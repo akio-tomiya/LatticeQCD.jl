@@ -26,7 +26,7 @@ module Clover
         NV = work1.NV
         NC = work1.NC
 
-        #! ... Calculation of 4 leaves under the counter clock order.
+        # ... Calculation of 4 leaves under the counter clock order.
         μν = 0
         for μ=1:3
             for ν=μ+1:4
@@ -36,16 +36,16 @@ module Clover
                 end
 
                 #=
-                !     1) First leaf, which is located on the right up side.
-                !                             
-                !                      (1,3)---------+
-                !                        |           |
-                !     nu                 |           | 
-                !      |                 |    (1)    |
-                !      |                 |           | 
-                !      |                 |           |
-                !      +----> mu       (1,1)-------(1,2)
-                !
+                     1) First leaf, which is located on the right up side.
+                                             
+                                      (1,3)---------+
+                                        |           |
+                     nu                 |           | 
+                      |                 |    (1)    |
+                      |                 |           | 
+                      |                 |           |
+                      +----> mu       (1,1)-------(1,2)
+                
                 =#
                 substitute!(work1,U[μ])
                 gauge_shift!(work2,μ,U[ν])
@@ -59,16 +59,16 @@ module Clover
                 addFμν!(CloverFμν,μν,work3)
 
                 #=
-                !     2) Second leaf, which is located on the left up side.
-                !                             
-                !                      (1,4)--------(1,2)
-                !                        |            |
-                !     nu                 |            | 
-                !      |                 |    (2)     |
-                !      |                 |            | 
-                !      |                 |            |
-                !      +----> mu       (1,3)--------(1,1)
-                ! 
+                     2) Second leaf, which is located on the left up side.
+                                             
+                                      (1,4)--------(1,2)
+                                        |            |
+                     nu                 |            | 
+                      |                 |    (2)     |
+                      |                 |            | 
+                      |                 |            |
+                      +----> mu       (1,3)--------(1,1)
+                 
                 =#
 
                 substitute!(work1,U[ν])
@@ -82,17 +82,17 @@ module Clover
                 addFμν!(CloverFμν,μν,work2)
 
                 #=
-                !     3) Third leaf, which is located on the left down side.
-                !                             
-                !                      (1,2)--------(1,1)
-                !                        |            |
-                !     nu                 |            | 
-                !      |                 |    (3)     |
-                !      |                 |            | 
-                !      |                 |            |
-                !      +----> mu       (1,3)--------(1,4)
-                !
-                ! 
+                     3) Third leaf, which is located on the left down side.
+                                             
+                                      (1,2)--------(1,1)
+                                        |            |
+                     nu                 |            | 
+                      |                 |    (3)     |
+                      |                 |            | 
+                      |                 |            |
+                      +----> mu       (1,3)--------(1,4)
+                
+                 
                 =#
                 gauge_shift!(work1,-ν,U[ν])
                 dir = (-μ,-ν)
@@ -106,17 +106,17 @@ module Clover
                 addFμν!(CloverFμν,μν,work3)
 
                 #=
-                !     4) Fourth leaf, which is located on the right down side.
-                !                             
-                !                      (1,1)--------(1,4)
-                !                        |            |
-                !     nu                 |            | 
-                !      |                 |    (4)     |
-                !      |                 |            | 
-                !      |                 |            |
-                !      +----> mu       (1,2)--------(1,3)
-                !
-                ! 
+                     4) Fourth leaf, which is located on the right down side.
+                                             
+                                      (1,1)--------(1,4)
+                                        |            |
+                     nu                 |            | 
+                      |                 |    (4)     |
+                      |                 |            | 
+                      |                 |            |
+                      +----> mu       (1,2)--------(1,3)
+                
+                 
                 =#
                 gauge_shift!(work1,-ν,U[ν])
                 gauge_shift!(work2,-ν,U[μ])
@@ -153,9 +153,7 @@ module Clover
     end
 
     """
-c------------------------------------------------------c
-c     y = x - x_aj
-c------------------------------------------------------c
+     y = x - x_aj
     """
     function cimaglink!(Fμν,μν,NV,NC)
         if NC == 3
@@ -231,9 +229,9 @@ c------------------------------------------------------c
         return
     end
 
-    JF(I,L) = (I+1) % L
-    JB(I,L) = (I-1+L) %L
-    IC(ix,iy,iz,it,N1,N2,N3) = 1+ix+N1*(iy+N2*(iz+N3*it))
+    jf(I,L) = (I+1) % L
+    jb(I,L) = (I-1+L) %L
+    ic(ix,iy,iz,it,N1,N2,N3) = 1+ix+N1*(iy+N2*(iz+N3*it))
 
     
     function fprep3!(NX,NY,NZ,NT,inn)
@@ -241,15 +239,15 @@ c------------------------------------------------------c
             for iz=0:NZ-1
                 for iy=0:NY-1
                     for ix=0:NX-1
-                        i = IC(ix,iy,iz,it,NX,NY,NZ)
-                        inn[i,1,1] = IC(JF(ix,NX),iy       ,iz       ,it       ,NX,NY,NZ)
-                        inn[i,2,1] = IC(ix       ,JF(iy,NY),iz       ,it       ,NX,NY,NZ)
-                        inn[i,3,1] = IC(ix       ,iy       ,JF(iz,NZ),it       ,NX,NY,NZ)
-                        inn[i,4,1] = IC(ix       ,iy       ,iz       ,JF(it,NT),NX,NY,NZ)
-                        inn[i,1,2] = IC(JB(ix,NX),iy       ,iz       ,it       ,NX,NY,NZ)
-                        inn[i,2,2] = IC(ix       ,JB(iy,NY),iz       ,it       ,NX,NY,NZ)
-                        inn[i,3,2] = IC(ix       ,iy       ,JB(iz,NZ),it       ,NX,NY,NZ)
-                        inn[i,4,2] = IC(ix       ,iy       ,iz       ,JB(it,NT),NX,NY,NZ)
+                        i = ic(ix,iy,iz,it,NX,NY,NZ)
+                        inn[i,1,1] = ic(jf(ix,NX),iy       ,iz       ,it       ,NX,NY,NZ)
+                        inn[i,2,1] = ic(ix       ,jf(iy,NY),iz       ,it       ,NX,NY,NZ)
+                        inn[i,3,1] = ic(ix       ,iy       ,jf(iz,NZ),it       ,NX,NY,NZ)
+                        inn[i,4,1] = ic(ix       ,iy       ,iz       ,jf(it,NT),NX,NY,NZ)
+                        inn[i,1,2] = ic(jb(ix,NX),iy       ,iz       ,it       ,NX,NY,NZ)
+                        inn[i,2,2] = ic(ix       ,jb(iy,NY),iz       ,it       ,NX,NY,NZ)
+                        inn[i,3,2] = ic(ix       ,iy       ,jb(iz,NZ),it       ,NX,NY,NZ)
+                        inn[i,4,2] = ic(ix       ,iy       ,iz       ,jb(it,NT),NX,NY,NZ)
                     end
                 end
             end
@@ -259,9 +257,7 @@ c------------------------------------------------------c
     
 
     """
-!-----------------------------------------------------!
-!     Calculate   dS_clover/dA_mu(x)
-!-----------------------------------------------------c
+    Calculate   dS_clover/dA_mu(x)
     """
     function dSclover!(z,μ,X,Y,U,fparam::FermiActionParam_WilsonClover,temps::Array{T,1}) where T <: GaugeFields_1d
         NX = X.NX
@@ -332,9 +328,9 @@ c------------------------------------------------------c
             end
 
             #=
-            ! .....................  !
-            !    Case 1 and 3        !
-            ! .....................  !
+             .....................  
+                Case 1 and 3        
+             .....................  
             =#
             iflag = 1
             cal_dFμν!(dF1,dF2,
@@ -343,11 +339,11 @@ c------------------------------------------------------c
                         gtmp1,gtmp2,gtmp3,gtmp4,
                         μ,ν,iflag)
 
-            #! ... Case 1
+            # ... Case 1
             VxSigxV!(veta,vxi,dF1,z,ftmp1,ftmp2,μ,ν)
             #println("z1 = ",z*z)
 
-            #! ... Case 3
+            # ... Case 3
             for is=1:NV
                 is1[is] = inn[is,μ,1]
             end
@@ -369,9 +365,9 @@ c------------------------------------------------------c
             #println("z2 = ",z*z)
 
             #=
-            ! .....................  !
-            !    Case 2 and 4        !
-            ! .....................  !
+             .....................  
+                Case 2 and 4        
+             .....................  
             =#
 
             iflag = 2
@@ -382,7 +378,7 @@ c------------------------------------------------------c
                     gtmp1,gtmp2,gtmp3,gtmp4,
                     μ,ν,iflag)
 
-            #! ... Case 2
+            # ... Case 2
             for is=1:NV
                 is1[is] = inn[is,μ,1]
             end
@@ -399,7 +395,7 @@ c------------------------------------------------------c
             VxSigxV!(v1,v2,dF1,z,ftmp1,ftmp2,μ,ν)
             #println("z3 = ",z*z)
 
-            #! ... Case 4
+            # ... Case 4
             for is=1:NV
                 is1[is] = inn[is,ν,1]
             end
@@ -417,9 +413,9 @@ c------------------------------------------------------c
             #println("z4 = ",z*z)
 
             #=
-            ! .....................  !
-            !    Case 4' and 2'      !
-            ! .....................  !
+             .....................  
+                Case 4' and 2'      
+             .....................  
             =#
 
             iflag = 3
@@ -430,11 +426,11 @@ c------------------------------------------------------c
                     gtmp1,gtmp2,gtmp3,gtmp4,
                     μ,ν,iflag)
 
-            #! ... Case 4'
+            # ... Case 4'
             VxSigxV!(veta,vxi,dF1,z,ftmp1,ftmp2,μ,ν)
             #println("z5 = ",z*z)
 
-            #! ... Case 2' 
+            # ... Case 2' 
             for is=1:NV
                 is1[is] = inn[is,μ,1]
             end
@@ -456,9 +452,9 @@ c------------------------------------------------------c
             #println("z6 = ",z*z)
 
             #=
-            ! .....................  !
-            !    Case 3' and 1'      !
-            ! .....................  !
+             .....................  
+                Case 3' and 1'     
+             .....................  
             =#
             iflag = 4
 
@@ -471,7 +467,7 @@ c------------------------------------------------------c
 
 
 
-            #! ... Case 3'
+            # ... Case 3'
             for is=1:NV
                 is1[is] = inn[is,μ,1]
             end
@@ -484,18 +480,12 @@ c------------------------------------------------------c
                     end
                 end
             end
-            #println(sum(abs.(v1)))
-            #println(sum(abs.(v2)))
-            #for ia=1:8
-            #    println(sum(abs.(dF1[ia].g)))
-            #end
-            #println(z*z)
+
             
             VxSigxV!(v1,v2,dF1,z,ftmp1,ftmp2,μ,ν)
-            #println("z7 = ",z*z)
-            #exit()
 
-            #! ... Case 1' 
+
+            # ... Case 1' 
             for is=1:NV
                 is1[is] = inn[is,ν,2]
             end
@@ -510,12 +500,11 @@ c------------------------------------------------------c
             end
 
             VxSigxV!(v1,v2,dF2,z,ftmp1,ftmp2,μ,ν)
-            #println("z8 = ",z*z)
-            #println(z*z)
+
 
         end
 
-        #! z = -2 Re ( .... )
+
         for ia=1:numbasis
             is = 0
             for it=1:NT
@@ -531,9 +520,6 @@ c------------------------------------------------------c
 
         end
 
-        
-        #println("zfinal = ",z*z)
-        #exit()
 
 
     end
@@ -546,8 +532,7 @@ c------------------------------------------------------c
         NZ = z.NZ
         NT = z.NT
         numbasis = ifelse(NC==3,8,3)
-        #println(sum(abs.(v2)))
-        #exit()
+
 
         if μ == ν
             error("""μ should not be equal to ν (VsSigV)
@@ -565,7 +550,7 @@ c------------------------------------------------------c
             ν0 = μ
         end
 
-        #! ... \sigma_{\mu,\nu} x v2 (in Dirac space)  .... 
+        # ... σ_μν x v2 (in Dirac space)  .... 
         if μ0 == 1
             if ν0 == 2
                 for ic=1:NC
@@ -657,7 +642,7 @@ c------------------------------------------------------c
 
         if NC == 3
 
-            #! ... tmp1 = u x tmp2 (in color space) 
+            # ... tmp1 = u x tmp2 (in color space) 
             for ia = 1:8
                 for ialpha=1:4
                     for is=1:NV
@@ -671,9 +656,6 @@ c------------------------------------------------------c
                             + u[ia][3,2,is]*tmp2[2,is,ialpha] +
                             + u[ia][3,3,is]*tmp2[3,is,ialpha]
 
-                        #println(tmp2[:,is,:])    
-                        #println("$s1,$s2,$s3")
-                        #exit()
 
                         tmp1[1,is,ialpha] = s1
                         tmp1[2,is,ialpha] = s2
@@ -681,11 +663,9 @@ c------------------------------------------------------c
                     end
                 end
 
-                #println("temp1 = ",sum(abs.(tmp1)))
-                #println(z*z)
-                
 
-                #! ... v1^{\dagger} * tmp1
+
+                # ... v1^{\dagger} * tmp1
                 is = 0
                 for it=1:NT
 
@@ -707,9 +687,7 @@ c------------------------------------------------------c
                                         conj(v1[3,is,2]) * tmp1[3,is,2] + 
                                         conj(v1[3,is,3]) * tmp1[3,is,3] + 
                                         conj(v1[3,is,4]) * tmp1[3,is,4]
-                                #println(tmp1[:,is,:])
-                                
-                                #println("$s1,$s2,$s3")
+
                                 z[ia,ix,iy,iz,it] += real(s1+s2+s3)
                                 #println(z[ia,ix,iy,iz,it])
                             end
@@ -721,7 +699,7 @@ c------------------------------------------------------c
             end
         elseif NC == 2
 
-            #! ... tmp1 = u x tmp2 (in color space) 
+            # ... tmp1 = u x tmp2 (in color space) 
             for ia = 1:3
                 for ialpha=1:4
                     for is=1:NV
@@ -736,7 +714,7 @@ c------------------------------------------------------c
                     end
                 end
 
-                #! ... v1^{\dagger} * tmp1
+                # ... v1^{\dagger} * tmp1
                 is = 0
                 for it=1:NT
                     for iz=1:NZ
@@ -774,15 +752,15 @@ c------------------------------------------------------c
 
 
         #=
-        !    ...  A) the upper staple  ....................
-        !                               w3
-        !       nu                 .-----------+
-        !                          |           | 
-        !       /|             w4  |           | w2
-        !        |                 |           |
-        !        |                 |           |
-        !        +----> mu         .-----------.
-        !      
+            ...  A) the upper staple  ....................
+                                       w3
+               nu                 .-----------+
+                                  |           | 
+               /|             w4  |           | w2
+                |                 |           |
+                |                 |           |
+                +----> mu         .-----------.
+              
         =#
         if iflag == 1 || iflag == 2
             substitute!(work1,U[μ])
@@ -791,26 +769,26 @@ c------------------------------------------------------c
             substitute!(work4,U[ν])
         end
 
-        #! ...  iflag = 1 (Case 1 and 3)
+        # ...  iflag = 1 (Case 1 and 3)
         if iflag == 1
             #=
-            !                               w3
-            !                          .-----------+
-            !  Case 1                  |           |
-            !       nu                 |           |
-            !        |              w4 |           | w2
-            !        |                 |           |
-            !        +----> mu         o-----------. 
-            !                          x    w1 
-            !
-            !                               w3
-            !                          .<----------o
-            !  Case 3                  |           |
-            !       nu                 |           |
-            !        |              w4 |           | w2
-            !        |                 |           |
-            !        +----> mu         .-----------. 
-            !     
+                                           w3
+                                      .-----------+
+              Case 1                  |           |
+                   nu                 |           |
+                    |              w4 |           | w2
+                    |                 |           |
+                    +----> mu         o-----------. 
+                                      x    w1 
+            
+                                           w3
+                                      .<----------o
+              Case 3                  |           |
+                   nu                 |           |
+                    |              w4 |           | w2
+                    |                 |           |
+                    +----> mu         .-----------. 
+                 
             =#
             mul!(temp1,work1,work2)
             mul!(temp2,work4,work3)
@@ -831,31 +809,31 @@ c------------------------------------------------------c
 
 
         end        
-        #! ...  iflag = 2 (Case 2 and 4)
+        # ...  iflag = 2 (Case 2 and 4)
         if iflag == 2
             #=
-            !                                w3
-            !                          .-----------+
-            !  Case 2                  |           |
-            !       nu                 |           |
-            !        |             w4  |           | w2
-            !        |                 |           |
-            !        +----> mu         .---------->o 
-            !                          x    w1 
-            !
-            !                                w3
-            !                          o-----------+
-            !  Case 4                  |           |
-            !       nu                 |           |
-            !        |              w4 |           | w2
-            !        |                 |           |
-            !        +----> mu         .-----------. 
-            !                          x    w1 
+                                            w3
+                                      .-----------+
+              Case 2                  |           |
+                   nu                 |           |
+                    |             w4  |           | w2
+                    |                 |           |
+                    +----> mu         .---------->o 
+                                      x    w1 
+            
+                                            w3
+                                      o-----------+
+              Case 4                  |           |
+                   nu                 |           |
+                    |              w4 |           | w2
+                    |                 |           |
+                    +----> mu         .-----------. 
+                                      x    w1 
             =#
             mul!(temp1,work2,work3')
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) #! temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work4',temp2)
                 mul!(temp4,temp1,temp3)
                 mul!(temp4,im)
@@ -871,20 +849,20 @@ c------------------------------------------------------c
         end
 
         #=
-        !    ...  B) the lower staple  ....................
-        !
-        !       nu
-        !       /|
-        !        |
-        !        |
-        !        |                 x    w1
-        !        +----> mu         .-----------+
-        !                          |           |
-        !                      w4  |           | w2
-        !                          |           |
-        !                          |           |
-        !                          .-----------.
-        !  
+            ...  B) the lower staple  ....................
+        
+               nu
+               /|
+                |
+                |
+                |                 x    w1
+                +----> mu         .-----------+
+                                  |           |
+                              w4  |           | w2
+                                  |           |
+                                  |           |
+                                  .-----------.
+          
         =#       
         if iflag == 3 || iflag == 4
             substitute!(work1,U[μ])
@@ -895,37 +873,37 @@ c------------------------------------------------------c
             #println(work2[1,1,1])
             #exit()
         end 
-        #!   ...  iflag = 3 (Case 4' and 2')
+        #   ...  iflag = 3 (Case 4' and 2')
         if iflag == 3
             #=
-            !  Case 4'
-            !       nu
-            !        |
-            !        |                 x    w1
-            !        +----> mu         o<----------. 
-            !                          |           |
-            !                      w4  |           | w2
-            !                          |           |
-            !                          |           |
-            !                          .-----------.
-            !                               w3
-            !  Case 2'
-            !       nu
-            !        |
-            !        |                 x    w1
-            !        +----> mu         .<----------. 
-            !                          |           |
-            !                      w4  |           | w2
-            !                          |           |
-            !                          |           |
-            !                          .-----------o
-            !                               w3
+              Case 4'
+                   nu
+                    |
+                    |                 x    w1
+                    +----> mu         o<----------. 
+                                      |           |
+                                  w4  |           | w2
+                                      |           |
+                                      |           |
+                                      .-----------.
+                                           w3
+              Case 2'
+                   nu
+                    |
+                    |                 x    w1
+                    +----> mu         .<----------. 
+                                      |           |
+                                  w4  |           | w2
+                                      |           |
+                                      |           |
+                                      .-----------o
+                                           w3
             =#
 
             mul!(temp1,work4',work3)
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) #! temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work2,temp2')
 
                 mul!(temp4,temp1,temp3)
@@ -940,37 +918,37 @@ c------------------------------------------------------c
             end
         end
 
-        #! ...  iflag = 4 (Case 3' and 1')
+        # ...  iflag = 4 (Case 3' and 1')
         if iflag == 4
             #=
-            !  Case 3' 
-            !       nu
-            !        |
-            !        |                 x    w1
-            !        +----> mu         .<----------o 
-            !                          |           |
-            !                      w4  |           | w2
-            !                          |           |
-            !                          |           |
-            !                          .-----------.
-            !                               w3
-            !  Case 1' 
-            !       nu
-            !        |
-            !        |                 x    w1
-            !        +----> mu         .<----------. 
-            !                          |           |
-            !                      w4  |           | w2
-            !                          |           |
-            !                          |           |
-            !                          o-----------.
-            !      
+              Case 3' 
+                   nu
+                    |
+                    |                 x    w1
+                    +----> mu         .<----------o 
+                                      |           |
+                                  w4  |           | w2
+                                      |           |
+                                      |           |
+                                      .-----------.
+                                           w3
+              Case 1' 
+                   nu
+                    |
+                    |                 x    w1
+                    +----> mu         .<----------. 
+                                      |           |
+                                  w4  |           | w2
+                                      |           |
+                                      |           |
+                                      o-----------.
+                  
             =#
 
             mul!(temp1,work3,work2)
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) #! temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work4,temp2)
 
                 mul!(temp4,temp3',temp1)
