@@ -152,7 +152,7 @@ module Heatbath
         NZ = u[1].NZ
         NT = u[1].NT
 
-        NC = 2
+        NC = 3
         V = zeros(ComplexF64,NC,NC)
         Vtemp = zeros(ComplexF64,NC,NC)
 
@@ -193,7 +193,9 @@ module Heatbath
 
                             
 
-                            function ishikawa!(V,u)
+                            function ishikawa(V)
+                                #display(V)
+                                #println("\t")
                                 R = real(sqrt(det(V)))
                                 V0 = inv(V/R)
 
@@ -204,8 +206,7 @@ module Heatbath
                                 ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
 
                                 #
-                                Nc = 2 # Since Ishikawa's book uses 1/g^2 notation.
-                                k = (beta/Nc)*ρ
+                                k = (beta/NC)*ρ
 
                                 #k = 2beta*R
 
@@ -219,11 +220,21 @@ module Heatbath
                                 while(ur^2 > 1.0-a[1]^2) # rejection sampling
                                     s = rand()
                                     a[1] = log(s*epk + (1-s)*emk)/k # F.17
+                                    #a[1] = 1 + log(s+(1-s)*emk^2)/k #F.17
+                                    #println("$i_count ",a[1]," $k")
+                                    
+                                    #a[1] = log(epk*(s + (1-s)*emk^2))  /k # F.17
                                     #a[1] =log(A*y+B)/(k)
                                     ur = rand()
                                     i_count+=1
+                                    #if a[1] == Inf 
+                                    #    println("$i_count ",a[1]," $k")
+                                    #    a[1] = 1 + log(s+(1-s)*emk^2)/k
+                                    #    println("$i_count ",a[1]," $k")
+                                    #    exit()
+                                    #end
                                     if i_count> ITERATION_MAX
-                                        error("The rejection sampling is failed")
+                                        error("The rejection sampling is failed $ur,$(a[1]),$(ur^2 > 1.0-a[1]^2)")
                                     end
                                 end
 
@@ -242,14 +253,32 @@ module Heatbath
                             end
 
                             
-                            S = u[mu][:,:,ix,iy,iz,it]*V
+                            
 
+                            for l=1:3
+                                SN = u[mu][:,:,ix,iy,iz,it]*V
 
-                            #aoki!(u)
-                            a,V0 = ishikawa!(V,u)
+                                if l==1
+                                    n,m = 1,2
+                                elseif l==2
+                                    n,m = 2,3
+                                else
+                                    n,m = 1,3
+                                end
+                                S = make_submatrix(SN,n,m)
+                                a,S0 = ishikawa(S)
 
-                            u[mu][:,:,ix,iy,iz,it] =[a[1]+im*a[4] a[3]+im*a[2]
-                                                        -a[3]+im*a[2] a[1]-im*a[4]]*V0
+                                K = [a[1]+im*a[4] a[3]+im*a[2]
+                                    -a[3]+im*a[2] a[1]-im*a[4]]*S0
+                                
+                                #display(K)
+                                #println("\t")
+                                A = make_largematrix(K,n,m,NC)
+                                #display(A)
+                                #println("\t")
+                                u[mu][:,:,ix,iy,iz,it] = A*u[mu][:,:,ix,iy,iz,it]
+                            end
+                            #exit()
 
 
                         end
@@ -257,8 +286,31 @@ module Heatbath
                 end
             end
             normalize!(u[mu])
+            #set_wing!(u[mu])
         end
 
+    end
+
+    function make_submatrix(S,i,j)
+        U = zeros(ComplexF64,2,2)
+        U[1,1] = S[i,i]
+        U[1,2] = S[i,j]
+        U[2,1] = S[j,i]
+        U[2,2] = S[j,j]
+        return U
+    end
+
+
+    function make_largematrix(U,i,j,NC)
+        K = zeros(ComplexF64,NC,NC)
+        for n=1:NC
+            K[n,n] = 1
+        end
+        K[i,i] = U[1,1]
+        K[i,j] = U[1,2] 
+        K[j,i] = U[2,1]
+        K[j,j] = U[2,2]  
+        return K
     end
 
 
@@ -437,16 +489,16 @@ c------------------------------------------------------c
     =#
 
     """
-c-------------------------------------------------c
-*     su2-submatrix(c) in su3 matrix(x)
-*            su2            su3
-*     k=1         <-    1-2 elements
-*     k=2         <-    2-3 elements
-*     k=3         <-    1-3 elements
-*     k=4          ->   1-2 elements
-*     k=5          ->   2-3 elements
-*     k=6          ->   1-3 elements
-c-------------------------------------------------c
+-------------------------------------------------c
+     su2-submatrix(c) in su3 matrix(x)
+            su2            su3
+     k=1         <-    1-2 elements
+     k=2         <-    2-3 elements
+     k=3         <-    1-3 elements
+     k=4          ->   1-2 elements
+     k=5          ->   2-3 elements
+     k=6          ->   1-3 elements
+-------------------------------------------------c
     """
     function submat!(x,c,n,k,id)
 

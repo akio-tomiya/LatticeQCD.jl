@@ -2165,18 +2165,20 @@ c-----------------------------------------------------c
                             println("w2, w3 : $w2, $w3   ")
                             exit()
                         end
+                        #println(u[:,:,ix,iy,iz,it]'*u[:,:,ix,iy,iz,it])
                     end
                 end
             end
         end
+        m3complv!(u)
     end
 
     """
     normalize!(u)
-    c----------------------------------------------------------------------c
-    c     normalizes links                                                 c
-    c     input  x : arbitrary 2*2 complex matrix                          c
-    c     output x : SU(2) matrix 
+    ----------------------------------------------------------------------c
+         normalizes links                                                 c
+         input  x : arbitrary 2*2 complex matrix                          c
+         output x : SU(2) matrix 
     """
     function normalize!(u::GaugeFields{T}) where T <: SU2
         NX = u.NX
@@ -2188,54 +2190,65 @@ c-----------------------------------------------------c
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        w1 = 0
-                        w2 = 0
-                        for ic=1:2
-                            w1 += u[2,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
-                            w2 += u[1,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
-                        end
-                        zerock2 = w2
-                        if zerock2 == 0 
-                            println("w2 is zero  !!  (in normlz)")
-                            println("u[1,1),u[1,2) : ",u[1,1,ix,iy,iz,it], "\t",u[1,2,ix,iy,iz,it])
-                        end
 
-                        w1 = -w1/w2
+                        α = u[1,1,ix,iy,iz,it]
+                        β = u[2,1,ix,iy,iz,it]
+                        detU = abs(α)^2 + abs(β)^2
+                        u[1,1,ix,iy,iz,it] = α/detU
+                        u[2,1,ix,iy,iz,it] = β/detU
+                        u[1,2,ix,iy,iz,it] = -conj(β)/detU
+                        u[2,2,ix,iy,iz,it] = conj(α)/detU
 
-                        x4 = (u[2,1,ix,iy,iz,it]) + w1*u[1,1,ix,iy,iz,it]
-                        x5 = (u[2,2,ix,iy,iz,it]) + w1*u[1,2,ix,iy,iz,it]
-                        #x6 = (u[2,3,ix,iy,iz,it]) + w1*u[1,3,ix,iy,iz,it]
+                    end
+                end
+            end
+        end
+    end
 
-                        w3 = x4*conj(x4) + x5*conj(x5) #+ x6*conj(x6)
 
-                        zerock3 = w3
-                        if zerock3 == 0
-                            println("w3 is zero  !!  (in normlz)")
-                            println("x4, x5: $x4, $x5")
-                            exit()
-                        end
+    function m3complv!(a::SU3GaugeFields)
+        aa = zeros(Float64,18)
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+    
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+    
+                        aa[ 1] = real( a[1,1,ix,iy,iz,it])
+                        aa[ 2] = imag(a[1,1,ix,iy,iz,it])
+                        aa[ 3] = real( a[1,2,ix,iy,iz,it])
+                        aa[ 4] = imag(a[1,2,ix,iy,iz,it])
+                        aa[ 5] = real( a[1,3,ix,iy,iz,it])
+                        aa[ 6] = imag(a[1,3,ix,iy,iz,it])
+                        aa[ 7] = real( a[2,1,ix,iy,iz,it])
+                        aa[ 8] = imag(a[2,1,ix,iy,iz,it])
+                        aa[ 9] = real( a[2,2,ix,iy,iz,it])
+                        aa[10] = imag(a[2,2,ix,iy,iz,it])
+                        aa[11] = real( a[2,3,ix,iy,iz,it])
+                        aa[12] = imag(a[2,3,ix,iy,iz,it])
+    
+                        aa[13] = aa[ 3]*aa[11] - aa[ 4]*aa[12] -
+                                    aa[ 5]*aa[ 9] + aa[ 6]*aa[10]
+                        aa[14] = aa[ 5]*aa[10] + aa[ 6]*aa[ 9] -
+                                    aa[ 3]*aa[12] - aa[ 4]*aa[11]
+                        aa[15] = aa[ 5]*aa[ 7] - aa[ 6]*aa[ 8] -
+                                    aa[ 1]*aa[11] + aa[ 2]*aa[12]
+                        aa[16] = aa[ 1]*aa[12] + aa[ 2]*aa[11] -
+                                    aa[ 5]*aa[ 8] - aa[ 6]*aa[ 7]
+                        aa[17] = aa[ 1]*aa[ 9] - aa[ 2]*aa[10] -
+                                    aa[ 3]*aa[ 7] + aa[ 4]*aa[ 8]
+                        aa[18] = aa[ 3]*aa[ 8] + aa[ 4]*aa[ 7] -
+                                    aa[ 1]*aa[10] - aa[ 2]*aa[ 9]
+    
+                        a[3,1,ix,iy,iz,it] = aa[13]+im*aa[14]
+                        a[3,2,ix,iy,iz,it] = aa[15]+im*aa[16]
+                        a[3,3,ix,iy,iz,it] = aa[17]+im*aa[18]
 
-                        u[2,1,ix,iy,iz,it] = x4
-                        u[2,2,ix,iy,iz,it] = x5
-                        #u[2,3,ix,iy,iz,it] = x6
-
-                        w3 = 1/sqrt(w3)
-                        w2 = 1/sqrt(w2)
-
-                        u[1,1,ix,iy,iz,it] = u[1,1,ix,iy,iz,it]*w2
-                        u[1,2,ix,iy,iz,it] = u[1,2,ix,iy,iz,it]*w2
-                        #u[1,3,ix,iy,iz,it] = u[1,3,ix,iy,iz,it]*w2
-                        u[2,1,ix,iy,iz,it] = u[2,1,ix,iy,iz,it]*w3
-                        u[2,2,ix,iy,iz,it] = u[2,2,ix,iy,iz,it]*w3
-                        #u[2,3,ix,iy,iz,it] = u[2,3,ix,iy,iz,it]*w3
-
-                        if zerock2*zerock3 == 0 
-                            println("!! devided by zero !! (in normalize)")
-                            println("w2 or w3 in normlz is zero !!")
-                            println("w2, w3 : $w2, $w3   ")
-                            exit()
-                        end
-                        #println(u[:,:,ix,iy,iz,it]'*u[:,:,ix,iy,iz,it])
+                        #println(a[:,:,ix,iy,iz,it]'*a[:,:,ix,iy,iz,it] )
                     end
                 end
             end
