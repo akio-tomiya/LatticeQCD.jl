@@ -382,7 +382,7 @@ module Wizard
                     "cold start",
                     "hot start",
                     "start from a file",
-                    "one instanton",
+                    "start from one instanton (Radius is half of Nx)",
                 ]))
         end
         if initialconf == 1

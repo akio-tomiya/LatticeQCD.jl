@@ -290,28 +290,33 @@ module Measurements
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
+                    Nflowsteps = 1
+                    eps_flow = 0.01
+                    println_verbose2(verbose,"# epsilon for the Wilson flow is $eps_flow")
                     Usmr = deepcopy(U)
                     W1 = deepcopy(univ.U)
                     W2 = deepcopy(univ.U)
 
                     temp_UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
 
-                    iflow = 0
+                    τ = 0.0
                     plaq = calc_plaquette(Usmr)
                     #Q = calc_topological_charge(Usmr)
+                    # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
-                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow")
+                    println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     flush(stdout)
                     
 
                     for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                        gradientflow!(Usmr,univ,W1,W2)
+                        gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
                         plaq = calc_plaquette(Usmr)
                         Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                         Qclover= calc_topological_charge_clover(Usmr)
                         #@time Q = calc_topological_charge(Usmr)
-                        println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow")
+                        τ = iflow*eps_flow*Nflowsteps
+                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                         if iflow%10 == 0
                             flush(stdout)
                         end
@@ -321,7 +326,8 @@ module Measurements
                     measure_chiral_cond(univ,measset.fermions[i],itrj,verbose = verbose )
                 elseif method["methodname"] == "Pion_correlator" 
                     #fermiontype = method["fermiontype"]
-                    calc_pion_correlator(univ,measset.fermions[i])
+                    #calc_pion_correlator(univ,measset.fermions[i])
+                    measure_correlator(univ,measset.fermions[i],itrj)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
@@ -414,7 +420,7 @@ module Measurements
                 end
             end
         end
-        return Q/(32*(π^2))
+        return -Q/(32*(π^2))
     end
 
     function calc_topological_charge_plaq(U::Array{GaugeFields{S},1}) where S <: SUn
@@ -505,7 +511,7 @@ module Measurements
                 end
             end
         end
-        return Q/(32*(π^2))
+        return -Q/(32*(π^2))
     end
 
     
@@ -641,7 +647,7 @@ module Measurements
 
         println("Hadron spectrum: Reconstruction")
         Cpi = zeros( univ.NT )
-        # Construct Pion propagator ## ちょっと考える。
+        # Construct Pion propagator 
         for t=1:univ.NT
             tmp = 0.0+0.0im
             for z=1:univ.NZ
