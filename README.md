@@ -101,7 +101,7 @@ We support following two user interfaces
 1. Julia REPL interface (For beginners, just after the lattice QCD textbook)
 2. Genral run code (Experience with another code, for batch job, customised purpose)
 
-Usage 1 was already explained. You can call wizard through Julia Repel.
+Usage 1 was already explained. 
 
 For Usage 2, you can clone this repository with Git commands.
 And in the directory, you can execute like,
@@ -110,7 +110,7 @@ And in the directory, you can execute like,
 julia run.jl PARAMETER_FILE
 ```
 
-then, you get results though standard I/O.
+then, you get results though standard I/O. The "PARAMETER_FILE" can be created through the wizard "julia run_wizard.jl"  or you can write by yourself.
 
 
 # Purpose of the code
