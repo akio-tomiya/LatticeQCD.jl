@@ -1,4 +1,4 @@
-# LatticeQCD.jl
+# LatticeQCD.jl (ver. 0.5)
 
 [![Build Status](https://travis-ci.com/cometscome/LatticeQCD.jl.svg?branch=master)](https://travis-ci.com/cometscome/LatticeQCD.jl)
 [![Coverage](https://codecov.io/gh/cometscome/LatticeQCD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/cometscome/LatticeQCD.jl)
