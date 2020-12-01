@@ -321,7 +321,8 @@ module Measurements
                     measure_chiral_cond(univ,measset.fermions[i],itrj,verbose = verbose )
                 elseif method["methodname"] == "Pion_correlator" 
                     #fermiontype = method["fermiontype"]
-                    calc_pion_correlator(univ,measset.fermions[i])
+                    #calc_pion_correlator(univ,measset.fermions[i])
+                    measure_correlator(univ,measset.fermions[i],itrj)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
@@ -641,7 +642,7 @@ module Measurements
 
         println("Hadron spectrum: Reconstruction")
         Cpi = zeros( univ.NT )
-        # Construct Pion propagator ## ちょっと考える。
+        # Construct Pion propagator 
         for t=1:univ.NT
             tmp = 0.0+0.0im
             for z=1:univ.NZ
