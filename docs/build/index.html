@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>LatticeQCD.jl · LatticeQCD.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="assets/documenter.js"></script><script src="siteinfo.js"></script><script src="../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">LatticeQCD.jl</span></div><form class="docs-search" action="search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li class="is-active"><a class="tocitem" href>LatticeQCD.jl</a><ul class="internal"><li><a class="tocitem" href="#How-to-do"><span>How to do</span></a></li><li><a class="tocitem" href="#Benchmarks"><span>Benchmarks</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>LatticeQCD.jl</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>LatticeQCD.jl</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/cometscome/QCDLatticeToolKit/blob/master/LTK.jl/LatticeQCD/docs/src/index.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="LatticeQCD.jl"><a class="docs-heading-anchor" href="#LatticeQCD.jl">LatticeQCD.jl</a><a id="LatticeQCD.jl-1"></a><a class="docs-heading-anchor-permalink" href="#LatticeQCD.jl" title="Permalink"></a></h1><p>This is the lattice QCD package purely written in Julia language. Lattice QCD is a well-established non-perturbative approach to solving the quantum chromodynamics (QCD) theory of quarks and gluons.</p><p>We confirmed that it works in Julia 1.5 or later. </p><p>This code is inspired by the Lattice Tool Kit (LTK) written in <a href="https://nio-mon.riise.hiroshima-u.ac.jp/LTK/">Fortran</a>. With the use of a modern programing language, it is easy to understand how the code works.  The part of the codes is translated from the LTK. </p><p>What LatticeQCD.jl can do is :</p><ul><li>Two flavor SU(3) Hybrid Monte Carlo with the Wilson Fermion (We want to add more functionalities.). </li><li>The speed is the faster than the original LTK code written in fortran. </li></ul><h2 id="How-to-do"><a class="docs-heading-anchor" href="#How-to-do">How to do</a><a id="How-to-do-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-do" title="Permalink"></a></h2><h3 id="simple-version"><a class="docs-heading-anchor" href="#simple-version">simple version</a><a id="simple-version-1"></a><a class="docs-heading-anchor-permalink" href="#simple-version" title="Permalink"></a></h3><p>You can try this code with </p><pre><code class="language-none">julia ./src/run.jl</code></pre><p>or </p><pre><code class="language-none">julia ./src/run.jl params.jl</code></pre><p>Here, in params.jl, we can see </p><pre><code class="language-julia">L = (4,4,4,4)
+β = 6
+#gparam = Setup_Gauge_action(β)
+
+NTRACE = 3
+gparam =  GaugeActionParam_standard(β,NTRACE)
+#gparam = Setup_Gauge_action(β)
+
+hop= 0.141139#Hopping parameter
+r= 1#Wilson term
+eps= 1e-19
+Dirac_operator= &quot;Wilson&quot;
+MaxCGstep= 3000
+#fparam = Setup_Fermi_action()
+fparam = FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep)</code></pre><p>You can change the parameters.  If you set <code>fparam=nothing</code> in this file, you can do the quench HMC.</p><h3 id="more-details"><a class="docs-heading-anchor" href="#more-details">more details</a><a id="more-details-1"></a><a class="docs-heading-anchor-permalink" href="#more-details" title="Permalink"></a></h3><p>In the LatticeQCD.jl, the Universe type is an important type for simulations.  At first, you have to generate your &quot;universe&quot;. </p><pre><code class="language-julia">univ = Universe(file)</code></pre><p>The file is like: </p><pre><code class="language-julia">L = (4,4,4,4)
+β = 6
+NTRACE = 3
+#gparam = Setup_Gauge_action(β)
+gparam =  GaugeActionParam_standard(β,NTRACE)
+
+BoundaryCondition=[1,1,1,-1]
+Nwing = 1
+initial=&quot;cold&quot;
+NC =3
+
+
+hop= 0.141139#Hopping parameter
+r= 1#Wilson term
+eps= 1e-19
+Dirac_operator= &quot;Wilson&quot;
+MaxCGstep= 3000
+
+fparam = FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep)
+</code></pre><p>The parameters that you do not provide are set by the default values. </p><p>Then, you can calculate physical obserbables.  For example, if you want to calculate a plaquette, just do </p><pre><code class="language-julia">plaq = calc_plaquette(univ)
+println(&quot;plaq = &quot;,plaq)</code></pre><p>If you want to do the HMC simulation, set the MD parameters: </p><pre><code class="language-julia">Δτ = 0.1
+MDsteps = 10
+βMD = β
+
+mdparams =MD_parameters_standard(gparam,Δτ,MDsteps,βMD)</code></pre><p>and do it like: </p><pre><code class="language-julia">for i=1:20
+    Sold = md_initialize!(univ)
+    Snew = md!(univ,mdparams)
+
+    metropolis_update!(univ,Sold,Snew)
+    plaq = calc_plaquette(univ)
+    println(&quot;-------------------------------------&quot;)
+    println(&quot;$i-th plaq = &quot;,plaq)
+    println(&quot;-------------------------------------&quot;)
+end </code></pre><h2 id="Benchmarks"><a class="docs-heading-anchor" href="#Benchmarks">Benchmarks</a><a id="Benchmarks-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmarks" title="Permalink"></a></h2><p>The speed is important for the Lattice QCD simulation.  Remarkably, this Julia code is faster than s similar code in Fortran. </p><p>For example, with the following parameters: </p><pre><code class="language-none">6.0d0     6.0d0         beta, betamd
+0.141139d0  1.d0         hop,  r (Hopping parametger, Wilson term)
+.false.                   Clover term
+(0.0d0,0.0d0)            cmu (Chemical potential)
+1                        istart (1:Cold, 2:Hot, 3:File)
+001       020            ntraj0, ntraj1 
+1.d0                     gamma_G
+10     0.1d0            nstep, dtau
+.true.                   fermions
+0                        flagMD</code></pre><p>, where this is an input file of the LTK.  We set eps=1e-19 as a convergence criteria in a CG solver. </p><p>The elapsed time of the original LTK code on Mac mini (2018) with 3.2Ghz Intel Core i7 (6 cores) is </p><pre><code class="language-none">Eold,Enew,Diff,accept:   0.1613911E+04    0.1614279E+04   -0.3678492E+00   T
+ Plaq :   0.60513145439721250     
+ Pol :         (1.1156431755476819,-3.20744714128515240E-002)
+./a.out &lt; input  227.40s user 0.07s system 99% cpu 3:47.51 total</code></pre><p>On the other hand, the elapsed time of this LatticeQCD.jl is </p><pre><code class="language-none">-------------------------------------
+20-th plaq = 0.6051309989225465
+-------------------------------------
+julia --sysimage ~/sys_plots.so run.jl  180.41s user 0.25s system 100% cpu 3:00.62 total</code></pre><p>The LatticeQCD.jl is faster than the Fortran-based code. </p><p>We note that the plaquette value is consistently in single precision floating point numbers,  since the random number generation is based on the original Fortran code and random numbers are in single precision floating point.</p><article class="docstring"><header><a class="docstring-binding" id="LatticeQCD.LTK_universe.Universe" href="#LatticeQCD.LTK_universe.Universe"><code>LatticeQCD.LTK_universe.Universe</code></a> — <span class="docstring-category">Type</span></header><section><div><p>Your universe is described in this type.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/cometscome/QCDLatticeToolKit/blob/49853c829dfcd22dd13691c3398d36aff9cb9f79/LTK.jl/LatticeQCD/src/universe.jl#L20-L22">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="LatticeQCD.LTK_universe.Universe" href="#LatticeQCD.LTK_universe.Universe"><code>LatticeQCD.LTK_universe.Universe</code></a> — <span class="docstring-category">Type</span></header><section><div><p><code>Universe(L::Tuple,gparam::GaugeActionParam,initial=&quot;cold&quot;,fparam=nothing)</code></p><ul><li>L: system size (NX,NY,NZ,NT)</li><li>gparam: parameters for gauge actions</li><li>[initial]: initial Gauge configuration</li><li>[fparam]: parameters for fermion actions</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/cometscome/QCDLatticeToolKit/blob/49853c829dfcd22dd13691c3398d36aff9cb9f79/LTK.jl/LatticeQCD/src/universe.jl#L136-L143">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="LatticeQCD.LTK_universe.Universe-Tuple{Any}" href="#LatticeQCD.LTK_universe.Universe-Tuple{Any}"><code>LatticeQCD.LTK_universe.Universe</code></a> — <span class="docstring-category">Method</span></header><section><div><p><code>Universe(file)</code></p><ul><li>file: file name of the input file.</li></ul><p>Make your universe. The input file is loaded.</p><p>Undefined parameters in your input file are defined with the default values.</p><p>The default values are as follows.</p><pre><code class="language-julia">    L = (4,4,4,4)
+    β = 6
+    NTRACE = 3
+    #gparam = Setup_Gauge_action(β)
+    gparam =  GaugeActionParam_standard(β,NTRACE)
+
+    BoundaryCondition=[1,1,1,-1]
+    Nwing = 1
+    initial=&quot;cold&quot;
+    NC =3
+
+
+    hop= 0.141139 #Hopping parameter
+    r= 1 #Wilson term
+    eps= 1e-19
+    Dirac_operator= &quot;Wilson&quot;
+    MaxCGstep= 3000
+
+    fparam = FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep)
+</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/cometscome/QCDLatticeToolKit/blob/49853c829dfcd22dd13691c3398d36aff9cb9f79/LTK.jl/LatticeQCD/src/universe.jl#L57-L89">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="LatticeQCD.Actions.Setup_Gauge_action" href="#LatticeQCD.Actions.Setup_Gauge_action"><code>LatticeQCD.Actions.Setup_Gauge_action</code></a> — <span class="docstring-category">Function</span></header><section><div><p><code>Setup_Gauge_action(β;actiontype=&quot;standard&quot;)</code>`</p><ul><li>β: Coupling value</li></ul><p>Set up the information about the Gauge action. You can set the coupling value β.</p><p>Now only SU(3) case is supported.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/cometscome/QCDLatticeToolKit/blob/49853c829dfcd22dd13691c3398d36aff9cb9f79/LTK.jl/LatticeQCD/src/actions.jl#L11-L19">source</a></section></article><article class="docstring"><header><a class="docstring-binding" id="LatticeQCD.Actions.Setup_Fermi_action" href="#LatticeQCD.Actions.Setup_Fermi_action"><code>LatticeQCD.Actions.Setup_Fermi_action</code></a> — <span class="docstring-category">Function</span></header><section><div><p><code>Setup_Fermi_action(Dirac_operator= &quot;Wilson&quot;)</code></p><p>Set up the information about the Fermion action.</p><p>Now only WilsonFermion case is supported.</p><p><strong>For example</strong></p><pre><code class="language-julia">    fparam = Setup_Fermi_action()</code></pre><p>The default values are </p><pre><code class="language-julia">hop::Float64  = 0.141139
+r::Float64  = 1
+eps::Float64 = 1e-19
+Dirac_operator::String = &quot;Wilson&quot;
+MaxCGstep::Int64 = 3000</code></pre><ul><li>hop : hopping parameter</li><li>r : Wilson term</li><li>eps : convergence criteria in the CG method</li><li>MaxCGstep : maximum number of the CG steps</li></ul><p>If you want to change the parameters for the Wilson Fermions,  please do as follows.</p><pre><code class="language-julia">    fparam = FermiActionParam_Wilson(hop,r,eps,MaxCGstep)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/cometscome/QCDLatticeToolKit/blob/49853c829dfcd22dd13691c3398d36aff9cb9f79/LTK.jl/LatticeQCD/src/actions.jl#L53-L88">source</a></section></article></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 28 September 2020 13:06">Monday 28 September 2020</span>. Using Julia version 1.5.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
