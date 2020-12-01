@@ -290,7 +290,7 @@ module Measurements
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
-                    Nflow = 1
+                    Nflowsteps = 1
                     eps_flow = 0.01
                     println_verbose2(verbose,"# epsilon for the Wilson flow is $eps_flow")
                     Usmr = deepcopy(U)
@@ -299,23 +299,24 @@ module Measurements
 
                     temp_UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
 
-                    iflow = 0
+                    τ = 0.0
                     plaq = calc_plaquette(Usmr)
                     #Q = calc_topological_charge(Usmr)
                     # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
-                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclov")
+                    println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     flush(stdout)
                     
 
                     for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                        gradientflow!(Usmr,univ,W1,W2,Nflow,eps_flow)
+                        gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
                         plaq = calc_plaquette(Usmr)
                         Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                         Qclover= calc_topological_charge_clover(Usmr)
                         #@time Q = calc_topological_charge(Usmr)
-                        println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclov")
+                        τ = iflow*eps_flow*Nflowsteps
+                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                         if iflow%10 == 0
                             flush(stdout)
                         end
