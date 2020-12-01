@@ -301,7 +301,7 @@ module Measurements
                     #Q = calc_topological_charge(Usmr)
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
-                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow")
+                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclovow")
                     flush(stdout)
                     
 
@@ -311,7 +311,7 @@ module Measurements
                         Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                         Qclover= calc_topological_charge_clover(Usmr)
                         #@time Q = calc_topological_charge(Usmr)
-                        println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow")
+                        println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclov")
                         if iflow%10 == 0
                             flush(stdout)
                         end
