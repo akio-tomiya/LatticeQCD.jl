@@ -600,7 +600,7 @@ module Gaugefields
 
         R = div(NX,2) # instanton radius
 
-        println("# instanton backgorund with R=$R")
+        println("# Starting from a instanton backgorund with radius R=$R ")
         inst_cent = [L[1]/2+0.5, L[2]/2+0.5, L[3]/2+0.5, L[4]/2+0.5]
         #eps = 1/10000000
         s1 = [
