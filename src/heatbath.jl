@@ -4,7 +4,7 @@ module Heatbath
     import ..Gaugefields:GaugeFields,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,elementwise_tr!,set_wing!,make_staple_double!,substitute!,clear!,
-            evaluate_wilson_loops!,normalize!
+            evaluate_wilson_loops!,normalize!,normalize3!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator
 
@@ -128,7 +128,7 @@ module Heatbath
                     end
                 end
             end
-            normalize!(u[mu])
+            #normalize!(u[mu])
         end
 
     end
@@ -159,10 +159,16 @@ module Heatbath
         a = zeros(Float64,4)
 
         for mu=1:4
+            normalize!(u[mu])
+            set_wing!(u[mu])
+        end
+
+        for mu=1:4
             #make_staple_double!(staple,u,mu,temp1,temp2,temp3)
             if typeof(gparam) == GaugeActionParam_standard
                 loops = make_plaq_staple(mu)
             end
+            
 
 
             
@@ -185,6 +191,8 @@ module Heatbath
                                     @. V += (gparam.βs[iloop]/beta)*Vtemp
                                 end
                             end
+
+                            #normalize3!(V)
                             
                             
 
@@ -257,6 +265,8 @@ module Heatbath
 
                             for l=1:3
                                 SN = u[mu][:,:,ix,iy,iz,it]*V
+                                #normalize3!(SN)
+                                #println(SN'*SN)
 
                                 if l==1
                                     n,m = 1,2
@@ -267,16 +277,25 @@ module Heatbath
                                 end
                                 S = make_submatrix(SN,n,m)
                                 a,S0 = ishikawa(S)
+                                #println(S0'*S0)
 
                                 K = [a[1]+im*a[4] a[3]+im*a[2]
                                     -a[3]+im*a[2] a[1]-im*a[4]]*S0
+                                #println(K'*K)
                                 
                                 #display(K)
                                 #println("\t")
                                 A = make_largematrix(K,n,m,NC)
+                                
+                                AU = A*u[mu][:,:,ix,iy,iz,it]
                                 #display(A)
                                 #println("\t")
-                                u[mu][:,:,ix,iy,iz,it] = A*u[mu][:,:,ix,iy,iz,it]
+                                #println(u[mu][:,:,ix,iy,iz,it]'*u[mu][:,:,ix,iy,iz,it])
+                                #println(AU'*AU)
+                                #println(A'*A)
+                                #normalize3!(AU)
+                                normalize3!(AU)
+                                u[mu][:,:,ix,iy,iz,it] = AU
                             end
                             #exit()
 
@@ -285,8 +304,8 @@ module Heatbath
                     end
                 end
             end
-            normalize!(u[mu])
-            #set_wing!(u[mu])
+            #normalize!(u[mu])
+            set_wing!(u[mu])
         end
 
     end
