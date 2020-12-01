@@ -7,11 +7,11 @@
 
 ![LatticeQCD.jl](logo.png)
 
-This code enabales you to perform lattice QCD calculations!
+This code enabales you to perform lattice QCD calculations! Native Julia code for Lattice QCD.
 
-[What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf)
+- [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
-
+- [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar.
 
 # Quick start
 
@@ -19,16 +19,16 @@ You can start lattice QCD in 5 steps!
 
 
 
-1.Download a Julia binary from [Julialang.org](https://julialang.org/)
+1.Download a Julia binary from [Julialang.org](https://julialang.org/downloads/). Set a path to the binary of Julia. 
 
 
 
-2.In Julia REPL, push "]" key to enter the package mode
+2.In Julia REPL, push "]" key to enter the package mode and type
 
 ```
 add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
-press "backspace" key ( "delete" key for mac) key to exit the package mode.
+and "return" key. Press "backspace" key ( "delete" key for mac) to exit the package mode.
 
 (All dependence will be solved automatically)
 
