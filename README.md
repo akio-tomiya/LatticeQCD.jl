@@ -28,7 +28,7 @@ You can start lattice QCD in 5 steps!
 ```
 add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
-press ESC key to exit the package mode.
+press "backspace" key ( "delete" key for mac) key to exit the package mode.
 
 (All dependence will be solved automatically)
 
