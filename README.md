@@ -68,6 +68,8 @@ Enjoy life with lattice QCD.
 
 # What is supported?
 
+We support 4 dimensional euclidean spacetime and following things:
+
 - Configuration generation
   - Cold/Hot start for SU(2) and SU(3), One instanton for SU(2)
   - Heatbath for SU(2) and SU(3) for plaquette gauge action
@@ -91,7 +93,7 @@ Enjoy life with lattice QCD.
   - <s>ILDG format</s> (This will be supported)
   - JLD format (Defoult binary file for Julia, one of HDF5)
 
-Many of smearing and improved fermion actions have not supported yet.
+Many of smearing and improved fermion actions and parallelazation have not supported yet.
 
 
 # USAGE/User interface
@@ -114,15 +116,15 @@ then, you get results though standard I/O. The "PARAMETER_FILE" can be created t
 
 
 # Purpose of the code
-We develop this code to achive following thing:
+We develop this code to achive following things:
 
-1. Good portability (If one has Julia, this code is runnable)
-2. Easy to start/ pedagogical
-3. Suite
+1. Good portability (If one has Julia, this code is runnable. All dependence is under control.)
+2. Easy to start/ pedagogical (start in 10 minutes)
+3. Suite (configuration generation with and without fermions, and measurements)
 4. Easy to modify (Good for prototyping)
 5. Compatitive speed with Fortran 90 codes
 
-First open source Julia code for lattice QCD. High performance is out of our scope.
+This is the first open source Julia code for lattice QCD. High performance is out of our scope.
 
 # How has it been tested?
 
