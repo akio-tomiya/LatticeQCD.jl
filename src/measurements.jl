@@ -305,7 +305,7 @@ module Measurements
                     # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
-                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclovow")
+                    println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclov")
                     flush(stdout)
                     
 
