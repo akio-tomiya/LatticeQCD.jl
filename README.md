@@ -80,7 +80,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - <s>RHMC (any flavor staggered) with SU(2) or SU(3) for general gauge action</s> (This will be supported)
   - <s> General gauge action = plaquette+rect + etc action </s>  (This will be supported)
   - Fermion integrated HMC with plaquette action
-  - Self-learning Monte-Carlo with plaquette action
+  - Self-learning Monte-Carlo with plaquette action (simpler version of [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
   - Load & measurement mode (load and measure all configurations in a directory)
 - Measurements
@@ -88,7 +88,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - Polyakov loop
   - Chiral condensates (Wilson/Staggered)
   - Momentum projected pion correlator (Wilson fermion)
-  - <s>Topological charge with the Wilson flow (Clover operaor definition)</s>   (Not well tested)
+  - <s>Topological charge with the Wilson flow (plaquette and clover definition)</s>   (Not well tested)
 - I/O for configurations
   - <s>ILDG format</s> (This will be supported)
   - JLD format (Defoult binary file for Julia, one of HDF5)
