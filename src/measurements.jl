@@ -290,6 +290,9 @@ module Measurements
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
+                    Nflow = 1
+                    eps_flow = 0.01
+                    println_verbose2(verbose,"# epsilon for the Wilson flow is $eps_flow")
                     Usmr = deepcopy(U)
                     W1 = deepcopy(univ.U)
                     W2 = deepcopy(univ.U)
@@ -299,6 +302,7 @@ module Measurements
                     iflow = 0
                     plaq = calc_plaquette(Usmr)
                     #Q = calc_topological_charge(Usmr)
+                    # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
                     println_verbose1(verbose,"$itrj $iflow $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj iflow plaq Qplaq Qclovow")
@@ -306,7 +310,7 @@ module Measurements
                     
 
                     for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                        gradientflow!(Usmr,univ,W1,W2)
+                        gradientflow!(Usmr,univ,W1,W2,Nflow,eps_flow)
                         plaq = calc_plaquette(Usmr)
                         Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                         Qclover= calc_topological_charge_clover(Usmr)
@@ -415,7 +419,7 @@ module Measurements
                 end
             end
         end
-        return Q/(32*(π^2))
+        return -Q/(32*(π^2))
     end
 
     function calc_topological_charge_plaq(U::Array{GaugeFields{S},1}) where S <: SUn
@@ -506,7 +510,7 @@ module Measurements
                 end
             end
         end
-        return Q/(32*(π^2))
+        return -Q/(32*(π^2))
     end
 
     
