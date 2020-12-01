@@ -71,12 +71,15 @@ Enjoy life with lattice QCD.
 - Configuration generation
   - Cold/Hot start, One instanton for SU(2)
   - Heatbath for SU(2) and SU(3) for plaquette gauge action
+  - HMC for SU(2) and SU(3) for plaquette gauge action
   - <s>Quenched HMC with SU(2) or SU(3) for general gauge action </s> (This will be supported)
   - HMC (2 flavor Wilson/Clover) with SU(2) or SU(3) for plaquette gauge action
   - HMC (4 flavor Staggered fermions) with SU(2) or SU(3) for plaquette gauge action
   - <s>RHMC (any flavor staggered) with SU(2) or SU(3) for general gauge action</s> (This will be supported)
   - <s> General gauge action = plaquette+rect + etc action </s>  (This will be supported)
-  - SLMC with plaquette action
+  - Fermion integrated HMC with plaquette action
+  - Self-learning Monte-Carlo with plaquette action
+  - Self-learning HMC with plaquette action
   - Load & measurement mode (load and measure all configurations in a directory)
 - Measurements
   - Plaquette
@@ -93,7 +96,7 @@ Many of smearing and improved fermion actions have not supported yet.
 
 # USAGE/User interface
 
-We support following user interfaces
+We support following two user interfaces
 
 1. Julia REPL interface (For beginners, just after the lattice QCD textbook)
 2. Genral run code (Experience with another code, for batch job, customised purpose)
