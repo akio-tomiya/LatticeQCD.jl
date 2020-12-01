@@ -69,7 +69,7 @@ Enjoy life with lattice QCD.
 # What is supported?
 
 - Configuration generation
-  - Cold/Hot start, One instanton for SU(2)
+  - Cold/Hot start for SU(2) and SU(3), One instanton for SU(2)
   - Heatbath for SU(2) and SU(3) for plaquette gauge action
   - HMC for SU(2) and SU(3) for plaquette gauge action
   - <s>Quenched HMC with SU(2) or SU(3) for general gauge action </s> (This will be supported)
