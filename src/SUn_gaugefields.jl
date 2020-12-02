@@ -2099,6 +2099,15 @@ c-----------------------------------------------------c
         
     end
 
+    function normalize2!(u)
+        α = u[1,1]
+        β = u[2,1]
+        detU = abs(α)^2 + abs(β)^2
+        u[1,1] = α/detU
+        u[2,1] = β/detU
+        u[1,2] = -conj(β)/detU
+        u[2,2] = conj(α)/detU
+    end
 
     function normalize3!(u)
         w1 = 0

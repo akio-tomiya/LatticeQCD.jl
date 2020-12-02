@@ -4,7 +4,7 @@ module Heatbath
     import ..Gaugefields:GaugeFields,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,elementwise_tr!,set_wing!,make_staple_double!,substitute!,clear!,
-            evaluate_wilson_loops!,normalize!,normalize3!
+            evaluate_wilson_loops!,normalize!,normalize3!,normalize2!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator
 
@@ -113,9 +113,18 @@ module Heatbath
                                 a[2]=rr*cos(ϕ)*sinθ
                                 a[3]=rr*sin(ϕ)*sinθ
                                 a[4]=rr*cosθ
+                                Unew = [a[1]+im*a[4] a[3]+im*a[2]
+                                        -a[3]+im*a[2] a[1]-im*a[4]]*V0
+                                #normalize2!(Unew)
+                                #display(Unew)
 
-                                u[mu][:,:,ix,iy,iz,it] =[a[1]+im*a[4] a[3]+im*a[2]
-                                                        -a[3]+im*a[2] a[1]-im*a[4]]*V0
+                                α = Unew[1,1]
+                                β = Unew[2,1]
+                                detU = abs(α)^2 + abs(β)^2
+                                u[mu][1,1,ix,iy,iz,it] = α/detU
+                                u[mu][2,1,ix,iy,iz,it]  = β/detU
+                                u[mu][1,2,ix,iy,iz,it] = -conj(β)/detU
+                                u[mu][2,2,ix,iy,iz,it] = conj(α)/detU                            
 
                                 return 
                             end
@@ -281,6 +290,14 @@ module Heatbath
 
                                 K = [a[1]+im*a[4] a[3]+im*a[2]
                                     -a[3]+im*a[2] a[1]-im*a[4]]*S0
+
+                                α = K[1,1]
+                                β = K[2,1]
+                                detK = abs(α)^2 + abs(β)^2
+                                K[1,1] = α/detK
+                                K[2,1]  = β/detK
+                                K[1,2] = -conj(β)/detK
+                                K[2,2] = conj(α)/detK   
                                 #println(K'*K)
                                 
                                 #display(K)
