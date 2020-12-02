@@ -25,6 +25,7 @@ module Heatbath
 
         NV = staple.NV
         ITERATION_MAX = 10^5
+        
         Wnew = zeros(ComplexF64,2,2)
         NX = u[1].NX
         NY = u[1].NY
@@ -65,73 +66,7 @@ module Heatbath
                                 end
                             end
                             
-
-
-                            #V = staple[:,:,i]
-
-                            
-
-                            function ishikawa!(V,u)
-                                R = real(sqrt(det(V)))
-                                V0 = inv(V/R)
-
-                                ρ0 = real(V[1,1]+V[2,2])
-                                ρ1 = -imag(V[1,2]+V[2,1])
-                                ρ2 = real(V[2,1]-V[1,2])
-                                ρ3 = imag(V[2,2]-V[1,1])
-                                ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
-
-                                #
-                                Nc = 2 # Since Ishikawa's book uses 1/g^2 notation.
-                                k = (beta/Nc)*ρ
-
-                                #k = 2beta*R
-
-
-                                #A = 2*sinh(k)
-                                emk = exp(-k)
-                                epk = exp(k)
-                                ur = 999.0
-                                i_count=0
-                                a .= 0
-                                while(ur^2 > 1.0-a[1]^2) # rejection sampling
-                                    s = rand()
-                                    a[1] = log(s*epk + (1-s)*emk)/k # F.17
-                                    #a[1] =log(A*y+B)/(k)
-                                    ur = rand()
-                                    i_count+=1
-                                    if i_count> ITERATION_MAX
-                                        error("The rejection sampling is failed after $ITERATION_MAX trials.")
-                                    end
-                                end
-
-                                rr = sqrt(1.0-a[1]^2)
-                                ϕ = rand()*pi*2.0 # ϕ = [0,2pi]
-                                cosθ = (rand()-0.5)*2.0 # -1<cosθ<1
-                                sinθ = sqrt(1-cosθ^2)
-
-                                a[2]=rr*cos(ϕ)*sinθ
-                                a[3]=rr*sin(ϕ)*sinθ
-                                a[4]=rr*cosθ
-                                Unew = [a[1]+im*a[4] a[3]+im*a[2]
-                                        -a[3]+im*a[2] a[1]-im*a[4]]*V0
-                                #normalize2!(Unew)
-                                #display(Unew)
-
-                                α = Unew[1,1]
-                                β = Unew[2,1]
-                                detU = abs(α)^2 + abs(β)^2
-                                u[mu][1,1,ix,iy,iz,it] = α/detU
-                                u[mu][2,1,ix,iy,iz,it]  = β/detU
-                                u[mu][1,2,ix,iy,iz,it] = -conj(β)/detU
-                                u[mu][2,2,ix,iy,iz,it] = conj(α)/detU                            
-
-                                return 
-                            end
-
-
-                            #aoki!(u)
-                            ishikawa!(V,u)
+                            u[mu][:,:,ix,iy,iz,it] = SU2update(V,beta,NC,ITERATION_MAX)
 
                         end
                     end
@@ -140,6 +75,64 @@ module Heatbath
             #normalize!(u[mu])
         end
 
+    end
+
+    function SU2update(V,beta,NC,ITERATION_MAX = 10^5)
+        R = real(sqrt(det(V)))
+        V0 = inv(V/R)
+
+        ρ0 = real(V[1,1]+V[2,2])
+        ρ1 = -imag(V[1,2]+V[2,1])
+        ρ2 = real(V[2,1]-V[1,2])
+        ρ3 = imag(V[2,2]-V[1,1])
+        ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
+
+        #
+        #Nc = 2 # Since Ishikawa's book uses 1/g^2 notation.
+        k = (beta/NC)*ρ
+
+        #k = 2beta*R
+
+
+        #A = 2*sinh(k)
+        emk = exp(-k)
+        epk = exp(k)
+        ur = 999.0
+        i_count=0
+        a = zeros(Float64,4)
+        while(ur^2 > 1.0-a[1]^2) # rejection sampling
+            s = rand()
+            a[1] = log(s*epk + (1-s)*emk)/k # F.17
+            #a[1] =log(A*y+B)/(k)
+            ur = rand()
+            i_count+=1
+            if i_count> ITERATION_MAX
+                error("The rejection sampling is failed after $ITERATION_MAX trials.")
+            end
+        end
+
+        rr = sqrt(1.0-a[1]^2)
+        ϕ = rand()*pi*2.0 # ϕ = [0,2pi]
+        cosθ = (rand()-0.5)*2.0 # -1<cosθ<1
+        sinθ = sqrt(1-cosθ^2)
+
+        a[2]=rr*cos(ϕ)*sinθ
+        a[3]=rr*sin(ϕ)*sinθ
+        a[4]=rr*cosθ
+        Unew = [a[1]+im*a[4] a[3]+im*a[2]
+                -a[3]+im*a[2] a[1]-im*a[4]]*V0
+        #normalize2!(Unew)
+        #display(Unew)
+
+        α = Unew[1,1]
+        β = Unew[2,1]
+        detU = abs(α)^2 + abs(β)^2
+        Unew[1,1] = α/detU
+        Unew[2,1]  = β/detU
+        Unew[1,2] = -conj(β)/detU
+        Unew[2,2] = conj(α)/detU                            
+
+        return Unew 
     end
 
     function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU3GaugeFields,T_1d <: SU3GaugeFields_1d}
@@ -201,76 +194,6 @@ module Heatbath
                                 end
                             end
 
-                            #normalize3!(V)
-                            
-                            
-
-
-                            #V = staple[:,:,i]
-
-                            
-
-                            function ishikawa(V)
-                                #display(V)
-                                #println("\t")
-                                R = real(sqrt(det(V)))
-                                V0 = inv(V/R)
-
-                                ρ0 = real(V[1,1]+V[2,2])
-                                ρ1 = -imag(V[1,2]+V[2,1])
-                                ρ2 = real(V[2,1]-V[1,2])
-                                ρ3 = imag(V[2,2]-V[1,1])
-                                ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
-
-                                #
-                                k = (beta/NC)*ρ
-
-                                #k = 2beta*R
-
-
-                                #A = 2*sinh(k)
-                                emk = exp(-k)
-                                epk = exp(k)
-                                ur = 999.0
-                                i_count=0
-                                a .= 0
-                                while(ur^2 > 1.0-a[1]^2) # rejection sampling
-                                    s = rand()
-                                    a[1] = log(s*epk + (1-s)*emk)/k # F.17
-                                    #a[1] = 1 + log(s+(1-s)*emk^2)/k #F.17
-                                    #println("$i_count ",a[1]," $k")
-                                    
-                                    #a[1] = log(epk*(s + (1-s)*emk^2))  /k # F.17
-                                    #a[1] =log(A*y+B)/(k)
-                                    ur = rand()
-                                    i_count+=1
-                                    #if a[1] == Inf 
-                                    #    println("$i_count ",a[1]," $k")
-                                    #    a[1] = 1 + log(s+(1-s)*emk^2)/k
-                                    #    println("$i_count ",a[1]," $k")
-                                    #    exit()
-                                    #end
-                                    if i_count> ITERATION_MAX
-                                        error("The rejection sampling is failed $ur,$(a[1]),$(ur^2 > 1.0-a[1]^2)")
-                                    end
-                                end
-
-                                rr = sqrt(1.0-a[1]^2)
-                                ϕ = rand()*pi*2.0 # ϕ = [0,2pi]
-                                cosθ = (rand()-0.5)*2.0 # -1<cosθ<1
-                                sinθ = sqrt(1-cosθ^2)
-
-                                a[2]=rr*cos(ϕ)*sinθ
-                                a[3]=rr*sin(ϕ)*sinθ
-                                a[4]=rr*cosθ
-
-                                
-
-                                return a,V0
-                            end
-
-                            
-                            
 
                             for l=1:3
                                 SN = u[mu][:,:,ix,iy,iz,it]*V
@@ -285,35 +208,17 @@ module Heatbath
                                     n,m = 1,3
                                 end
                                 S = make_submatrix(SN,n,m)
-                                a,S0 = ishikawa(S)
-                                #println(S0'*S0)
 
-                                K = [a[1]+im*a[4] a[3]+im*a[2]
-                                    -a[3]+im*a[2] a[1]-im*a[4]]*S0
+                                K = SU2update(S,beta,NC,ITERATION_MAX)
 
-                                α = K[1,1]
-                                β = K[2,1]
-                                detK = abs(α)^2 + abs(β)^2
-                                K[1,1] = α/detK
-                                K[2,1]  = β/detK
-                                K[1,2] = -conj(β)/detK
-                                K[2,2] = conj(α)/detK   
-                                #println(K'*K)
-                                
-                                #display(K)
-                                #println("\t")
                                 A = make_largematrix(K,n,m,NC)
                                 
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
-                                #display(A)
-                                #println("\t")
-                                #println(u[mu][:,:,ix,iy,iz,it]'*u[mu][:,:,ix,iy,iz,it])
-                                #println(AU'*AU)
-                                #println(A'*A)
-                                #normalize3!(AU)
+
                                 normalize3!(AU)
                                 u[mu][:,:,ix,iy,iz,it] = AU
                             end
+
                             #exit()
 
 
