@@ -137,7 +137,7 @@ module Heatbath
                     end
                 end
             end
-            normalize!(u[mu])
+            #normalize!(u[mu])
         end
 
     end
