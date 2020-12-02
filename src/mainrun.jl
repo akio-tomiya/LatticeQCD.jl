@@ -81,20 +81,24 @@ module Mainrun
 
     function run_core!(parameters,univ,mdparams,meas)
 
+        Nsteps = parameters.Nsteps
         if parameters.upgrade_method == "Fileloading"
             println("load U from ",parameters.loadU_dir)
-            filename = filename = filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
+            filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
             #filename = filter(f -> isfile(f), readdir("./$(parameters.loadU_dir)"))
             #println(filename)
-            numfiles = length(filename)
+            numfiles = length(filename_load)
             println("Num of files = $numfiles")
+            Nsteps = numfiles-1
+            filename_i = filename_load[1]
+            loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
         end
 
 
         numaccepts = 0
 
         measurements(0,univ.U,univ,meas) # check consistency
-        if parameters.saveU_format != nothing
+        if parameters.saveU_format != nothing && parameters.upgrade_method != "Fileloading"
             itrj = 0
             itrjstring = lpad(itrj,8,"0")
             itrjsavecount = 0
@@ -104,7 +108,7 @@ module Mainrun
             Sfold = nothing
         end
         
-        for itrj=1:parameters.Nsteps
+        for itrj=1:Nsteps
             Hold = md_initialize!(univ)
             if parameters.upgrade_method == "HMC"
 
@@ -126,6 +130,7 @@ module Mainrun
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
 
             elseif parameters.upgrade_method == "Fileloading"
+                filename_i = filename_load[itrj+1]
                 loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
             end
 
@@ -136,7 +141,7 @@ module Mainrun
 
             
 
-            if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing
+            if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.upgrade_method != "Fileloading"
                 itrjsavecount += 1
                 itrjstring = lpad(itrjsavecount,8,"0")
                 filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
