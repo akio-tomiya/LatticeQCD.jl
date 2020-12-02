@@ -24,7 +24,7 @@ module Heatbath
 
 
         NV = staple.NV
-        ITERATION_MAX = 10000
+        ITERATION_MAX = 10^5
         Wnew = zeros(ComplexF64,2,2)
         NX = u[1].NX
         NY = u[1].NY
@@ -101,7 +101,7 @@ module Heatbath
                                     ur = rand()
                                     i_count+=1
                                     if i_count> ITERATION_MAX
-                                        error("The rejection sampling is failed")
+                                        error("The rejection sampling is failed after $ITERATION_MAX trials.")
                                     end
                                 end
 
@@ -128,7 +128,7 @@ module Heatbath
                     end
                 end
             end
-            #normalize!(u[mu])
+            normalize!(u[mu])
         end
 
     end
