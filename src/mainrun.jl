@@ -81,7 +81,9 @@ module Mainrun
     end
 
     function run_core!(parameters,univ,mdparams,meas)
-        if parameters.upgrade_method == "IntegratedHMC" || parameters.upgrade_method == "SLHMC"
+        if parameters.upgrade_method == "IntegratedHMC" || 
+                    parameters.upgrade_method == "SLHMC" || 
+                    parameters.upgrade_method == "IntegratedHB"
             isIntegratedFermion = true
         else
             isIntegratedFermion = false
@@ -176,6 +178,17 @@ module Mainrun
                 end
                 Sfold = ifelse(accept,Sfnew,Sfold)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+            elseif parameters.upgrade_method == "IntegratedHB"
+                Sgold = md_initialize!(univ)
+            
+                @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
+                Sold = Sgold + Sfold -Sgeffold
+                Snew = Sgnew + Sfnew -Sgeffnew
+                accept = metropolis_update!(univ,Sold,Snew)
+                numaccepts += ifelse(accept,1,0)
+                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                
+                Sfold = ifelse(accept,Sfnew,Sfold)
             end
 
             measurements(itrj,univ.U,univ,meas)

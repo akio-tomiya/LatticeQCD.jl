@@ -11,13 +11,16 @@ module MD
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
-                            GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d
+                            GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
+                            calc_GaugeAction
     import ..LieAlgebrafields:gauss_distribution_lie!,LieAlgebraFields,SU3AlgebraFields,SU2AlgebraFields,
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
             StaggeredFermion,Wx!,clear!,WdagWx!
     using ..Fermionfields
+    import ..Heatbath:heatbath!
+
 
     #import ..CGfermion:cg0!,cg0_WdagW!,shiftedcg0_WdagW!
     import ..Clover:Make_CloverFμν!,dSclover!
@@ -32,31 +35,26 @@ module MD
     struct MD_parameters_SextonWeingargten  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
-        #fac::Float64
-        #βMD::Float64
         N_SextonWeingargten::Int64
     end
 
     struct MD_parameters_standard  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
-        #fac::Float64
-        #βMD::Float64
     end
 
     struct MD_parameters_IntegratedHMC  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
-        #fac::Float64
-        #βMD::Float64
+    end
+
+    struct MD_parameters_IntegratedHB  <: MD_parameters
     end
 
     mutable struct MD_parameters_SLHMC  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
         βeff::Float64
-        #fac::Float64
-        #βMD::Float64
     end
 
     function calc_factor(univ::Universe,mdparams::MD_parameters)
@@ -79,10 +77,16 @@ module MD
             return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps)
         elseif p.SextonWeingargten ==false && p.upgrade_method == "SLHMC"
             if p.quench == false
-                error("quench = false. The SLHMC needs the quench update. Put upgrade_method != IntegratedHMC or quench = true")
+                error("quench = false. The SLHMC needs the quench update. Put upgrade_method != SLHMC or quench = true")
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
-            return MD_parameters_SLHMC(p.Δτ,p.MDsteps,p.βeff)   
+            return MD_parameters_SLHMC(p.Δτ,p.MDsteps,p.βeff)  
+        elseif  p.SextonWeingargten ==false && p.upgrade_method == "IntegratedHB"
+            if p.quench == false
+                error("quench = false. The IntegratedHB needs the quench update. Put upgrade_method != IntegratedHB or quench = true")
+            end
+            #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
+            return MD_parameters_IntegratedHB()
         else
             #return MD_parameters_standard(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_standard(p.Δτ,p.MDsteps)
@@ -356,6 +360,51 @@ module MD
         #println("Snew,plaq = ",Snew,"\t",plaq)
         println("Sgnew,Sfnew,Sgold,Sfold: ", Sgnew,"\t",Sfnew,"\t",Sgold,"\t",Sfold)
         return Sgnew,Sfnew,Sgold,Sfold
+    end
+
+    function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_IntegratedHB)
+        @assert univ.quench == true "quench should be true!"
+        @assert univ.NC == 2 "Only SU(2) is supported now."
+        if Sfold == nothing            
+            WdagW = make_WdagWmatrix(univ)
+            #e,_ = eigen(WdagW)
+            #println(e)
+            Sfold = real(logdet(WdagW))
+            #Uold = deepcopy(univ.U)
+            if univ.Dirac_operator == "Staggered" 
+                if univ.fparam.Nf == 4
+                    Sfold /= 2
+                end
+            end
+        end
+
+        Sgold,plaq = calc_GaugeAction(univ)
+
+        Sgeffold = Sgold
+
+        heatbath!(univ)
+
+
+        Sgnew,plaq = calc_GaugeAction(univ)
+
+        Sgeffnew = Sgnew
+        println("Making W^+W matrix...")
+        @time WdagW = make_WdagWmatrix(univ)
+        println("Calculating logdet")
+        @time Sfnew = real(logdet(WdagW))
+        if univ.Dirac_operator == "Staggered" 
+            if univ.fparam.Nf == 4
+                Sfnew /= 2
+            end
+        end
+
+
+        
+        #
+
+        #println("Snew,plaq = ",Snew,"\t",plaq)
+        println("Sgnew,Sfnew,Sgold,Sfold: ", Sgnew,"\t",Sfnew,"\t",Sgold,"\t",Sfold)
+        return Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold
     end
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLHMC)

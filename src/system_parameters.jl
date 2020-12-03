@@ -292,7 +292,7 @@ module System_parameters
                 println("No update will be used (read-measure mode)")
             elseif upgrade_method == "SLHMC"
                 if system["quench"] == false
-                    error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHMC\" or system[\"quench\"] = true")
+                    error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"SLHMC\" or system[\"quench\"] = true")
                 end
 
                 if haskey(system,"βeff")
@@ -305,6 +305,13 @@ module System_parameters
                     firstlearn = system["firstlearn"]
                 else
                     error("system[\"firstlearn\"] should be set when you want to do SLHMC.")
+                end
+            elseif upgrade_method == "IntegratedHB"
+                println("IntegratedHB will be used")
+
+                #IntegratedHMC = system["IntegratedHMC"]
+                if system["quench"] == false
+                    error("system[\"quench\"] = false. The IntegratedHB needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHB\" or system[\"quench\"] = true")
                 end
             else
                 error("""

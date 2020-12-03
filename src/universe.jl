@@ -11,6 +11,7 @@ module LTK_universe
                         SU3GaugeFields,SU3GaugeFields_1d,
                         SU2GaugeFields,SU2GaugeFields_1d,
                         Oneinstanton
+    import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!
     import ..Fermionfields
@@ -434,6 +435,11 @@ module LTK_universe
         clear!(F)
         add_gaugeforce!(F,U,univ._temporal_gauge,univ._temporal_algebra[1]) 
         return
+    end
+
+    function Gaugefields.calc_GaugeAction(univ::Universe)
+        Sg,plaq = calc_GaugeAction(univ.U,univ.gparam,univ._temporal_gauge)
+        return real(Sg),real(plaq)
     end
 
     function calc_Action(univ::Universe)
