@@ -148,13 +148,13 @@ module Measurements
                 if haskey(method,"eps")
                     eps = method["eps"]
                 else
-                    eps = 1e-19
+                    eps = 1e-10
                 end
 
                 if haskey(method,"MaxCGstep")
                     MaxCGstep = method["MaxCGstep"]
                 else
-                    MaxCGstep = 3000
+                    MaxCGstep = 1000
                 end
                 
 
@@ -551,7 +551,7 @@ module Measurements
             #gauss_distribution_fermi!(r,univ.ranf)
             Z4_distribution_fermi!(r)
             #set_wing_fermi!(r) 
-            bicg(p,M,r) # solve Mp=b, we get p=M^{-1}b
+            bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
             tmp = r*p # hemitian inner product
             println_verbose2(verbose,"$(real(tmp)/univ.NV) # chiralcond $ir")
             pbp+=tmp 
