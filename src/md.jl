@@ -51,6 +51,10 @@ module MD
     struct MD_parameters_IntegratedHB  <: MD_parameters
     end
 
+    mutable struct MD_parameters_SLMC  <: MD_parameters
+        βeff::Float64
+    end
+
     mutable struct MD_parameters_SLHMC  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
@@ -87,6 +91,12 @@ module MD
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_IntegratedHB()
+        elseif p.SextonWeingargten ==false && p.upgrade_method == "SLMC"
+            if p.quench == false
+                error("quench = false. The SLMC needs the quench update. Put upgrade_method != SLMC or quench = true")
+            end
+            #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
+            return MD_parameters_SLMC(p.βeff)  
         else
             #return MD_parameters_standard(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_standard(p.Δτ,p.MDsteps)
@@ -388,6 +398,54 @@ module MD
         Sgnew,plaq = calc_GaugeAction(univ)
 
         Sgeffnew = Sgnew
+        println("Making W^+W matrix...")
+        @time WdagW = make_WdagWmatrix(univ)
+        println("Calculating logdet")
+        @time Sfnew = real(logdet(WdagW))
+        if univ.Dirac_operator == "Staggered" 
+            if univ.fparam.Nf == 4
+                Sfnew /= 2
+            end
+        end
+
+
+        
+        #
+
+        #println("Snew,plaq = ",Snew,"\t",plaq)
+        println("Sgnew,Sfnew,Sgold,Sfold: ", Sgnew,"\t",Sfnew,"\t",Sgold,"\t",Sfold)
+        return Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold
+    end
+
+    function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLMC)
+        @assert univ.quench == true "quench should be true!"
+        @assert univ.NC == 2 "Only SU(2) is supported now."
+        if Sfold == nothing            
+            WdagW = make_WdagWmatrix(univ)
+            #e,_ = eigen(WdagW)
+            #println(e)
+            Sfold = real(logdet(WdagW))
+            #Uold = deepcopy(univ.U)
+            if univ.Dirac_operator == "Staggered" 
+                if univ.fparam.Nf == 4
+                    Sfold /= 2
+                end
+            end
+        end
+
+        β = univ.gparam.β
+        Sgold,plaq = calc_GaugeAction(univ)
+
+        set_β!(univ,mdparams.βeff)
+        Sgeffold,plaq = calc_GaugeAction(univ)
+
+        heatbath!(univ)
+
+        Sgeffnew,plaq = calc_GaugeAction(univ)
+        set_β!(univ,β)
+
+        Sgnew,plaq = calc_GaugeAction(univ)
+
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")

@@ -13,6 +13,7 @@ module Mainrun
     import ..Wilsonloops:make_plaq
     import ..IOmodule:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
+    import ..Gaugefields:calc_GaugeAction
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
 
@@ -83,7 +84,8 @@ module Mainrun
     function run_core!(parameters,univ,mdparams,meas)
         if parameters.upgrade_method == "IntegratedHMC" || 
                     parameters.upgrade_method == "SLHMC" || 
-                    parameters.upgrade_method == "IntegratedHB"
+                    parameters.upgrade_method == "IntegratedHB" ||
+                    parameters.upgrade_method == "SLMC" 
             isIntegratedFermion = true
         else
             isIntegratedFermion = false
@@ -100,7 +102,7 @@ module Mainrun
             Nsteps = numfiles-1
             filename_i = filename_load[1]
             loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
-        elseif parameters.upgrade_method == "SLHMC"
+        elseif parameters.upgrade_method == "SLHMC" || parameters.upgrade_method == "SLMC"
             slmc_data = SLMC_data(1,univ.NC)
         end
 
@@ -188,6 +190,30 @@ module Mainrun
                 numaccepts += ifelse(accept,1,0)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
+                Sfold = ifelse(accept,Sfnew,Sfold)
+            elseif parameters.upgrade_method == "SLMC"
+                Sgold = md_initialize!(univ)
+            
+                @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
+                Sold = Sgold + Sfold -Sgeffold
+                Snew = Sgnew + Sfnew -Sgeffnew
+
+                S2,plaq = calc_GaugeAction(univ)
+                Sf = Sfnew
+
+                outputdata = univ.gparam.β*plaq*slmc_data.factor + Sf
+                update_slmcdata!(slmc_data,[plaq],outputdata)
+                βeffs,Econst,IsSucs = show_effbeta(slmc_data)
+
+                println("#S = ",outputdata)
+                println("#Estimated Seff = ",Econst + βeffs[1]*plaq*slmc_data.factor)
+                if IsSucs && itrj ≥ parameters.firstlearn 
+                    mdparams.βeff = βeffs[1]
+                end
+
+                accept = metropolis_update!(univ,Sold,Snew)
+                numaccepts += ifelse(accept,1,0)
+                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 Sfold = ifelse(accept,Sfnew,Sfold)
             end
 
