@@ -250,13 +250,13 @@ module Heatbath
 
     end
 
-    function make_submatrix(S,i,j)
-        U = zeros(ComplexF64,2,2)
-        U[1,1] = S[i,i]
-        U[1,2] = S[i,j]
-        U[2,1] = S[j,i]
-        U[2,2] = S[j,j]
-        return U
+    function make_submatrix(UV,i,j)
+        S = zeros(ComplexF64,2,2)
+        S[1,1] = UV[i,i]
+        S[1,2] = UV[i,j]
+        S[2,1] = UV[j,i]
+        S[2,2] = UV[j,j]
+        return S
     end
 
 
