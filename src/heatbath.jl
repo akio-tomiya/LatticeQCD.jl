@@ -214,11 +214,13 @@ module Heatbath
                                     n,m = 1,3
                                 end
                                 S = make_submatrix(UV,n,m)
+                                project_onto_SU2!(S)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(S) =  $(det(S)) #prop SU(2)")
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(S) =  $(tr(S)) #prop SU(2)")
                                 #println("SU2update: S->K")
 
                                 K = SU2update(S,beta,NC,ITERATION_MAX)
+
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(K) =  $(det(K))# before normalize #SU(2)")
                                 #K = normalize2!(K)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(K) =  $(det(K))# after normalize #SU(2)")
@@ -250,6 +252,17 @@ module Heatbath
 
     end
 
+    function project_onto_SU2!(S)
+        #S2 = zeros(ComplexF64,2,2)
+        α = S[1,1]*0.5 + conj(S[2,2])*0.5
+        β = S[2,1]*0.5 - conj(S[1,2])*0.5
+        S[1,1] = α
+        S[2,1] = β
+        S[1,2] = -conj(β)
+        S[2,2] = conj(α)
+        #return S2
+    end
+
     function make_submatrix(UV,i,j)
         S = zeros(ComplexF64,2,2)
         S[1,1] = UV[i,i]
@@ -265,6 +278,7 @@ module Heatbath
         for n=1:NC
             A[n,n] = 1
         end
+        #K = project_onto_su2(K)
         A[i,i] = K[1,1]
         A[i,j] = K[1,2] 
         A[j,i] = K[2,1]
