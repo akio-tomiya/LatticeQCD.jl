@@ -272,7 +272,7 @@ module LTK_universe
 
         if fparam != nothing && fparam.Dirac_operator == "WilsonClover"
             num_tempfield_g += 4+4+8+8
-        elseif fparam != nothing && fparam.Dirac_operator == "Staggered"
+        elseif fparam != nothing # && fparam.Dirac_operator == "Staggered"
             num_tempfield_f += 4
         end
         

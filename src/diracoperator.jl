@@ -167,7 +167,7 @@ module Diracoperators
         return
     end
 
-    function LinearAlgebra.mul!(y::FermionFields,A::DdagD_operator,x::FermionFields) #y = A*x
+    function LinearAlgebra.mul!(y::FermionFields,A::T,x::FermionFields)  where T <: DdagD_operator #y = A*x
         temp = A.dirac._temporal_fermi[5]
         mul!(temp,A.dirac,x)
         mul!(y,A.dirac',temp)
@@ -175,10 +175,16 @@ module Diracoperators
         return
     end
 
+    function LinearAlgebra.mul!(y::FermionFields,A::DdagD_operator,x::FermionFields,indices) #y = A*x        
+        mul!(y,A,x)
+        return
+    end
+
     function LinearAlgebra.mul!(y::FermionFields,A::DdagD_Staggered_operator,x::FermionFields,indices) #y = A*x        
         WdagWx!(y,A.dirac.U,x,A.dirac._temporal_fermi,A.dirac.mass,indices)
         return
     end
+
 
     function LinearAlgebra.mul!(y::StaggeredFermion,A::Staggered_operator,x::StaggeredFermion) #y = A*x
         temps = A._temporal_fermi
