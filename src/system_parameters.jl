@@ -285,7 +285,9 @@ module System_parameters
 
                 #IntegratedHMC = system["IntegratedHMC"]
                 if system["quench"] == false
-                    error("system[\"quench\"] = false. The IntegratedHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHMC\" or system[\"quench\"] = true")
+                    println("system[\"quench\"] = true is set")
+                    system["quench"] = true
+                    #error("system[\"quench\"] = false. The IntegratedHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHMC\" or system[\"quench\"] = true")
                 end
     
             elseif upgrade_method == "Fileloading"
@@ -293,7 +295,9 @@ module System_parameters
             elseif upgrade_method == "SLHMC"
                 println("SLHMC will be used")
                 if system["quench"] == false
-                    error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"SLHMC\" or system[\"quench\"] = true")
+                    println("system[\"quench\"] = true is set")
+                    system["quench"] = true
+                    #error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"SLHMC\" or system[\"quench\"] = true")
                 end
 
                 if haskey(system,"βeff")
@@ -310,7 +314,9 @@ module System_parameters
             elseif upgrade_method == "SLMC"
                 println("SLMC will be used")
                 if system["quench"] == false
-                    error("system[\"quench\"] = false. The SLMC needs the quench update. Put the other system[\"upgrade_method\"] != \"SLMC\" or system[\"quench\"] = true")
+                    println("system[\"quench\"] = true is set")
+                    system["quench"] = true
+                    #error("system[\"quench\"] = false. The SLMC needs the quench update. Put the other system[\"upgrade_method\"] != \"SLMC\" or system[\"quench\"] = true")
                 end
 
                 if haskey(system,"βeff")
@@ -329,7 +335,9 @@ module System_parameters
 
                 #IntegratedHMC = system["IntegratedHMC"]
                 if system["quench"] == false
-                    error("system[\"quench\"] = false. The IntegratedHB needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHB\" or system[\"quench\"] = true")
+                    println("system[\"quench\"] = true is set")
+                    system["quench"] = true
+                    #error("system[\"quench\"] = false. The IntegratedHB needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHB\" or system[\"quench\"] = true")
                 end
             else
                 error("""

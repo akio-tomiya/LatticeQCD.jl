@@ -151,7 +151,6 @@ module Mainrun
                 loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
             elseif parameters.upgrade_method == "SLHMC"
 
-
                 Sgold = md_initialize!(univ)
             
                 @time Sgnew,Sfnew,Sgold,Sfold,plaq = md!(univ,Sfold,Sgold,mdparams)

@@ -164,32 +164,7 @@ module MD
                 end
                 
 
-                #=
-                updateP!(univ,mdparams,-0.5)
 
-
-                if univ.quench == false
-                #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,-0.5)
-                end
-
-
-                updateU!(univ,mdparams,-1.0)
-
-                updateP!(univ,mdparams,-0.5)
-
-
-                if univ.quench == false
-                #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,-0.5)
-                end
-                =#
-
-
-                #Sold,Sg = calc_Action(univ)
-                #println("$istep Sold,plaq = ",Sold,"\t",Sg)
-
-                #exit()
             end
         end
 
@@ -461,7 +436,7 @@ module MD
         #
 
         #println("Snew,plaq = ",Snew,"\t",plaq)
-        println("Sgnew,Sfnew,Sgold,Sfold: ", Sgnew,"\t",Sfnew,"\t",Sgold,"\t",Sfold)
+        println("Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold: ", Sgnew,"\t",Sfnew,"\t",Sgeffnew,"\t",Sgold,"\t",Sfold,"\t",Sgeffold)
         return Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold
     end
 
