@@ -175,7 +175,7 @@ module Diracoperators
         return
     end
 
-    function LinearAlgebra.mul!(y::FermionFields,A::DdagD_Staggered_operator,x::FermionFields,indices) #y = A*x
+    function LinearAlgebra.mul!(y::FermionFields,A::DdagD_Staggered_operator,x::FermionFields,indices) #y = A*x        
         WdagWx!(y,A.dirac.U,x,A.dirac._temporal_fermi,A.dirac.mass,indices)
         return
     end

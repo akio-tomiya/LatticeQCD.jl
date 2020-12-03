@@ -1968,6 +1968,97 @@ c-----------------------------------------------------c
 
     end
 
+    function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion,vec_indices) where T <: SU3GaugeFields
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = a.NC
+
+        #NTrange = get_looprange(NT)
+        #println(NTrange)
+        outindices = Array{Tuple,1}(undef,length(vec_indices))
+        #clear!(b)
+        if μ > 0
+            for (k,indices) in enumerate(vec_indices)
+
+                ix1 = indices[1]
+                iy1 = indices[2]
+                iz1 = indices[3]
+                it1 = indices[4]
+                ialpha = indices[5]
+
+                ix = ix1 - ifelse(μ ==1,1,0)
+                iy = iy1 - ifelse(μ ==2,1,0)
+                iz = iz1 - ifelse(μ ==3,1,0)
+                it = it1 - ifelse(μ ==4,1,0)
+
+                η = staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
+
+                ix,iy,iz,it,sign =  apply_periodicity(ix,iy,iz,it,NX,NY,NZ,NT,b.BoundaryCondition)
+
+
+                outindices[k] = (ix,iy,iz,it,ialpha)
+
+                
+
+                b[1,ix,iy,iz,it,ialpha] += sign*η*(u[μ][1,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][1,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][1,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha] 
+                                            )
+
+                b[2,ix,iy,iz,it,ialpha] += sign*η*(u[μ][2,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][2,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][2,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha] )
+                b[3,ix,iy,iz,it,ialpha] += sign*η*(u[μ][3,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][3,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                            u[μ][3,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha] )
+            end
+            
+        elseif μ < 0
+            for (k,indices) in enumerate(vec_indices)
+
+                ix1 = indices[1]
+                iy1 = indices[2]
+                iz1 = indices[3]
+                it1 = indices[4]
+                ialpha = indices[5]
+
+                ix = ix1 + ifelse(-μ ==1,1,0)
+                iy = iy1 + ifelse(-μ ==2,1,0)
+                iz = iz1 + ifelse(-μ ==3,1,0)
+                it = it1 + ifelse(-μ ==4,1,0)
+
+                η = staggered_phase(-μ,ix1,iy1,iz1,it1,NX,NY,NZ,NT)
+
+                ix,iy,iz,it,sign =  apply_periodicity(ix,iy,iz,it,NX,NY,NZ,NT,b.BoundaryCondition)
+
+                outindices[k] = (ix,iy,iz,it,ialpha)
+
+
+                b[1,ix,iy,iz,it,ialpha] += sign*η*(conj(u[-μ][1,1,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            conj(u[-μ][2,1,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                            conj(u[-μ][3,1,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha] )
+
+                b[2,ix,iy,iz,it,ialpha] += sign*η*(conj(u[-μ][1,2,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            conj(u[-μ][2,2,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha]+ 
+                                            conj(u[-μ][3,2,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha] )
+                b[3,ix,iy,iz,it,ialpha] += sign*η*(conj(u[-μ][1,3,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                            conj(u[-μ][2,3,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha]+ 
+                                            conj(u[-μ][3,3,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha] )
+            end
+
+        end
+
+        return outindices
+
+    end
+
 
     function fermion_shift!(b::StaggeredFermion,evensite,u::Array{T,1},μ::Int,a::StaggeredFermion) where T <: SU2GaugeFields
         if μ == 0
