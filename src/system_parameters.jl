@@ -287,7 +287,7 @@ module System_parameters
                 end
     
             elseif upgrade_method == "Fileloading"
-                println("Fileloading will be used")
+                println("No update will be used (read-measure mode)")
             elseif upgrade_method == "SLHMC"
                 if haskey(system,"βeff")
                     βeff = system["βeff"]

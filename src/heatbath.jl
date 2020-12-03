@@ -197,11 +197,14 @@ module Heatbath
                                 end
                             end
 
-
+                            #println("#Heatbath for one SU(3) link started")
                             for l=1:3
-                                SN = u[mu][:,:,ix,iy,iz,it]*V
+                                UV = u[mu][:,:,ix,iy,iz,it]*V
                                 #normalize3!(SN)
                                 #println(SN'*SN)
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(U) =  $(det(u[mu][:,:,ix,iy,iz,it])) #SU(3)")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(V) =  $(det(V)) #prop SU(3)")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(UV) =  $(det(UV)) #prop SU(3)")
 
                                 if l==1
                                     n,m = 1,2
@@ -210,15 +213,27 @@ module Heatbath
                                 else
                                     n,m = 1,3
                                 end
-                                S = make_submatrix(SN,n,m)
+                                S = make_submatrix(UV,n,m)
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(S) =  $(det(S)) #prop SU(2)")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(S) =  $(tr(S)) #prop SU(2)")
+                                #println("SU2update: S->K")
 
                                 K = SU2update(S,beta,NC,ITERATION_MAX)
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(K) =  $(det(K))# before normalize #SU(2)")
+                                #K = normalize2!(K)
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(K) =  $(det(K))# after normalize #SU(2)")
 
                                 A = make_largematrix(K,n,m,NC)
-                                
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(A) =  $(det(A)) # before normalize #SU(3)")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(A) =  $(tr(A)) # before normalize #SU(3)")
+                                #normalize3!(A)
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(A) =  $(det(A)) # after normalize #SU(3)")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(A) =  $(tr(A)) # after normalize #SU(3)")
+
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
 
                                 normalize3!(AU)
+                                println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(AU) =  $(det(AU)) #SU(3)\n")
                                 u[mu][:,:,ix,iy,iz,it] = AU
                             end
 
@@ -245,16 +260,16 @@ module Heatbath
     end
 
 
-    function make_largematrix(U,i,j,NC)
-        K = zeros(ComplexF64,NC,NC)
+    function make_largematrix(K,i,j,NC)
+        A = zeros(ComplexF64,NC,NC)
         for n=1:NC
-            K[n,n] = 1
+            A[n,n] = 1
         end
-        K[i,i] = U[1,1]
-        K[i,j] = U[1,2] 
-        K[j,i] = U[2,1]
-        K[j,j] = U[2,2]  
-        return K
+        A[i,i] = K[1,1]
+        A[i,j] = K[1,2] 
+        A[j,i] = K[2,1]
+        A[j,j] = K[2,2]  
+        return A
     end
 
 

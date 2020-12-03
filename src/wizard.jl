@@ -392,7 +392,7 @@ module Wizard
         elseif initialconf == 3
             system["initial"] = Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld")
         elseif initialconf == 4
-            system["initial"] = "one instanton"
+            system["initial"] = "Start from one instanton"
         end
         #system["initial"] = ifelse(initialconf == 1,"cold","hot")
 
@@ -466,6 +466,19 @@ module Wizard
             system["saveU_dir"] = Base.prompt("Saving directory", default="./confs")
         end
 
+        if system["upgrade_method"] == "HMC" || system["upgrade_method"] == "IntegratedHMC" || system["upgrade_method"] == "SLHMC"|| system["upgrade_method"] == "Heatbath"
+            Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
+            Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
+
+            if Nthermalization<0
+                error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
+            end
+            if Nsteps<=0
+                error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
+            end
+            md["Nthermalization"] = Nthermalization
+            md["Nsteps"] = Nsteps
+        end
 
         if system["upgrade_method"] == "HMC" || system["upgrade_method"] == "IntegratedHMC" || system["upgrade_method"] == "SLHMC"
             println("Choose parameters for MD")
@@ -486,10 +499,6 @@ module Wizard
                 N_SextonWeingargten = 2
             end
 
-
-            Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
-            Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
-
             if MDsteps<=0
                 error("Invalid value for MDsteps=$MDsteps. This has to be strictly positive.")
             end
@@ -497,20 +506,10 @@ module Wizard
                 error("Invalid value for Δτ=$Δτ. This has to be strictly positive.")
             end
 
-
-            if Nthermalization<0
-                error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
-            end
-            if Nsteps<=0
-                error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
-            end
-
             md["MDsteps"] = MDsteps
             md["Δτ"] = Δτ
             md["SextonWeingargten"] = SextonWeingargten
             md["N_SextonWeingargten"] = N_SextonWeingargten
-            md["Nthermalization"] = Nthermalization
-            md["Nsteps"] = Nsteps
         end
 
         measurement = Dict()
