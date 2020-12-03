@@ -6,13 +6,14 @@ module Heatbath
             GaugeFields_1d,elementwise_tr!,set_wing!,make_staple_double!,substitute!,clear!,
             evaluate_wilson_loops!,normalize!,normalize3!,normalize2!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
-    import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator
+    import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator,GaugeActionParam
 
     function heatbath!(univ::Universe)
         heatbath!(univ.U,univ.ranf,univ.gparam,univ._temporal_gauge)
+        #heatbath!(univ.U,univ.ranf,univ.gparam.β,univ._temporal_gauge)
     end
 
-    function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU2GaugeFields,T_1d <: SU2GaugeFields_1d}
+    function heatbath!(u::Array{T,1},ranf,gparam::GaugeActionParam,temps::Array{T_1d,1}) where {T <: SU2GaugeFields,T_1d <: SU2GaugeFields_1d}
         beta = gparam.β
 
     
@@ -160,10 +161,12 @@ module Heatbath
 
         a = zeros(Float64,4)
 
+        #=
         for mu=1:4
             normalize!(u[mu])
             set_wing!(u[mu])
         end
+        =#
 
         for mu=1:4
             #make_staple_double!(staple,u,mu,temp1,temp2,temp3)
@@ -426,8 +429,9 @@ c------------------------------------------------------c
         #println("u ",u[1][1,2,2,2,2,2],"\t",u[2][3,1,2,2,4,4],"\t",u[2][3,1,0,0,4,4])
         #exit()
     end
-
     =#
+
+    
 
     """
 -------------------------------------------------c
