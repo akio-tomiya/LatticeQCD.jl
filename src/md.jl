@@ -402,7 +402,7 @@ module MD
         #
         #println("Snew,plaq = ",Snew,"\t",plaq)
         println("Sgnew,Sfnew,Sgold,Sfold: ", Sgnew,"\t",Sfnew,"\t",Sgold,"\t",Sfold)
-        return Sgnew,Sfnew,Sgold,Sfold
+        return Sgnew,Sfnew,Sgold,Sfold,plaq
     end
 
     function md_initialize!(univ::Universe)

@@ -1,6 +1,6 @@
 module Mainrun
     using Dates
-    import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!
+    import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β
     import ..Actions:Setup_Gauge_action,Setup_Fermi_action,GaugeActionParam_autogenerator
     import ..Measurements:calc_plaquette,measure_correlator,Measurement,calc_polyakovloop,measure_chiral_cond,calc_topological_charge,
                 measurements,Measurement_set
@@ -12,6 +12,7 @@ module Mainrun
     import ..Heatbath:heatbath!
     import ..Wilsonloops:make_plaq
     import ..IOmodule:saveU,loadU,loadU!
+    import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
 
@@ -80,6 +81,11 @@ module Mainrun
     end
 
     function run_core!(parameters,univ,mdparams,meas)
+        if parameters.upgrade_method == "IntegratedHMC" || parameters.upgrade_method == "SLHMC"
+            isIntegratedFermion = true
+        else
+            isIntegratedFermion = false
+        end
 
         Nsteps = parameters.Nsteps
         if parameters.upgrade_method == "Fileloading"
@@ -92,6 +98,8 @@ module Mainrun
             Nsteps = numfiles-1
             filename_i = filename_load[1]
             loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+        elseif parameters.upgrade_method == "SLHMC"
+            slmc_data = SLMC_data(1,univ.NC)
         end
 
 
@@ -104,13 +112,17 @@ module Mainrun
             itrjsavecount = 0
 
             println("save gaugefields U every $(parameters.saveU_every) trajectory")
-        elseif parameters.upgrade_method == "IntegratedHMC"
+        end
+
+
+        if isIntegratedFermion
             Sfold = nothing
         end
         
         for itrj=1:Nsteps
-            Hold = md_initialize!(univ)
+            
             if parameters.upgrade_method == "HMC"
+                Hold = md_initialize!(univ)
 
                 @time Hnew = md!(univ,mdparams)
                 accept = metropolis_update!(univ,Hold,Hnew)
@@ -128,10 +140,42 @@ module Mainrun
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
-
+                
+                Sfold = ifelse(accept,Sfnew,Sfold)
             elseif parameters.upgrade_method == "Fileloading"
                 filename_i = filename_load[itrj+1]
                 loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+            elseif parameters.upgrade_method == "SLHMC"
+
+
+                Sgold = md_initialize!(univ)
+            
+                @time Sgnew,Sfnew,Sgold,Sfold,plaq = md!(univ,Sfold,Sgold,mdparams)
+                Sold = Sgold + Sfold
+                Snew = Sgnew + Sfnew
+
+                S2,plaq2 = calc_Action(univ)
+                Sf = Sfnew
+                outputdata = univ.gparam.β*plaq2*slmc_data.factor + Sf
+                update_slmcdata!(slmc_data,[plaq],outputdata)
+                βeffs,Econst,IsSucs = show_effbeta(slmc_data)
+
+
+                accept = metropolis_update!(univ,Sold,Snew)
+                numaccepts += ifelse(accept,1,0)
+                
+                
+                
+                
+                #println("Sg = ",Sg,"\t",univ.gparam.β*plaq/univ.gparam.NTRACE,
+                #"\t",univ.gparam.β*plaq2/univ.gparam.NTRACE,"Sg2 ",S2)
+                println("#S = ",outputdata)
+                println("#Estimated Seff = ",Econst + βeffs[1]*plaq*slmc_data.factor)
+                if IsSucs && itrj ≥ parameters.firstlearn 
+                    mdparams.βeff = βeffs[1]
+                end
+                Sfold = ifelse(accept,Sfnew,Sfold)
+                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
             end
 
             measurements(itrj,univ.U,univ,meas)

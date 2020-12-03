@@ -39,7 +39,9 @@ module LatticeQCD
     include("md.jl")
     include("wizard.jl")
 
+    include("SLMC.jl")
     include("mainrun.jl")
+    
     
     
     

@@ -150,6 +150,7 @@ module System_parameters
 
         upgrade_method::String
         βeff::Float64
+        firstlearn::Int64
 
 
 
@@ -268,6 +269,7 @@ module System_parameters
             end
 
             βeff = 0
+            firstlearn = 0
 
             upgrade_method = system["upgrade_method"]
             if upgrade_method == "HMC"
@@ -289,10 +291,20 @@ module System_parameters
             elseif upgrade_method == "Fileloading"
                 println("No update will be used (read-measure mode)")
             elseif upgrade_method == "SLHMC"
+                if system["quench"] == false
+                    error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"upgrade_method\"] != \"IntegratedHMC\" or system[\"quench\"] = true")
+                end
+
                 if haskey(system,"βeff")
                     βeff = system["βeff"]
                 else
                     error("system[\"βeff\"] should be set when you want to do SLHMC.")
+                end
+
+                if haskey(system,"firstlearn")
+                    firstlearn = system["firstlearn"]
+                else
+                    error("system[\"firstlearn\"] should be set when you want to do SLHMC.")
                 end
             else
                 error("""
@@ -363,7 +375,8 @@ module System_parameters
                 loadU_format,
                 loadU_dir,
                 upgrade_method,
-                βeff
+                βeff,
+                firstlearn
             )
 
         end

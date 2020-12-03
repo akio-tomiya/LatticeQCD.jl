@@ -87,6 +87,16 @@ module LTK_universe
         end
     end
 
+    function get_β(univ::Universe)
+        if typeof(univ.gparam) == GaugeActionParam_standard 
+            return univ.gparam.β
+        elseif typeof(univ.gparam) == GaugeActionParam_autogenerator
+            return univ.gparam.β
+        else
+            error("$(typeof(univ.gparam)) is not supported!")
+        end
+    end
+
     function set_βs!(univ::Universe,βs)
         if typeof(univ.gparam) == GaugeActionParam_standard 
             univ.gparam.β = βs[1]

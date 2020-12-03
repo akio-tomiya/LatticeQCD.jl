@@ -310,6 +310,9 @@ module Wizard
                     system["upgrade_method"] = "IntegratedHMC"
                 else
                     system["upgrade_method"] = "SLHMC"
+                    system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                    system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                    system["quench"] = true
                 end
             end
 
