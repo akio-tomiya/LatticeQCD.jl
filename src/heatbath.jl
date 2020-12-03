@@ -233,7 +233,7 @@ module Heatbath
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
 
                                 normalize3!(AU)
-                                println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(AU) =  $(det(AU)) #SU(3)\n")
+                                #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(AU) =  $(det(AU)) #SU(3)\n")
                                 u[mu][:,:,ix,iy,iz,it] = AU
                             end
 
