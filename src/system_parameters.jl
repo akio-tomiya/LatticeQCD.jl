@@ -49,8 +49,8 @@ module System_parameters
     md["Δτ"] = 0.05
     md["MDsteps"] = 20
     md["SextonWeingargten"] = false
-    md["Nsteps"] = 100
-    md["Nthermalization"] = 10
+    system["Nsteps"] = 100
+    system["Nthermalization"] = 10
 
     #md["N_SextonWeingargten"] 
 
@@ -187,8 +187,8 @@ module System_parameters
             Δτ = md["Δτ"] #::Float64 = 0.05
             MDsteps = md["MDsteps"]#::Int64 = 20
             SextonWeingargten = md["SextonWeingargten"] #::Bool = false
-            Nsteps = md["Nsteps"] #::Int64 = 100
-            Nthermalization = md["Nthermalization"] #::Int64 = 10
+            Nsteps = system["Nsteps"] #::Int64 = 100
+            Nthermalization = system["Nthermalization"] #::Int64 = 10
             if SextonWeingargten
                 if haskey(md,"N_SextonWeingargten")
                     N_SextonWeingargten = md["N_SextonWeingargten"]
@@ -343,8 +343,8 @@ module System_parameters
                 Δτ,# = md["Δτ"] #::Float64 = 0.05
                 MDsteps,# = md["MDsteps"]#::Int64 = 20
                 SextonWeingargten,# = md["SextonWeingargten"] #::Bool = false
-                Nsteps,# = md["Nsteps"] #::Int64 = 100
-                Nthermalization,# = md["Nthermalization"] #::Int64 = 10
+                Nsteps,# = system["Nsteps"] #::Int64 = 100
+                Nthermalization,# = system["Nthermalization"] #::Int64 = 10
                 N_SextonWeingargten,# = md["N_SextonWeingargten"]
                 #IntegratedHMC,# = system["IntegratedHMC"]
                 #Heatbath,# = system["Heatbath"] #::Bool = false
