@@ -1,7 +1,7 @@
 name = "LatticeQCD"
 uuid = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
-authors = ["Yuki Nagai"]
-version = "0.1.0"
+authors = ["Akio Tomiya","Yuki Nagai"]
+version = "0.5.0"
 
 [deps]
 CLIME_jll = "3c6ae550-c37b-5556-a07e-d40b4910cf1c"
