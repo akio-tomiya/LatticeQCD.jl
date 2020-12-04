@@ -137,6 +137,8 @@ module Heatbath
     end
 
     function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU3GaugeFields,T_1d <: SU3GaugeFields_1d}
+        #println("Warning!!!!!!!!")
+        error("Heatbath update for SU(3) is not implemented")
         beta = gparam.β
 
     
@@ -285,8 +287,6 @@ module Heatbath
         A[j,j] = K[2,2]  
         return A
     end
-
-
 
     const nhit = 6
     const rwidth = 0.4
