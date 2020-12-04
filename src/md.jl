@@ -73,27 +73,27 @@ module MD
             end
             #return MD_parameters_SextonWeingargten(p.Δτ,p.MDsteps,fac,p.β,p.N_SextonWeingargten)
             return MD_parameters_SextonWeingargten(p.Δτ,p.MDsteps,p.N_SextonWeingargten)
-        elseif p.SextonWeingargten ==false && p.upgrade_method == "IntegratedHMC"
+        elseif p.SextonWeingargten ==false && p.update_method == "IntegratedHMC"
             if p.quench == false
-                error("quench = false. The IntegratedHMC needs the quench update. Put upgrade_method != IntegratedHMC or quench = true")
+                error("quench = false. The IntegratedHMC needs the quench update. Put update_method != IntegratedHMC or quench = true")
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps)
-        elseif p.SextonWeingargten ==false && p.upgrade_method == "SLHMC"
+        elseif p.SextonWeingargten ==false && p.update_method == "SLHMC"
             if p.quench == false
-                error("quench = false. The SLHMC needs the quench update. Put upgrade_method != SLHMC or quench = true")
+                error("quench = false. The SLHMC needs the quench update. Put update_method != SLHMC or quench = true")
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_SLHMC(p.Δτ,p.MDsteps,p.βeff)  
-        elseif  p.SextonWeingargten ==false && p.upgrade_method == "IntegratedHB"
+        elseif  p.SextonWeingargten ==false && p.update_method == "IntegratedHB"
             if p.quench == false
-                error("quench = false. The IntegratedHB needs the quench update. Put upgrade_method != IntegratedHB or quench = true")
+                error("quench = false. The IntegratedHB needs the quench update. Put update_method != IntegratedHB or quench = true")
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_IntegratedHB()
-        elseif p.SextonWeingargten ==false && p.upgrade_method == "SLMC"
+        elseif p.SextonWeingargten ==false && p.update_method == "SLMC"
             if p.quench == false
-                error("quench = false. The SLMC needs the quench update. Put upgrade_method != SLMC or quench = true")
+                error("quench = false. The SLMC needs the quench update. Put update_method != SLMC or quench = true")
             end
             #return MD_parameters_IntegratedHMC(p.Δτ,p.MDsteps,fac,p.β)
             return MD_parameters_SLMC(p.βeff)  

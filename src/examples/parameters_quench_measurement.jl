@@ -17,7 +17,7 @@ md["Nthermalization"] = 10
 
 md["Nsteps"] = 100+md["Nthermalization"]
 
-system["upgrade_method"] = "Fileloading"
+system["update_method"] = "Fileloading"
 system["loadU_format"] = "JLD"
 system["loadU_dir"] = "confs"
 
