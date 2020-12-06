@@ -1446,7 +1446,7 @@ module Gaugefields
 
     
 
-    
+    #=
 function m3complv!(a::SU3GaugeFields)
     aa = zeros(Float64,18)
     NX = u.NX
@@ -1493,6 +1493,7 @@ function m3complv!(a::SU3GaugeFields)
         end
     end
 end
+=#
 
     function TA(vin::T) where T <: GaugeFields_1d
         vout = deepcopy(vin)
