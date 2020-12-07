@@ -134,6 +134,12 @@ module Gaugefields
         temp2 = temps[2]
         temp3 = temps[3]
 
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NC = U[1].NC
+
 
 
         for i=1:num
@@ -151,12 +157,20 @@ module Gaugefields
             gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
 
 
+            #ix,iy,iz,it = 3,3,3,3
+            #icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+            ##println("all i = $i")
+            #display(temp1[:,:,icum])
+            #println("\t")
+
+
             
             loopk1_2 = loopk[2]
             for k=2:numloops
                 loopk = wi[k]
                 #println("k = $k shift: ",shifts[k])
                 #println("gauge_shift!(temp2,$(shifts[k]),$(loopk[1]) )")
+                clear!(temp2)
                 gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
 
                 multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
@@ -226,6 +240,10 @@ module Gaugefields
 
             
             temp1[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
+            #println("part i = $i")
+            #display(temp1[:,:])
+            #println("\t")
+
             loopk1_2 = loopk[2]
 
             #gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
@@ -237,32 +255,6 @@ module Gaugefields
                 temp2[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
 
                 multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
-                #=
-
-                if loopk[2] == 1
-                    if k==2
-                        if loopk1_2 == 1
-                            mul!(temp3,temp1,temp2)
-                        else
-                            mul!(temp3,temp1',temp2)
-                        end
-                    else
-                        mul!(temp3,temp1,temp2)
-                    end
-                elseif loopk[2] == -1
-                    if k==2
-                        if loopk1_2 == 1
-                            mul!(temp3,temp1,temp2')
-                        else
-                            mul!(temp3,temp1',temp2')
-                        end
-                    else
-                        mul!(temp3,temp1,temp2')
-                    end
-                else
-                    error("Second element should be 1 or -1 but now $(loopk)")
-                end
-                =#
 
                 temp1,temp3 = temp3,temp1
             end
@@ -1138,6 +1130,30 @@ module Gaugefields
 
     end
 
+    function muladd!(c::GaugeFields_1d{T},α::Number,a::GaugeFields_1d{T}) where T <: SUn
+        if T == SU3
+            NC = 3
+        elseif T == SU2
+            NC = 2
+        else
+            error("NC >3 is not supported")
+        end
+        NV=c.NV
+
+        for i=1:NV
+            #ncadd!(a,c,i)
+            
+            for k2=1:NC                            
+                for k1=1:NC
+                    c[k1,k2,i] += α*a[k1,k2,i] 
+                end
+            end
+            
+        end
+
+
+    end
+
     function staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
         t = it-1
         t += ifelse(t<0,NT,0)
@@ -1305,7 +1321,16 @@ module Gaugefields
         return
     end
 
+    struct Shift_set
+        shift::NTuple{4,Int8}
+    end
+
     function gauge_shift_all!(a::GaugeFields_1d{T},dir,b::GaugeFields{T}) where T <: SUn 
+        shift = Shift_set(dir)
+        gauge_shift!(a,shift,b) 
+        return
+
+        #=
 
         indx = Int64[]
         for mu = 1:4
@@ -1321,6 +1346,54 @@ module Gaugefields
             gauge_shift!(a,Tuple(indx),b) 
         elseif length(indx) == 0
             substitute!(a,b)
+        end
+        return
+        =#
+    end
+
+    function gauge_shift!(a::GaugeFields_1d{T},shift::Shift_set,b::GaugeFields{T}) where T <: SUn 
+        if T == SU3
+            NC = 3
+        elseif T == SU2
+            NC = 2
+        else
+            error("NC >3 is not supported")
+        end
+
+        
+        NT = b.NT
+        NZ = b.NZ
+        NY = b.NY
+        NX = b.NX
+
+
+        #func! = NCsubstitute_63(b.NC)
+        #        NC = b.NC
+        
+
+        
+        for it=1:NT
+            it1 = it + shift.shift[4]
+            for iz=1:NZ
+                iz1 = iz + shift.shift[3]
+                for iy=1:NY
+                    iy1 = iy+ shift.shift[2]
+                    for ix=1:NX
+                        ix1 = ix+ shift.shift[1]
+
+                        icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                        #func!(a,b,icum,ix1,iy1,iz1,it1)
+
+                        
+                        for k2=1:NC
+                            for k1=1:NC
+                                a[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
+                            end
+                        end
+                        
+                    end
+                end
+            end
         end
         return
     end
@@ -2091,7 +2164,10 @@ c-----------------------------------------------------c
         for i = 1:gparam.numactions
 
             evaluate_wilson_loops!(loopaction,gparam.loops[i],U,temps[1:3])
-            Sg += (-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2
+            sg = (-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2
+            println("$i-th actions ",sg)
+            Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2
+            
         end
 
         
