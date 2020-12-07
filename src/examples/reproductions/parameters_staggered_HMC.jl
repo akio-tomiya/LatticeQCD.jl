@@ -17,7 +17,7 @@ md["SextonWeingargten"] = false
 #N_SextonWeingargten = 25
 md["Nsteps"] = 5000
 
-system["upgrade_method"] = "HMC"
+system["update_method"] = "HMC"
 system["saveU_format"] = "JLD"
 system["saveU_every"] = 1
 system["saveU_dir"] = "./beta53_confs"

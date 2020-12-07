@@ -133,10 +133,12 @@ module Heatbath
         Unew[1,2] = -conj(β)/detU
         Unew[2,2] = conj(α)/detU                            
 
-        return Unew 
+        return Unew
     end
 
     function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU3GaugeFields,T_1d <: SU3GaugeFields_1d}
+        #println("Warning!!!!!!!!")
+        error("Heatbath update for SU(3) is not implemented")
         beta = gparam.β
 
     
@@ -231,7 +233,7 @@ module Heatbath
                                 #normalize3!(A)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(A) =  $(det(A)) # after normalize #SU(3)")
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(A) =  $(tr(A)) # after normalize #SU(3)")
-
+                                #normalize3!(A)
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
 
                                 normalize3!(AU)
@@ -252,7 +254,7 @@ module Heatbath
 
     end
 
-    function project_onto_SU2!(S)
+    function project_onto_SU2!(S) # This project onto SU(2) up to normalization.
         #S2 = zeros(ComplexF64,2,2)
         α = S[1,1]*0.5 + conj(S[2,2])*0.5
         β = S[2,1]*0.5 - conj(S[1,2])*0.5
@@ -285,8 +287,6 @@ module Heatbath
         A[j,j] = K[2,2]  
         return A
     end
-
-
 
     const nhit = 6
     const rwidth = 0.4

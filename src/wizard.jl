@@ -294,9 +294,9 @@ module Wizard
                     "Heatbath",
                 ]))
                 if methodtype == 1
-                    system["upgrade_method"] = "HMC"
+                    system["update_method"] = "HMC"
                 else
-                    system["upgrade_method"] = "Heatbath"
+                    system["update_method"] = "Heatbath"
                 end
             else
                 methodtype = request("Choose an update method",RadioMenu([
@@ -305,11 +305,11 @@ module Wizard
                     "Self-learning Hybrid Monte Carlo (SLHMC)",
                 ]))
                 if methodtype == 1
-                    system["upgrade_method"] = "HMC"
+                    system["update_method"] = "HMC"
                 elseif methodtype == 2
-                    system["upgrade_method"] = "IntegratedHMC"
+                    system["update_method"] = "IntegratedHMC"
                 else
-                    system["upgrade_method"] = "SLHMC"
+                    system["update_method"] = "SLHMC"
                     system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
                     system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
                     system["quench"] = true
@@ -333,7 +333,7 @@ module Wizard
                 system["saveU_dir"] = Base.prompt("Saving directory", default="./confs")
             end
 
-            if system["upgrade_method"] == "HMC" || system["upgrade_method"] == "IntegratedHMC" || system["upgrade_method"] == "SLHMC"|| system["upgrade_method"] == "Heatbath"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath"
                 Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
                 Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
 
@@ -347,7 +347,7 @@ module Wizard
                 system["Nsteps"] = Nsteps
             end
 
-            if system["upgrade_method"] == "HMC" || system["upgrade_method"] == "IntegratedHMC" || system["upgrade_method"] == "SLHMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"
                 println("Choose parameters for MD")
                 MDsteps = parse(Int64,Base.prompt("Input MD steps", default="20"))
                 Δτ = parse(Float64,Base.prompt("Input Δτ", default="$(1/MDsteps)"))
@@ -384,7 +384,7 @@ module Wizard
             wilson,cg,staggered,system = wilson_wizard_simple!(system)
             system["quench"] = false
 
-            system["upgrade_method"] = "HMC"
+            system["update_method"] = "HMC"
 
 
             system["saveU_format"] = nothing

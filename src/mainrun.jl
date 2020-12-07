@@ -82,17 +82,17 @@ module Mainrun
     end
 
     function run_core!(parameters,univ,mdparams,meas)
-        if parameters.upgrade_method == "IntegratedHMC" || 
-                    parameters.upgrade_method == "SLHMC" || 
-                    parameters.upgrade_method == "IntegratedHB" ||
-                    parameters.upgrade_method == "SLMC" 
+        if parameters.update_method == "IntegratedHMC" || 
+                    parameters.update_method == "SLHMC" || 
+                    parameters.update_method == "IntegratedHB" ||
+                    parameters.update_method == "SLMC" 
             isIntegratedFermion = true
         else
             isIntegratedFermion = false
         end
 
         Nsteps = parameters.Nsteps
-        if parameters.upgrade_method == "Fileloading"
+        if parameters.update_method == "Fileloading"
             println("load U from ",parameters.loadU_dir)
             filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
             #filename = filter(f -> isfile(f), readdir("./$(parameters.loadU_dir)"))
@@ -102,7 +102,7 @@ module Mainrun
             Nsteps = numfiles-1
             filename_i = filename_load[1]
             loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
-        elseif parameters.upgrade_method == "SLHMC" || parameters.upgrade_method == "SLMC"
+        elseif parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
             slmc_data = SLMC_data(1,univ.NC)
         end
 
@@ -110,7 +110,7 @@ module Mainrun
         numaccepts = 0
 
         measurements(0,univ.U,univ,meas) # check consistency
-        if parameters.saveU_format != nothing && parameters.upgrade_method != "Fileloading"
+        if parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
             itrj = 0
             itrjstring = lpad(itrj,8,"0")
             itrjsavecount = 0
@@ -125,7 +125,7 @@ module Mainrun
         
         for itrj=1:Nsteps
             
-            if parameters.upgrade_method == "HMC"
+            if parameters.update_method == "HMC"
                 Hold = md_initialize!(univ)
 
                 @time Hnew = md!(univ,mdparams)
@@ -133,9 +133,9 @@ module Mainrun
                 numaccepts += ifelse(accept,1,0)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
 
-            elseif parameters.upgrade_method == "Heatbath"
+            elseif parameters.update_method == "Heatbath"
                 @time heatbath!(univ)
-            elseif parameters.upgrade_method == "IntegratedHMC"
+            elseif parameters.update_method == "IntegratedHMC"
                 Sgold = md_initialize!(univ)
             
                 @time Sgnew,Sfnew,Sgold,Sfold = md!(univ,Sfold,Sgold,mdparams)
@@ -146,10 +146,10 @@ module Mainrun
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
-            elseif parameters.upgrade_method == "Fileloading"
+            elseif parameters.update_method == "Fileloading"
                 filename_i = filename_load[itrj+1]
                 loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
-            elseif parameters.upgrade_method == "SLHMC"
+            elseif parameters.update_method == "SLHMC"
 
                 Sgold = md_initialize!(univ)
             
@@ -179,7 +179,7 @@ module Mainrun
                 end
                 Sfold = ifelse(accept,Sfnew,Sfold)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
-            elseif parameters.upgrade_method == "IntegratedHB"
+            elseif parameters.update_method == "IntegratedHB"
                 Sgold = md_initialize!(univ)
             
                 @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
@@ -190,7 +190,7 @@ module Mainrun
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
-            elseif parameters.upgrade_method == "SLMC"
+            elseif parameters.update_method == "SLMC"
                 Sgold = md_initialize!(univ)
             
                 @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
@@ -223,7 +223,7 @@ module Mainrun
 
             
 
-            if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.upgrade_method != "Fileloading"
+            if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
                 itrjstring = lpad(itrjsavecount,8,"0")
                 filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
