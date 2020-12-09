@@ -1,32 +1,32 @@
 module LatticeQCD
-    include("verboseprint.jl")
-    include("cgmethod.jl")
-    include("wilsonloops.jl")
+    include("./output/verboseprint.jl")
+    include("./fermions/cgmethod.jl")
+    include("./autostaples/wilsonloops.jl")
     
-    include("system_parameters.jl")
-    include("parallel.jl")
-    include("site.jl")
-    include("rand.jl")
-    include("actions.jl")
-    include("SUn_gaugefields.jl")
+    include("./system/system_parameters.jl")
+    #include("parallel.jl")
+    #include("site.jl")
+    include("./system/rand.jl")
+    include("./actions/actions.jl")
+    include("./gaugefields/gaugefields.jl")
     
     #include("gaugefields.jl")
-    include("fermionfields.jl")
-    include("algebrafields.jl")
-    include("clover.jl")
+    include("./fermions/fermionfields.jl")
+    include("./liealgebra/liealgebrafields.jl")
+    include("./fermions/clover.jl")
     
-    include("diracoperator.jl")
+    include("./fermions/diracoperator.jl")
 
-    include("io.jl")
-    include("ildg_format.jl")
+    include("./output/io.jl")
+    include("./output/ildg_format.jl")
 
     
 
-    include("universe.jl")
-    include("smearing.jl")
+    include("./system/LTK_universe.jl")
+    include("./gaugefields/smearing.jl")
 
 
-    include("print_config.jl")
+    include("./output/print_config.jl")
 
 
     
@@ -34,13 +34,13 @@ module LatticeQCD
     #include("cg.jl")
 
 
-    include("measurements.jl")
-    include("heatbath.jl")
-    include("md.jl")
-    include("wizard.jl")
+    include("./measurements/measurements.jl")
+    include("./heatbath/heatbath.jl")
+    include("./md/md.jl")
+    include("./system/wizard.jl")
 
-    include("SLMC.jl")
-    include("mainrun.jl")
+    include("./SLMC/SLMC.jl")
+    include("./system/mainrun.jl")
     
     
     
