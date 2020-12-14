@@ -447,6 +447,7 @@ module LieAlgebrafields
 
         c = temp_a
 
+        #=
         NX = U[1].NX
         NY = U[1].NY
         NZ = U[1].NZ
@@ -454,7 +455,7 @@ module LieAlgebrafields
         NC = U[1].NC
         V = zeros(ComplexF64,NC,NC)
         Vtemp = zeros(ComplexF64,NC,NC)
-
+        =#
 
 
         for μ=1:4
@@ -465,16 +466,16 @@ module LieAlgebrafields
                 muladd!(staple,gparam.βs[i]/gparam.β,temp4)
 
                 
-                ix,iy,iz,it = 1,1,1,1
-                icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
-                evaluate_wilson_loops!(Vtemp,gparam.staples[i][μ],U,ix,iy,iz,it)
-                println("μ = $μ, i = $i")
-                println("all")
-                display(temp4[:,:,icum])
-                println("\t")
-                println("partial")
-                display(Vtemp)
-                println("\t")
+                #ix,iy,iz,it = 1,1,1,1
+                #icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                #evaluate_wilson_loops!(Vtemp,gparam.staples[i][μ],U,ix,iy,iz,it)
+                #println("μ = $μ, i = $i")
+                #println("all")
+                #display(temp4[:,:,icum])
+                #println("\t")
+                #println("partial")
+                #display(Vtemp)
+                #println("\t")
             end
             #exit()
                 

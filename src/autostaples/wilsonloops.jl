@@ -139,16 +139,14 @@ module Wilsonloops
     end
 
     function make_rect()
+
+
+
+
         loops = Wilson_loop_set()
         origin = zeros(Int8,4)
 
-        #=
-        loop = make_links([(1,1),(2,2),(1,-1),(2,-2)])
-        loop1 = Wilson_loop(loop,Tuple(origin))
-
-        push!(loops,loop1)
-        return loops
-        =#
+            
 
         for μ=1:4
             for ν=1:4
@@ -264,10 +262,12 @@ module Wilsonloops
     function make_staples(w::Wilson_loop_set)
         num = length(w)
         staplesset = Array{Wilson_loop_set,1}(undef,4)
-        tempset = Array{Set,1}(undef,4)
+        tempset = Array{Array{Any,1},1}(undef,4)
+        #tempset = Array{Set,1}(undef,4)
         for mu=1:4
             staplesset[mu] = Wilson_loop_set()
-            tempset[mu] = Set()
+            #tempset[mu] = Set()
+            tempset[mu] = []
         end
 
         

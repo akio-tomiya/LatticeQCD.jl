@@ -65,6 +65,8 @@ module MD
         return -univ.gparam.β*mdparams.Δτ/ (2*univ.NC)
     end
 
+    
+
     function construct_MD_parameters(p::Params)
         #fac = - p.Δτ * p.β / (2*p.NC)
         if p.SextonWeingargten 

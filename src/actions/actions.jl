@@ -88,7 +88,11 @@ module Actions
         staples = Array{Array{Wilson_loop_set,1},1}(undef,numactions)
         for (i,loop) in enumerate(loops)
             staples[i] = make_staples(loop)
+            println("$i-th action")
+            display(loop)
+            println("$i-th action's staple")
             for mu=1:4
+                println("$mu -direction")
                 display(staples[i][mu])
             end
         end

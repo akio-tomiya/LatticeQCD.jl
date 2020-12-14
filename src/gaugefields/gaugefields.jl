@@ -2150,28 +2150,14 @@ c-----------------------------------------------------c
         Sg = 0
         loopaction = temps[4]        
 
-        #=
-        evaluate_wilson_loops!(loopaction,gparam.loops[1],U,temps[1:3])
-        Sg += (-gparam.βs[1]/gparam.NTRACE)*tr(loopaction)/2
-        println("Sg1: $Sg")
-
-        evaluate_wilson_loops!(loopaction,gparam.loops[2],U,temps[1:3])
-        Sg2 = (-gparam.βs[2]/gparam.NTRACE)*tr(loopaction)/2
-        println("Sg2: $Sg2")
-        println("dS12: $((Sg2-Sg)/Sg2)")
-        Sg += Sg2
-        return Sg,Sg/(-gparam.βs[1]/gparam.NTRACE)
-        =#
         for i = 1:gparam.numactions
 
             evaluate_wilson_loops!(loopaction,gparam.loops[i],U,temps[1:3])
-            sg = (-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2
-            println("$i-th actions ",sg)
-            Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2
-            
+            sg = (-gparam.βs[i]/gparam.NTRACE)*tr(loopaction) #/2
+            #println("$i-th actions ",sg)
+            Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2            
         end
 
-        
         return Sg,Sg/(-gparam.βs[1]/gparam.NTRACE)
         
     end
