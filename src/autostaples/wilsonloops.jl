@@ -1,6 +1,7 @@
 module Wilsonloops
 
-    mutable struct Wilson_loop
+
+    mutable struct Wilson_loop 
         wilson_loop::Array{Tuple{Int8,Int8},1}
         origin::NTuple{4,Int8}
         Wilson_loop() = new([],(0,0,0,0))
@@ -28,6 +29,7 @@ module Wilsonloops
 
     mutable struct Wilson_loop_set
         #loopset::Set{Wilson_loop}
+        #loopset::Array{Wilson,1}
         loopset::Array{Wilson_loop,1}
         Wilson_loop_set() = new([])
     end
@@ -66,13 +68,21 @@ module Wilsonloops
         return
     end
 
-    function make_loopforactions(couplinglist)
+    function make_loopforactions(couplinglist,L)
         loops = Array{Wilson_loop_set,1}(undef,length(couplinglist))
         for (i,name) in enumerate(couplinglist)
             if  name == "plaq"
                 loops[i] = make_plaq()
             elseif name == "rect"
                 loops[i] = make_rect()
+            elseif name == "polyt"
+                loops[i] = make_polyakov(4,L[4])
+            elseif name == "polyx"
+                loops[i] = make_polyakov(3,L[3])
+            elseif name == "polyy"
+                loops[i] = make_polyakov(2,L[2])
+            elseif name == "polyz"
+                loops[i] = make_polyakov(1,L[1])
             else
                 error("$name is not supported!")
             end
@@ -139,10 +149,6 @@ module Wilsonloops
     end
 
     function make_rect()
-
-
-
-
         loops = Wilson_loop_set()
         origin = zeros(Int8,4)
 
@@ -161,6 +167,15 @@ module Wilsonloops
             end
         end
         
+        return loops
+    end
+
+    function make_polyakov(μ,Nμ)
+        loops = Wilson_loop_set()
+        origin = zeros(Int8,4)
+        loop = make_links([(μ,Nμ)])
+        loop1 = Wilson_loop(loop,Tuple(origin))
+        push!(loops,loop1)
         return loops
     end
 

@@ -1329,26 +1329,12 @@ module Gaugefields
         shift = Shift_set(dir)
         gauge_shift!(a,shift,b) 
         return
+    end
 
-        #=
-
-        indx = Int64[]
-        for mu = 1:4
-            if dir[mu] != 0
-                push!(indx,mu*sign(dir[mu]))
-            end
-        end
-        #println(indx,"\t")
-
-        if length(indx) == 1
-            gauge_shift!(a,indx[1],b) 
-        elseif length(indx) == 2
-            gauge_shift!(a,Tuple(indx),b) 
-        elseif length(indx) == 0
-            substitute!(a,b)
-        end
-        return
-        =#
+    function periodiccheck(ix,NX,NDW)
+        ix1 = ix + ifelse(ix > NX+NDW,-NX,0)
+        ix1 += ifelse(ix < 1-NDW,NX,0)
+        return ix1
     end
 
     function gauge_shift!(a::GaugeFields_1d{T},shift::Shift_set,b::GaugeFields{T}) where T <: SUn 
@@ -1365,6 +1351,7 @@ module Gaugefields
         NZ = b.NZ
         NY = b.NY
         NX = b.NX
+        NDW= b.NDW
 
 
         #func! = NCsubstitute_63(b.NC)
@@ -1374,13 +1361,17 @@ module Gaugefields
         
         for it=1:NT
             it1 = it + shift.shift[4]
+            it1 = periodiccheck(it1,NT,NDW)
             for iz=1:NZ
                 iz1 = iz + shift.shift[3]
+                iz1 = periodiccheck(iz1,NZ,NDW)
                 for iy=1:NY
                     iy1 = iy+ shift.shift[2]
+                    iy1 = periodiccheck(iy1,NY,NDW)
                     for ix=1:NX
                         ix1 = ix+ shift.shift[1]
-
+                        ix1 = periodiccheck(ix1,NX,NDW)
+                        
                         icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
                         #func!(a,b,icum,ix1,iy1,iz1,it1)
 
