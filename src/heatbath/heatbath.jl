@@ -68,6 +68,7 @@ module Heatbath
                             end
                             
                             u[mu][:,:,ix,iy,iz,it] = SU2update(V,beta,NC,ITERATION_MAX)
+                            #u[mu][:,:,ix,iy,iz,it] = SU2update_KP(V,beta,NC,ITERATION_MAX)
 
                         end
                     end
@@ -77,6 +78,99 @@ module Heatbath
         end
 
     end
+
+    function SU2update_KP(V,beta,NC,ITERATION_MAX = 10^5)
+        eps = 0.000000000001
+
+        #R = real(sqrt(det(V)))
+        #V0 = inv(V/R)
+        #w = zeros(Float64,4)
+
+        ρ0 = real(V[1,1]+V[2,2])/2
+        #ρ1 = -imag(V[1,2]+V[2,1])/2
+        ρ1 = imag(V[1,2]+V[2,1])/2
+        ρ2 = real(V[2,1]-V[1,2])/2
+        ρ3 = imag(V[2,2]-V[1,1])/2
+        ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
+        #println("R = ",R," ρ ",ρ)
+        #println("detV = , ", det(V)," ",ρ0^2+ρ1^2+ρ2^2+ρ3^2)
+        V0 = inv(V/ρ)
+
+        #
+        #Nc = 2 # Since Ishikawa's book uses 1/g^2 notation.
+        #k = (beta/NC)*ρ
+        k = 2*(beta/NC)*ρ
+
+        
+        #k = (beta/2)*ρ
+
+        R = rand() + eps
+        Rp = rand() + eps
+        X = -log(R)/k
+        Xp = -log(Rp)/k
+        Rpp = rand()
+        C = cos(2pi*Rpp)^2
+        A = X*C
+        delta = Xp + A
+        Rppp = rand()
+
+        a = zeros(Float64,4)
+        while(Rppp^2 > 1-0.5*delta)
+            R = rand()
+            Rp = rand()
+            X = -log(R)/k
+            Xp = -log(Rp)/k
+            Rpp = rand()
+            C = cos(2pi*Rpp)^2
+            A = X*C
+            delta = Xp + A
+            Rppp = rand()
+        end
+        a[1] = 1-delta
+
+
+        rr = sqrt(1.0-a[1]^2)
+        ϕ = rand()*pi*2.0 # ϕ = [0,2pi]
+        cosθ = (rand()-0.5)*2.0 # -1<cosθ<1
+        sinθ = sqrt(1-cosθ^2)
+
+        a[2]=rr*cos(ϕ)*sinθ
+        a[3]=rr*sin(ϕ)*sinθ
+        a[4]=rr*cosθ
+        Unew = [a[1]+im*a[4] a[3]+im*a[2]
+                -a[3]+im*a[2] a[1]-im*a[4]]*V0
+
+        #=
+        w[1]=(1/ρ)*( a[1]*ρ0+a[2]*ρ1+a[3]*ρ2+a[4]*ρ3)
+        w[2]=(1/ρ)*(-a[1]*ρ1+a[2]*ρ0+a[3]*ρ3-a[4]*ρ2)
+        w[3]=(1/ρ)*(-a[1]*ρ2-a[2]*ρ3+a[3]*ρ0+a[4]*ρ1)
+        w[4]=(1/ρ)*(-a[1]*ρ3+a[2]*ρ2-a[3]*ρ1+a[4]*ρ0)
+
+        Unew = [w[1]+im*w[4] w[3]+im*w[2]
+                -w[3]+im*w[2] w[1]-im*w[4]]
+        =#
+
+        #normalize2!(Unew)
+        #display(Unew)
+
+        #α = Unew[1,1]
+        #β = Unew[2,1]
+        
+
+        α = Unew[1,1]*0.5 + conj(Unew[2,2])*0.5
+        β = Unew[2,1]*0.5 - conj(Unew[1,2])*0.5
+
+        detU = abs(α)^2 + abs(β)^2
+        Unew[1,1] = α/detU
+        Unew[2,1]  = β/detU
+        Unew[1,2] = -conj(β)/detU
+        Unew[2,2] = conj(α)/detU     
+        
+        
+
+        return Unew
+    end
+
 
     function SU2update(V,beta,NC,ITERATION_MAX = 10^5)
         R = real(sqrt(det(V)))
@@ -125,8 +219,11 @@ module Heatbath
         #normalize2!(Unew)
         #display(Unew)
 
-        α = Unew[1,1]
-        β = Unew[2,1]
+        #α = Unew[1,1]
+        #β = Unew[2,1]
+        α = Unew[1,1]*0.5 + conj(Unew[2,2])*0.5
+        β = Unew[2,1]*0.5 - conj(Unew[1,2])*0.5
+
         detU = abs(α)^2 + abs(β)^2
         Unew[1,1] = α/detU
         Unew[2,1]  = β/detU
@@ -189,6 +286,7 @@ module Heatbath
                             i += 1 
 
                             if typeof(gparam) == GaugeActionParam_standard
+                                V .= 0
                                 evaluate_wilson_loops!(V,loops,u,ix,iy,iz,it)
                             elseif typeof(gparam) == GaugeActionParam_autogenerator
                                 V .= 0
@@ -201,7 +299,24 @@ module Heatbath
 
                             #println("#Heatbath for one SU(3) link started")
                             for l=1:3
+                            
+
+
+                                #println("l = $l before u: ",)
+                                #display(u[mu][:,:,ix,iy,iz,it])
+                                #println("\t")
+
+
+
                                 UV = u[mu][:,:,ix,iy,iz,it]*V
+
+                                #gramschmidt_special!(UV)
+                                #UVdet = det(UV)
+                                #UV2 = copy(UV)
+                                #gramschmidt_special!(UV2)
+                                #println("det ",UVdet)
+                                #println(UV2'*UV)
+                                #UV .= UV*sqrt(UVdet)
                                 #normalize3!(SN)
                                 #println(SN'*SN)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(U) =  $(det(u[mu][:,:,ix,iy,iz,it])) #SU(3)")
@@ -214,14 +329,19 @@ module Heatbath
                                     n,m = 2,3
                                 else
                                     n,m = 1,3
+
                                 end
+
                                 S = make_submatrix(UV,n,m)
+                                #gramschmidt_special!(S)
                                 project_onto_SU2!(S)
+                                #println(S'*S)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(S) =  $(det(S)) #prop SU(2)")
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(S) =  $(tr(S)) #prop SU(2)")
                                 #println("SU2update: S->K")
 
-                                K = SU2update(S,beta,NC,ITERATION_MAX)
+                                #K = SU2update(S,beta,NC,ITERATION_MAX)
+                                K = SU2update_KP(S,beta,NC,ITERATION_MAX)
 
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(K) =  $(det(K))# before normalize #SU(2)")
                                 #K = normalize2!(K)
@@ -231,15 +351,39 @@ module Heatbath
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(A) =  $(det(A)) # before normalize #SU(3)")
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(A) =  $(tr(A)) # before normalize #SU(3)")
                                 #normalize3!(A)
+                                #gramschmidt_special!(A)
+                                #println("detA ",det(A))
+                                #println("A'A ",A'*A)
+                                #U2 = u[mu][:,:,ix,iy,iz,it]
+
+                                #println("detU2 ",det(U2))
+                                #println("U2'U ",U2'*U2)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(A) =  $(det(A)) # after normalize #SU(3)")
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: tr(A) =  $(tr(A)) # after normalize #SU(3)")
                                 #normalize3!(A)
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
 
-                                normalize3!(AU)
+                                
+                                #gramschmidt!(AU)
                                 #println("ix,iy,iz,it,l = $ix,$iy,$iz,$it,$l :: det(AU) =  $(det(AU)) #SU(3)\n")
+                                #for i2=1:NC
+                                #    for i1=1:NC
+                                #        u[mu][i1,i2,ix,iy,iz,it] = AU[i1,i2]
+                                #    end
+                                #end
+
+                                #println("l = $l after u: ",)
+                                #display(u[mu][:,:,ix,iy,iz,it])
+                                #println("\t")
+
                                 u[mu][:,:,ix,iy,iz,it] = AU
+                                #println("det U ",det(AU))
+
                             end
+
+                            #AU = u[mu][:,:,ix,iy,iz,it]
+                            #normalize3!(AU)
+                            #u[mu][:,:,ix,iy,iz,it] = AU
 
                             #exit()
 
@@ -248,10 +392,53 @@ module Heatbath
                     end
                 end
             end
-            #normalize!(u[mu])
+
+            normalize!(u[mu])
             set_wing!(u[mu])
         end
 
+    end
+
+    function gramschmidt!(v)
+        n = size(v)[1]
+        for i=1:n
+            for j=1:i-1
+                v[:,i] = v[:,i] - v[:,j]'*v[:,i]*v[:,j]
+            end
+            v[:,i] = v[:,i]/norm(v[:,i])
+        end
+    end
+
+
+    function gramschmidt_special!(v)
+        n = size(v)[1]
+        #vdet = det(v)
+
+        #
+        #V = (v1,v2,v3)
+        #det(V)
+        #det(V'*V) = det(V)*det(V')
+        #W = (w1,w2,w3)
+        #W'*W = diag(1,1,1)
+        #det(W) = 1
+        #w1 = v1/norm(v1)
+
+
+        #sqrt((v1*v1)*(v2*v2)*(v3*v3))
+
+        #vnorm = zeros(Float64,n)
+        vnorm1 = norm(v[:,1])
+        for i=1:n
+            #vnorm[i] = norm(v[:,i])
+            for j=1:i-1
+                v[:,i] = v[:,i] - v[:,j]'*v[:,i]*v[:,j]
+            end
+            v[:,i] = v[:,i]/norm(v[:,i])
+        end
+        for i=1:n
+            #v[:,i] = v[:,i]*vnorm[i]
+            v[:,i] = v[:,i]*vnorm1
+        end
     end
 
     function project_onto_SU2!(S) # This project onto SU(2) up to normalization.
@@ -460,7 +647,6 @@ c------------------------------------------------------c
     end
     =#
 
-    
 
     """
 -------------------------------------------------c
