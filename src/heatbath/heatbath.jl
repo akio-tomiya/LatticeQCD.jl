@@ -69,8 +69,10 @@ module Heatbath
                                 end
                             end
                             
-                            u[mu][:,:,ix,iy,iz,it] = SU2update(V,beta,NC,ITERATION_MAX)
-                            #u[mu][:,:,ix,iy,iz,it] = SU2update_KP(V,beta,NC,ITERATION_MAX)
+                            #u[mu][:,:,ix,iy,iz,it] = SU2update(V,beta,NC,ITERATION_MAX)
+                            u[mu][:,:,ix,iy,iz,it] = SU2update_KP(V,beta,NC,ITERATION_MAX)
+
+                            set_wing!(u[mu],ix,iy,iz,it)
 
                         end
                     end
