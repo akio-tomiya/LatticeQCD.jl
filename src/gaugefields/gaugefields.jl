@@ -360,25 +360,65 @@ module Gaugefields
             itp = it-NT
         end
 
-        update!(u,ixp,iy,iz,it,ix,iy,iz,it)
-        update!(u,ix,iyp,iz,it,ix,iy,iz,it)
-        update!(u,ix,iy,izp,it,ix,iy,iz,it)
-        update!(u,ix,iy,iz,itp,ix,iy,iz,it)
+        if isxwing != 0
+            update!(u,ixp,iy,iz,it,ix,iy,iz,it)
 
-        update!(u,ixp,iyp,iz,it,ix,iy,iz,it)
-        update!(u,ix,iyp,izp,it,ix,iy,iz,it)
-        update!(u,ix,iy,izp,itp,ix,iy,iz,it)
+            if isywing != 0
+                update!(u,ixp,iyp,iz,it,ix,iy,iz,it)
+                if iszwing != 0
+                    update!(u,ixp,iyp,izp,it,ix,iy,iz,it)
 
-        update!(u,ixp,iy,izp,it,ix,iy,iz,it)
-        update!(u,ix,iyp,iz,itp,ix,iy,iz,it)
-        update!(u,ixp,iy,iz,itp,ix,iy,iz,it)
+                    if istwing != 0
+                        update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
+                    end
+                end
+                if istwing != 0
+                    update!(u,ixp,iyp,iz,itp,ix,iy,iz,it)
+                end
+            end
+            
+            if iszwing != 0
+                update!(u,ixp,iy,izp,it,ix,iy,iz,it)
+                if istwing != 0
+                    update!(u,ixp,iy,izp,itp,ix,iy,iz,it)
+                end
+            end
+            
+            if istwing != 0
+                update!(u,ixp,iy,iz,itp,ix,iy,iz,it)
+            end
+            
+        end
 
-        update!(u,ixp,iyp,izp,it,ix,iy,iz,it)
-        update!(u,ixp,iyp,iz,itp,ix,iy,iz,it)
-        update!(u,ixp,iy,izp,itp,ix,iy,iz,it)
-        update!(u,ix,iyp,izp,itp,ix,iy,iz,it)
+        if isywing != 0
+            update!(u,ix,iyp,iz,it,ix,iy,iz,it)
 
-        update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
+            if iszwing != 0
+                update!(u,ix,iyp,izp,it,ix,iy,iz,it)
+                if istwing != 0
+                    update!(u,ix,iyp,izp,itp,ix,iy,iz,it)
+                end
+            end
+
+            if istwing != 0
+                update!(u,ix,iyp,iz,itp,ix,iy,iz,it)
+            end
+        
+
+        end
+
+        if iszwing != 0
+            update!(u,ix,iy,izp,it,ix,iy,iz,it)
+            if istwing != 0
+                update!(u,ix,iy,izp,itp,ix,iy,iz,it)
+            end
+
+        end
+
+        if istwing != 0
+            update!(u,ix,iy,iz,itp,ix,iy,iz,it)
+        end
+
 
     end
 
