@@ -5,6 +5,8 @@ module Heatbath
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,elementwise_tr!,set_wing!,make_staple_double!,substitute!,clear!,
             evaluate_wilson_loops!,normalize!,normalize3!,normalize2!
+            #,
+            #set_wing_x!,set_wing_y!,set_wing_z!,set_wing_t!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator,GaugeActionParam
 
@@ -235,7 +237,7 @@ module Heatbath
 
     function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU3GaugeFields,T_1d <: SU3GaugeFields_1d}
         #println("Warning!!!!!!!!")
-        error("Heatbath update for SU(3) is not implemented")
+        #error("Heatbath update for SU(3) is not implemented")
         beta = gparam.β
 
     
@@ -386,13 +388,21 @@ module Heatbath
                             u[mu][:,:,ix,iy,iz,it] = AU
 
                             #exit()
-
+                            #set_wing!(u[mu])
+                            set_wing!(u[mu],ix,iy,iz,it)
 
                         end
-                        set_wing!(u[mu])
+                        #set_wing_x!(u[mu],iy,iz,it)
+                        #set_wing_x!(u[mu],iy,iz,it)
+
+                        #set_wing!(u[mu])
                     end
+                    #set_wing_y!(u[mu],iz,it)
+                    
                 end
+                #set_wing_z!(u[mu],it)
             end
+            #set_wing_t!(u[mu])
 
             normalize!(u[mu])
             
