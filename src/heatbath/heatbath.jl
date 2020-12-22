@@ -87,8 +87,8 @@ module Heatbath
         #w = zeros(Float64,4)
 
         ρ0 = real(V[1,1]+V[2,2])/2
-        #ρ1 = -imag(V[1,2]+V[2,1])/2
-        ρ1 = imag(V[1,2]+V[2,1])/2
+        ρ1 = -imag(V[1,2]+V[2,1])/2
+        #ρ1 = imag(V[1,2]+V[2,1])/2
         ρ2 = real(V[2,1]-V[1,2])/2
         ρ3 = imag(V[2,2]-V[1,1])/2
         ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
@@ -381,20 +381,21 @@ module Heatbath
 
                             end
 
-                            #AU = u[mu][:,:,ix,iy,iz,it]
-                            #normalize3!(AU)
-                            #u[mu][:,:,ix,iy,iz,it] = AU
+                            AU = u[mu][:,:,ix,iy,iz,it]
+                            normalize3!(AU)
+                            u[mu][:,:,ix,iy,iz,it] = AU
 
                             #exit()
 
 
                         end
+                        set_wing!(u[mu])
                     end
                 end
             end
 
             normalize!(u[mu])
-            set_wing!(u[mu])
+            
         end
 
     end
