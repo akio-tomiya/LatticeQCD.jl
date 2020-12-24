@@ -440,7 +440,7 @@ module MD
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLMC)
         @assert univ.quench == true "quench should be true!"
-        @assert univ.NC == 2 "Only SU(2) is supported now."
+        #@assert univ.NC == 2 "Only SU(2) is supported now."
         if Sfold == nothing            
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
