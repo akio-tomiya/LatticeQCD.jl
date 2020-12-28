@@ -149,7 +149,7 @@ module System_parameters
         loadU_dir::String
 
         update_method::String
-        βeff::Float64
+        βeff::Union{Float64,Array{Float64,1}}
         firstlearn::Int64
 
 
@@ -268,7 +268,7 @@ module System_parameters
                 println("$saveU_dir is used for saving configurations")
             end
 
-            βeff = 0
+            βeff = 0.0
             firstlearn = 0
 
             update_method = system["update_method"]
@@ -292,6 +292,7 @@ module System_parameters
     
             elseif update_method == "Fileloading"
                 println("No update will be used (read-measure mode)")
+                system["quench"] = true
             elseif update_method == "SLHMC"
                 println("SLHMC will be used")
                 if system["quench"] == false

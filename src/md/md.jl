@@ -52,13 +52,13 @@ module MD
     end
 
     mutable struct MD_parameters_SLMC  <: MD_parameters
-        βeff::Float64
+        βeff::Union{Float64,Array{Float64,1}}
     end
 
     mutable struct MD_parameters_SLHMC  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
-        βeff::Float64
+        βeff::Union{Float64,Array{Float64,1}}
     end
 
     function calc_factor(univ::Universe,mdparams::MD_parameters)

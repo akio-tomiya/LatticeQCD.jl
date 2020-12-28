@@ -5,7 +5,7 @@ module ILDG_format
 
 
     import ..IOmodule:IOFormat
-    import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields
+    import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields,set_wing!
 
     struct ILDG <: IOFormat
         header::Array{Dict,1}
@@ -40,11 +40,13 @@ module ILDG_format
                             for ic2 = 1:NC
                                 for ic1 = 1:NC
                                     i+= 1
+                                    #rvalue = read(fp, floattype)
                                     rvalue = ntoh(read(fp, floattype))
                                     #rvalue = ntoh(read(fp, ComplexF64))
                                     i+= 1
                                     ivalue = ntoh(read(fp, floattype))
-                                    U[μ][ic1,ic2,ix,iy,iz,it] = rvalue + im*ivalue
+                                    #ivalue = read(fp, floattype)
+                                    U[μ][ic2,ic1,ix,iy,iz,it] = rvalue + im*ivalue
                                     #U[μ][ic1,ic2,ix,iy,iz,it] = rvalue# + im*ivalue
                                     #println(i,"/",totalnum,"= ",i/totalnum)
                                     #println(rvalue,"\t",ivalue)
@@ -56,18 +58,51 @@ module ILDG_format
             end
         end
 
+        set_wing!(U)
+
         close(fp)
     end
 
-    function load_gaugefield(i,ildg::ILDG;NDW = 1)
-        data = ildg[i]
-        filename = ildg.filename
-        L = data["L"]
+    function load_gaugefield!(U,i,ildg::ILDG,L,NC;NDW = 1)
         NX = L[1]
         NY = L[2]
         NZ = L[3]
         NT = L[4]
-        NC = data["NC"]
+        data = ildg[i]
+        filename = ildg.filename
+        @assert U[1].NX == NX "NX mismatch"
+        @assert U[1].NY == NY "NY mismatch"
+        @assert U[1].NZ == NZ "NZ mismatch"
+        @assert U[1].NT == NT "NT mismatch"
+        @assert U[1].NC == NC "NC mismatch"
+
+        message_no = data["message_no"]
+        reccord_no = data["reccord_no"]
+        if haskey(data,"precision")
+            precision = data["precision"]
+        else
+            precision = 64
+        end
+        
+
+        lime_extract_record() do exe
+            run(`$exe $filename $message_no $reccord_no tempconf.dat`)
+        end
+
+        load_binarydata!(U,NX,NY,NZ,NT,NC,"tempconf.dat",precision)
+
+        return
+    end
+
+
+    function load_gaugefield(i,ildg::ILDG,L,NC;NDW = 1)
+        NX = L[1]
+        NY = L[2]
+        NZ = L[3]
+        NT = L[4]
+        data = ildg[i]
+        filename = ildg.filename
+
         if NC == 3
             U = Array{SU3GaugeFields,1}(undef,4)
         elseif NC == 2
@@ -78,18 +113,30 @@ module ILDG_format
             U[μ] = GaugeFields(NC,NDW,NX,NY,NZ,NT)
         end
 
-        message_no = data["message_no"]
-        reccord_no = data["reccord_no"]
-        precision = data["precision"]
-
-        lime_extract_record() do exe
-            run(`$exe $filename $message_no $reccord_no tempconf.dat`)
-        end
-
-        load_binarydata!(U,NX,NY,NZ,NT,NC,"tempconf.dat",precision)
-
-
+        load_gaugefield!(U,i,ildg::ILDG,L,NC;NDW = 1)
         return U
+
+    end
+
+    function load_gaugefield(i,ildg::ILDG;NDW = 1)
+        #@assert length(ildg) != 0 "the header file is not found"
+        data = ildg[i]
+        filename = ildg.filename
+        if haskey(data,"L")
+            L = data["L"]
+            NX = L[1]
+            NY = L[2]
+            NZ = L[3]
+            NT = L[4]
+        else
+            error("header file is not found. Please put lattice size")
+        end
+        if haskey(data,"L")
+            error("header file is not found. Please put NC")
+            NC = data["NC"]
+        end
+        load_gaugefield(i,ildg::ILDG,L,NC;NDW = NDW)
+
 
 
     end
@@ -101,13 +148,13 @@ module ILDG_format
         header = nothing
         lime_contents() do exe
             contents_data = read(`$exe $filename`,String)
-            println(contents_data)
+            #println(contents_data)
             contents_data = split(string(contents_data),"\n")
             #println(contents_data)
             header = extract_info(contents_data)
             
         end
-        #println(header)
+        println(header)
         return header
     end
 
@@ -234,13 +281,14 @@ module ILDG_format
 
                     end
 
-                    if datatype == "ildg-binary-data" && headerfound
+                    if datatype == "ildg-binary-data" #&& headerfound
                         #println("message_no = $(message_no)")
                         #println("reccord_no = $reccord_no")
                         headerdic["message_no"] = message_no
                         headerdic["reccord_no"] = reccord_no
                         push!(header,headerdic)
                         headerfound = false
+
                     end
                     
                 end

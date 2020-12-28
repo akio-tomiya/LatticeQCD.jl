@@ -8,31 +8,28 @@ module Mainrun
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
     import ..Smearing:gradientflow!
-    import ..ILDG_format:ILDG,load_gaugefield
+    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!
     import ..Heatbath:heatbath!
     import ..Wilsonloops:make_plaq
     import ..IOmodule:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
     import ..Gaugefields:calc_GaugeAction
 
+    import ..Actions:GaugeActionParam_standard,
+                    GaugeActionParam,
+                    GaugeActionParam_autogenerator
+
+
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
 
     function run_LQCD(filename::String)
 
-        #=
-        filename= "/Users/yuki/ILDG/ckpoint_lat.ildg.1000"
-        ildg = ILDG(filename)
-        i = 1
-        U = load_gaugefield(i,ildg)
-        plaq = calc_plaquette(U)
-            println("-------------------------------------")
-            println("$i-th plaq = ",plaq)
-            println("-------------------------------------")
-        exit()
-        =#
+
 
         include(pwd()*"/"*filename)
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
+
+
 
         
         run_LQCD(params_set)
@@ -91,19 +88,40 @@ module Mainrun
             isIntegratedFermion = false
         end
 
+
+
         Nsteps = parameters.Nsteps
         if parameters.update_method == "Fileloading"
             println("load U from ",parameters.loadU_dir)
-            filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
+            if parameters.loadU_format == "JLD"
+                filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
+            elseif parameters.loadU_format == "ILDG"
+                filename_load =  filter(f -> contains(f,"ildg"),readdir("./$(parameters.loadU_dir)"))
+            end
             #filename = filter(f -> isfile(f), readdir("./$(parameters.loadU_dir)"))
             #println(filename)
             numfiles = length(filename_load)
             println("Num of files = $numfiles")
             Nsteps = numfiles-1
             filename_i = filename_load[1]
-            loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+            if parameters.loadU_format == "JLD"
+                loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+            elseif parameters.loadU_format == "ILDG"
+                ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
+                i = 1
+                load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
+                measurements(0,univ.U,univ,meas) 
+                exit()
+            end
+
         elseif parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
-            slmc_data = SLMC_data(1,univ.NC)
+            #slmc_data = SLMC_data(1,univ.NC)
+            if typeof(univ.gparam) == GaugeActionParam_autogenerator
+                slmc_data = SLMC_data(length(univ.gparam.couplinglist),univ.NC)
+            else
+                slmc_data = SLMC_data(1,univ.NC)
+            end
+            
         end
 
 
@@ -157,28 +175,13 @@ module Mainrun
                 Sold = Sgold + Sfold
                 Snew = Sgnew + Sfnew
 
-                S2,plaq2 = calc_Action(univ)
-                Sf = Sfnew
-                outputdata = univ.gparam.β*plaq2*slmc_data.factor + Sf
-                update_slmcdata!(slmc_data,[plaq],outputdata)
-                βeffs,Econst,IsSucs = show_effbeta(slmc_data)
+            elseif parameters.update_method == "SLMC"
+                Sgold = md_initialize!(univ)
+            
+                @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
+                Sold = Sgold + Sfold -Sgeffold
+                Snew = Sgnew + Sfnew -Sgeffnew
 
-
-                accept = metropolis_update!(univ,Sold,Snew)
-                numaccepts += ifelse(accept,1,0)
-                
-                
-                
-                
-                #println("Sg = ",Sg,"\t",univ.gparam.β*plaq/univ.gparam.NTRACE,
-                #"\t",univ.gparam.β*plaq2/univ.gparam.NTRACE,"Sg2 ",S2)
-                println("#S = ",outputdata)
-                println("#Estimated Seff = ",Econst + βeffs[1]*plaq*slmc_data.factor)
-                if IsSucs && itrj ≥ parameters.firstlearn 
-                    mdparams.βeff = βeffs[1]
-                end
-                Sfold = ifelse(accept,Sfnew,Sfold)
-                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
             elseif parameters.update_method == "IntegratedHB"
                 Sgold = md_initialize!(univ)
             
@@ -190,25 +193,33 @@ module Mainrun
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
-            elseif parameters.update_method == "SLMC"
-                Sgold = md_initialize!(univ)
-            
-                @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
-                Sold = Sgold + Sfold -Sgeffold
-                Snew = Sgnew + Sfnew -Sgeffnew
+            end
 
-                S2,plaq = calc_GaugeAction(univ)
+            if parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
+                S2,plaqetc = calc_GaugeAction(univ)
+                plaq = plaqetc
+                #S2,plaq = calc_Action(univ)
+
+                if typeof(plaqetc) == Float64
+                    plaqetc = [plaq]
+                end
+                #println(plaq)
+                #exit()
                 Sf = Sfnew
 
-                outputdata = univ.gparam.β*plaq*slmc_data.factor + Sf
-                update_slmcdata!(slmc_data,[plaq],outputdata)
-                βeffs,Econst,IsSucs = show_effbeta(slmc_data)
+                outputdata = univ.gparam.β*plaqetc[1]*slmc_data.factor + Sf
+                update_slmcdata!(slmc_data,plaqetc,outputdata)
+                #update_slmcdata!(slmc_data,[plaq],outputdata)
+                βeffs,Econst,IsSucs = show_effbeta(slmc_data,univ.gparam)
+                #βeffs,Econst,IsSucs = show_effbeta(slmc_data)
 
                 println("#S = ",outputdata)
-                println("#Estimated Seff = ",Econst + βeffs[1]*plaq*slmc_data.factor)
+                println("#Estimated Seff = ",Econst + sum(βeffs[:].*plaqetc[:])*slmc_data.factor)
                 if IsSucs && itrj ≥ parameters.firstlearn 
-                    mdparams.βeff = βeffs[1]
+                    #mdparams.βeff = βeffs[1]
+                    mdparams.βeff = βeffs[:]
                 end
+
 
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)

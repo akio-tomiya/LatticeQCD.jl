@@ -225,191 +225,237 @@ module Wizard
         system["NC"] = NC
         println("SU($NC) will be used")
 
-        if NC == 3
-            β = parse(Float64,Base.prompt("β ?", default="5.7"))
-        elseif NC == 2
-            β = parse(Float64,Base.prompt("β ?", default="2.7"))
-        end
-        system["β"] = β
-        if β<0
-            error("Invalid value for β=$β. This has to be positive or zero")
-        end
+        fileloading = request("Do you want to load configurations from files?",RadioMenu([
+                        "No",
+                        "Yes",
+                    ]))
 
-        if NC == 3
-            initialconf = request("Choose initial configurations",RadioMenu([
+        if fileloading == 2
+            loadtype = request("Choose a configuration format for loading",RadioMenu([
+                    "JLD",
+                    "ILDG",
+            ]))
+            system["update_method"] = "Fileloading"
+
+            if loadtype == 1
+                system["loadU_format"] = "JLD"
+                
+            elseif loadtype == 2
+                system["loadU_format"] = "ILDG"
+            end
+
+            if system["loadU_format"] ≠ nothing
+                system["loadU_dir"] = String(Base.prompt("Loading directory", default="./confs"))
+            end
+
+            system["β"] = 2.6
+            system["initial"] = "cold"
+            system["BoundaryCondition"] = [1,1,1,-1]
+            system["Nwing"] = 1
+            cg = Dict()
+            wilson = Dict()
+            staggered = Dict()
+            system["Dirac_operator"] = nothing
+            system["quench"] = true
+
+
+
+
+        else
+
+            if NC == 3
+                β = parse(Float64,Base.prompt("β ?", default="5.7"))
+            elseif NC == 2
+                β = parse(Float64,Base.prompt("β ?", default="2.7"))
+            end
+            system["β"] = β
+            if β<0
+                error("Invalid value for β=$β. This has to be positive or zero")
+            end
+
+            if NC == 3
+                initialconf = request("Choose initial configurations",RadioMenu([
+                            "cold start",
+                            "hot start",
+                            "start from a file",
+                        ]))
+            elseif NC == 2
+                initialconf = request("Choose initial configurations",RadioMenu([
                         "cold start",
                         "hot start",
                         "start from a file",
+                        "start from one instanton (Radius is half of Nx)",
                     ]))
-        elseif NC == 2
-            initialconf = request("Choose initial configurations",RadioMenu([
-                    "cold start",
-                    "hot start",
-                    "start from a file",
-                    "start from one instanton (Radius is half of Nx)",
-                ]))
-        end
-        if initialconf == 1
-            system["initial"] = "cold"
-        elseif initialconf == 2
-            system["initial"] = "hot"
-        elseif initialconf == 3
-            system["initial"] = Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld")
-        elseif initialconf == 4
-            system["initial"] = "Start from one instanton"
-        end
-        #system["initial"] = ifelse(initialconf == 1,"cold","hot")
-
-        system["BoundaryCondition"] = [1,1,1,-1]
-        system["Nwing"] = 1
-
-
-
-        if isexpert 
-
-            ftype = request("Choose a dynamical fermion",RadioMenu([
-                        "Nothing (quenched approximation)",
-                        "Wilson Fermion (2-flavor)",
-                        "Staggered Fermion (4-tastes)",
-                    ]))
-            if ftype == 1
-                cg = Dict()
-                wilson = Dict()
-                staggered = Dict()
-                system["Dirac_operator"] = nothing
-                system["quench"] = true
-
-                
-            elseif ftype == 2
-                wilson,cg,staggered,system = wilson_wizard!(system)
-                system["quench"] = false
-            elseif ftype == 3
-                wilson,cg,staggered,system = staggered_wizard!(system)
-                system["quench"] = false
             end
+            if initialconf == 1
+                system["initial"] = "cold"
+            elseif initialconf == 2
+                system["initial"] = "hot"
+            elseif initialconf == 3
+                system["initial"] = Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld")
+            elseif initialconf == 4
+                system["initial"] = "Start from one instanton"
+            end
+            #system["initial"] = ifelse(initialconf == 1,"cold","hot")
 
-            if system["quench"] == true
-                methodtype = request("Choose an update method",RadioMenu([
-                    "Hybrid Monte Carlo",
-                    "Heatbath",
-                ]))
-                if methodtype == 1
-                    system["update_method"] = "HMC"
+            system["BoundaryCondition"] = [1,1,1,-1]
+            system["Nwing"] = 1
+
+
+
+            if isexpert 
+
+                ftype = request("Choose a dynamical fermion",RadioMenu([
+                            "Nothing (quenched approximation)",
+                            "Wilson Fermion (2-flavor)",
+                            "Staggered Fermion (4-tastes)",
+                        ]))
+                if ftype == 1
+                    cg = Dict()
+                    wilson = Dict()
+                    staggered = Dict()
+                    system["Dirac_operator"] = nothing
+                    system["quench"] = true
+
+                    
+                elseif ftype == 2
+                    wilson,cg,staggered,system = wilson_wizard!(system)
+                    system["quench"] = false
+                elseif ftype == 3
+                    wilson,cg,staggered,system = staggered_wizard!(system)
+                    system["quench"] = false
+                end
+
+                if system["quench"] == true
+                    methodtype = request("Choose an update method",RadioMenu([
+                        "Hybrid Monte Carlo",
+                        "Heatbath",
+                    ]))
+                    if methodtype == 1
+                        system["update_method"] = "HMC"
+                    else
+                        system["update_method"] = "Heatbath"
+                    end
                 else
-                    system["update_method"] = "Heatbath"
+                    methodtype = request("Choose an update method",RadioMenu([
+                        "Hybrid Monte Carlo",
+                        "Integrated HMC",
+                        "Self-learning Hybrid Monte Carlo (SLHMC)",
+                        "Self-learning Hybrid Monte Carlo (SLHMC)",
+                    ]))
+                    if methodtype == 1
+                        system["update_method"] = "HMC"
+                    elseif methodtype == 2
+                        system["update_method"] = "IntegratedHMC"
+                    elseif methodtype == 3
+                        system["update_method"] = "SLHMC"
+                        system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                        system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                        system["quench"] = true
+                    elseif methodtype == 4
+                        system["update_method"] = "SLMC"
+                        system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                        system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                        system["quench"] = true
+                    end
+                end
+
+                savetype = request("Choose a configuration format for saving",RadioMenu([
+                        "no save",
+                        "JLD",
+                    ]))
+                if savetype == 2
+                    system["saveU_format"] = "JLD"
+                    
+                elseif savetype == 1
+                    system["saveU_format"] = nothing
+                    system["saveU_dir"] = ""
+                end
+
+                if system["saveU_format"] ≠ nothing
+                    system["saveU_every"] = parse(Int64,Base.prompt("Timing for saving configuration", default="1"))
+                    system["saveU_dir"] = String(Base.prompt("Saving directory", default="./confs"))
+                end
+
+                if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath"
+                    Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
+                    Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
+
+                    if Nthermalization<0
+                        error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
+                    end
+                    if Nsteps<=0
+                        error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
+                    end
+                    system["Nthermalization"] = Nthermalization
+                    system["Nsteps"] = Nsteps
+                end
+
+                if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"
+                    println("Choose parameters for MD")
+                    MDsteps = parse(Int64,Base.prompt("Input MD steps", default="20"))
+                    Δτ = parse(Float64,Base.prompt("Input Δτ", default="$(1/MDsteps)"))
+                    
+                    #SextonWeingargten = parse(Bool,Base.prompt("Use SextonWeingargten method? true or false", default="false"))
+
+                    SW = request("Use SextonWeingargten method? multi-time scale",RadioMenu([
+                            "false",
+                            "true",
+                        ]))
+                    SextonWeingargten = ifelse(SW==1,false,true)
+                    
+                    if SextonWeingargten
+                        N_SextonWeingargten = parse(Int64,Base.prompt("Input number of SextonWeingargten steps", default="2"))
+                    else
+                        N_SextonWeingargten = 2
+                    end
+
+                    if MDsteps<=0
+                        error("Invalid value for MDsteps=$MDsteps. This has to be strictly positive.")
+                    end
+                    if Δτ<=0
+                        error("Invalid value for Δτ=$Δτ. This has to be strictly positive.")
+                    end
+
+                    md["MDsteps"] = MDsteps
+                    md["Δτ"] = Δτ
+                    md["SextonWeingargten"] = SextonWeingargten
+                    md["N_SextonWeingargten"] = N_SextonWeingargten
                 end
             else
-                methodtype = request("Choose an update method",RadioMenu([
-                    "Hybrid Monte Carlo",
-                    "Integrated HMC",
-                    "Self-learning Hybrid Monte Carlo (SLHMC)",
-                ]))
-                if methodtype == 1
-                    system["update_method"] = "HMC"
-                elseif methodtype == 2
-                    system["update_method"] = "IntegratedHMC"
-                else
-                    system["update_method"] = "SLHMC"
-                    system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
-                    system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
-                    system["quench"] = true
-                end
-            end
+                system["Dirac_operator"] = "Wilson"
 
-            savetype = request("Choose a configuration format for saving",RadioMenu([
-                    "no save",
-                    "JLD",
-                ]))
-            if savetype == 2
-                system["saveU_format"] = "JLD"
-                
-            elseif savetype == 1
+                wilson,cg,staggered,system = wilson_wizard_simple!(system)
+                system["quench"] = false
+
+                system["update_method"] = "HMC"
+
+
                 system["saveU_format"] = nothing
                 system["saveU_dir"] = ""
-            end
 
-            if system["saveU_format"] ≠ nothing
-                system["saveU_every"] = parse(Int64,Base.prompt("Timing for saving configuration", default="1"))
-                system["saveU_dir"] = Base.prompt("Saving directory", default="./confs")
-            end
+                MDsteps = 20
+                Δτ = 1/MDsteps
 
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath"
-                Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
+                SextonWeingargten = false
+                N_SextonWeingargten = 2
+
+
+                Nthermalization = 0
                 Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
 
-                if Nthermalization<0
-                    error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
-                end
                 if Nsteps<=0
                     error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
-                end
-                system["Nthermalization"] = Nthermalization
-                system["Nsteps"] = Nsteps
-            end
-
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"
-                println("Choose parameters for MD")
-                MDsteps = parse(Int64,Base.prompt("Input MD steps", default="20"))
-                Δτ = parse(Float64,Base.prompt("Input Δτ", default="$(1/MDsteps)"))
-                
-                #SextonWeingargten = parse(Bool,Base.prompt("Use SextonWeingargten method? true or false", default="false"))
-
-                SW = request("Use SextonWeingargten method? multi-time scale",RadioMenu([
-                        "false",
-                        "true",
-                    ]))
-                SextonWeingargten = ifelse(SW==1,false,true)
-                
-                if SextonWeingargten
-                    N_SextonWeingargten = parse(Int64,Base.prompt("Input number of SextonWeingargten steps", default="2"))
-                else
-                    N_SextonWeingargten = 2
-                end
-
-                if MDsteps<=0
-                    error("Invalid value for MDsteps=$MDsteps. This has to be strictly positive.")
-                end
-                if Δτ<=0
-                    error("Invalid value for Δτ=$Δτ. This has to be strictly positive.")
                 end
 
                 md["MDsteps"] = MDsteps
                 md["Δτ"] = Δτ
                 md["SextonWeingargten"] = SextonWeingargten
                 md["N_SextonWeingargten"] = N_SextonWeingargten
-            end
-        else
-            system["Dirac_operator"] = "Wilson"
-
-            wilson,cg,staggered,system = wilson_wizard_simple!(system)
-            system["quench"] = false
-
-            system["update_method"] = "HMC"
-
-
-            system["saveU_format"] = nothing
-            system["saveU_dir"] = ""
-
-            MDsteps = 20
-            Δτ = 1/MDsteps
-
-            SextonWeingargten = false
-            N_SextonWeingargten = 2
-
-
-            Nthermalization = 0
-            Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
-
-            if Nsteps<=0
-                error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
+                system["Nthermalization"] = Nthermalization
+                system["Nsteps"] = Nsteps
             end
 
-            md["MDsteps"] = MDsteps
-            md["Δτ"] = Δτ
-            md["SextonWeingargten"] = SextonWeingargten
-            md["N_SextonWeingargten"] = N_SextonWeingargten
-            system["Nthermalization"] = Nthermalization
-            system["Nsteps"] = Nsteps
         end
 
         measurement = Dict()

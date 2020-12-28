@@ -125,6 +125,8 @@ module Gaugefields
         return x.g[i1,i2,i3]
     end
 
+    
+
 
     function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1},temps::Array{T_1d,1}) where {S <: SUn,T_1d <: GaugeFields_1d}
 
@@ -225,6 +227,11 @@ module Gaugefields
         temp1 = zero(V)
         temp2 = zero(V)
         temp3 = zero(V)
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NDW = U[1].NDW
 
 
         for i=1:num
@@ -237,6 +244,7 @@ module Gaugefields
             
             loopk = wi[1]
             ix1,iy1,iz1,it1 = shift_xyzt(shifts[1],ix,iy,iz,it)
+            ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
 
             
             temp1[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
@@ -252,6 +260,8 @@ module Gaugefields
                 
                 #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
                 ix1,iy1,iz1,it1 = shift_xyzt(shifts[k],ix,iy,iz,it)
+                ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+                
                 temp2[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
 
                 multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
@@ -1331,6 +1341,10 @@ module Gaugefields
         return
     end
 
+    function periodiccheck(ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+        return periodiccheck(ix,NX,NDW),periodiccheck(iy,NY,NDW),periodiccheck(iz,NZ,NDW),periodiccheck(it,NT,NDW)
+    end
+
     function periodiccheck(ix,NX,NDW)
         ix1 = ix + ifelse(ix > NX+NDW,-NX,0)
         ix1 += ifelse(ix < 1-NDW,NX,0)
@@ -1952,7 +1966,7 @@ c-----------------------------------------------------c
         tmp1= zeros(ComplexF64,NC,NC)
         tmp2= zero(tmp1)
 
-        set_wing!(u)
+        #set_wing!(u)
 
         for iz=1:NZ
             for iy=1:NY
@@ -2140,16 +2154,19 @@ c-----------------------------------------------------c
     function calc_GaugeAction(U::Array{T,1},gparam::GaugeActionParam_autogenerator,temps::Array{T_1d,1}) where {T <: GaugeFields,T_1d <: GaugeFields_1d}
         Sg = 0
         loopaction = temps[4]        
-
+        trs = zeros(ComplexF64,gparam.numactions)
+        
         for i = 1:gparam.numactions
-
-            evaluate_wilson_loops!(loopaction,gparam.loops[i],U,temps[1:3])
-            sg = (-gparam.βs[i]/gparam.NTRACE)*tr(loopaction) #/2
-            #println("$i-th actions ",sg)
-            Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2            
+            if gparam.βs[i] != 0
+                evaluate_wilson_loops!(loopaction,gparam.loops[i],U,temps[1:3])
+                trs[i] = tr(loopaction)
+                sg = (-gparam.βs[i]/gparam.NTRACE)*trs[i] #/2
+                #println("$i-th actions ",sg)
+                Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2       
+            end     
         end
 
-        return Sg,Sg/(-gparam.βs[1]/gparam.NTRACE)
+        return Sg,trs
         
     end
 

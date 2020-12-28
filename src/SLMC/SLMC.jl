@@ -1,4 +1,8 @@
 module SLMC
+    import ..Actions:GaugeActionParam_standard,
+                    GaugeActionParam,
+                    GaugeActionParam_autogenerator
+
     using LinearAlgebra
     mutable struct SLMC_data
         KdagK::Array{Float64,2}
@@ -54,16 +58,16 @@ module SLMC
         return slmc_betas
     end
 
-    function show_effbeta(s::SLMC_data)
-        effectiveterms = ["plaq"]
+    function show_effbeta(s::SLMC_data,effectiveterms)
+        #effectiveterms = ["plaq"]
         n = length(s.KdagY)
         be1=zeros(n)
         IsSucs=true
 
         try
             for i=1:n-1
-                print("#Estimation1 learning ")
-                print("$(effectiveterms[i]) only: ")
+                print("#Estimation$i learning ")
+                print("$(effectiveterms[1:i]) only: ")
                 be1 = make_beta(s,i)
                 #println("slmc_betas ",be1 )
                 for k = 1:length(be1)-1
@@ -79,5 +83,24 @@ module SLMC
         end
         return be1[2:end],be1[1],IsSucs
     end
+
+    function show_effbeta(s::SLMC_data)
+        effectiveterms = ["plaq"]
+        return show_effbeta(s,effectiveterms)
+    end
+
+    function show_effbeta(s::SLMC_data,gparam::GaugeActionParam)
+        
+        if typeof(gparam) == GaugeActionParam_autogenerator
+            effectiveterms = gparam.couplinglist
+            #println(gparam.couplinglist )
+        elseif typeof(gparam) == GaugeActionParam_standard
+            effectiveterms = ["plaq"]
+        else
+            error("error!")
+        end
+        return show_effbeta(s,effectiveterms)
+    end
+
 
 end
