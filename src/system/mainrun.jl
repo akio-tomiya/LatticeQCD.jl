@@ -8,7 +8,7 @@ module Mainrun
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
     import ..Smearing:gradientflow!
-    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!
+    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!
     import ..Wilsonloops:make_plaq
     import ..IOmodule:saveU,loadU,loadU!
@@ -113,8 +113,12 @@ module Mainrun
                 ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
                 i = 1
                 load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
-                measurements(0,univ.U,univ,meas) 
-                exit()
+                #measurements(0,univ.U,univ,meas) 
+                #save_binarydata(univ.U,"test_ildg")
+                #ildg = ILDG("test_ildg")
+                #load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
+                #measurements(0,univ.U,univ,meas) 
+                #exit()
             end
 
         elseif parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
@@ -177,7 +181,14 @@ module Mainrun
             # This actually loads files, and performs measurements
             elseif parameters.update_method == "Fileloading"
                 filename_i = filename_load[itrj+1]
-                loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+                if parameters.loadU_format == "JLD"
+                    loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+                elseif parameters.loadU_format == "ILDG"
+                    ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
+                    i = 1
+                    load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
+                end
+                #loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
 
             # SLHMC: Self-learing Hybrid Monte-Carlo
             # This uses gluonic effective action for MD
@@ -246,8 +257,13 @@ module Mainrun
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
                 itrjstring = lpad(itrjsavecount,8,"0")
-                filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
-                saveU(filename,univ.U)
+                if parameters.saveU_format == "JLD"
+                    filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
+                    saveU(filename,univ.U)
+                elseif parameters.saveU_format == "ILDG"
+                    filename = parameters.saveU_dir*"/conf_$(itrjstring).ildg"
+                    save_binarydata(univ.U,filename)
+                end
             end
 
             

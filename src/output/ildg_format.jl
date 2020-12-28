@@ -7,6 +7,24 @@ module ILDG_format
     import ..IOmodule:IOFormat
     import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields,set_wing!
 
+    struct LIME_header
+        doc::EzXML.Document
+        function LIME_header(L,field,version,precision) 
+            doc = XMLDocument()
+            elm = ElementNode("ildgFormat")
+            addelement!(elm, "version", "$version")
+            addelement!(elm, "field", "$field")
+            addelement!(elm, "precision", "$precision")
+            addelement!(elm, "lx", "$(L[1])")
+            addelement!(elm, "ly", "$(L[2])")
+            addelement!(elm, "lz", "$(L[3])")
+            addelement!(elm, "lt", "$(L[4])")
+            setroot!(doc, elm)
+            return new(doc)
+        end
+    end
+
+
     struct ILDG <: IOFormat
         header::Array{Dict,1}
         filename::String
@@ -19,6 +37,59 @@ module ILDG_format
 
     function Base.getindex(ildg::ILDG,i)
         return ildg.header[i]
+    end
+
+    function save_binarydata(U,filename)
+        
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NC = U[1].NC
+
+
+        #li = LIME_header((NX,NY,NZ,NT),"su3gauge",1,64)
+        #print(li.doc)
+        #write("test.xml", li.doc)
+
+
+        fp = open("testbin.dat","w")
+        i = 0
+        i = 0
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for μ=1:4
+                            for ic2 = 1:NC
+                                for ic1 = 1:NC
+                                    i+= 1
+                                    #rvalue = read(fp, floattype)
+                                    rvalue = real(U[μ][ic2,ic1,ix,iy,iz,it])
+                                    ivalue = imag(U[μ][ic2,ic1,ix,iy,iz,it])
+                                    write(fp,hton(rvalue))
+                                    write(fp,hton(ivalue))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        close(fp)
+
+        fp = open("filelist.dat","w")
+        #println(fp,"test.xml ","ildg-format")
+        println(fp,"testbin.dat ","ildg-binary-data")
+        close(fp)
+
+        lime_pack() do exe
+            run(`$exe filelist.dat $filename`)
+        end
+
+
+        return
+
     end
 
     function load_binarydata!(U,NX,NY,NZ,NT,NC,filename,precision)
@@ -154,7 +225,7 @@ module ILDG_format
             header = extract_info(contents_data)
             
         end
-        println(header)
+        #println(header)
         return header
     end
 

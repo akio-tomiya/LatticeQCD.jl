@@ -363,6 +363,7 @@ module Wizard
                 savetype = request("Choose a configuration format for saving",RadioMenu([
                         "no save",
                         "JLD",
+                        "ILDG",
                     ]))
                 if savetype == 2
                     system["saveU_format"] = "JLD"
@@ -370,6 +371,8 @@ module Wizard
                 elseif savetype == 1
                     system["saveU_format"] = nothing
                     system["saveU_dir"] = ""
+                elseif savetype == 3
+                    system["saveU_format"] = "ILDG"
                 end
 
                 if system["saveU_format"] ≠ nothing
