@@ -7,7 +7,7 @@ module CGmethods
     end
 
     function add!(Y,a,X) #Y + a*X -> Y
-        axpby!(a,X,Y) #X*a + Y -> Y
+        axpby!(a,X,1,Y) #X*a + Y -> Y
     end
 
     function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b

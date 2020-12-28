@@ -239,11 +239,54 @@ module MD
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_IntegratedHMC)
         @assert univ.quench == true "quench should be true!"
-        if Sfold == nothing            
+        if Sfold == nothing       
+            function debug2()  
+                gauss_distribution_fermi!(univ.η,univ.ranf)
+                WdagW2 = DdagD_operator(univ.U,univ.η,univ.fparam)
+                #mul!(univ.φ,WdagW2,univ.η)
+                cg(univ.φ,WdagW2,univ.η,eps = univ.fparam.eps,verbose = Verbose_3())
+                #set_wing_fermi!(univ.φ)
+                println(univ.φ*univ.φ)
+
+                NX = univ.η.NX
+                NY = univ.η.NY
+                NZ = univ.η.NZ
+                NT = univ.η.NT
+                NC = univ.η.NC
+
+                Nsize = NX*NY*NZ*NT*NC
+                xtest = zeros(ComplexF64,Nsize)
+                i = 0
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                for ic=1:NC
+                                    i += 1
+                                    xtest[i] = univ.η[ic,ix,iy,iz,it,1]
+                                end
+                            end
+                        end
+                    end
+                end
+
+
+                WdagW = make_WdagWmatrix(univ)
+                x2 = similar(xtest)
+                cg(x2,WdagW,xtest,eps = univ.fparam.eps,verbose = Verbose_3())
+                #x2 = WdagW*xtest
+                println(x2'*x2)
+
+
+
+                exit()
+            end
+            #debug2()
+            
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
-            Sfold = real(logdet(WdagW))
+            Sfold = -real(logdet(WdagW))
             #Uold = deepcopy(univ.U)
             if univ.Dirac_operator == "Staggered" 
                 if univ.fparam.Nf == 4
@@ -265,7 +308,7 @@ module MD
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
-        @time Sfnew = real(logdet(WdagW))
+        @time Sfnew = -real(logdet(WdagW))
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
                 Sfnew /= 2
@@ -352,11 +395,12 @@ module MD
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_IntegratedHB)
         @assert univ.quench == true "quench should be true!"
         @assert univ.NC == 2 "Only SU(2) is supported now."
-        if Sfold == nothing            
+        if Sfold == nothing           
+             
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
-            Sfold = real(logdet(WdagW))
+            Sfold = -real(logdet(WdagW))
             #Uold = deepcopy(univ.U)
             if univ.Dirac_operator == "Staggered" 
                 if univ.fparam.Nf == 4
@@ -378,7 +422,7 @@ module MD
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
-        @time Sfnew = real(logdet(WdagW))
+        @time Sfnew = -real(logdet(WdagW))
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
                 Sfnew /= 2
@@ -396,12 +440,12 @@ module MD
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLMC)
         @assert univ.quench == true "quench should be true!"
-        @assert univ.NC == 2 "Only SU(2) is supported now."
+        #@assert univ.NC == 2 "Only SU(2) is supported now."
         if Sfold == nothing            
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
-            Sfold = real(logdet(WdagW))
+            Sfold = -real(logdet(WdagW))
             #Uold = deepcopy(univ.U)
             if univ.Dirac_operator == "Staggered" 
                 if univ.fparam.Nf == 4
@@ -426,7 +470,7 @@ module MD
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
-        @time Sfnew = real(logdet(WdagW))
+        @time Sfnew = -real(logdet(WdagW))
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
                 Sfnew /= 2
@@ -444,11 +488,15 @@ module MD
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLHMC)
         @assert univ.quench == true "quench should be true!"
-        if Sfold == nothing            
+        if Sfold == nothing  
+            
+
+            
+
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
-            Sfold = real(logdet(WdagW))
+            Sfold = -real(logdet(WdagW))
             #Uold = deepcopy(univ.U)
             if univ.Dirac_operator == "Staggered" 
                 if univ.fparam.Nf == 4
@@ -475,7 +523,7 @@ module MD
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
-        @time Sfnew = real(logdet(WdagW))
+        @time Sfnew = -real(logdet(WdagW))
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
                 Sfnew /= 2

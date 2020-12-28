@@ -275,13 +275,161 @@ module Gaugefields
     end
 
 
-
-
-
     function set_wing!(u::Array{T,1}) where T <: GaugeFields
         for μ=1:4
             set_wing!(u[μ])
         end
+    end
+
+
+
+    function set_wing!(u::GaugeFields{T},ix,iy,iz,it) where T <: SUn
+        NT = u.NT
+        NY = u.NY
+        NZ = u.NZ
+        NX = u.NX
+        NDW = u.NDW
+
+        if T == SU3
+            NC = 3
+        elseif T == SU2
+            NC = 2
+        else
+            error("NC >3 is not supported")
+        end
+
+        function update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
+            for k2=1:NC
+                for k1=1:NC
+                    u[k1,k2,ixp,iyp,izp,itp] = u[k1,k2,ix,iy,iz,it]
+                end
+            end
+            return
+        end
+
+        isxwing = 0
+        isywing = 0
+        iszwing = 0
+        istwing = 0
+
+        if ix ≤ NDW
+            isxwing = 1
+        elseif ix ≥ NX + 1- NDW
+            isxwing = -1
+        end
+
+        if iy ≤ NDW
+            isywing = 1
+        elseif iy ≥ NY + 1- NDW
+            isywing = -1
+        end
+
+        if iz ≤ NDW
+            iszwing = 1
+        elseif iz ≥ NZ + 1- NDW
+            iszwing = -1
+        end
+
+        if it ≤ NDW
+            istwing = 1
+        elseif it ≥ NT + 1- NDW
+            istwing = -1
+        end
+
+        if isxwing == 0 && isywing == 0 && iszwing == 0 && istwing == 0
+            return
+        end
+
+
+        ixp = ix
+        iyp = iy
+        izp = iz
+        itp = it
+    
+        if isxwing == 1
+            ixp = NX+ix
+        elseif isxwing == -1
+            ixp = ix-NX
+        end
+
+        if isywing == 1
+            iyp = NY+iy
+        elseif isywing == -1
+            iyp = iy-NY
+        end
+
+        if iszwing == 1
+            izp = NZ+iz
+        elseif iszwing == -1
+            izp = iz-NZ
+        end
+
+        if istwing == 1
+            itp = NT+it
+        elseif istwing == -1
+            itp = it-NT
+        end
+
+        if isxwing != 0
+            update!(u,ixp,iy,iz,it,ix,iy,iz,it)
+
+            if isywing != 0
+                update!(u,ixp,iyp,iz,it,ix,iy,iz,it)
+                if iszwing != 0
+                    update!(u,ixp,iyp,izp,it,ix,iy,iz,it)
+
+                    if istwing != 0
+                        update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
+                    end
+                end
+                if istwing != 0
+                    update!(u,ixp,iyp,iz,itp,ix,iy,iz,it)
+                end
+            end
+            
+            if iszwing != 0
+                update!(u,ixp,iy,izp,it,ix,iy,iz,it)
+                if istwing != 0
+                    update!(u,ixp,iy,izp,itp,ix,iy,iz,it)
+                end
+            end
+            
+            if istwing != 0
+                update!(u,ixp,iy,iz,itp,ix,iy,iz,it)
+            end
+            
+        end
+
+        if isywing != 0
+            update!(u,ix,iyp,iz,it,ix,iy,iz,it)
+
+            if iszwing != 0
+                update!(u,ix,iyp,izp,it,ix,iy,iz,it)
+                if istwing != 0
+                    update!(u,ix,iyp,izp,itp,ix,iy,iz,it)
+                end
+            end
+
+            if istwing != 0
+                update!(u,ix,iyp,iz,itp,ix,iy,iz,it)
+            end
+        
+
+        end
+
+        if iszwing != 0
+            update!(u,ix,iy,izp,it,ix,iy,iz,it)
+            if istwing != 0
+                update!(u,ix,iy,izp,itp,ix,iy,iz,it)
+            end
+
+        end
+
+        if istwing != 0
+            update!(u,ix,iy,iz,itp,ix,iy,iz,it)
+        end
+
+
     end
 
     function set_wing!(u::GaugeFields{T}) where T <: SUn

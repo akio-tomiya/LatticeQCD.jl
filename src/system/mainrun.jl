@@ -79,6 +79,9 @@ module Mainrun
     end
 
     function run_core!(parameters,univ,mdparams,meas)
+
+        # If an algorithm uses fermion integration (trlog(D+m)),
+        # it is flagged
         if parameters.update_method == "IntegratedHMC" || 
                     parameters.update_method == "SLHMC" || 
                     parameters.update_method == "IntegratedHB" ||
@@ -127,7 +130,7 @@ module Mainrun
 
         numaccepts = 0
 
-        measurements(0,univ.U,univ,meas) # check consistency
+        measurements(0,univ.U,univ,meas) # check consistency of preparation.
         if parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
             itrj = 0
             itrjstring = lpad(itrj,8,"0")
@@ -142,7 +145,8 @@ module Mainrun
         end
         
         for itrj=1:Nsteps
-            
+            # Update for different updaters
+            # HMC: Hybrid Monte-Carlo
             if parameters.update_method == "HMC"
                 Hold = md_initialize!(univ)
 
@@ -151,8 +155,12 @@ module Mainrun
                 numaccepts += ifelse(accept,1,0)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
 
+            # Heatbath
             elseif parameters.update_method == "Heatbath"
                 @time heatbath!(univ)
+
+            # Integrated HMC
+            # HMC with S = -tr(log(D+m)), instead of the pseudo-fermins
             elseif parameters.update_method == "IntegratedHMC"
                 Sgold = md_initialize!(univ)
             
@@ -164,9 +172,15 @@ module Mainrun
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
+
+            # File loading
+            # This actually loads files, and performs measurements
             elseif parameters.update_method == "Fileloading"
                 filename_i = filename_load[itrj+1]
                 loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
+
+            # SLHMC: Self-learing Hybrid Monte-Carlo
+            # This uses gluonic effective action for MD
             elseif parameters.update_method == "SLHMC"
 
                 Sgold = md_initialize!(univ)
@@ -225,14 +239,9 @@ module Mainrun
                 numaccepts += ifelse(accept,1,0)
                 println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 Sfold = ifelse(accept,Sfnew,Sfold)
-            end
+            end# update end
 
             measurements(itrj,univ.U,univ,meas)
-
-
-            #dH = Sold -Snew
-
-            
 
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
