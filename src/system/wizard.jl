@@ -216,10 +216,10 @@ module Wizard
 
         if isexpert 
             SNC = request("Choose a gauge group",RadioMenu([
-                        "SU(2)",
                         "SU(3)",
+                        "SU(2)",
                     ]))
-            NC = ifelse(SNC == 1,2,3)
+            NC = ifelse(SNC == 1,3,2)
         else
             NC = 3
         end
