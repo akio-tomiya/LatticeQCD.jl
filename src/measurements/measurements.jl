@@ -150,15 +150,15 @@ module Measurements
                 fermiontype = method["fermiontype"] 
 
                 if method["methodname"] == "Plaquette"
-                    measurementfps[i] = open(measurement_dir*"/Plaquette.dat","w")
+                    measurementfps[i] = open(measurement_dir*"/Plaquette.txt","w")
                 elseif method["methodname"] == "Polyakov_loop"
-                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.dat","w")
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.txt","w")
                 elseif method["methodname"] == "Topological_charge"
-                    measurementfps[i] = open(measurement_dir*"/Topological_charge.dat","w")
+                    measurementfps[i] = open(measurement_dir*"/Topological_charge.txt","w")
                 elseif method["methodname"] == "Chiral_condensate" 
-                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.dat","w")
+                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","w")
                 elseif method["methodname"] == "Pion_correlator" 
-                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.dat","w")
+                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","w")
                 else
                     error("$(method["methodname"]) is not supported in measurement functions")
                 end

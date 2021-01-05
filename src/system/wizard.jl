@@ -168,7 +168,7 @@ module Wizard
         actions["couplinglist"] = []
         actions["couplingcoeff"] = []
 
-        filename = Base.prompt("put the name of the parameter file you make", default="parameters_used.jl")
+        filename = Base.prompt("put the name of the parameter file you make", default="my_parameters.jl")
 
         if isexpert 
             verboselevel = parse(Int64,Base.prompt("verbose level ?", default="2"))
