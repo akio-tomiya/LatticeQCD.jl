@@ -12,7 +12,8 @@ module Measurements
     import ..System_parameters:Params
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover
     import ..Diracoperators:Dirac_operator
-    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1
+    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+            print_verbose1,print_verbose2,print_verbose3
     import ..Smearing:gradientflow!
 
     #=
@@ -137,13 +138,30 @@ module Measurements
         nummeasurement::Int64
         fermions::Array{Measurement,1}
         measurement_methods::Array{Dict,1}
+        measurementfps::Array{IOStream,1}
 
-        function Measurement_set(univ::Universe;measurement_methods=defaultmeasures)
+        function Measurement_set(univ::Universe,measurement_dir;measurement_methods=defaultmeasures)
             nummeasurement = length(measurement_methods)
             fermions = Array{Measurement,1}(undef,nummeasurement)
+            measurementfps = Array{IOStream,1}(undef,nummeasurement)
             for i=1:nummeasurement
+ 
                 method = measurement_methods[i]
                 fermiontype = method["fermiontype"] 
+
+                if method["methodname"] == "Plaquette"
+                    measurementfps[i] = open(measurement_dir*"/Plaquette.dat","w")
+                elseif method["methodname"] == "Polyakov_loop"
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.dat","w")
+                elseif method["methodname"] == "Topological_charge"
+                    measurementfps[i] = open(measurement_dir*"/Topological_charge.dat","w")
+                elseif method["methodname"] == "Chiral_condensate" 
+                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.dat","w")
+                elseif method["methodname"] == "Pion_correlator" 
+                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.dat","w")
+                else
+                    error("$(method["methodname"]) is not supported in measurement functions")
+                end
 
                 if haskey(method,"eps")
                     eps = method["eps"]
@@ -245,40 +263,14 @@ module Measurements
         end
     end
 
-    struct Measurement_setold
-        numfermions::Int64
-        fermions::Dict{String,Measurement}
-        #fermions::Array{Measurement,1}
-        #fermiontypes::Array{String,1}
 
-        function Measurement_setold(p::Params,univ::Universe;fermionlist=["Wilson","Staggered"])
-
-            numfermions = length(fermionlist)
-            fermions = Dict{String,Measurement}()#Array{Measurement,1}(undef,numfermions)
-            #fermiontypes  =Array{String,1}(undef,numfermions)
-
-
-            for i=1:numfermions
-                fermiontype = fermionlist[i]
-                if fermiontype  == "Wilson"
-                    fparam = FermiActionParam_Wilson(p.hop_measurement,p.r_measurement,p.eps_measurement,
-                                fermiontype,p.MaxCGstep_measurement,p.quench)
-                elseif fermiontype == "Staggered"
-                    println("Measurement_set::mass_measurement = $(p.mass_measurement)")
-                    fparam = FermiActionParam_Staggered(p.mass_measurement,p.eps_measurement,
-                                fermiontype,p.MaxCGstep_measurement,p.quench,p.Nf)
-                else
-                    error("$fermiontype is not supported. Use Wilson or Staggered")
-                end
-                fermions[fermiontype] = Measurement(univ,fparam;Dirac_operator=fermiontype )
-            end
-            return new(numfermions,fermions)
-        end
-    end 
 
     function measurements(itrj,U,univ,measset::Measurement_set;verbose = Verbose_2())
+        plaq = 0.0
+        poly = 0.0 + 0.0im
         for i = 1:measset.nummeasurement
             method = measset.measurement_methods[i]
+            measfp = measset.measurementfps[i]
             #println(method)
             #println(method["measure_every"])
             if itrj % method["measure_every"] == 0
@@ -286,9 +278,11 @@ module Measurements
                 if method["methodname"] == "Plaquette"
                     plaq = calc_plaquette(U)
                     println_verbose1(verbose,"$itrj $plaq # plaq")
+                    println(measfp,"$itrj $plaq # plaq")
                 elseif method["methodname"] == "Polyakov_loop"
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
+                    println(measfp,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
                     Nflowsteps = 1
                     eps_flow = 0.01
@@ -306,6 +300,7 @@ module Measurements
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
                     println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                    println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     flush(stdout)
                     
 
@@ -317,23 +312,25 @@ module Measurements
                         #@time Q = calc_topological_charge(Usmr)
                         τ = iflow*eps_flow*Nflowsteps
                         println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                        println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                         if iflow%10 == 0
                             flush(stdout)
                         end
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
-                    measure_chiral_cond(univ,measset.fermions[i],itrj,verbose = verbose )
+                    measure_chiral_cond(univ,measset.fermions[i],itrj,verbose,measfp)
                 elseif method["methodname"] == "Pion_correlator" 
                     #fermiontype = method["fermiontype"]
                     #calc_pion_correlator(univ,measset.fermions[i])
-                    measure_correlator(univ,measset.fermions[i],itrj)
+                    measure_correlator(univ,measset.fermions[i],itrj,verbose)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
                 println_verbose1(verbose,"-----------------")
             end
         end
+        return plaq,poly
     end
 
 
@@ -565,7 +562,7 @@ module Measurements
         flush(stdout)
     end
 
-    function calc_quark_propagators_point_source_each(M,meas,i,NC)
+    function calc_quark_propagators_point_source_each(M,meas,i,NC,verbose)
         # calculate D^{-1} for a given source at the origin.
         # Nc*4 elements has to be gathered.
         b = similar(meas._temporal_fermi2[1]) # source is allocated
@@ -574,25 +571,28 @@ module Measurements
         clear!(b)
         is = ((i-1) % 4)+1 # spin index 
         ic = ((i-is) ÷ 4)+ 1 # color index
-        println("$ic $is")
+        println_verbose1(verbose,"$ic $is")
+        #println("$ic $is")
         b[ic,1,1,1,1,is]=1 # source at the origin
 
         @time bicg(p,M,b) # solve Mp=b, we get p=M^{-1}b
 
         #@time cg0!(k,b,1, univ.U, meas._temporal_gauge, meas._temporal_fermi1, meas.fparam) # k[x] = M^{-1}b[0]
-        println("Hadron spectrum: Inversion $(i)/$(NC*4) is done")
+        println_verbose1(verbose,"Hadron spectrum: Inversion $(i)/$(NC*4) is done")
+        #println("Hadron spectrum: Inversion $(i)/$(NC*4) is done")
         flush(stdout)
         return p
     end
 
-    function calc_quark_propagators_point_source(D,meas,NC)
+    function calc_quark_propagators_point_source(D,meas,NC,verbose)
         # D^{-1} for each spin x color element
-        propagators = map(i -> calc_quark_propagators_point_source_each(D,meas,i,NC),1:NC*4)
+        propagators = map(i -> calc_quark_propagators_point_source_each(D,meas,i,NC,verbose),1:NC*4)
         return propagators
     end
 
-    function calc_pion_correlator(univ::Universe,meas::Measurement)
-        println("Hadron spectrum started")
+    function calc_pion_correlator(univ::Universe,meas::Measurement,verbose)
+        println_verbose1(verbose,"Hadron spectrum started")
+        #println("Hadron spectrum started")
         #U = univ._temporal_gauge
         #if univ.NC != 3
         #    error("not implemented yet for calc_pion_correlator")
@@ -607,7 +607,7 @@ module Measurements
         S = zeros(ComplexF64, (univ.NX,univ.NY,univ.NZ,univ.NT, 4*univ.NC, 4*univ.NC) )
 
         # calculate quark propagators from a point source at he origin
-        propagators = calc_quark_propagators_point_source(M,meas,univ.NC)
+        propagators = calc_quark_propagators_point_source(M,meas,univ.NC,verbose)
 
         #ctr = 0 # a counter
         for ic=1:univ.NC
@@ -645,7 +645,8 @@ module Measurements
         end
         # contruction end.
 
-        println("Hadron spectrum: Reconstruction")
+        println_verbose1(verbose,"Hadron spectrum: Reconstruction")
+        #println("Hadron spectrum: Reconstruction")
         Cpi = zeros( univ.NT )
         # Construct Pion propagator 
         for t=1:univ.NT
@@ -671,17 +672,22 @@ module Measurements
             end
             Cpi[t] = real(tmp)
         end
-        println("Hadron spectrum end")
+        #println(typeof(verbose),"\t",verbose)
+        println_verbose1(verbose,"Hadron spectrum end")
+        #println("Hadron spectrum end")
         return Cpi
     end
-    function measure_correlator(univ::Universe,meas::Measurement,itrj)
-        C = calc_pion_correlator(univ,meas)
-        print("$itrj ")
+    function measure_correlator(univ::Universe,meas::Measurement,itrj,verbose)
+        C = calc_pion_correlator(univ,meas,verbose)
+        print_verbose1(verbose,"$itrj ")
+        #print("$itrj ")
         for it=1:length(C)
             cc = C[it]
-            print("$cc ")
+            print_verbose1(verbose,"$cc ")
+            #print("$cc ")
         end
-        println("#pioncorrelator")
+        println_verbose1(verbose,"#pioncorrelator")
+        #println("#pioncorrelator")
     end
     #topological charge
     function epsilon_tensor(mu::Int,nu::Int,rho::Int,sigma::Int) 

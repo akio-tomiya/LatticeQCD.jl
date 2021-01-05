@@ -157,6 +157,8 @@ module Wizard
             isexpert = true
         end
 
+        
+
     
 
         system = Dict()
@@ -516,10 +518,42 @@ module Wizard
             end
         end
 
+
+
         #measurement["measurement_methods"] = nothing
         #if nummeasurements ≠ 0
         measurement["measurement_methods"] = measurement_methods
         #end
+
+        
+        L = system["L"]
+        headername = system["update_method"]*"_L"*string(L[1],pad=2)*string(L[2],pad=2)*string(L[3],pad=2)*string(L[4],pad=2)*"_beta"*string(system["β"])
+
+        if system["update_method"] == "HMC"
+            if system["quench"] == true
+                headername *= "_quenched"
+            else
+                headername *= "_"*system["Dirac_operator"]
+            end
+        elseif system["update_method"] == "Heatbath"
+            headername *= "_quenched"
+        else
+            if system["Dirac_operator"] != nothing
+                headername *= "_"*system["Dirac_operator"]
+            else
+            end
+        end
+
+        if nummeasurements != 0
+            measurement["measurement_basedir"] = String(Base.prompt("base directory for measurements", default="./measurements"))
+            measurement["measurement_dir"] = String(Base.prompt("directory for measurements in $(measurement["measurement_basedir"])/", default=headername))
+        else
+            #measurement["measurement_basedir"] = ""
+            #measurement["measurement_dir"] = ""
+        end
+
+        system["log_dir"] = String(Base.prompt("log directory", default="./logs"))
+        system["logfile"] = String(Base.prompt("logfile name", default=headername*".txt"))
 
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
 

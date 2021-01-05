@@ -18,24 +18,32 @@ module Mainrun
     import ..Actions:GaugeActionParam_standard,
                     GaugeActionParam,
                     GaugeActionParam_autogenerator
+    import ..Verbose_print:println_verbose1,println_verbose2
 
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
 
-    function run_LQCD(filename::String)
+    function run_LQCD()
+        run_LQCD(filenamein="",isdemo=true)
+    end
 
+    function run_LQCD(filenamein::String;isdemo=false)
 
-
+        if isdemo 
+            filename = "./parameters_demo.jl"
+        else
+            filename = filenamein
+        end
         include(pwd()*"/"*filename)
+
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
 
-
-
-        
-        run_LQCD(params_set)
+        run_LQCD(params_set;isdemo=isdemo)
     end
 
 
+
+    #=
     function run_LQCD()
         parameters = parameterloading()
 
@@ -46,6 +54,7 @@ module Mainrun
         run_LQCD!(univ,parameters)
         return 
     end
+    =#
 
     function run_LQCD(parameters::Params)
         univ = Universe(parameters)
@@ -54,32 +63,38 @@ module Mainrun
         return 
     end
 
-    function run_LQCD(params_set::Params_set)
+    function run_LQCD(params_set::Params_set;isdemo=false)
         parameters = parameterloading(params_set)
         univ = Universe(parameters)
-        run_LQCD!(univ,parameters)
+        run_LQCD!(univ,parameters;isdemo=isdemo)
 
         return 
     end
 
-    function run_LQCD!(univ::Universe,parameters::Params)
-        println("# ",pwd())
-        println("# ",Dates.now())
+    function run_LQCD!(univ::Universe,parameters::Params;isdemo=false)
+        verbose = univ.kind_of_verboselevel
+        #println("# ",pwd())
+        #println("# ",Dates.now())
+        println_verbose1(verbose,"# ",pwd())
+        println_verbose1(verbose,"# ",Dates.now())
 
-        show_parameters(univ)
+        #show_parameters(univ)
 
 
         mdparams = construct_MD_parameters(parameters)
 
-        measset = Measurement_set(univ,measurement_methods=parameters.measurement_methods)
+        measset = Measurement_set(univ,parameters.measuredir,measurement_methods=parameters.measurement_methods)
 
-        run_core!(parameters,univ,mdparams,measset)
+        run_core!(parameters,univ,mdparams,measset;isdemo=isdemo)
 
 
     end
 
-    function run_core!(parameters,univ,mdparams,meas)
 
+
+
+    function run_core!(parameters,univ,mdparams,meas;isdemo=false)
+        
         # If an algorithm uses fermion integration (trlog(D+m)),
         # it is flagged
         if parameters.update_method == "IntegratedHMC" || 
@@ -90,12 +105,14 @@ module Mainrun
         else
             isIntegratedFermion = false
         end
+        verbose = univ.kind_of_verboselevel
 
 
 
         Nsteps = parameters.Nsteps
         if parameters.update_method == "Fileloading"
-            println("load U from ",parameters.loadU_dir)
+            #println("load U from ",parameters.loadU_dir)
+            println_verbose1(verbose,"load U from ",parameters.loadU_dir)
             if parameters.loadU_format == "JLD"
                 filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
             elseif parameters.loadU_format == "ILDG"
@@ -104,7 +121,8 @@ module Mainrun
             #filename = filter(f -> isfile(f), readdir("./$(parameters.loadU_dir)"))
             #println(filename)
             numfiles = length(filename_load)
-            println("Num of files = $numfiles")
+            println_verbose1(verbose,"Num of files = $numfiles")
+            #println("Num of files = $numfiles")
             Nsteps = numfiles-1
             filename_i = filename_load[1]
             if parameters.loadU_format == "JLD"
@@ -113,12 +131,7 @@ module Mainrun
                 ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
                 i = 1
                 load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
-                #measurements(0,univ.U,univ,meas) 
-                #save_binarydata(univ.U,"test_ildg")
-                #ildg = ILDG("test_ildg")
-                #load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
-                #measurements(0,univ.U,univ,meas) 
-                #exit()
+
             end
 
         elseif parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
@@ -134,13 +147,13 @@ module Mainrun
 
         numaccepts = 0
 
-        measurements(0,univ.U,univ,meas) # check consistency of preparation.
+        plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
         if parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
             itrj = 0
             itrjstring = lpad(itrj,8,"0")
             itrjsavecount = 0
-
-            println("save gaugefields U every $(parameters.saveU_every) trajectory")
+            println_verbose1(verbose,"save gaugefields U every $(parameters.saveU_every) trajectory")
+            #println("save gaugefields U every $(parameters.saveU_every) trajectory")
         end
 
 
@@ -157,7 +170,8 @@ module Mainrun
                 @time Hnew = md!(univ,mdparams)
                 accept = metropolis_update!(univ,Hold,Hnew)
                 numaccepts += ifelse(accept,1,0)
-                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                println_verbose1(verbose,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
 
             # Heatbath
             elseif parameters.update_method == "Heatbath"
@@ -173,7 +187,9 @@ module Mainrun
                 Snew = Sgnew + Sfnew
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
-                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                println_verbose1(verbose,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
 
@@ -215,7 +231,8 @@ module Mainrun
                 Snew = Sgnew + Sfnew -Sgeffnew
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
-                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                println_verbose1(verbose,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 
                 Sfold = ifelse(accept,Sfnew,Sfold)
             end
@@ -238,8 +255,10 @@ module Mainrun
                 βeffs,Econst,IsSucs = show_effbeta(slmc_data,univ.gparam)
                 #βeffs,Econst,IsSucs = show_effbeta(slmc_data)
 
-                println("#S = ",outputdata)
-                println("#Estimated Seff = ",Econst + sum(βeffs[:].*plaqetc[:])*slmc_data.factor)
+                println_verbose1(verbose,"#S = ",outputdata)
+                #println("#S = ",outputdata)
+                println_verbose1(verbose,"#Estimated Seff = ",Econst + sum(βeffs[:].*plaqetc[:])*slmc_data.factor)
+                #println("#Estimated Seff = ",Econst + sum(βeffs[:].*plaqetc[:])*slmc_data.factor)
                 if IsSucs && itrj ≥ parameters.firstlearn 
                     #mdparams.βeff = βeffs[1]
                     mdparams.βeff = βeffs[:]
@@ -248,11 +267,12 @@ module Mainrun
 
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
-                println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                println_verbose1(verbose,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+                #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
                 Sfold = ifelse(accept,Sfnew,Sfold)
             end# update end
 
-            measurements(itrj,univ.U,univ,meas)
+            plaq,poly = measurements(itrj,univ.U,univ,meas;verbose = univ.kind_of_verboselevel)
 
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
@@ -266,8 +286,8 @@ module Mainrun
                 end
             end
 
-            
-            println("-------------------------------------")
+            println_verbose1(verbose,"-------------------------------------")
+            #println("-------------------------------------")
             flush(stdout)
         end
         return

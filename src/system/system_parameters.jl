@@ -151,6 +151,10 @@ module System_parameters
         update_method::String
         βeff::Union{Float64,Array{Float64,1}}
         firstlearn::Int64
+        log_dir::String
+        logfile::String
+        load_fp::IOStream
+        measuredir::String
 
 
 
@@ -372,6 +376,38 @@ module System_parameters
                 loadU_dir = "."
             end
 
+            if haskey(system,"log_dir")
+                log_dir = system["log_dir"]
+                if isdir(log_dir) == false
+                    mkdir(log_dir)
+                end
+            else
+                error("system[\"log_dir\"] should be set")
+            end
+
+            if haskey(system,"logfile")
+                logfile = pwd()*"/"*log_dir*"/"*system["logfile"]
+            else
+                error("system[\"logfile\"] should be set")
+            end
+            load_fp = open(logfile,"w")
+
+
+            if haskey(measurement,"measurement_basedir")
+                measurement_basedir = measurement["measurement_basedir"]
+            else
+                measurement_basedir = "nothing"
+            end
+
+            if haskey(measurement,"measurement_dir")
+                measurement_dir = measurement["measurement_dir"]
+            else
+                measurement_dir = "nothing"
+            end
+            measuredir = pwd()*"/"*measurement_basedir*"/"*measurement_dir
+
+
+
             
             return new(
                 L,# = system["L"] #::Tuple  = (2,2,2,2) # Mandatory
@@ -410,7 +446,11 @@ module System_parameters
                 loadU_dir,
                 update_method,
                 βeff,
-                firstlearn
+                firstlearn,
+                log_dir,
+                logfile,
+                load_fp,
+                measuredir
             )
 
         end
@@ -448,18 +488,23 @@ module System_parameters
         return
     end
 
-    function print_parameters(params_set::Params_set)
+    function print_parameters(params_set::Params_set,p)
         #(system,actions,md,cg,wilson,staggered,measurement)
         fp = open("parameters_used.jl","w")
+        fp2 = p.load_fp
         println(fp,"# - - parameters - - - - - - - - - - - ")
+        println(fp2,"# - - parameters - - - - - - - - - - - ")
         println("# - - parameters - - - - - - - - - - - ")
+        
         for (name,key) in params_set.system
             if typeof(key) == String
                 println("system[\"$name\"] = \"$key\"")
                 println(fp,"system[\"$name\"] = \"$key\"")
+                println(fp2,"system[\"$name\"] = \"$key\"")
             else
                 println("system[\"$name\"] = $key")
                 println(fp,"system[\"$name\"] = $key")
+                println(fp2,"system[\"$name\"] = $key")
             end
         end
 
@@ -467,9 +512,11 @@ module System_parameters
             if typeof(key) == String
                 println("actions[\"$name\"] = \"$key\"")
                 println(fp,"actions[\"$name\"] = \"$key\"")
+                println(fp2,"actions[\"$name\"] = \"$key\"")
             else
                 println("actions[\"$name\"] = $key")
                 println(fp,"actions[\"$name\"] = $key")
+                println(fp2,"actions[\"$name\"] = $key")
             end
         end
 
@@ -477,9 +524,11 @@ module System_parameters
             if typeof(key) == String
                 println("md[\"$name\"] = \"$key\"")
                 println(fp,"md[\"$name\"] = \"$key\"")
+                println(fp2,"md[\"$name\"] = \"$key\"")
             else
                 println("md[\"$name\"] = $key")
                 println(fp,"md[\"$name\"] = $key")
+                println(fp2,"md[\"$name\"] = $key")
             end
         end
 
@@ -487,9 +536,11 @@ module System_parameters
             if typeof(key) == String
                 println("cg[\"$name\"] = \"$key\"")
                 println(fp,"cg[\"$name\"] = \"$key\"")
+                println(fp2,"cg[\"$name\"] = \"$key\"")
             else
                 println("cg[\"$name\"] = $key")
                 println(fp,"cg[\"$name\"] = $key")
+                println(fp2,"cg[\"$name\"] = $key")
             end
         end
 
@@ -498,9 +549,11 @@ module System_parameters
             if typeof(key) == String
                 println("wilson[\"$name\"] = \"$key\"")
                 println(fp,"wilson[\"$name\"] = \"$key\"")  
+                println(fp2,"wilson[\"$name\"] = \"$key\"")  
             else
                 println("wilson[\"$name\"] = $key")
                 println(fp,"wilson[\"$name\"] = $key")
+                println(fp2,"wilson[\"$name\"] = $key")
             end
         end
 
@@ -509,9 +562,11 @@ module System_parameters
             if typeof(key) == String
                 println("staggered[\"$name\"] = \"$key\"")
                 println(fp,"staggered[\"$name\"] = \"$key\"")
+                println(fp2,"staggered[\"$name\"] = \"$key\"")
             else
                 println("staggered[\"$name\"] = $key")
                 println(fp,"staggered[\"$name\"] = $key")
+                println(fp2,"staggered[\"$name\"] = $key")
             end
         end
 
@@ -519,14 +574,17 @@ module System_parameters
             if typeof(key) == String
                 println("measurement[\"$name\"] = \"$key\"")
                 println(fp,"measurement[\"$name\"] = \"$key\"")
+                println(fp2,"measurement[\"$name\"] = \"$key\"")
             else
                 println("measurement[\"$name\"] = $key")
                 println(fp,"measurement[\"$name\"] = $key")
+                println(fp2,"measurement[\"$name\"] = $key")
             end
         end
 
         println("# - - - - - - - - - - - - - - - - - - -")
         println(fp,"# - - - - - - - - - - - - - - - - - - -")
+        println(fp2,"# - - - - - - - - - - - - - - - - - - -")
         close(fp)
 
         println("""
@@ -684,7 +742,7 @@ module System_parameters
         p = Params(param_set)
         Random.seed!(p.randomseed)
 
-        print_parameters(param_set)
+        print_parameters(param_set,p)
         return p
     end
 
@@ -696,7 +754,7 @@ module System_parameters
         p = Params(param_set)
         Random.seed!(p.randomseed)
         
-        print_parameters(param_set)
+        print_parameters(param_set,p)
         return p
     end
 

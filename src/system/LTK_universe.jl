@@ -32,6 +32,7 @@ module LTK_universe
     import ..IOmodule:loadU
 
 
+
     """
     Your universe is described in this type.
     """
@@ -177,8 +178,7 @@ module LTK_universe
             end
         end
 
-
-        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel)
+        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp)
 
     end
 
@@ -261,17 +261,17 @@ module LTK_universe
     end
 
 
-    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel)
+    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel,load_fp)
         #(L::Tuple,gparam::GaugeActionParam;
         #   Nwing = 1,fparam=nothing,
         #  BoundaryCondition=[1,1,1,-1],initial="cold",NC =3)
 
         if verboselevel == 1
-            kind_of_verboselevel = Verbose_1()
+            kind_of_verboselevel = Verbose_1(load_fp)
         elseif verboselevel == 2
-            kind_of_verboselevel = Verbose_2()
+            kind_of_verboselevel = Verbose_2(load_fp)
         elseif verboselevel == 3
-            kind_of_verboselevel = Verbose_3()
+            kind_of_verboselevel = Verbose_3(load_fp)
         end
 
 
