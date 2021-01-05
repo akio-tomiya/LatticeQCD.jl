@@ -395,12 +395,18 @@ module System_parameters
 
             if haskey(measurement,"measurement_basedir")
                 measurement_basedir = measurement["measurement_basedir"]
+                if isdir(measurement_basedir) == false
+                    mkdir(measurement_basedir)
+                end
             else
                 measurement_basedir = "nothing"
             end
 
             if haskey(measurement,"measurement_dir")
                 measurement_dir = measurement["measurement_dir"]
+                if isdir(measurement_dir) == false
+                    mkdir(measurement_dir)
+                end
             else
                 measurement_dir = "nothing"
             end
