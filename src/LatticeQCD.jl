@@ -1,4 +1,5 @@
 module LatticeQCD
+    include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
     include("./fermions/cgmethod.jl")
     include("./autostaples/wilsonloops.jl")

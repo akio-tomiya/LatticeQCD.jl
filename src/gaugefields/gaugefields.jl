@@ -1826,6 +1826,35 @@ c-----------------------------------------------------c
         end
     end
 
+    function projlink!(vout::SUNGaugeFields_1d,vin::SUNGaugeFields_1d)
+        NC = vout.NC
+        fac1N = 1/NC
+        nv = vin.NV
+
+        for i=1:nv
+            tri = 0.0
+            for k=1:NC
+                tri += imag(vin[k,k,i])
+            end
+            tri *= fac1N
+            for k=1:NC
+                vout[k,k,i] = (imag(vin[k,k,i])-tri)*im
+            end
+
+        end
+
+        for i=1:nv
+            for k1=1:NC
+                for k2=k1+1:NC
+                    vv = 0.5*(vin[k1,k2,i] - conj(vin[k2,k1,i]))
+                    vout[k1,k2,i] = vv
+                    vout[k2,k1,i] = -conj(vv)
+                end
+            end
+            
+        end
+    end
+
     """
     c-----------------------------------------------------c
     c     !!!!!   vin and vout should be different vectors

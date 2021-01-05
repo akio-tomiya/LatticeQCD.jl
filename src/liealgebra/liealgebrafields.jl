@@ -2,7 +2,9 @@ module LieAlgebrafields
     using Random
     using LinearAlgebra
     import ..Gaugefields:SU3GaugeFields,SU3GaugeFields_1d,SU2GaugeFields,SU2GaugeFields_1d,GaugeFields,
-        GaugeFields_1d,make_staple_double!,substitute!,projlink!,set_wing!, evaluate_wilson_loops!,muladd!
+        GaugeFields_1d,make_staple_double!,substitute!,projlink!,set_wing!, evaluate_wilson_loops!,muladd!,
+        SUNGaugeFields_1d,SUNGaugeFields
+    import ..SUN_generator:Generator,lie2matrix!,matrix2lie!
     import ..Gaugefields
     import ..Actions:GaugeActionParam_autogenerator
     import ..Wilsonloops:make_plaq_staple_prime,make_plaq_staple
@@ -49,12 +51,15 @@ module LieAlgebrafields
         NT::Int64
         NC::Int64
         NumofBasis::Int64
+        generators::Generator
 
         function SUNAlgebraFields(NC,NX,NY,NZ,NT)
             NumofBasis = NC^2-1
-            return new(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis)
+            generators = Generator(NC)
+            return new(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis,generators)
         end
     end
+
 
     function Base.setindex!(x::LieAlgebraFields,v,i...) 
         x.a[i...] = v
@@ -152,6 +157,25 @@ module LieAlgebrafields
         return s
     end
 
+        
+    function Base.:*(x::T,y::T) where T <: LieAlgebraFields
+        n1,n2,n3,n4,n5 = size(x.a)
+        s = 0
+        for i5=1:n5
+            for i4=1:n4
+                for i3=1:n3
+                    for i2=1:n2
+                        for i1=1:n1
+                            s += x.a[i1,i2,i3,i4,i5]*y.a[i1,i2,i3,i4,i5]
+                        end
+                    end
+                end
+            end
+        end
+        return s
+    end
+
+
     function Base.:*(x::SU3AlgebraFields,y::SU3AlgebraFields)
         n1,n2,n3,n4,n5 = size(x.a)
         s = 0
@@ -185,6 +209,7 @@ module LieAlgebrafields
         end
         return s
     end
+
 
     function add!(a::LieAlgebraFields,α,b::LieAlgebraFields)
         n1,n2,n3,n4,n5 = size(a.a)
@@ -302,6 +327,41 @@ module LieAlgebrafields
 
     end
 
+    function Gauge2Lie!(c::SUNAlgebraFields,x::SUNGaugeFields)
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        g = c.generators
+        NC = c.NC
+        matrix = zeros(ComplexF64,NC,NC)
+        a = zeros(Float64,length(g))
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for k2=1:NC
+                            for k1=1:NC
+                                matrix[k1,k2] =  x[k1,k2,ix,iy,iz,it]
+                            end
+                        end
+
+                        matrix2lie!(a,g,matrix)
+                        for k = 1:length(g)
+                            c[k,ix,iy,iz,it] = a[k]
+                        end
+
+                    end
+                end
+
+            end
+
+        end
+
+
+    end
+
 
     function Gauge2Lie!(c::SU3AlgebraFields,x::SU3GaugeFields_1d)
         NX = c.NX
@@ -368,6 +428,44 @@ module LieAlgebrafields
                         c[1,ix,iy,iz,it] = (imag(x12)+imag(x21))
                         c[2,ix,iy,iz,it] = (real(x12)-real(x21))
                         c[3,ix,iy,iz,it] = (imag(x11)-imag(x22))
+
+                    end
+                end
+
+            end
+
+        end
+
+
+    end
+
+    function Gauge2Lie!(c::SUNAlgebraFields,x::SUNGaugeFields_1d)
+        NX = c.NX
+        NY = c.NY
+        NZ = c.NZ
+        NT = c.NT
+
+        g = c.generators
+        NC = c.NC
+        matrix = zeros(ComplexF64,NC,NC)
+        a = zeros(Float64,length(g))
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i = (((it-1)*NX+iz-1)*NY+iy-1)*NX+ix 
+
+                        for k2=1:NC
+                            for k1=1:NC
+                                matrix[k1,k2] =  x[k1,k2,i]
+                            end
+                        end
+
+                        matrix2lie!(a,g,matrix)
+                        for k = 1:length(g)
+                            c[k,ix,iy,iz,it] = a[k]
+                        end
 
                     end
                 end
@@ -539,6 +637,36 @@ module LieAlgebrafields
                         v[1,2,icum] = im*a1 + a2
                         v[2,1,icum] = im*a1 - a2
                         v[2,2,icum] = cos(R) - im*a3
+                    end
+                end
+            end
+        end
+
+    end
+
+    function expA!(v::SUNGaugeFields_1d ,u::SUNAlgebraFields,temp1,temp2)   
+        g = u.generators
+        
+
+        NX=u.NX
+        NY=u.NY
+        NZ=u.NZ
+        NT=u.NT
+        NC=u.NC
+        u0 = zeros(ComplexF64,NC,NC)
+        a = zeros(Float64,length(g))
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        icum = (((it-1)*NX+iz-1)*NY+iy-1)*NX+ix  
+                        for k=1:length(a)
+                            a[k] = u[k,ix,iy,iz,it]
+                        end
+
+                        lie2matrix!(u0,g,a)
+                        v[:,:,icum] = exp(u0)
                     end
                 end
             end
