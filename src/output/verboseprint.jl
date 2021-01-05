@@ -23,6 +23,12 @@ module Verbose_print
         Verbose_1(fp::IOStream) = new(fp)
     end
 
+    function Base.flush(v::Verbose_level)
+        if v.fp != nothing
+            flush(v.fp)
+        end
+    end
+
 
 
     function println_verbose1(v::Verbose_3,val...)

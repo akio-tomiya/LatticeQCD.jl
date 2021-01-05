@@ -289,6 +289,7 @@ module Mainrun
             println_verbose1(verbose,"-------------------------------------")
             #println("-------------------------------------")
             flush(stdout)
+            flush(verbose)
         end
         return
     end
