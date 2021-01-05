@@ -405,13 +405,16 @@ module Heatbath
                             end
 
                             #println("#Heatbath for one SU(3) link started")
-                            for l=1:NC-1
+                            for l=1:NC
                             
 
                                 UV = u[mu][:,:,ix,iy,iz,it]*V
 
-                                n = l
-                                m = l+1
+                                n = rand(1:NC)#l
+                                m = rand(1:NC)
+                                while(n==m)
+                                    m = rand(1:NC)
+                                end
 
 
                                 S = make_submatrix(UV,n,m)
