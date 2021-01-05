@@ -679,7 +679,7 @@ module Measurements
         #println("Hadron spectrum end")
         return Cpi
     end
-    function measure_correlator(univ::Universe,meas::Measurement,itrj,verbose,measfp)
+    function measure_correlator(univ::Universe,meas::Measurement,itrj,measfp,verbose)
         C = calc_pion_correlator(univ,meas,verbose)
         print_verbose1(verbose,"$itrj ")
         print(measfp,"$itrj ")
