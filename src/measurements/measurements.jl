@@ -532,7 +532,7 @@ module Measurements
         return ic-1 + (is-1)*univ.NC + 1
     end
 
-    function calc_chiral_cond(univ::Universe,meas,Nr = 10, verbose = Verbose_2())
+    function calc_chiral_cond(univ::Universe,meas,Nr = 10, verbose = Verbose_2(),measfp)
         #error("calc_chiral_cond is not implemented!")
         #
         # pbp = (1/Nr) Σ_i p_i
@@ -552,13 +552,14 @@ module Measurements
             bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
             tmp = r*p # hemitian inner product
             println_verbose2(verbose,"$(real(tmp)/univ.NV) # chiralcond $ir")
+            println(measfp,"$(real(tmp)/univ.NV) # chiralcond $ir")
             pbp+=tmp 
         end
         return real(pbp/Nr)/univ.NV
     end
-    function measure_chiral_cond(univ::Universe,meas::Measurement,itrj;verbose = Verbose_2())
+    function measure_chiral_cond(univ::Universe,meas::Measurement,itrj;verbose = Verbose_2(),measfp)
         Nr = 10
-        pbp = calc_chiral_cond(univ,meas,Nr,verbose)
+        pbp = calc_chiral_cond(univ,meas,Nr,verbose,measfp)
         println_verbose1(verbose,"$itrj $pbp # pbp")
         flush(stdout)
     end
@@ -592,7 +593,7 @@ module Measurements
     end
 
     function calc_pion_correlator(univ::Universe,meas::Measurement,verbose)
-        println_verbose1(verbose,"Hadron spectrum started")
+        println_verbose2(verbose,"Hadron spectrum started")
         #println("Hadron spectrum started")
         #U = univ._temporal_gauge
         #if univ.NC != 3
@@ -646,7 +647,7 @@ module Measurements
         end
         # contruction end.
 
-        println_verbose1(verbose,"Hadron spectrum: Reconstruction")
+        println_verbose2(verbose,"Hadron spectrum: Reconstruction")
         #println("Hadron spectrum: Reconstruction")
         Cpi = zeros( univ.NT )
         # Construct Pion propagator 
@@ -674,21 +675,21 @@ module Measurements
             Cpi[t] = real(tmp)
         end
         #println(typeof(verbose),"\t",verbose)
-        println_verbose1(verbose,"Hadron spectrum end")
+        println_verbose2(verbose,"Hadron spectrum end")
         #println("Hadron spectrum end")
         return Cpi
     end
-    function measure_correlator(univ::Universe,meas::Measurement,itrj,verbose)
+    function measure_correlator(univ::Universe,meas::Measurement,itrj,verbose,measfp)
         C = calc_pion_correlator(univ,meas,verbose)
         print_verbose1(verbose,"$itrj ")
-        #print("$itrj ")
+        print(measfp,"$itrj ")
         for it=1:length(C)
             cc = C[it]
             print_verbose1(verbose,"$cc ")
-            #print("$cc ")
+            print(measfp,"$cc ")
         end
         println_verbose1(verbose,"#pioncorrelator")
-        #println("#pioncorrelator")
+        println(measfp,"#pioncorrelator")
     end
     #topological charge
     function epsilon_tensor(mu::Int,nu::Int,rho::Int,sigma::Int) 
