@@ -90,7 +90,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - Momentum projected pion correlator (Wilson fermion)
   - <s>Topological charge with the Wilson flow (plaquette and clover definition)</s>   (Not well tested)
 - I/O for configurations
-  - <s>ILDG format</s> (This will be supported)
+  - ILDG format
   - JLD format (Defoult binary file for Julia, one of HDF5)
 
 Many of smearing and improved fermion actions and parallelazation have not supported yet.
