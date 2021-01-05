@@ -404,8 +404,8 @@ module System_parameters
 
             if haskey(measurement,"measurement_dir")
                 measurement_dir = measurement["measurement_dir"]
-                if isdir(measurement_dir) == false
-                    mkdir(measurement_dir)
+                if isdir(pwd()*"/"*measurement_basedir*"/"*measurement_dir) == false
+                    mkdir(pwd()*"/"*measurement_basedir*"/"*measurement_dir)
                 end
             else
                 measurement_dir = "nothing"
