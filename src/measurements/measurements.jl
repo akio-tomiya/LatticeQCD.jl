@@ -328,6 +328,7 @@ module Measurements
                     error("$(method["methodname"]) is not supported")
                 end
                 println_verbose1(verbose,"-----------------")
+                flush(measfp)
             end
         end
         return plaq,poly
