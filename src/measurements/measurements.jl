@@ -319,11 +319,11 @@ module Measurements
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
-                    measure_chiral_cond(univ,measset.fermions[i],itrj,verbose,measfp)
+                    measure_chiral_cond(univ,measset.fermions[i],itrj,measfp,verbose)
                 elseif method["methodname"] == "Pion_correlator" 
                     #fermiontype = method["fermiontype"]
                     #calc_pion_correlator(univ,measset.fermions[i])
-                    measure_correlator(univ,measset.fermions[i],itrj,verbose)
+                    measure_correlator(univ,measset.fermions[i],itrj,measfp,verbose)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
@@ -532,7 +532,7 @@ module Measurements
         return ic-1 + (is-1)*univ.NC + 1
     end
 
-    function calc_chiral_cond(univ::Universe,meas,Nr = 10, verbose = Verbose_2(),measfp)
+    function calc_chiral_cond(univ::Universe,meas,measfp,Nr = 10, verbose = Verbose_2())
         #error("calc_chiral_cond is not implemented!")
         #
         # pbp = (1/Nr) Σ_i p_i
@@ -557,9 +557,9 @@ module Measurements
         end
         return real(pbp/Nr)/univ.NV
     end
-    function measure_chiral_cond(univ::Universe,meas::Measurement,itrj;verbose = Verbose_2(),measfp)
+    function measure_chiral_cond(univ::Universe,meas::Measurement,itrj,measfp;verbose = Verbose_2())
         Nr = 10
-        pbp = calc_chiral_cond(univ,meas,Nr,verbose,measfp)
+        pbp = calc_chiral_cond(univ,meas,measfp,Nr,verbose)
         println_verbose1(verbose,"$itrj $pbp # pbp")
         flush(stdout)
     end
