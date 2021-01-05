@@ -259,7 +259,7 @@ module Measurements
 
                 fermions[i] = Measurement(univ,fparam;Dirac_operator=fermiontype )
             end
-            return new(nummeasurement,fermions,measurement_methods)
+            return new(nummeasurement,fermions,measurement_methods,measurementfps)
         end
     end
 
