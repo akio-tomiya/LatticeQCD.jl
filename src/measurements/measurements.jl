@@ -177,7 +177,7 @@ module Measurements
                 if haskey(method,"MaxCGstep")
                     MaxCGstep = method["MaxCGstep"]
                 else
-                    MaxCGstep = 1000
+                    MaxCGstep = 5000
                 end
                 
 
