@@ -41,6 +41,21 @@ module LieAlgebrafields
         end
     end
 
+    struct SUNAlgebraFields <: LieAlgebraFields
+        a::Array{Float64,5}
+        NX::Int64
+        NY::Int64
+        NZ::Int64
+        NT::Int64
+        NC::Int64
+        NumofBasis::Int64
+
+        function SUNAlgebraFields(NC,NX,NY,NZ,NT)
+            NumofBasis = NC^2-1
+            return new(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis)
+        end
+    end
+
     function Base.setindex!(x::LieAlgebraFields,v,i...) 
         x.a[i...] = v
     end
@@ -54,6 +69,8 @@ module LieAlgebrafields
             return SU3AlgebraFields(NC,NX,NY,NZ,NT)
         elseif NC == 2
             return SU2AlgebraFields(NC,NX,NY,NZ,NT)
+        elseif NC ≥ 4
+            return SUNAlgebraFields(NC,NX,NY,NZ,NT)
         end
     end
 

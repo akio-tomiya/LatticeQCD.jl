@@ -10,6 +10,7 @@ module LTK_universe
                         calc_GaugeAction,
                         SU3GaugeFields,SU3GaugeFields_1d,
                         SU2GaugeFields,SU2GaugeFields_1d,
+                        SUNGaugeFields,SUNGaugeFields_1d,
                         Oneinstanton
     import ..Gaugefields
                         
@@ -303,6 +304,9 @@ module LTK_universe
         elseif NC == 2
             U = Array{SU2GaugeFields,1}(undef,4)
             _temporal_gauge = Array{SU2GaugeFields_1d,1}(undef,num_tempfield_g)
+        elseif NC ≥ 4
+            U = Array{SUNGaugeFields,1}(undef,4)
+            _temporal_gauge = Array{SUNGaugeFields_1d,1}(undef,num_tempfield_g)
         end
         
 #        Uold = Array{GaugeFields,1}(undef,4)

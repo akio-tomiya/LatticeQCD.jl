@@ -4,7 +4,8 @@ module Measurements
     import ..Gaugefields:GaugeFields,set_wing!,substitute!,
             make_staple!,calc_Plaq!,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
-            GaugeFields_1d,calc_Polyakov,calc_Plaq,calc_Plaq_notrace_1d,SUn,SU2,SU3,TA,add!
+            GaugeFields_1d,calc_Polyakov,calc_Plaq,calc_Plaq_notrace_1d,SUn,SU2,SU3,TA,add!,
+            SUNGaugeFields,SUNGaugeFields_1d
     import ..Fermionfields:clear!,FermionFields,WilsonFermion
     import ..Fermionfields:Z4_distribution_fermi!,gauss_distribution_fermi!,set_wing_fermi!
     import ..CGmethods:bicg
@@ -68,6 +69,10 @@ module Measurements
             elseif NC == 2
                 U = Array{SU2GaugeFields,1}(undef,4)
                 _temporal_gauge = Array{SU2GaugeFields_1d,1}(undef,4)
+            elseif NC ≥ 4
+                U = Array{SUNGaugeFields,1}(undef,4)
+                _temporal_gauge = Array{SUNGaugeFields_1d,1}(undef,4)
+            
             end
 
             for i=1:length(_temporal_gauge)
@@ -166,7 +171,7 @@ module Measurements
                 if haskey(method,"eps")
                     eps = method["eps"]
                 else
-                    eps = 1e-10
+                    eps = 1e-16
                 end
 
                 if haskey(method,"MaxCGstep")

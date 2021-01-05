@@ -14,6 +14,8 @@ module Gaugefields
     abstract type SU3 <: SUn
     end
 
+
+
     struct GaugeFields{T <: SUn} 
         g::Array{ComplexF64,6}
         NX::Int64
@@ -30,6 +32,8 @@ module Gaugefields
                 sutype = SU3
             elseif NC == 2
                 sutype = SU2
+            elseif NC ≥ 4
+                sutype = SUn
             else
                 error("NC = $NC")
             end 
@@ -45,6 +49,7 @@ module Gaugefields
 
     const SU2GaugeFields  = GaugeFields{SU2}
     const SU3GaugeFields  = GaugeFields{SU3}
+    const SUNGaugeFields  = GaugeFields{SUn}
 
 
 
@@ -74,6 +79,10 @@ module Gaugefields
                 sutype = SU3
             elseif NC == 2
                 sutype = SU2
+            elseif NC ≥ 4
+                sutype = SUn
+            else
+                error("NC = $NC")
             end 
 
             NV = NX*NY*NZ*NT
@@ -86,6 +95,8 @@ module Gaugefields
                 sutype = SU3
             elseif NC == 2
                 sutype = SU2
+            else
+                sutype = SUn
             end 
 
             g = zeros(ComplexF64,NC,NC,NV)
@@ -95,6 +106,7 @@ module Gaugefields
 
     const SU2GaugeFields_1d  = GaugeFields_1d{SU2}
     const SU3GaugeFields_1d  = GaugeFields_1d{SU3}
+    const SUNGaugeFields_1d  = GaugeFields_1d{SUn}
 
     struct Adjoint_GaugeFields_1d{T <: SUn} 
         parent::GaugeFields_1d{T}
@@ -295,7 +307,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = u.NC
+            #error("NC >3 is not supported")
         end
 
         function update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
@@ -444,7 +457,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = u.NC
+            #error("NC >3 is not supported")
         end
     
         #X direction 
@@ -559,7 +573,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = x.NC
+            #error("NC >3 is not supported")
         end
 
         icum = 0
@@ -622,7 +637,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
 
         for it=1:NT
@@ -657,7 +673,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
 
         for it=1:NT
@@ -829,7 +846,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = u.NC
+            #error("NC >3 is not supported")
         end
 
         NV=u.NV
@@ -856,7 +874,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
 
         s = 0
@@ -882,7 +901,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
         s = 0
 
@@ -907,7 +927,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
 
         for it=1:NT
@@ -932,7 +953,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
 
         NV=a.NV
@@ -1024,7 +1046,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
         NV=a.NV
 
@@ -1054,7 +1077,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
 
         #NC=a.NC
@@ -1162,7 +1186,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
 
         NV=c.NV
@@ -1270,8 +1295,10 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
+
         NV=c.NV
 
         for i=1:NV
@@ -1294,7 +1321,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = c.NC
+            #error("NC >3 is not supported")
         end
         NV=c.NV
 
@@ -1352,7 +1380,8 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
 
         if ν == 0
@@ -1410,8 +1439,10 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
+
 
         #....  Stop for the exceptional case   ...
         if dir[1] != 0 && dir[2] != 0
@@ -1505,8 +1536,10 @@ module Gaugefields
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = a.NC
+            #error("NC >3 is not supported")
         end
+
 
         
         NT = b.NT
@@ -1672,54 +1705,6 @@ module Gaugefields
 
     
 
-    #=
-function m3complv!(a::SU3GaugeFields)
-    aa = zeros(Float64,18)
-    NX = u.NX
-    NY = u.NY
-    NZ = u.NZ
-    NT = u.NT
-
-    for it=1:NT
-        for iz=1:NZ
-            for iy=1:NY
-                for ix=1:NX
-
-                    aa[ 1] = real( a[1,1,ix,iy,iz,it])
-                    aa[ 2] = imag(a[1,1,ix,iy,iz,it])
-                    aa[ 3] = real( a[1,2,ix,iy,iz,it])
-                    aa[ 4] = imag(a[1,2,ix,iy,iz,it])
-                    aa[ 5] = real( a[1,3,ix,iy,iz,it])
-                    aa[ 6] = imag(a[1,3,ix,iy,iz,it])
-                    aa[ 7] = real( a[2,1,ix,iy,iz,it])
-                    aa[ 8] = imag(a[2,1,ix,iy,iz,it])
-                    aa[ 9] = real( a[2,2,ix,iy,iz,it])
-                    aa[10] = imag(a[2,2,ix,iy,iz,it])
-                    aa[11] = real( a[2,3,ix,iy,iz,it])
-                    aa[12] = imag(a[2,3,ix,iy,iz,it])
-
-                    aa[13] = aa[ 3]*aa[11] - aa[ 4]*aa[12] -
-                                aa[ 5]*aa[ 9] + aa[ 6]*aa[10]
-                    aa[14] = aa[ 5]*aa[10] + aa[ 6]*aa[ 9] -
-                                aa[ 3]*aa[12] - aa[ 4]*aa[11]
-                    aa[15] = aa[ 5]*aa[ 7] - aa[ 6]*aa[ 8] -
-                                aa[ 1]*aa[11] + aa[ 2]*aa[12]
-                    aa[16] = aa[ 1]*aa[12] + aa[ 2]*aa[11] -
-                                aa[ 5]*aa[ 8] - aa[ 6]*aa[ 7]
-                    aa[17] = aa[ 1]*aa[ 9] - aa[ 2]*aa[10] -
-                                aa[ 3]*aa[ 7] + aa[ 4]*aa[ 8]
-                    aa[18] = aa[ 3]*aa[ 8] + aa[ 4]*aa[ 7] -
-                                aa[ 1]*aa[10] - aa[ 2]*aa[ 9]
-
-                    a[3,1,ix,iy,iz,it] = aa[13]+im*aa[14]
-                    a[3,2,ix,iy,iz,it] = aa[15]+im*aa[16]
-                    a[3,3,ix,iy,iz,it] = aa[17]+im*aa[18]
-                end
-            end
-        end
-    end
-end
-=#
 
     function TA(vin::T) where T <: GaugeFields_1d
         vout = deepcopy(vin)

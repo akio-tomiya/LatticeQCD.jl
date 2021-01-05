@@ -343,7 +343,7 @@ module Wizard
                         "Hybrid Monte Carlo",
                         "Integrated HMC",
                         "Self-learning Hybrid Monte Carlo (SLHMC)",
-                        "Self-learning Hybrid Monte Carlo (SLHMC)",
+                        "Self-learning Monte Carlo (SLMC)",
                     ]))
                     if methodtype == 1
                         system["update_method"] = "HMC"
@@ -635,6 +635,17 @@ module Wizard
         method["fermiontype"] = "Staggered"
         method["mass"] = parse(Float64,Base.prompt("Input mass for the measurement of chiral condensates", default="$mass_default"))
         method["Nf"] = 4
+
+        eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
+        MaxCGstep = parse(Int64,Base.prompt("Maximum iteration steps in CG loops", default="3000"))
+        if eps<=0
+            error("Invalid value for eps=$eps. This has to be strictly positive.")
+        end
+        if MaxCGstep<=0
+            error("Invalid value for MaxCGstep=$MaxCGstep. This has to be strictly positive.")
+        end
+        method["eps"] = eps
+        method["MaxCGstep"] = MaxCGstep
     
 
         return method
@@ -670,6 +681,17 @@ module Wizard
         end
         method["hop"] = hop
         method["r"] = 1
+
+        eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
+        MaxCGstep = parse(Int64,Base.prompt("Maximum iteration steps in CG loops", default="3000"))
+        if eps<=0
+            error("Invalid value for eps=$eps. This has to be strictly positive.")
+        end
+        if MaxCGstep<=0
+            error("Invalid value for MaxCGstep=$MaxCGstep. This has to be strictly positive.")
+        end
+        method["eps"] = eps
+        method["MaxCGstep"] = MaxCGstep
 
         return method
     end
