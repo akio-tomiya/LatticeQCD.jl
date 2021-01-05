@@ -2313,6 +2313,10 @@ c-----------------------------------------------------c
         u[2,2] = conj(α)/detU
     end
 
+    function normalizeN!(u)
+        gramschmidt!(u)
+    end
+
     function normalize3!(u)
         w1 = 0
         w2 = 0
@@ -2469,6 +2473,37 @@ c-----------------------------------------------------c
             end
         end
     end
+
+    function gramschmidt!(v)
+        n = size(v)[1]
+        for i=1:n
+            for j=1:i-1
+                v[:,i] = v[:,i] - v[:,j]'*v[:,i]*v[:,j]
+            end
+            v[:,i] = v[:,i]/norm(v[:,i])
+        end
+    end
+
+    function normalize!(u::GaugeFields{T}) where T <: SUn
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        A = u[:,:,ix,iy,iz,it]
+                        gramschmidt!(A)
+                        u[:,:,ix,iy,iz,it] = A[:,:]
+                    end
+                end
+            end
+        end
+
+    end
+
 
     function m3complv3!(a)
         aa = zeros(Float64,18)
