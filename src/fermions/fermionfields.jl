@@ -1051,8 +1051,12 @@ c-----------------------------------------------------c
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = v1.NC
+            #error("NC >3 is not supported")
         end
+        #else
+        #    error("NC >3 is not supported")
+        #end
 
 
         if iflag == 1
@@ -1113,8 +1117,12 @@ c-----------------------------------------------------c
         elseif T == SU2
             NC = 2
         else
-            error("NC >3 is not supported")
+            NC = v1.NC
+            #error("NC >3 is not supported")
         end
+        #else
+        #    error("NC >3 is not supported")
+        #end
 
 
         if iflag == 1
@@ -1164,7 +1172,7 @@ c-----------------------------------------------------c
     end
 
 
-    function fermion_shift!(b::FermionFields,u::Array{GaugeFields,1},μ,a::FermionFields)
+    function fermion_shift!(b::F,u::Array{T,1},μ,a::F) where {T <: GaugeFields,F <: FermionFields}
         if μ == 0
             substitute!(b,a)
             return
@@ -1232,7 +1240,7 @@ c-----------------------------------------------------c
     end
 
     
-    function fermion_shift!(b::FermionFields,evensite::Bool,u::Array{GaugeFields,1},μ,a::FermionFields)
+    function fermion_shift!(b::F,evensite::Bool,u::Array{T,1},μ,a::F) where {T <: GaugeFields,F <: FermionFields}
         if μ == 0
             substitute!(b,a)
             return
@@ -1890,80 +1898,6 @@ c-----------------------------------------------------c
         return ix,iy,iz,it,sign
     end
 
-#=
-    function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion,indices) where T <: SU2GaugeFields
-        if μ == 0
-            substitute!(b,a)
-            return
-        end
-
-        NX = a.NX
-        NY = a.NY
-        NZ = a.NZ
-        NT = a.NT
-        NC = a.NC
-
-        #NTrange = get_looprange(NT)
-        #println(NTrange)
-        clear!(b)
-        if μ > 0
-
-            ix1 = indices[1]
-            iy1 = indices[2]
-            iz1 = indices[3]
-            it1 = indices[4]
-            ialpha = indices[5]
-
-            ix = ix1 - ifelse(μ ==1,1,0)
-            iy = iy1 - ifelse(μ ==2,1,0)
-            iz = iz1 - ifelse(μ ==3,1,0)
-            it = it1 - ifelse(μ ==4,1,0)
-
-            η = staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
-
-            ix,iy,iz,it,sign =  apply_periodicity(ix,iy,iz,it,NX,NY,NZ,NT,b.BoundaryCondition)
-
-
-            
-
-            
-
-            b[1,ix,iy,iz,it,ialpha] = sign*η*(u[μ][1,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
-                                        u[μ][1,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] )
-
-            b[2,ix,iy,iz,it,ialpha] = sign*η*(u[μ][2,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
-                                        u[μ][2,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] )
-            
-        elseif μ < 0
-            ix1 = indices[1]
-            iy1 = indices[2]
-            iz1 = indices[3]
-            it1 = indices[4]
-            ialpha = indices[5]
-
-            ix = ix1 + ifelse(-μ ==1,1,0)
-            iy = iy1 + ifelse(-μ ==2,1,0)
-            iz = iz1 + ifelse(-μ ==3,1,0)
-            it = it1 + ifelse(-μ ==4,1,0)
-
-            η = staggered_phase(-μ,ix1,iy1,iz1,it1,NX,NY,NZ,NT)
-
-            ix,iy,iz,it,sign =  apply_periodicity(ix,iy,iz,it,NX,NY,NZ,NT,b.BoundaryCondition)
-
-            
-
-            b[1,ix,iy,iz,it,ialpha] = sign*η*(conj(u[-μ][1,1,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
-                                        conj(u[-μ][2,1,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] )
-
-            b[2,ix,iy,iz,it,ialpha] = sign*η*(conj(u[-μ][1,2,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
-                                        conj(u[-μ][2,2,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] )
-
-        end
-
-        return (ix,iy,iz,it,ialpha)
-
-    end
-    =#
 
     function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion,vec_indices) where T <: SU2GaugeFields
         if μ == 0
@@ -2223,6 +2157,220 @@ c-----------------------------------------------------c
 
     end
 
+    function fermion_shiftB!(b::WilsonFermion,u::Array{SUNGaugeFields,1},μ,a::WilsonFermion) 
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+        
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = a.NC
+
+
+        if μ > 0
+            error("""
+            Sorry this case if not yet ready
+            mu = $mu
+            """)
+            
+        elseif μ < 0
+            #idel = zeros(Int64,4)
+            #idel[-μ] = 1
+            #n6 = size(b.f)[6]
+            for ialpha =1:4
+                for it=1:NT
+                    it1 = it + ifelse(-μ == 4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz +ifelse(-μ == 3,1,0)  #idel[3]
+                        for iy=1:NY
+                            iy1 = iy + ifelse(-μ == 2,1,0) #idel[2]
+                            for ix=1:NX
+                                ix1 = ix + ifelse(-μ == 1,1,0)  #idel[1]
+                                                                
+                                for k1=1:NC
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:NC
+                                        b[k1,ix,iy,iz,it,ialpha] += conj(a[k2,ix1,iy1,iz1,it1,ialpha])*conj(u[-μ][k1,k2,ix,iy,iz,it])
+                                    end
+                                end
+                                
+                                
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
+    function fermion_shiftB!(b::WilsonFermion,evensite,u::Array{SUNGaugeFields,1},μ,a::WilsonFermion) 
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+
+        ibush = ifelse(evensite,0,1)
+        
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = a.NC
+
+
+        if μ > 0
+            error("""
+            Sorry this case if not yet ready
+            mu = $mu
+            """)
+            
+        elseif μ < 0
+            #idel = zeros(Int64,4)
+            #idel[-μ] = 1
+            #n6 = size(b.f)[6]
+            for ialpha =1:4
+                for it=1:NT
+                    it1 = it + ifelse(-μ == 4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz +ifelse(-μ == 3,1,0)  #idel[3]
+                        for iy=1:NY
+                            iy1 = iy + ifelse(-μ == 2,1,0) #idel[2]
+                            xran =1+(1+ibush+iy+iz+it)%2:2:NX
+                            for ix in xran
+                            #for ix=1:NX
+                                ix1 = ix + ifelse(-μ == 1,1,0)  #idel[1]
+                                
+                                
+                                for k1=1:NC
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:NC
+                                        b[k1,ix,iy,iz,it,ialpha] += conj(a[k2,ix1,iy1,iz1,it1,ialpha])*conj(u[-μ][k1,k2,ix,iy,iz,it])
+                                    end
+                                end
+                                
+                                
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
+    function fermion_shiftB!(b::StaggeredFermion,u::Array{SUNGaugeFields,1},μ,a::StaggeredFermion) 
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+        
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = a.NC
+
+
+        if μ > 0
+            error("""
+            Sorry this case if not yet ready
+            mu = $mu
+            """)
+            
+        elseif μ < 0
+            #idel = zeros(Int64,4)
+            #idel[-μ] = 1
+            #n6 = size(b.f)[6]
+            for ialpha =1:1
+                for it=1:NT
+                    it1 = it + ifelse(-μ == 4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz +ifelse(-μ == 3,1,0)  #idel[3]
+                        for iy=1:NY
+                            iy1 = iy + ifelse(-μ == 2,1,0) #idel[2]
+                            for ix=1:NX
+                                ix1 = ix + ifelse(-μ == 1,1,0)  #idel[1]
+                                η = staggered_phase(-μ,ix,iy,iz,it,NX,NY,NZ,NT)
+                                
+                                for k1=1:NC
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:NC
+                                        b[k1,ix,iy,iz,it,ialpha] += η*conj(a[k2,ix1,iy1,iz1,it1,ialpha])*conj(u[-μ][k1,k2,ix,iy,iz,it])
+                                    end
+                                end
+                                
+                                
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
+    function fermion_shiftB!(b::StaggeredFermion,evensite,u::Array{SUNGaugeFields,1},μ,a::StaggeredFermion) 
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+        
+        ibush = ifelse(evensite,0,1)
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = a.NC
+
+
+        if μ > 0
+            error("""
+            Sorry this case if not yet ready
+            mu = $mu
+            """)
+            
+        elseif μ < 0
+            #idel = zeros(Int64,4)
+            #idel[-μ] = 1
+            #n6 = size(b.f)[6]
+            for ialpha =1:1
+                for it=1:NT
+                    it1 = it + ifelse(-μ == 4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz +ifelse(-μ == 3,1,0)  #idel[3]
+                        for iy=1:NY
+                            iy1 = iy + ifelse(-μ == 2,1,0) #idel[2]
+                            xran =1+(1+ibush+iy+iz+it)%2:2:NX
+                            for ix in xran
+                            #for ix=1:NX
+                                ix1 = ix + ifelse(-μ == 1,1,0)  #idel[1]
+                                η = staggered_phase(-μ,ix,iy,iz,it,NX,NY,NZ,NT)
+                                
+                                for k1=1:NC
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:NC
+                                        b[k1,ix,iy,iz,it,ialpha] += η*conj(a[k2,ix1,iy1,iz1,it1,ialpha])*conj(u[-μ][k1,k2,ix,iy,iz,it])
+                                    end
+                                end
+                                
+                                
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
 
     
     function fermion_shiftB!(b::WilsonFermion,u::Array{SU3GaugeFields,1},μ,a::WilsonFermion) 
@@ -2361,7 +2509,7 @@ c-----------------------------------------------------c
 
     end
 
-       
+
     function fermion_shiftB!(b::StaggeredFermion,u::Array{SU3GaugeFields,1},μ,a::StaggeredFermion) 
         if μ == 0
             substitute!(b,a)
@@ -2497,7 +2645,6 @@ c-----------------------------------------------------c
 
     end
 
-    
     
     function fermion_shiftB!(b::WilsonFermion,u::Array{SU2GaugeFields,1},μ,a::WilsonFermion) 
         if μ == 0

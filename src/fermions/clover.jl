@@ -4,7 +4,8 @@ module Clover
     import ..LieAlgebrafields:clear!
     import ..Gaugefields:GaugeFields_1d,GaugeFields,set_wing!,
                 substitute!,gauge_shift!,lambdamul,
-                SU3GaugeFields_1d,SU2GaugeFields_1d
+                SU3GaugeFields_1d,SU2GaugeFields_1d,
+                SUNGaugeFields_1d
 
     function Make_CloverFμν(fparam::FermiActionParam_WilsonClover,U,temps::Array{T,1})  where T <: GaugeFields_1d
         NV = temps[1].NV
@@ -229,6 +230,20 @@ module Clover
         return
     end
 
+    function addFμν!(Fμν,μν,v::SUNGaugeFields_1d)
+        NV=v.NV
+        NC = v.NC
+
+        for i=1:NV
+            for k2=1:NC
+                for k1=1:NC
+                    Fμν[k1,k2,i,μν] += v[ k1,k2,i]
+                end
+            end
+        end
+        return
+    end
+
     jf(I,L) = (I+1) % L
     jb(I,L) = (I-1+L) %L
     ic(ix,iy,iz,it,N1,N2,N3) = 1+ix+N1*(iy+N2*(iz+N3*it))
@@ -266,7 +281,8 @@ module Clover
         NT = X.NT
         NC = X.NC
         NV = NX*NY*NZ*NT
-        numbasis = ifelse(NC==3,8,3)
+        numbasis = NC^2-1
+        #numbasis = ifelse(NC==3,8,3)
 
 
         work1 = temps[1]
@@ -531,7 +547,8 @@ module Clover
         NY = z.NY
         NZ = z.NZ
         NT = z.NT
-        numbasis = ifelse(NC==3,8,3)
+        #numbasis = ifelse(NC==3,8,3)
+        numbasis = NC^2-1
 
 
         if μ == ν
@@ -737,6 +754,46 @@ module Clover
                     end
                 end
 
+            end
+        else
+            # ... tmp1 = u x tmp2 (in color space) 
+            for ia = 1:NC^2-1
+                for ialpha=1:4
+                    for is=1:NV
+                        for k1=1:NC
+                            tmp1[k1,is,ialpha] = 0
+
+                            for k2=1:NC
+                                tmp1[k1,is,ialpha] += u[ia][k1,k2,is]*tmp2[k2,is,ialpha] 
+                            end
+
+                        end
+                    end
+                end
+
+
+
+                # ... v1^{\dagger} * tmp1
+                is = 0
+                for it=1:NT
+
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                is += 1
+
+                                for k1=1:NC
+                                    for k2=1:NC
+                                        z[ia,ix,iy,iz,it] += real(conj(v1[k1,is,k2]) * tmp1[k1,is,k2])
+                                    end
+                                end
+
+                                #println(z[ia,ix,iy,iz,it])
+                            end
+                        end
+                    end
+                end
+
 
             end
         end
@@ -748,7 +805,8 @@ module Clover
     function cal_dFμν!(dFμν1,dFμν2,U,fparam::FermiActionParam_WilsonClover,work1::T,work2,work3,work4,temp1,temp2,temp3,temp4,μ,ν,iflag) where T <: GaugeFields_1d
         coe = im*0.125*fparam.hop*fparam.Clover_coefficient
         NC = U[1].NC
-        numbasis = ifelse(NC == 3,8,3)
+        #numbasis = ifelse(NC == 3,8,3)
+        numbasis = NC^2-1
 
 
         #=
@@ -792,6 +850,8 @@ module Clover
             =#
             mul!(temp1,work1,work2)
             mul!(temp2,work4,work3)
+            println("dd")
+            exit()
 
             for ia=1:numbasis
                 lambdamul(temp3,temp1,ia)
@@ -975,7 +1035,23 @@ module Clover
     """
         x <= x - x_aj
     """
-    function cimaglnk!(x::GaugeFields_1d)
+    function cimaglnk!(x::SUNGaugeFields_1d)
+        NV = x.NV
+        NC = x.NC
+        for i=1:NV
+            for k2=1:NC
+                for k1=k2:NC
+                    xdiff = x[k1,k2,i] - conj(x[k2,k1,i]) 
+                    x[k1,k2,i] = xdiff
+                    if k1 != k2
+                        x[k2,k1,i] = -conj(xdiff)
+                    end
+                end
+            end
+        end
+    end
+
+    function cimaglnk!(x::SU3GaugeFields_1d)
         NV = x.NV
         for i=1:NV
             z11 = x[1,1,i] - conj(x[1,1,i]) 
@@ -998,6 +1074,7 @@ module Clover
             x[3,3,i] = z33
         end
     end
+
 
     function cimaglnk!(x::SU2GaugeFields_1d)
         NV = x.NV
