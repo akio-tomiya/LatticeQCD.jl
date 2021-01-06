@@ -24,7 +24,11 @@ module SUN_generator
 
     function matrix2lie!(a,g::Generator,A)
         for i=1:length(a)
-            a[i] = real(tr(g.generator[i]*A)/2)
+            #println("i = $i")
+            #display(g.generator[i]*g.generator[i])
+            #println("\t")
+            #println(tr(g.generator[i]*A)/2)
+            a[i] = tr(g.generator[i]*A)/2
         end
         return
     end

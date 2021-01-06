@@ -479,7 +479,8 @@ module System_parameters
     end
 
     function print_parameters_file(p)
-        fp = open("parameters_used.jl","w")
+        filename = p.logfile*"_parameters.jl"# "parameters_used.jl"
+        fp = open(filename,"w")
         println(fp,"# - - parameters - - - - - - - - - - - ")
         pdict,pnames = make_parametersdict(p)
         for param in pdict
@@ -496,7 +497,9 @@ module System_parameters
 
     function print_parameters(params_set::Params_set,p)
         #(system,actions,md,cg,wilson,staggered,measurement)
-        fp = open("parameters_used.jl","w")
+        filename = p.logfile*"_parameters.jl"
+        #logfile = pwd()*"/"*log_dir*"/"*system["logfile"]
+        fp = open(filename,"w")
         fp2 = p.load_fp
         println(fp,"# - - parameters - - - - - - - - - - - ")
         println(fp2,"# - - parameters - - - - - - - - - - - ")
@@ -594,10 +597,10 @@ module System_parameters
         close(fp)
 
         println("""
-        # Your parameters were written in parameters_used.jl
+        # Your parameters were written in $filename
         # If you want to do the simulation with same parameters, 
         # Just do 
-        # julia run.jl parameters_used.jl
+        # julia run.jl $filename
         """)
         flush(stdout)
 

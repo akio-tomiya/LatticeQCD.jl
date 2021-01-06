@@ -534,12 +534,22 @@ module Wizard
                 headername *= "_quenched"
             else
                 headername *= "_"*system["Dirac_operator"]
+                if system["Dirac_operator"] == "Staggered"
+                    headername *= "_mass"*string(staggered["mass"])
+                elseif system["Dirac_operator"] == "Wilson" || system["Dirac_operator"] == "WilsonClover"
+                    headername *= "_kappa"*string(wilson["hop"])
+                end
             end
         elseif system["update_method"] == "Heatbath"
             headername *= "_quenched"
         else
             if system["Dirac_operator"] != nothing
                 headername *= "_"*system["Dirac_operator"]
+                if system["Dirac_operator"] == "Staggered"
+                    headername *= "_mass"*string(staggered["mass"])
+                elseif system["Dirac_operator"] == "Wilson" || system["Dirac_operator"] == "WilsonClover"
+                    headername *= "_kappa"*string(wilson["hop"])
+                end
             else
             end
         end

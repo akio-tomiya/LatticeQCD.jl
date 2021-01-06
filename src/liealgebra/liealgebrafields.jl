@@ -335,7 +335,7 @@ module LieAlgebrafields
         g = c.generators
         NC = c.NC
         matrix = zeros(ComplexF64,NC,NC)
-        a = zeros(Float64,length(g))
+        a = zeros(ComplexF64,length(g))
 
         for it=1:NT
             for iz=1:NZ
@@ -349,7 +349,7 @@ module LieAlgebrafields
 
                         matrix2lie!(a,g,matrix)
                         for k = 1:length(g)
-                            c[k,ix,iy,iz,it] = a[k]
+                            c[k,ix,iy,iz,it] = 2*imag(a[k])
                         end
 
                     end
@@ -396,6 +396,8 @@ module LieAlgebrafields
                         c[8,ix,iy,iz,it] = sr3i *
                                 ( imag(x11) + imag(x22) -
                                         2*imag(x33) )
+
+                        
                     end
                 end
 
@@ -448,7 +450,7 @@ module LieAlgebrafields
         g = c.generators
         NC = c.NC
         matrix = zeros(ComplexF64,NC,NC)
-        a = zeros(Float64,length(g))
+        a = zeros(ComplexF64,length(g))
 
         for it=1:NT
             for iz=1:NZ
@@ -461,10 +463,9 @@ module LieAlgebrafields
                                 matrix[k1,k2] =  x[k1,k2,i]
                             end
                         end
-
                         matrix2lie!(a,g,matrix)
                         for k = 1:length(g)
-                            c[k,ix,iy,iz,it] = a[k]
+                            c[k,ix,iy,iz,it] = 2*imag(a[k])
                         end
 
                     end
@@ -666,7 +667,7 @@ module LieAlgebrafields
                         end
 
                         lie2matrix!(u0,g,a)
-                        v[:,:,icum] = exp(u0)
+                        v[:,:,icum] = exp((im/2)*u0)
                     end
                 end
             end
