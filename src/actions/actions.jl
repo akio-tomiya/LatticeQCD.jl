@@ -1,5 +1,6 @@
 module Actions
     import ..Wilsonloops:Wilson_loop_set,make_staples
+    import ..SUN_generator:Generator
 
     abstract type GaugeActionParam end
 
@@ -70,6 +71,7 @@ module Actions
         _is1::Array{Int64,1}
         _is2::Array{Int64,1}
         quench::Bool = false
+        SUNgenerator::Union{Nothing,Generator}
     end
 
     Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
@@ -167,7 +169,7 @@ module Actions
         println("#--------------------------------------------------")
     end
 
-    function FermiActionParam_WilsonClover(hop,r,eps,MaxCGstep,NV,Clover_coefficient;quench=false)
+    function FermiActionParam_WilsonClover(hop,r,eps,MaxCGstep,NV,Clover_coefficient,NC;quench=false)
         #CloverFμν = zeros(ComplexF64,3,3,NV,6)
         inn_table= zeros(Int64,NV,4,2)
         internal_flags = zeros(Bool,2)
@@ -178,7 +180,13 @@ module Actions
             _ftmp_vectors[i] = zeros(ComplexF64,3,NV,4)
         end
         #return FermiActionParam_WilsonClover(hop,r,eps,"WilsonClover",MaxCGstep,Clover_coefficient,CloverFμν,inn_table,internal_flags,_ftmp_vectors,_is1,_is2,quench)
-        return FermiActionParam_WilsonClover(hop,r,eps,"WilsonClover",MaxCGstep,Clover_coefficient,inn_table,internal_flags,_ftmp_vectors,_is1,_is2,quench)
+        if NC ≥ 4
+            SUNgenerator = Generator(NC)
+        else
+            SUNgenerator = nothing
+        end
+
+        return FermiActionParam_WilsonClover(hop,r,eps,"WilsonClover",MaxCGstep,Clover_coefficient,inn_table,internal_flags,_ftmp_vectors,_is1,_is2,quench,SUNgenerator)
     end
 
     function FermiActionParam_Wilson(hop,r,eps,MaxCGstep;quench=false)

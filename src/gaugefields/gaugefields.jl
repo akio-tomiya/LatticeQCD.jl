@@ -4,6 +4,7 @@ module Gaugefields
     using JLD
     import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq
+    import ..SUN_generator:Generator
     
 
     abstract type SUn end
@@ -1952,7 +1953,7 @@ c-----------------------------------------------------c
     const sqr3inv = sr3i
 
 
-    function lambdamul(b::SU3GaugeFields_1d,a::SU3GaugeFields_1d,k)
+    function lambdamul(b::SU3GaugeFields_1d,a::SU3GaugeFields_1d,k,generator::Nothing)
         #=
         c----------------------------------------------------------------------c
         c     b = (lambda_k/2)*a
@@ -1960,7 +1961,6 @@ c-----------------------------------------------------c
         c----------------------------------------------------------------------c
         =#
         NV = a.NV
-
 
         if k==1
             for i=1:NV
@@ -2065,7 +2065,7 @@ c-----------------------------------------------------c
         return
     end
 
-    function lambdamul(b::SU2GaugeFields_1d,a::SU2GaugeFields_1d,k)
+    function lambdamul(b::SU2GaugeFields_1d,a::SU2GaugeFields_1d,k,generator::Nothing)
         #=
         c----------------------------------------------------------------------c
         c     b = (lambda_k/2)*a
@@ -2109,6 +2109,32 @@ c-----------------------------------------------------c
     
         return
     end
+
+    function lambdamul(b::SUNGaugeFields_1d,a::SUNGaugeFields_1d,k,generator)
+        #=
+        c----------------------------------------------------------------------c
+        c     b = (lambda_k/2)*a
+        C             lambda_k : GellMann matrices. k=1, 8 
+        c----------------------------------------------------------------------c
+        =#
+        NV = a.NV
+        NC = generator.NC
+        matrix = generator.generator[k]
+        for i=1:NV
+            for k2=1:NC
+                for k1=1:NC
+                    b[k1,k2,i] = 0
+                    for l=1:NC
+                        b[k1,k2,i] += matrix[k1,l]*a[l,k2,i]/2
+                    end
+                end
+            end
+        end
+    
+
+        return
+    end
+    
 
         
 
