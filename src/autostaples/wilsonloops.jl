@@ -95,7 +95,8 @@ module Wilsonloops
         loops = Wilson_loop_set()
         origin = zeros(Int8,4)
         for μ=1:4
-            for ν=1:4
+            for ν=μ:4
+                #for ν=1:4
                 if ν == μ
                     continue
                 end
@@ -111,7 +112,8 @@ module Wilsonloops
     function make_plaq(origin)
         loops = Wilson_loop_set()
         for μ=1:4
-            for ν=1:4
+            #for ν=1:4
+            for ν=μ:4
                 if ν == μ
                     continue
                 end
@@ -155,7 +157,7 @@ module Wilsonloops
             
 
         for μ=1:4
-            for ν=1:4
+            for ν=μ:4
                 if ν == μ
                     continue
                 end

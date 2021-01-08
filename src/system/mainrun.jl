@@ -250,10 +250,16 @@ module Mainrun
                 Sf = Sfnew
 
                 outputdata = univ.gparam.β*plaqetc[1]*slmc_data.factor + Sf
+                #outputdata = univ.gparam.β*plaqetc[1]*slmc_data.factor + Sf
+                #println(outputdata)
+                #exit()
+                #println(plaqetc)
+                #exit()
                 update_slmcdata!(slmc_data,plaqetc,outputdata)
                 #update_slmcdata!(slmc_data,[plaq],outputdata)
                 βeffs,Econst,IsSucs = show_effbeta(slmc_data,univ.gparam)
                 #βeffs,Econst,IsSucs = show_effbeta(slmc_data)
+                println("βeffs = ",βeffs)
 
                 println_verbose1(verbose,"#S = ",outputdata)
                 #println("#S = ",outputdata)

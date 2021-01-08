@@ -382,7 +382,7 @@ module Wizard
                     system["saveU_dir"] = String(Base.prompt("Saving directory", default="./confs"))
                 end
 
-                if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath"
+                if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
                     Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
                     Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
 

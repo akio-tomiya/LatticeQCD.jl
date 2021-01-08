@@ -2345,13 +2345,14 @@ c-----------------------------------------------------c
         trs = zeros(ComplexF64,gparam.numactions)
         
         for i = 1:gparam.numactions
-            if gparam.βs[i] != 0
+            #if gparam.βs[i] != 0
                 evaluate_wilson_loops!(loopaction,gparam.loops[i],U,temps[1:3])
                 trs[i] = tr(loopaction)
+                #println("i = $i ",trs[i])
                 sg = (-gparam.βs[i]/gparam.NTRACE)*trs[i] #/2
                 #println("$i-th actions ",sg)
                 Sg += sg#(-gparam.βs[i]/gparam.NTRACE)*tr(loopaction)/2       
-            end     
+            #end     
         end
 
         return Sg,trs

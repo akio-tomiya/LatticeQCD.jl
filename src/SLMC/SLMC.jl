@@ -31,6 +31,7 @@ module SLMC
         for i=2:n
             K[i] = s.factor*inputdata[i-1]
         end
+        println("K = ",K)
 
         s.KdagY += K[:]*S #KdagK 
         s.KdagK += K*K' #KdagY 
@@ -68,7 +69,7 @@ module SLMC
             for i=1:n-1
                 print("#Estimation$i learning ")
                 print("$(effectiveterms[1:i]) only: ")
-                be1 = make_beta(s,i)
+                be1[1:i+1] = make_beta(s,i)
                 #println("slmc_betas ",be1 )
                 for k = 1:length(be1)-1
                     print("$(be1[k+1]) \t")
