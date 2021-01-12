@@ -50,6 +50,21 @@ module Analyze
         end
     end
 
+    function get_plaquette(dirname::String)
+        a = analyze(dirname)
+        return a.plaquette
+    end
+
+    function get_polyakov(dirname::String)
+        a = analyze(dirname)
+        return a.polyakov
+    end
+
+    function get_trjs(dirname::String)
+        a = analyze(dirname)
+        return a.trjs
+    end
+
     function get_plaquette(a::Analyze_data)
         return a.plaquette
     end
