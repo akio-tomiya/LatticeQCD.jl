@@ -6,7 +6,7 @@ module Analyze
         return Analyze_data(dirname)
     end
 
-    function get_plaquette(a::Analyze_data)
+
 
     mutable struct Analyze_data
         plaquette::Array{Float64,1}
@@ -192,7 +192,6 @@ module Analyze
                 end
                 savefig(pwd()*"/"*a.dirname*"/Plaquette_Polyakov.pdf")
             end
-
         end
     end
 
