@@ -410,10 +410,10 @@ module Heatbath
 
                                 UV = u[mu][:,:,ix,iy,iz,it]*V
 
-                                n = rand(1:NC)#l
-                                m = rand(1:NC)
+                                n = rand(1:NC-1)#l
+                                m = rand(n:NC)
                                 while(n==m)
-                                    m = rand(1:NC)
+                                    m = rand(n:NC)
                                 end
 
 
