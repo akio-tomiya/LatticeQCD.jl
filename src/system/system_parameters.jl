@@ -732,9 +732,11 @@ module System_parameters
     measurement = Measurement_parames()
     =#
 
+    #=
     if length(ARGS) > 0
         include(pwd()*"/"*ARGS[1])
     end
+    =#
 
     function defaultparameters()
         return Params_set(system,actions,md,cg,wilson,staggered,measurement)
