@@ -461,6 +461,7 @@ module MD
         Sgeffold,plaq = calc_GaugeAction(univ)
 
         heatbath!(univ)
+        #heatbath!(univ)
 
         Sgeffnew,plaq = calc_GaugeAction(univ)
         set_β!(univ,β)

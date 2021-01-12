@@ -1,4 +1,6 @@
 module LatticeQCD
+    using Requires
+
     include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
     include("./fermions/cgmethod.jl")
@@ -41,8 +43,20 @@ module LatticeQCD
     include("./system/wizard.jl")
 
     include("./SLMC/SLMC.jl")
+
+
+
     include("./system/mainrun.jl")
+
     
+    
+    function __init__()
+        @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin 
+            include("./demo/demo.jl")
+            import .Demo:demo
+            export demo
+        end
+    end
     
     
     
@@ -61,6 +75,7 @@ module LatticeQCD
     import .IOmodule:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD,run_LQCD!
+    
     #import .Fermionfields:make_WdagWmatrix
     
 
@@ -83,6 +98,8 @@ module LatticeQCD
 
     export write_config
     export run_wizard
+
+
 
 
 

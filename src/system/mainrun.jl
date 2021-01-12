@@ -18,27 +18,22 @@ module Mainrun
     import ..Actions:GaugeActionParam_standard,
                     GaugeActionParam,
                     GaugeActionParam_autogenerator
-    import ..Verbose_print:println_verbose1,println_verbose2
+    import ..Verbose_print:println_verbose1,println_verbose2,Verbose_1
 
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
 
-    function run_LQCD()
-        run_LQCD(filenamein="",isdemo=true)
-    end
 
-    function run_LQCD(filenamein::String;isdemo=false)
-
-        if isdemo 
-            filename = "./parameters_demo.jl"
-        else
-            filename = filenamein
-        end
+    function run_LQCD(filenamein::String)
+        #if isdemo
+        #    params_set = Params_set(Demo.system,Demo.actions,Demo.md,Demo.cg,Demo.wilson,Demo.staggered,Demo.measurement)
+        #else
+        filename = filenamein
         include(pwd()*"/"*filename)
-
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
+        #end
 
-        run_LQCD(params_set;isdemo=isdemo)
+        run_LQCD(params_set)
     end
 
 
@@ -63,15 +58,15 @@ module Mainrun
         return 
     end
 
-    function run_LQCD(params_set::Params_set;isdemo=false)
+    function run_LQCD(params_set::Params_set)
         parameters = parameterloading(params_set)
         univ = Universe(parameters)
-        run_LQCD!(univ,parameters;isdemo=isdemo)
+        run_LQCD!(univ,parameters)
 
         return 
     end
 
-    function run_LQCD!(univ::Universe,parameters::Params;isdemo=false)
+    function run_LQCD!(univ::Universe,parameters::Params)
         verbose = univ.kind_of_verboselevel
         #println("# ",pwd())
         #println("# ",Dates.now())
@@ -85,7 +80,11 @@ module Mainrun
 
         measset = Measurement_set(univ,parameters.measuredir,measurement_methods=parameters.measurement_methods)
 
-        run_core!(parameters,univ,mdparams,measset;isdemo=isdemo)
+        #if isdemo
+        #run_demo!(parameters,univ,measset)
+        #else
+        run_core!(parameters,univ,mdparams,measset)
+        #end
 
 
     end
@@ -93,7 +92,7 @@ module Mainrun
 
 
 
-    function run_core!(parameters,univ,mdparams,meas;isdemo=false)
+    function run_core!(parameters,univ,mdparams,meas)
         
         # If an algorithm uses fermion integration (trlog(D+m)),
         # it is flagged
