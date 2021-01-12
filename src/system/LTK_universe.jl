@@ -31,6 +31,7 @@ module LTK_universe
     import ..Wilsonloops:make_loopforactions
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
+    import ..SUN_generator:Generator
 
 
 
@@ -166,12 +167,18 @@ module LTK_universe
                 _is1 = zeros(Int64,NV)
                 _is2 = zeros(Int64,NV)
 
+                if p.NC ≥ 4
+                    SUNgenerator = Generator(p.NC)
+                else
+                    SUNgenerator = nothing
+                end
+
                 #fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,CloverFμν,
                 #                internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                 #                p.quench)
                 fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
                                 internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                                p.quench)
+                                p.quench,SUNgenerator)
             elseif p.Dirac_operator == "Staggered"
                 fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
             else
@@ -288,7 +295,8 @@ module LTK_universe
         num_tempfield_f = 4
 
         if fparam != nothing && fparam.Dirac_operator == "WilsonClover"
-            num_tempfield_g += 4+4+8+8
+            numbasis = NC^2-1
+            num_tempfield_g += 4+4+2numbasis
         elseif fparam != nothing # && fparam.Dirac_operator == "Staggered"
             num_tempfield_f += 4
         end

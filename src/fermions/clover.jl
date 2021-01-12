@@ -180,7 +180,7 @@ module Clover
                 Fμν[3,2,i,μν] = -conj(z23) 
                 Fμν[3,3,i,μν] = z33
             end
-        else
+        elseif NC==2
             for i=1:NV
                 z11 = Fμν[1,1,i,μν] - conj(Fμν[1,1,i,μν] ) 
                 z12 = Fμν[1,2,i,μν] - conj(Fμν[2,1,i,μν] ) 
@@ -196,6 +196,19 @@ module Clover
                 Fμν[2,2,i,μν] = z22
 
             end
+        else
+            for i=1:NV
+                for k2=1:NC
+                    for k1=k2:NC
+                        z = Fμν[k1,k2,i,μν] - conj(Fμν[k2,k1,i,μν] ) 
+                        Fμν[k1,k2,i,μν] = z
+                        if k1 != k2
+                            Fμν[k2,k1,i,μν] = -conj(z)
+                        end
+                    end
+                end
+            end
+            #error("error!")
         end
         return
     end
@@ -295,8 +308,10 @@ module Clover
         gtmp3 = temps[7]
         gtmp4 = temps[8]
 
-        dF1 = temps[9:16]
-        dF2 = temps[17:24]
+        dF1 = temps[8+1:8+numbasis]
+        #dF1 = temps[9:16]
+        dF2 = temps[8+numbasis+1:8+2numbasis]
+        #dF2 = temps[17:24]
 
 
 
@@ -762,6 +777,7 @@ module Clover
                     for is=1:NV
                         for k1=1:NC
                             tmp1[k1,is,ialpha] = 0
+                            
 
                             for k2=1:NC
                                 tmp1[k1,is,ialpha] += u[ia][k1,k2,is]*tmp2[k2,is,ialpha] 
@@ -783,9 +799,10 @@ module Clover
                                 is += 1
 
                                 for k1=1:NC
-                                    for k2=1:NC
-                                        z[ia,ix,iy,iz,it] += real(conj(v1[k1,is,k2]) * tmp1[k1,is,k2])
-                                    end
+                                    z[ia,ix,iy,iz,it] += real(conj(v1[k1,is,1]) * tmp1[k1,is,1] + 
+                                        conj(v1[k1,is,2]) * tmp1[k1,is,2] + 
+                                        conj(v1[k1,is,3]) * tmp1[k1,is,3] + 
+                                        conj(v1[k1,is,4]) * tmp1[k1,is,4])
                                 end
 
                                 #println(z[ia,ix,iy,iz,it])
@@ -850,11 +867,9 @@ module Clover
             =#
             mul!(temp1,work1,work2)
             mul!(temp2,work4,work3)
-            println("dd")
-            exit()
 
             for ia=1:numbasis
-                lambdamul(temp3,temp1,ia)
+                lambdamul(temp3,temp1,ia,fparam.SUNgenerator)
                 mul!(temp4,temp3,temp2')
                 mul!(temp4,im)
                 cimaglnk!(temp4)
@@ -893,7 +908,7 @@ module Clover
             mul!(temp1,work2,work3')
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work4',temp2)
                 mul!(temp4,temp1,temp3)
                 mul!(temp4,im)
@@ -963,7 +978,7 @@ module Clover
             mul!(temp1,work4',work3)
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work2,temp2')
 
                 mul!(temp4,temp1,temp3)
@@ -1008,7 +1023,7 @@ module Clover
             mul!(temp1,work3,work2)
 
             for ia=1:numbasis
-                lambdamul(temp2,work1,ia) # temp2=(lambda_a/2)*work1
+                lambdamul(temp2,work1,ia,fparam.SUNgenerator) # temp2=(lambda_a/2)*work1
                 mul!(temp3,work4,temp2)
 
                 mul!(temp4,temp3',temp1)
