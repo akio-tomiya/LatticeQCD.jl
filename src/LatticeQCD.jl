@@ -47,6 +47,7 @@ module LatticeQCD
 
 
     include("./system/mainrun.jl")
+    include("./output/analyze.jl")
     
 
     
@@ -56,7 +57,7 @@ module LatticeQCD
             include("./demo/demo.jl")
             import .Demo:demo
             export demo
-            include("./output/analyze.jl")
+            
             import .Analyze:plot_plaquette,plot_polyakov,plot_plaq_and_poly
             export plot_plaquette,plot_polyakov,plot_plaq_and_poly
         end
@@ -79,6 +80,8 @@ module LatticeQCD
     import .IOmodule:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD,run_LQCD!
+
+    import .Analyze:analyze,get_plaquette,get_polyakov,get_trjs
     
     
     #import .Fermionfields:make_WdagWmatrix
@@ -103,6 +106,7 @@ module LatticeQCD
 
     export write_config
     export run_wizard
+    export analyze,get_plaquette,get_polyakov,get_trjs
 
 
 
