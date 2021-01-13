@@ -152,7 +152,13 @@ module Mainrun
         if parameters.integratedFermionAction
             loopactions = Wilsonloops_actions(univ)
             trainingfp = open(parameters.training_data_name,"w")
-            println(trainingfp,"#Re(plaq) Im(plaq) Re(rect) Im(rect) Re(polyx) Im(polyy) Re(polyz) Im(polyz) Re(polyt) Im(polyt) Sg Sf")
+            couplinglist = loopactions.couplinglist
+            print(trainingfp,"# ")
+            for i=1:loopactions.numloops
+                print(trainingfp,"Re($(loopactions.couplinglist[i])) Im($(loopactions.couplinglist[i])) ")
+            end
+            println(trainingfp,"Sg Sf")
+            #println(trainingfp,"#Re(plaq) Im(plaq) Re(rect) Im(rect) Re(polyx) Im(polyy) Re(polyz) Im(polyz) Re(polyt) Im(polyt) Sg Sf")
         end
 
 

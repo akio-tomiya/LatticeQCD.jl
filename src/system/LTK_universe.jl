@@ -511,6 +511,7 @@ module LTK_universe
         numloops::Int64
         β::Float64
         NC::Float64
+        couplinglist::Array{String,1}
 
         function Wilsonloops_actions(univ)
             couplinglist = ["plaq","rect","polyx","polyy","polyz","polyt"]
@@ -526,7 +527,7 @@ module LTK_universe
             β = univ.gparam.β
             NC = univ.NC
 
-            return new{sutype}(loops,loopaction,temps,numloops,β,NC)
+            return new{sutype}(loops,loopaction,temps,numloops,β,NC,couplinglist)
         end
     end
 
