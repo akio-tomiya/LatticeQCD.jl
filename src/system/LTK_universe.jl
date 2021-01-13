@@ -542,6 +542,32 @@ module LTK_universe
         return trs
     end
 
+    function calc_looptrvalues_site(w::Wilsonloops_actions,univ)
+        numloops = w.numloops
+        NX = univ.U[1].NX
+        NY = univ.U[1].NY
+        NZ = univ.U[1].NZ
+        NT = univ.U[1].NT
+        NC = univ.NC
+        V = zeros(ComplexF64,NC,NC)
+
+        trs = zeros(ComplexF64,numloops,NX,NY,NZ,NT)
+        for it = 1:NT
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix=1:NX
+                        for i=1:numloops
+                            evaluate_wilson_loops!(V,w.loops[i],univ.U,ix,iy,iz,it)
+                            trs[i,ix,iy,iz,it] = tr(V)
+                        end
+                    end
+                end
+            end
+        end
+        
+        return trs
+    end
+
     function get_looptrvalues(w::Wilsonloops_actions)
         return w.trs
     end
