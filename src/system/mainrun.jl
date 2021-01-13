@@ -1,7 +1,7 @@
 module Mainrun
     using Dates
     import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
-                            Wilsonloops_actions,calc_looptrvalues,calc_trainingdata
+                            Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site
     import ..Actions:Setup_Gauge_action,Setup_Fermi_action,GaugeActionParam_autogenerator
     import ..Measurements:calc_plaquette,measure_correlator,Measurement,calc_polyakovloop,measure_chiral_cond,calc_topological_charge,
                 measurements,Measurement_set
@@ -132,6 +132,29 @@ module Mainrun
         println(fp,Sg,"\t",Sf,"\t #trainingdata")
     end
 
+    function print_trainingdata_site(fp,trs,Sg,Sf)
+        return 
+        
+        numloops,NX,NY,NZ,NT = size(trs)
+        println(fp,Sg,"\t",Sf," $numloops $NX $NY $NZ $NT")
+        for it = 1:NT
+            for iz = 1:NZ
+                for iy = 1:NY
+                    for ix=1:NX
+                        print(fp,"$ix $iy $iz $it ")
+                        for i=1:numloops
+                            print(fp,real(trs[i,ix,iy,iz,it]),"\t",imag(trs[i,ix,iy,iz,it]),"\t")
+                        end
+                        println(fp,"\t")
+                        
+                    end
+                end
+            end
+        end
+        #println(fp,Sg,"\t",Sf,"\t #trainingdata_site")
+
+    end
+
 
 
     function run_core!(parameters,univ,mdparams,meas)
@@ -152,6 +175,7 @@ module Mainrun
         if parameters.integratedFermionAction
             loopactions = Wilsonloops_actions(univ)
             trainingfp = open(parameters.training_data_name,"w")
+            trainingfp2 = open("trainset.txt","w")
             couplinglist = loopactions.couplinglist
             print(trainingfp,"# ")
             for i=1:loopactions.numloops
@@ -182,6 +206,8 @@ module Mainrun
             trs,Sg,Sf = calc_trainingdata(loopactions,univ)
             print_trainingdata(trs,Sg,Sf)
             print_trainingdata(trainingfp,trs,Sg,Sf)
+            trs_site = calc_looptrvalues_site(loopactions,univ)
+            print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
         end
 
 
@@ -210,6 +236,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
                 accept = metropolis_update!(univ,Hold,Hnew)
@@ -225,6 +253,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
             # Integrated HMC
@@ -240,6 +270,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
                 accept = metropolis_update!(univ,Sold,Snew)
@@ -266,6 +298,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
                 #loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
@@ -298,6 +332,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
 
@@ -338,6 +374,8 @@ module Mainrun
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
                     print_trainingdata(trs,Sg,Sf)
                     print_trainingdata(trainingfp,trs,Sg,Sf)
+                    trs_site = calc_looptrvalues_site(loopactions,univ)
+                    print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
 
                 accept = metropolis_update!(univ,Sold,Snew)
@@ -368,6 +406,7 @@ module Mainrun
             flush(verbose)
             if parameters.integratedFermionAction
                 flush(trainingfp)
+                flush(trainingfp2)
             end
         end
         if parameters.integratedFermionAction

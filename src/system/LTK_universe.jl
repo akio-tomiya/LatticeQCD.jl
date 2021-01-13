@@ -543,6 +543,7 @@ module LTK_universe
     end
 
     function calc_looptrvalues_site(w::Wilsonloops_actions,univ)
+        return 
         numloops = w.numloops
         NX = univ.U[1].NX
         NY = univ.U[1].NY
