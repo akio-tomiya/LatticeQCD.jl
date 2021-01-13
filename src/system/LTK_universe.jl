@@ -514,6 +514,7 @@ module LTK_universe
 
         function Wilsonloops_actions(univ)
             couplinglist = ["plaq","rect","polyx","polyy","polyz","polyt"]
+            L = (univ.U[1].NX,univ.U[1].NY,univ.U[1].NZ,univ.U[1].NT)
             loops = make_loopforactions(couplinglist,L)
             loopaction = similar(univ._temporal_gauge[1])
             sutype = typeof(loopaction)
