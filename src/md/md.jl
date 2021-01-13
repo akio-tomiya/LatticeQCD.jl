@@ -8,7 +8,8 @@ module MD
     import ..Actions:GaugeActionParam_standard,
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
                         GaugeActionParam_autogenerator
-    import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!
+    import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
+                calc_IntegratedFermionAction
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
@@ -240,48 +241,6 @@ module MD
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_IntegratedHMC)
         @assert univ.quench == true "quench should be true!"
         if Sfold == nothing       
-            function debug2()  
-                gauss_distribution_fermi!(univ.η,univ.ranf)
-                WdagW2 = DdagD_operator(univ.U,univ.η,univ.fparam)
-                #mul!(univ.φ,WdagW2,univ.η)
-                cg(univ.φ,WdagW2,univ.η,eps = univ.fparam.eps,verbose = Verbose_3())
-                #set_wing_fermi!(univ.φ)
-                println(univ.φ*univ.φ)
-
-                NX = univ.η.NX
-                NY = univ.η.NY
-                NZ = univ.η.NZ
-                NT = univ.η.NT
-                NC = univ.η.NC
-
-                Nsize = NX*NY*NZ*NT*NC
-                xtest = zeros(ComplexF64,Nsize)
-                i = 0
-                for it=1:NT
-                    for iz=1:NZ
-                        for iy=1:NY
-                            for ix=1:NX
-                                for ic=1:NC
-                                    i += 1
-                                    xtest[i] = univ.η[ic,ix,iy,iz,it,1]
-                                end
-                            end
-                        end
-                    end
-                end
-
-
-                WdagW = make_WdagWmatrix(univ)
-                x2 = similar(xtest)
-                cg(x2,WdagW,xtest,eps = univ.fparam.eps,verbose = Verbose_3())
-                #x2 = WdagW*xtest
-                println(x2'*x2)
-
-
-
-                exit()
-            end
-            #debug2()
             
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
@@ -293,6 +252,7 @@ module MD
                     Sfold /= 2
                 end
             end
+            
         end
 
         for istep=1:mdparams.MDsteps
@@ -315,76 +275,8 @@ module MD
             end
         end
 
-        function debug()
-            #test
-            fp = open("testdet.dat","w")
-            numgauss = 10000
-            phis = zeros(Float64,numgauss)
-            phis2 = zeros(Float64,numgauss)
-            #U = deepcopy(univ.U)
-            for i=1:numgauss
-                temp1 = univ._temporal_fermi[6]
-                temp2 = univ._temporal_fermi[7]
-                gauss_distribution_fermi!(univ.η,univ.ranf)
-                set_wing_fermi!(univ.η) 
 
-                #=
-                if univ.Dirac_operator == "Staggered" 
-                    if univ.fparam.Nf == 4
-                        evensite = false
-                        Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
-                        clear!(univ.φ,evensite)
-                        cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
-                    end
-                end
-                =#
-
-                W = Dirac_operator(univ.Uold,univ.η,univ.fparam)
-
-
-
-                cg0!(univ.φ,univ.η,2,univ.Uold,univ._temporal_gauge,univ._temporal_fermi,univ.fparam) #(D(Uold)^+)^-1 η
-                
-
-
-
-                set_wing_fermi!(univ.φ) 
-                Wdagx!(temp1,univ.U,univ.φ,univ._temporal_fermi,univ.fparam) #D(U)^+ (D(Uold)^+)^-1 η
-                set_wing_fermi!(temp1) 
-
-                #println(temp1*univ.η - univ.η*univ.η)
-                #exit()
-
-                #set_wing_fermi!(temp1) 
-                Wx!(temp2,univ.U,temp1,univ._temporal_fermi,univ.fparam) #D(U) D(U)^+ (D(Uold)^+)^-1 η
-                set_wing_fermi!(temp2) 
-                #println(univ.φ*temp2- univ.η*univ.η)
-                #exit()
-
-                phis[i] = real(-(univ.φ*temp2 - univ.η*univ.η)) -(Sgold -Sgnew)*2
-                
-                phimax = maximum(phis[1:i])
-                
-                println("max is ",phimax)
-                sexp = 0
-                for k=1:i
-                    sexp += exp(phis[k]-phimax)
-                end
-                sexp /= i
-
-                dS = (-(phimax + log(sexp)) -(Sgold -Sgnew)*2)/2
-                #println(sexp)
-                #exit()
-                
-                println("$i-th dS = $dS Sfold-Sfnew = ", Sfold-Sfnew )
-                println(fp,i,"\t",dS,"\t",Sfold-Sfnew )
-            end
-            close(fp)
-            exit()
-        end
-        #debug()
-        
-        
+            
         #
 
         #println("Snew,plaq = ",Snew,"\t",plaq)
@@ -395,8 +287,10 @@ module MD
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_IntegratedHB)
         @assert univ.quench == true "quench should be true!"
         @assert univ.NC == 2 "Only SU(2) is supported now."
-        if Sfold == nothing           
+        if Sfold == nothing       
+            @time Sfold = calc_IntegratedFermionAction(univ)    
              
+            #=
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
@@ -407,6 +301,7 @@ module MD
                     Sfold /= 2
                 end
             end
+            =#
         end
 
         Sgold,plaq = calc_GaugeAction(univ)
@@ -419,6 +314,7 @@ module MD
         Sgnew,plaq = calc_GaugeAction(univ)
 
         Sgeffnew = Sgnew
+        #=
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
@@ -428,6 +324,8 @@ module MD
                 Sfnew /= 2
             end
         end
+        =#
+        @time Sfnew = calc_IntegratedFermionAction(univ)
 
 
         
@@ -441,7 +339,10 @@ module MD
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLMC)
         @assert univ.quench == true "quench should be true!"
         #@assert univ.NC == 2 "Only SU(2) is supported now."
-        if Sfold == nothing            
+        if Sfold == nothing       
+            @time Sfold = calc_IntegratedFermionAction(univ)
+            #=
+
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
             #println(e)
@@ -452,6 +353,7 @@ module MD
                     Sfold /= 2
                 end
             end
+            =#
         end
 
         β = univ.gparam.β
@@ -468,6 +370,7 @@ module MD
 
         Sgnew,plaq = calc_GaugeAction(univ)
 
+        #=
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
@@ -477,6 +380,10 @@ module MD
                 Sfnew /= 2
             end
         end
+        =#
+
+        @time Sfnew = calc_IntegratedFermionAction(univ)
+        #println("Sfnew comparison: $Sfnew,$Sfnew2")
 
 
         

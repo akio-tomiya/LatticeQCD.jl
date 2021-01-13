@@ -828,6 +828,10 @@ module Gaugefields
         return GaugeFields(x.NC,x.NDW,x.NX,x.NY,x.NZ,x.NT)
     end
 
+    function Base.similar(x::GaugeFields_1d) 
+        return GaugeFields_1d(x.NC,x.NV) 
+    end
+
     function Base.similar(x::Array{T,1}) where T <: GaugeFields
         xout = Array{T,1}(undef,4)
         for μ=1:4
@@ -2325,6 +2329,8 @@ c-----------------------------------------------------c
         return plaq*0.5
     end
 
+
+
     function calc_GaugeAction(U::Array{T,1},gparam::GaugeActionParam_standard,temps::Array{T_1d,1}) where {T <: GaugeFields,T_1d <: GaugeFields_1d}
         plaq = calc_Plaq!(U,temps)
 
@@ -2338,6 +2344,7 @@ c-----------------------------------------------------c
         Sg = -plaq*gparam.β/gparam.NTRACE
         return Sg,plaq
     end
+
 
     function calc_GaugeAction(U::Array{T,1},gparam::GaugeActionParam_autogenerator,temps::Array{T_1d,1}) where {T <: GaugeFields,T_1d <: GaugeFields_1d}
         Sg = 0

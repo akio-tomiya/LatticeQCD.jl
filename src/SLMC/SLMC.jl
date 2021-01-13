@@ -17,6 +17,7 @@ module SLMC
             return new(KdagK,KdagY,factor)
         end
     end
+    
 
 
     function update_slmcdata!(s::SLMC_data,inputdata,outputdata)

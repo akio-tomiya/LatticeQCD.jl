@@ -1,6 +1,7 @@
 module Mainrun
     using Dates
-    import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β
+    import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
+                            Wilsonloops_actions,calc_looptrvalues,calc_trainingdata
     import ..Actions:Setup_Gauge_action,Setup_Fermi_action,GaugeActionParam_autogenerator
     import ..Measurements:calc_plaquette,measure_correlator,Measurement,calc_polyakovloop,measure_chiral_cond,calc_topological_charge,
                 measurements,Measurement_set
@@ -10,7 +11,7 @@ module Mainrun
     import ..Smearing:gradientflow!
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!
-    import ..Wilsonloops:make_plaq
+    import ..Wilsonloops:make_plaq,make_loopforactions
     import ..IOmodule:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
     import ..Gaugefields:calc_GaugeAction
@@ -116,6 +117,20 @@ module Mainrun
 
     end
 
+    
+    function print_trainingdata(trs,Sg,Sf)
+        for i=1:length(trs)
+            print(real(trs[i]),"\t",imag(trs[i]),"\t")
+        end
+        println(Sg,"\t",Sf,"\t #trainingdata")
+    end
+
+    function print_trainingdata(fp,trs,Sg,Sf)
+        for i=1:length(trs)
+            print(fp,real(trs[i]),"\t",imag(trs[i]),"\t")
+        end
+        println(fp,Sg,"\t",Sf,"\t #trainingdata")
+    end
 
 
 
@@ -134,6 +149,12 @@ module Mainrun
         verbose = univ.kind_of_verboselevel
 
 
+        if parameters.integratedFermionAction
+            loopactions = Wilsonloops_actions(univ)
+            trainingfp = open(parameters.training_data_name,"w")
+            println(trainingfp,"#Re(plaq) Im(plaq) Re(rect) Im(rect) Re(polyx) Im(polyy) Re(polyz) Im(polyz) Re(polyt) Im(polyt) Sg Sf")
+        end
+
 
         Nsteps = parameters.Nsteps
         if parameters.update_method == "Fileloading"
@@ -151,6 +172,13 @@ module Mainrun
         numaccepts = 0
 
         plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
+        if parameters.integratedFermionAction
+            trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+            print_trainingdata(trs,Sg,Sf)
+            print_trainingdata(trainingfp,trs,Sg,Sf)
+        end
+
+
         if parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
             itrj = 0
             itrjstring = lpad(itrj,8,"0")
@@ -171,6 +199,13 @@ module Mainrun
                 Hold = md_initialize!(univ)
 
                 @time Hnew = md!(univ,mdparams)
+
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
                 accept = metropolis_update!(univ,Hold,Hnew)
                 numaccepts += ifelse(accept,1,0)
                 #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
@@ -180,6 +215,12 @@ module Mainrun
             elseif parameters.update_method == "Heatbath"
                 @time heatbath!(univ)
 
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
             # Integrated HMC
             # HMC with S = -tr(log(D+m)), instead of the pseudo-fermins
             elseif parameters.update_method == "IntegratedHMC"
@@ -188,6 +229,13 @@ module Mainrun
                 @time Sgnew,Sfnew,Sgold,Sfold = md!(univ,Sfold,Sgold,mdparams)
                 Sold = Sgold + Sfold
                 Snew = Sgnew + Sfnew
+
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
                 #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
@@ -207,6 +255,13 @@ module Mainrun
                     i = 1
                     load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
                 end
+
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
                 #loadU!(parameters.loadU_dir*"/"*filename_i,univ.U)
 
             # SLHMC: Self-learing Hybrid Monte-Carlo
@@ -232,6 +287,14 @@ module Mainrun
                 @time Sgnew,Sfnew,Sgeffnew,Sgold,Sfold,Sgeffold = md!(univ,Sfold,Sgold,mdparams)
                 Sold = Sgold + Sfold -Sgeffold
                 Snew = Sgnew + Sfnew -Sgeffnew
+
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
+
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
                 #println("Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
@@ -265,6 +328,12 @@ module Mainrun
                 end
 
 
+                if parameters.integratedFermionAction
+                    trs,Sg,Sf = calc_trainingdata(loopactions,univ)
+                    print_trainingdata(trs,Sg,Sf)
+                    print_trainingdata(trainingfp,trs,Sg,Sf)
+                end
+
                 accept = metropolis_update!(univ,Sold,Snew)
                 numaccepts += ifelse(accept,1,0)
                 println_verbose1(verbose,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
@@ -273,6 +342,7 @@ module Mainrun
             end# update end
 
             plaq,poly = measurements(itrj,univ.U,univ,meas;verbose = univ.kind_of_verboselevel)
+
 
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
@@ -290,6 +360,12 @@ module Mainrun
             #println("-------------------------------------")
             flush(stdout)
             flush(verbose)
+            if parameters.integratedFermionAction
+                flush(trainingfp)
+            end
+        end
+        if parameters.integratedFermionAction
+            close(trainingfp)
         end
         return
     end

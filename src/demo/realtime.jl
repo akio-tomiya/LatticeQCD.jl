@@ -1,3 +1,4 @@
+module Realtimeplot
 using Plots 
 
 # prep the plots

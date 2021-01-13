@@ -155,6 +155,8 @@ module System_parameters
         logfile::String
         load_fp::IOStream
         measuredir::String
+        integratedFermionAction::Bool
+        training_data_name::String
 
 
 
@@ -412,6 +414,18 @@ module System_parameters
             end
             measuredir = pwd()*"/"*measurement_basedir*"/"*measurement_dir
 
+            if haskey(actions,"IntegratedFermionAction")
+                integratedFermionAction = actions["IntegratedFermionAction"]
+            else
+                integratedFermionAction = false
+            end
+
+            if haskey(actions,"training_data_name")
+                training_data_name = pwd()*"/"*actions["training_data_name"]
+            else
+                training_data_name = pwd()*"/"*"trainingdata.txt"
+            end
+
 
 
             
@@ -456,7 +470,9 @@ module System_parameters
                 log_dir,
                 logfile,
                 load_fp,
-                measuredir
+                measuredir,
+                integratedFermionAction,
+                training_data_name
             )
 
         end

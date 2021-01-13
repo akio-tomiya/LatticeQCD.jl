@@ -11,7 +11,8 @@ module LTK_universe
                         SU3GaugeFields,SU3GaugeFields_1d,
                         SU2GaugeFields,SU2GaugeFields_1d,
                         SUNGaugeFields,SUNGaugeFields_1d,
-                        Oneinstanton
+                        Oneinstanton,
+                        evaluate_wilson_loops!
     import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!
@@ -28,7 +29,7 @@ module LTK_universe
     import ..Rand:Random_LCGs
     import ..System_parameters:Params
     import ..Diracoperators:DdagD_operator
-    import ..Wilsonloops:make_loopforactions
+    import ..Wilsonloops:make_loopforactions,Wilson_loop_set
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
     import ..SUN_generator:Generator
@@ -490,7 +491,75 @@ module LTK_universe
         return real(S),real(plaq)
     end
 
-    
+    function calc_IntegratedFermionAction(univ::Universe)
+        println("Making W^+W matrix...")
+        @time WdagW = make_WdagWmatrix(univ)
+        println("Calculating logdet")
+        @time Sfnew = -real(logdet(WdagW))
+        if univ.Dirac_operator == "Staggered" 
+            if univ.fparam.Nf == 4
+                Sfnew /= 2
+            end
+        end
+        return Sfnew
+    end
+
+    struct Wilsonloops_actions{Gauge_temp}
+        loops::Array{Wilson_loop_set,1}
+        loopaction::Gauge_temp
+        temps::Array{Gauge_temp,1}
+        numloops::Int64
+        β::Float64
+        NC::Float64
+
+        function Wilsonloops_actions(univ)
+            couplinglist = ["plaq","rect","polyx","polyy","polyz","polyt"]
+            loops = make_loopforactions(couplinglist,L)
+            loopaction = similar(univ._temporal_gauge[1])
+            sutype = typeof(loopaction)
+            temps = Array{sutype,1}(undef,3)
+            for i=1:3
+                temps[i] = similar(loopaction)
+            end
+            numloops = length(couplinglist)
+            β = univ.gparam.β
+            NC = univ.NC
+
+            return new{sutype}(loops,loopaction,temps,numloops,β,NC)
+        end
+    end
+
+
+    function calc_looptrvalues(w::Wilsonloops_actions,univ)
+        numloops = w.numloops
+        trs = zeros(ComplexF64,numloops)
+        for i=1:numloops
+            evaluate_wilson_loops!(w.loopaction,w.loops[i],univ.U,w.temps[1:3])
+            trs[i] = tr(w.loopaction)
+        end
+        return trs
+    end
+
+    function get_looptrvalues(w::Wilsonloops_actions)
+        return w.trs
+    end
+
+    function calc_IntegratedSf(w::Wilsonloops_actions,univ)
+        Sf = calc_IntegratedFermionAction(univ)
+        return Sf
+    end
+
+    function calc_gaugeSg(w::Wilsonloops_actions,univ)
+        trs = calc_looptrvalues(w,univ)
+        Sg = (-w.β/w.NC)*trs[1]
+        return real(Sg),trs
+    end
+
+    function calc_trainingdata(w::Wilsonloops_actions,univ)
+        Sf = calc_IntegratedSf(w,univ)
+        Sg,trs = calc_gaugeSg(w,univ)
+        return trs,Sg,Sf
+    end
 
     function make_WdagWmatrix(univ::Universe)
         return make_WdagWmatrix(univ.U,univ._temporal_fermi,univ.fparam)
@@ -501,7 +570,6 @@ module LTK_universe
     end
 
     
-
     function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
         x0 = temps[7]
         xi = temps[8]
