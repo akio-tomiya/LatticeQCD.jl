@@ -79,7 +79,8 @@ module LatticeQCD
     import .Wilsonloops:make_plaq
     import .IOmodule:saveU,loadU,loadU!
     import .Wizard:run_wizard
-    import .Mainrun:run_LQCD,run_LQCD!
+    import .Mainrun:run_LQCD
+    #,run_LQCD!
 
     import .Analyze:analyze,get_plaquette,get_polyakov,get_trjs
     
