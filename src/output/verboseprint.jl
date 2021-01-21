@@ -31,9 +31,9 @@ module Verbose_print
     end
 
     function InteractiveUtils.versioninfo(v::Verbose_level)
-        versioninfo(verbose=true)
+        InteractiveUtils.versioninfo()
         if v.fp != nothing
-            versioninfo(v.fp,verbose=true)
+            InteractiveUtils.versioninfo(v.fp)
         end
     end
 
