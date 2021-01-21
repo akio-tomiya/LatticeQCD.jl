@@ -74,11 +74,11 @@ We support 4 dimensional euclidean spacetime and following things:
   - Cold/Hot start for SU(2) and SU(3), One instanton for SU(2)
   - Heatbath for SU(2) and SU(3) for plaquette gauge action
   - HMC for SU(2) and SU(3) for plaquette gauge action
-  - <s>Quenched HMC with SU(2) or SU(3) for general gauge action </s> (This will be supported)
-  - HMC (2 flavor Wilson/Clover) with SU(2) or SU(3) for plaquette gauge action
-  - HMC (4 flavor Staggered fermions) with SU(2) or SU(3) for plaquette gauge action
+  - Quenched HMC with SU(2), SU(3), SU(N) for general gauge action
+  - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) for plaquette gauge action
+  - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) for plaquette gauge action
   - <s>RHMC (any flavor staggered) with SU(2) or SU(3) for general gauge action</s> (This will be supported)
-  - <s> General gauge action = plaquette+rect + etc action </s>  (This will be supported)
+  - General gauge action = plaquette+rect + etc action (This will be supported)
   - Fermion integrated HMC with plaquette action
   - Self-learning Monte-Carlo with plaquette action (simpler version of [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
@@ -86,9 +86,11 @@ We support 4 dimensional euclidean spacetime and following things:
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson/Staggered)
-  - Momentum projected pion correlator (Wilson fermion)
+  - Chiral condensates (Wilson, Wilson-Clover/Staggered)
+  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion)
   - <s>Topological charge with the Wilson flow (plaquette and clover definition)</s>   (Not well tested)
+- Smearing
+  - Gradient flow for a genelic action
 - I/O for configurations
   - ILDG format
   - JLD format (Defoult binary file for Julia, one of HDF5)
@@ -105,7 +107,7 @@ We support following two user interfaces
 
 Usage 1 was already explained. 
 
-For Usage 2, you can clone this repository with Git commands.
+For Usage 2, you can clone this repository with Git commands like ``git clone``. 
 And in the directory, you can execute like,
 
 ```
