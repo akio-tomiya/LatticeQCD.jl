@@ -1,5 +1,6 @@
 
 module Verbose_print
+    import InteractiveUtils
     abstract type Verbose_level end
 
     struct Verbose_3  <: Verbose_level
@@ -29,7 +30,7 @@ module Verbose_print
         end
     end
 
-    function Base.versioninfo(v::Verbose_level)
+    function InteractiveUtils.versioninfo(v::Verbose_level)
         versioninfo(verbose=true)
         if v.fp != nothing
             versioninfo(v.fp,verbose=true)
