@@ -71,13 +71,13 @@ Enjoy life with lattice QCD.
 We support 4 dimensional euclidean spacetime and following things:
 
 - Configuration generation
-  - Cold/Hot start for SU(2) and SU(3), One instanton for SU(2)
-  - Heatbath for SU(2) and SU(3) for plaquette gauge action
-  - HMC for SU(2) and SU(3) for plaquette gauge action
+  - Cold/Hot start for SU(2), SU(3) and SU(N). One instanton for SU(2)
+  - Heatbath for SU(2), SU(3) and SU(N) for plaquette gauge action
+  - HMC for SU(2), SU(3) and SU(N) for plaquette gauge action
   - Quenched HMC with SU(2), SU(3), SU(N) for general gauge action
   - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) for plaquette gauge action
   - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) for plaquette gauge action
-  - <s>RHMC (any flavor staggered) with SU(2) or SU(3) for general gauge action</s> (This will be supported)
+  - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for general gauge action</s> (This will be supported)
   - General gauge action = plaquette+rect + etc action (This will be supported)
   - Fermion integrated HMC with plaquette action
   - Self-learning Monte-Carlo with plaquette action (simpler version of [this paper](https://arxiv.org/abs/2010.11900) )
