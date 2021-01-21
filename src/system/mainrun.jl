@@ -73,6 +73,7 @@ module Mainrun
         #println("# ",Dates.now())
         println_verbose1(verbose,"# ",pwd())
         println_verbose1(verbose,"# ",Dates.now())
+        versioninfo(verbose)
 
         #show_parameters(univ)
 

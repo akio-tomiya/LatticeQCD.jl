@@ -29,6 +29,13 @@ module Verbose_print
         end
     end
 
+    function Base.versioninfo(v::Verbose_level)
+        versioninfo(verbose=true)
+        if v.fp != nothing
+            versioninfo(v.fp,verbose=true)
+        end
+    end
+
 
 
     function println_verbose1(v::Verbose_3,val...)
