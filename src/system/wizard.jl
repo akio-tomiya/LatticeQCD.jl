@@ -362,25 +362,7 @@ module Wizard
                     end
                 end
 
-                savetype = request("Choose a configuration format for saving",RadioMenu([
-                        "no save",
-                        "JLD",
-                        "ILDG",
-                    ]))
-                if savetype == 2
-                    system["saveU_format"] = "JLD"
-                    
-                elseif savetype == 1
-                    system["saveU_format"] = nothing
-                    system["saveU_dir"] = ""
-                elseif savetype == 3
-                    system["saveU_format"] = "ILDG"
-                end
-
-                if system["saveU_format"] ≠ nothing
-                    system["saveU_every"] = parse(Int64,Base.prompt("Timing for saving configuration", default="1"))
-                    system["saveU_dir"] = String(Base.prompt("Saving directory", default="./confs"))
-                end
+                
 
                 if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
                     Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="10"))
@@ -564,6 +546,28 @@ module Wizard
 
         system["log_dir"] = String(Base.prompt("log directory", default="./logs"))
         system["logfile"] = String(Base.prompt("logfile name", default=headername*".txt"))
+
+        if isexpert
+            savetype = request("Choose a configuration format for saving",RadioMenu([
+                        "no save",
+                        "JLD",
+                        "ILDG",
+                ]))
+            if savetype == 2
+                system["saveU_format"] = "JLD"
+                
+            elseif savetype == 1
+                system["saveU_format"] = nothing
+                system["saveU_dir"] = ""
+            elseif savetype == 3
+                system["saveU_format"] = "ILDG"
+            end
+
+            if system["saveU_format"] ≠ nothing
+                system["saveU_every"] = parse(Int64,Base.prompt("Timing for saving configuration", default="1"))
+                system["saveU_dir"] = String(Base.prompt("Saving directory", default="./confs_$(headername)"))
+            end
+        end
 
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
 
