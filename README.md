@@ -15,11 +15,6 @@ This code enabales you to perform lattice QCD calculations! Native Julia code fo
 
 
 ![demo](demo.gif)
-```julia
-using Plots
-using LatticeQCD 
-demo()
-```
 
 
 # Quick start
@@ -73,7 +68,13 @@ Of cource, you can write/modify a parameter file by yourself.
 
 Enjoy life with lattice QCD.
 
-
+To see our demonstration above, execute,
+```julia
+using Plots
+using LatticeQCD 
+demo()
+```
+it takes time before showing up the window.
 
 # What is supported?
 
