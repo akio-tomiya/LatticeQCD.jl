@@ -11,14 +11,16 @@ This code enabales you to perform lattice QCD calculations! Native Julia code fo
 
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
-- [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar.
+- [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar
 
 
-```
+![demo](demo.gif)
+```julia
 using Plots
 using LatticeQCD 
 demo()
 ```
+
 
 # Quick start
 
