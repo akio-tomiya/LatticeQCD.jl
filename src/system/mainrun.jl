@@ -35,7 +35,7 @@ module Mainrun
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
         #end
 
-        run_LQCD(params_set)
+        plaq = run_LQCD(params_set)
     end
 
 
@@ -55,17 +55,17 @@ module Mainrun
 
     function run_LQCD(parameters::Params)
         univ = Universe(parameters)
-        run_LQCD!(univ,parameters)
+        plaq = run_LQCD!(univ,parameters)
 
-        return 
+        return plaq
     end
 
     function run_LQCD(params_set::Params_set)
         parameters = parameterloading(params_set)
         univ = Universe(parameters)
-        run_LQCD!(univ,parameters)
+        plaq = run_LQCD!(univ,parameters)
 
-        return 
+        return  plaq
     end
 
     function run_LQCD!(univ::Universe,parameters::Params)
@@ -86,7 +86,7 @@ module Mainrun
         #if isdemo
         #run_demo!(parameters,univ,measset)
         #else
-        run_core!(parameters,univ,mdparams,measset)
+        plaq = run_core!(parameters,univ,mdparams,measset)
         #end
 
 
@@ -414,7 +414,7 @@ module Mainrun
         if parameters.integratedFermionAction
             close(trainingfp)
         end
-        return
+        return plaq
     end
 
 end
