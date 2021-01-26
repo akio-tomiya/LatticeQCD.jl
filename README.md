@@ -13,6 +13,13 @@ This code enabales you to perform lattice QCD calculations! Native Julia code fo
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar.
 
+
+```
+using Plots
+using LatticeQCD 
+demo()
+```
+
 # Quick start
 
 You can start lattice QCD in 5 steps!
