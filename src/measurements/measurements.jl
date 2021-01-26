@@ -378,7 +378,8 @@ module Measurements
         elseif S == SU2
             NC = 2
         else
-            error("NC != 2,3 is not supported")
+            NC = U[1].NC
+            #error("NC != 2,3 is not supported")
         end
 
         UμνTA = temp_UμνTA
@@ -437,7 +438,8 @@ module Measurements
         elseif S == SU2
             NC = 2
         else
-            error("NC != 2,3 is not supported")
+            NC = U[1].NC
+            #error("NC != 2,3 is not supported")
         end
 
 
