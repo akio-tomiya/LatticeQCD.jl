@@ -108,7 +108,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - Gradient flow for a genelic action
 - I/O for configurations
   - ILDG format
-  - JLD format (Defoult binary file for Julia, one of HDF5)
+  - JLD format (default binary file for Julia, one of HDF5)
 
 Many of smearing and improved fermion actions and parallelazation have not supported yet.
 

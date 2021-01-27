@@ -365,8 +365,8 @@ module Wizard
                 
 
                 if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
-                    Nthermalization = parse(Int64,Base.prompt("Input number of thermalization steps", default="0"))
-                    Nsteps = parse(Int64,Base.prompt("Input number of total trajectories", default="100"))
+                    Nthermalization = parse(Int64,Base.prompt("Input the number of thermalization steps (no mearurement)", default="0"))
+                    Nsteps = parse(Int64,Base.prompt("Input the number of total trajectories afterthermalization", default="100"))
 
                     if Nthermalization<0
                         error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
