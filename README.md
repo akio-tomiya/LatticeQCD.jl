@@ -11,7 +11,11 @@ This code enabales you to perform lattice QCD calculations! Native Julia code fo
 
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
-- [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar.
+- [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compilar
+
+
+![demo](demo.gif)
+
 
 # Quick start
 
@@ -64,31 +68,42 @@ Of cource, you can write/modify a parameter file by yourself.
 
 Enjoy life with lattice QCD.
 
-
+To see our demonstration above, execute,
+```julia
+using Plots
+using LatticeQCD 
+demo()
+```
+it takes time before showing up the window.
 
 # What is supported?
 
 We support 4 dimensional euclidean spacetime and following things:
 
-- Configuration generation
+- Gauge field
+  - Optimized SU(2), SU(3)
+  - General SU(N)
+  - General gauge action = plaquette + rect + etc action
+- Fermions
+  - Wilson/Wilson-clover (2flavor)
+  - Staggered fermion (4tastes)
+- Configuration generation algorithms
   - Cold/Hot start for SU(2), SU(3) and SU(N). One instanton for SU(2)
-  - Heatbath for SU(2), SU(3) and SU(N) for plaquette gauge action
-  - HMC for SU(2), SU(3) and SU(N) for plaquette gauge action
+  - Heatbath for SU(2), SU(3) and SU(N)
   - Quenched HMC with SU(2), SU(3), SU(N) for general gauge action
-  - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) for plaquette gauge action
-  - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) for plaquette gauge action
-  - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for general gauge action</s> (This will be supported)
-  - General gauge action = plaquette+rect + etc action (This will be supported)
+  - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) 
+  - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) 
+  - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for a general gauge action</s> (This will be supported)
   - Fermion integrated HMC with plaquette action
   - Self-learning Monte-Carlo with plaquette action (simpler version of [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
-  - Load & measurement mode (load and measure all configurations in a directory)
 - Measurements
   - Plaquette
   - Polyakov loop
   - Chiral condensates (Wilson, Wilson-Clover/Staggered)
   - Momentum projected pion correlator (Wilson& Wilson-Clover fermion)
   - <s>Topological charge with the Wilson flow (plaquette and clover definition)</s>   (Not well tested)
+  - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
   - Gradient flow for a genelic action
 - I/O for configurations
