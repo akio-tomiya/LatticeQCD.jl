@@ -564,8 +564,11 @@ module Wizard
             end
 
             if system["saveU_format"] ≠ nothing
+                
                 system["saveU_every"] = parse(Int64,Base.prompt("Timing for saving configuration", default="1"))
+                #system["saveU_basedir"] = String(Base.prompt("base directory for saving configuration", default="./confs"))
                 system["saveU_dir"] = String(Base.prompt("Saving directory", default="./confs_$(headername)"))
+                #system["saveU_dir"] = system["saveU_basedir"]*"/"*system["saveU_dir"]
             end
         end
 
