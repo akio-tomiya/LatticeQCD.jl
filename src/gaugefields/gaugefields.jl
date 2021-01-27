@@ -1185,6 +1185,52 @@ module Gaugefields
     end
 
 
+    function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::Adjoint_GaugeFields_1d{T},b::Adjoint_GaugeFields_1d{T}) where T <: SU3
+        
+        NV=a.parent.NV
+        #NC=a.NC
+        #mulabc! = NCmul_aconjb(NC)
+
+        for i=1:NV
+            c[1,1,i] = conj(a.parent[1,1,i]) * conj(b.parent[1,1,i]) +
+                conj(a.parent[2,1,i] )* conj(b.parent[1,2,i]) +
+                conj(a.parent[3,1,i] )* conj(b.parent[1,3,i]) 
+            c[1,2,i] = conj(a.parent[1,1,i]) * conj(b.parent[2,1,i]) + 
+                conj(a.parent[2,1,i]) * conj(b.parent[2,2,i]) +
+                conj(a.parent[3,1,i]) * conj(b.parent[2,3,i]) 
+
+            c[1,3,i] = conj(a.parent[1,1,i]) * conj(b.parent[3,1,i]) + 
+                conj(a.parent[2,1,i]) * conj(b.parent[3,2,i]) +
+                conj(a.parent[3,1,i]) * conj(b.parent[3,3,i]) 
+
+            c[2,1,i] = conj(a.parent[1,2,i]) * conj(b.parent[1,1,i]) +
+                conj(a.parent[2,2,i]) * conj(b.parent[1,2,i]) +
+                conj(a.parent[3,2,i]) * conj(b.parent[1,3,i]) 
+
+            c[2,2,i] = conj(a.parent[1,2,i]) * conj(b.parent[2,1,i]) + 
+                conj(a.parent[2,2,i]) * conj(b.parent[2,2,i])      +
+                conj(a.parent[3,2,i]) * conj(b.parent[2,3,i])   
+
+            c[2,3,i] = conj(a.parent[1,2,i]) * conj(b.parent[3,1,i]) + 
+                conj(a.parent[2,2,i]) * conj(b.parent[3,2,i]) +
+                conj(a.parent[3,2,i]) * conj(b.parent[3,3,i]) 
+
+            c[3,1,i] = conj(a.parent[1,3,i]) * conj(b.parent[1,1,i]) +
+                conj(a.parent[2,3,i]) * conj(b.parent[1,2,i]) +
+                conj(a.parent[3,3,i]) * conj(b.parent[1,3,i]) 
+
+            c[3,2,i] = conj(a.parent[1,3,i]) * conj(b.parent[2,1,i]) + 
+                conj(a.parent[2,3,i]) * conj(b.parent[2,2,i])      +
+                conj(a.parent[3,3,i]) * conj(b.parent[2,3,i])   
+
+            c[3,3,i] = conj(a.parent[1,3,i]) * conj(b.parent[3,1,i]) + 
+                conj(a.parent[2,3,i]) * conj(b.parent[3,2,i]) +
+                conj(a.parent[3,3,i]) * conj(b.parent[3,3,i]) 
+        end
+    
+    end
+
+
     function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::Adjoint_GaugeFields_1d{T},b::GaugeFields_1d{T}) where T <: SUn
         if T == SU3
             NC = 3

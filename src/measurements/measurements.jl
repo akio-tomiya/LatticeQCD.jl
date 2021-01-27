@@ -289,7 +289,7 @@ module Measurements
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                     println(measfp,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
-                    Nflowsteps = 1
+                    Nflowsteps = 50
                     eps_flow = 0.01
                     println_verbose2(verbose,"# epsilon for the Wilson flow is $eps_flow")
                     Usmr = deepcopy(U)

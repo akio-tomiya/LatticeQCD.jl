@@ -8,6 +8,7 @@ module Wilsonloops
         Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(loop,origin)
         Wilson_loop(loop,origin) = new([Tuple(loop)],origin)
         Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(loop,(0,0,0,0))
+        Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(make_links(loop),(0,0,0,0))
         Wilson_loop(loop) = new([Tuple(loop)],(0,0,0,0))
     end 
 
@@ -68,6 +69,14 @@ module Wilsonloops
         return
     end
 
+    function make_originalactions_fromloops(coupling_loops)
+        actions = Array{Wilson_loop_set,1}(undef,length(coupling_loops))
+        for (i,loopset) in enumerate(coupling_loops)
+            actions[i] = make_originalaction(loopset)
+        end
+        return actions
+    end
+
     function make_loopforactions(couplinglist,L)
         loops = Array{Wilson_loop_set,1}(undef,length(couplinglist))
         for (i,name) in enumerate(couplinglist)
@@ -90,22 +99,54 @@ module Wilsonloops
         return loops
     end
 
+    function make_originalaction(loopset::Array{T,1}) where T <: Any
+        loop_wilson = Wilson_loop_set()
+        for loops in loopset
+            @assert eltype(loops) == Tuple{<: Int,<: Int} "The loop should be like [(1, 1), (2, 1), (1, -1), (2, -1)]"
+            loop1 = Wilson_loop(loops)
+            push!(loop_wilson,loop1)
+        end
+        return loop_wilson
+    end
 
-    function make_plaq()
-        loops = Wilson_loop_set()
-        origin = zeros(Int8,4)
+    function make_plaqloops()
+        loopset = []
         for μ=1:4
             for ν=μ:4
                 #for ν=1:4
                 if ν == μ
                     continue
                 end
-                loop = make_links([(μ,1),(ν,1),(μ,-1),(ν,-1)])
-                loop1 = Wilson_loop(loop,Tuple(origin))
-                push!(loops,loop1)
+                push!(loopset,[(μ,1),(ν,1),(μ,-1),(ν,-1)])
             end
         end
-        
+        return loopset
+    end
+
+    function make_rectloops(N)
+        loopset = []
+        for μ=1:4
+            for ν=μ:4
+                if ν == μ
+                    continue
+                end
+                push!(loopset,[(μ,1),(ν,N),(μ,-1),(ν,-N)])
+            end
+        end
+        return loopset
+    end
+
+    function make_polyakovloops(μ,Nμ)
+        loopset = []
+        push!(loopset,[(μ,Nμ)])
+        return loopset 
+    end
+
+
+
+    function make_plaq()
+        loopset = make_plaqloops()
+        loops = make_originalaction(loopset)
         return loops
     end
 
@@ -138,6 +179,8 @@ module Wilsonloops
         return loops
     end
 
+
+
     function make_plaq(μ,ν,origin)
         loops = Wilson_loop_set()
         #origin = zeros(Int8,4)
@@ -161,10 +204,10 @@ module Wilsonloops
                 if ν == μ
                     continue
                 end
-                #loop = make_links([(μ,1),(ν,1),(ν,1),(μ,-1),(ν,-1),(ν,-1)])
-                loop = make_links([(μ,1),(ν,2),(μ,-1),(ν,-2)])
-                #loop = make_links([(μ,2),(ν,1),(μ,-2),(ν,-1)])
-                loop1 = Wilson_loop(loop,Tuple(origin))
+                #loop = make_links([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+
+                loop1 = Wilson_loop([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+                #loop1 = Wilson_loop(loop,Tuple(origin))
                 push!(loops,loop1)
             end
         end

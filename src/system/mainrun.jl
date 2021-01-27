@@ -12,7 +12,7 @@ module Mainrun
     import ..Smearing:gradientflow!
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!
-    import ..Wilsonloops:make_plaq,make_loopforactions
+    import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
     import ..IOmodule:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
     import ..Gaugefields:calc_GaugeAction
@@ -24,6 +24,8 @@ module Mainrun
 
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
+
+    
 
 
     function run_LQCD(filenamein::String)
