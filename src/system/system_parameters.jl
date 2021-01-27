@@ -51,7 +51,7 @@ module System_parameters
     md["MDsteps"] = 20
     md["SextonWeingargten"] = false
     system["Nsteps"] = 100
-    system["Nthermalization"] = 10
+    system["Nthermalization"] = 0
 
     #md["N_SextonWeingargten"] 
 

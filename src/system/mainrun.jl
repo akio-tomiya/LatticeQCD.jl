@@ -205,7 +205,10 @@ module Mainrun
 
         numaccepts = 0
 
-        plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
+        if parameters.Nthermalization ≤ 0
+            plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
+        end
+
         if parameters.integratedFermionAction
             trs,Sg,Sf = calc_trainingdata(loopactions,univ)
             print_trainingdata(trs,Sg,Sf)
@@ -389,7 +392,9 @@ module Mainrun
                 Sfold = ifelse(accept,Sfnew,Sfold)
             end# update end
 
-            plaq,poly = measurements(itrj,univ.U,univ,meas;verbose = univ.kind_of_verboselevel)
+            if itrj ≥ parameters.Nthermalization
+                plaq,poly = measurements(itrj,univ.U,univ,meas;verbose = univ.kind_of_verboselevel)
+            end
 
 
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
