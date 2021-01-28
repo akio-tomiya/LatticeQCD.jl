@@ -1,0 +1,11 @@
+0 0.0 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.01 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.02 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.03 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.04 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.05 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.06 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.07 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.08 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.09 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov
+0 0.1 1.0 -0.0 -0.0 #flow itrj flowtime plaq Qplaq Qclov

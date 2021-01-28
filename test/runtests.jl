@@ -3,7 +3,7 @@ using Test
 
 
 @testset "LatticeQCD.jl" begin
-    eps = 1e-12
+    eps = 1e-1
     
     @testset "quenched HMC" begin
 
