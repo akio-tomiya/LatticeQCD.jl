@@ -530,6 +530,7 @@ module System_parameters
         return
     end
 
+    #=
     function gather_allparameters(params_set::Params_set)
         allparams = Dict()
         for (name,key) in params_set.system
@@ -561,6 +562,7 @@ module System_parameters
         end
         return allparams
     end
+    =#
 
     function setprint(fp,fp2,string)
         println(fp,string)
@@ -578,7 +580,27 @@ module System_parameters
         end
     end
 
-    function print_parameters_list(allparams,p=nothing;filename=nothing)
+    function get_header(params_set::Params_set,inputname)
+        if haskey(params_set.system,inputname)
+            return "system",params_set.system[inputname]
+        elseif haskey(params_set.actions,inputname)
+            return "actions",params_set.actions[inputname]
+        elseif haskey(params_set.md,inputname)
+            return "md",params_set.md[inputname]
+        elseif haskey(params_set.cg,inputname)
+            return "cg",params_set.cg[inputname]
+        elseif haskey(params_set.wilson,inputname)
+            return "wilson",params_set.wilson[inputname]
+        elseif haskey(params_set.staggered,inputname)
+            return "staggered",params_set.staggered[inputname]
+        elseif haskey(params_set.measurement,inputname)
+            return "measurement",params_set.measurement[inputname]
+        else
+            return nothing,nothing
+        end
+    end
+
+    function print_parameters_list(params_set::Params_set,p=nothing;filename=nothing)
         if filename == nothing 
             @assert p != nothing "wrong input!"
 
@@ -592,10 +614,9 @@ module System_parameters
         setprint(fp,fp2,"# - - parameters - - - - - - - - - - - ")
         setprint(fp,fp2,"# Physical setting" )
         for name in printlist_physical
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                headstring = "system"
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
@@ -603,16 +624,9 @@ module System_parameters
         setprint(fp,fp2,"\t" )
         setprint(fp,fp2,"# Physical setting(fermions)" )
         for name in printlist_fermions
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                if name == "quench" || name == "Dirac_operator" || name == "BoundaryCondition" #system
-                    headstring = "system"
-                elseif name =="Clover_coefficient" || name == "r" || name == "hop"
-                    headstring = "wilson"
-                else
-                    headstring = "staggered"
-                end
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
@@ -620,14 +634,9 @@ module System_parameters
         setprint(fp,fp2,"\t" )
         setprint(fp,fp2,"# System Control" )
         for name in printlist_systemcontrol
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                if name == "measurement_basedir" || name == "measurement_dir"
-                    headstring = "measurement"
-                else
-                    headstring = "system"
-                end
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
@@ -635,14 +644,9 @@ module System_parameters
         setprint(fp,fp2,"\t" )
         setprint(fp,fp2,"# HMC related" )
         for name in printlist_HMCrelated
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                if name == "eps" || name == "MaxCGstep"
-                    headstring = "cg"
-                else
-                    headstring = "md"
-                end
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
@@ -650,24 +654,24 @@ module System_parameters
         setprint(fp,fp2,"\t" )
         setprint(fp,fp2,"# Action parameter for SLMC" )
         for name in printlist_parameters_SLMC
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                headstring = "actions"
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
+
         end
         setprint(fp,fp2,"\t" )
         setprint(fp,fp2,"# Measurement set" )
         for name in printlist_measurement
-            if haskey(allparams,name)
-                key = allparams[name]
+            headstring,key = get_header(params_set,name)
+            if headstring != nothing
                 string = get_stringfromkey(key)
-                headstring = "measurement"
                 paramstring = headstring*"[\"$name\"] = "*string
                 setprint(fp,fp2,paramstring)
             end
+
         end
         setprint(fp,fp2,"\t" )
 
@@ -687,14 +691,14 @@ module System_parameters
 
     function print_parameters(params_set::Params_set,p)
 
-        allparams = gather_allparameters(params_set)
-        print_parameters_list(allparams,p)
+        #allparams = gather_allparameters(params_set)
+        print_parameters_list(params_set,p)
         return
     end
 
     function print_parameters(filename,params_set::Params_set)
-        allparams = gather_allparameters(params_set)
-        print_parameters_list(allparams,filename=filename)
+        #allparams = gather_allparameters(params_set)
+        print_parameters_list(params_set,filename=filename)
     end
 
 
