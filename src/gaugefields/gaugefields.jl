@@ -54,10 +54,6 @@ module Gaugefields
 
 
 
-
-
-
-
     struct Adjoint_GaugeFields{T <: SUn} 
         parent::GaugeFields{T}
     end
@@ -138,7 +134,64 @@ module Gaugefields
         return x.g[i1,i2,i3]
     end
 
-    
+    struct Loops{T_1d}
+        loopset::Wilson_loop_set
+        temps::Array{T_1d,1}
+        function Loops(U::Array{GaugeFields{S},1},loopset::Wilson_loop_set) where {S <: SUn}
+            NC = U[1].NC
+            NX = U[1].NX
+            NY = U[1].NY
+            NZ = U[1].NZ
+            NT = U[1].NT
+            temp1 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            temp2 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            temp3 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            T_1d = typeof(temp1)
+            return new{T_1d}(loopset,[temp1,temp2,temp3])
+        end
+    end
+
+    function evaluate_loops(loops::Loops,U::Array{GaugeFields{S},1})  where {S <: SUn}
+        NC = U[1].NC
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        xout = GaugeFields_1d(NC,NX,NY,NZ,NT)
+        evaluate_loops!(xout,loops,U)
+        return xout
+    end
+
+    function evaluate_loops!(xout::T_1d,loops::Loops,U::Array{GaugeFields{S},1})  where {S <: SUn,T_1d <: GaugeFields_1d}
+        evaluate_wilson_loops!(xout,loops.loopset,U,loops.temps)
+    end
+
+    function evaluate_loops!(V,loops::Loops,U::Array{T,1},ix,iy,iz,it) where T <: GaugeFields
+        evaluate_wilson_loops!(V,loops.loopset,U,ix,iy,iz,it)
+    end
+
+    function evaluate_loops(loops::Loops,U::Array{T,1},ix,iy,iz,it) where T <: GaugeFields
+        NC = U[1].NC
+        V = zeros(ComplexF64,NC,NC)
+        evaluate_loops!(V,loops,U,ix,iy,iz,it)
+        return V
+    end
+
+    function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1}) where {S <: SUn,T_1d <: GaugeFields_1d}
+        NC = U[1].NC
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+
+        temp1 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+        temp2 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+        temp3 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+        evaluate_wilson_loops!(xout,w,U,[temp1,temp2,temp3])
+
+    end
+
+
 
 
     function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1},temps::Array{T_1d,1}) where {S <: SUn,T_1d <: GaugeFields_1d}

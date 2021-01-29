@@ -94,7 +94,7 @@ module Mainrun
 
     end
 
-    function run_init_Fileloading!(parameters,univ,mdparams,meas)
+    function run_init_Fileloading!(parameters,univ,mdparams,meas,verbose)
         ildg = nothing
         println_verbose1(verbose,"load U from ",parameters.loadU_dir)
         if parameters.loadU_format == "JLD"
@@ -192,7 +192,7 @@ module Mainrun
 
         Nsteps = parameters.Nsteps
         if parameters.update_method == "Fileloading"
-            Nsteps,numfiles,filename_load,ildg = run_init_Fileloading!(parameters,univ,mdparams,meas)
+            Nsteps,numfiles,filename_load,ildg = run_init_Fileloading!(parameters,univ,mdparams,meas,verbose)
         elseif parameters.update_method == "SLHMC" || parameters.update_method == "SLMC"
             #slmc_data = SLMC_data(1,univ.NC)
             if typeof(univ.gparam) == GaugeActionParam_autogenerator

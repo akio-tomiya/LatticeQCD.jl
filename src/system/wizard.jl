@@ -227,6 +227,17 @@ module Wizard
         system["NC"] = NC
         println("SU($NC) will be used")
 
+        if NC == 3
+            β = parse(Float64,Base.prompt("β ?", default="5.7"))
+        elseif NC == 2
+            β = parse(Float64,Base.prompt("β ?", default="2.7"))
+        end
+        system["β"] = β
+        if β<0
+            error("Invalid value for β=$β. This has to be positive or zero")
+        end
+
+
         fileloading = request("Do you want to load configurations from files?",RadioMenu([
                         "No",
                         "Yes",
@@ -250,7 +261,7 @@ module Wizard
                 system["loadU_dir"] = String(Base.prompt("Loading directory", default="./confs"))
             end
 
-            system["β"] = 2.6
+            #system["β"] = 2.6
             system["initial"] = "cold"
             system["BoundaryCondition"] = [1,1,1,-1]
             system["Nwing"] = 1
@@ -265,15 +276,7 @@ module Wizard
 
         else
 
-            if NC == 3
-                β = parse(Float64,Base.prompt("β ?", default="5.7"))
-            elseif NC == 2
-                β = parse(Float64,Base.prompt("β ?", default="2.7"))
-            end
-            system["β"] = β
-            if β<0
-                error("Invalid value for β=$β. This has to be positive or zero")
-            end
+            
 
             if NC == 3
                 initialconf = request("Choose initial configurations",RadioMenu([
@@ -464,7 +467,7 @@ module Wizard
                 elseif i == 2
                     measurement_methods[count] = poly_wizard()
                 elseif i == 3
-                    measurement_methods[count] = topo_wizard()
+                    measurement_methods[count] = topo_wizard(L)
                 elseif i == 4
                     measurement_methods[count] = chiral_wizard(staggered)
                 elseif i == 5
@@ -625,13 +628,21 @@ module Wizard
         return method
     end
 
-    function  topo_wizard()
+    function  topo_wizard(L)
         method = Dict()
         println("You measure a topological charge")
         method["methodname"] = "Topological_charge"
         method["measure_every"] = parse(Int64,Base.prompt("How often measure a topological charge?", default="10"))
         method["fermiontype"] = nothing
         method["numflow"]  = parse(Int64,Base.prompt("How many times do you want to flow gauge fields to measure the topological charge?", default="10"))
+
+        Nflowsteps = L[1]
+        eps_flow = 0.01
+
+        method["Nflowsteps"]  = parse(Int64,Base.prompt("Nflowsteps?", default="$Nflowsteps"))
+        method["eps_flow"]  = parse(Float64,Base.prompt("eps_flow?", default="$eps_flow"))
+
+
 
         return method
     end

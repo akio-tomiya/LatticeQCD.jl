@@ -5,7 +5,8 @@ module Measurements
             make_staple!,calc_Plaq!,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,calc_Polyakov,calc_Plaq,calc_Plaq_notrace_1d,SUn,SU2,SU3,TA,add!,
-            SUNGaugeFields,SUNGaugeFields_1d
+            SUNGaugeFields,SUNGaugeFields_1d,
+            Loops,evaluate_loops!,evaluate_loops
     import ..Fermionfields:clear!,FermionFields,WilsonFermion
     import ..Fermionfields:Z4_distribution_fermi!,gauss_distribution_fermi!,set_wing_fermi!
     import ..CGmethods:bicg
@@ -290,8 +291,9 @@ module Measurements
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                     println(measfp,"$itrj $(real(poly)) $(imag(poly)) # poly")
                 elseif method["methodname"] == "Topological_charge"
-                    Nflowsteps = 50
-                    eps_flow = 0.01
+                    Nflowsteps = method["Nflowsteps"]#50
+                    eps_flow =  method["eps_flow"] #0.01
+
                     println_verbose2(verbose,"# epsilon for the Wilson flow is $eps_flow")
                     Usmr = deepcopy(U)
                     W1 = deepcopy(univ.U)
@@ -305,8 +307,11 @@ module Measurements
                     # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
-                    println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
-                    println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                    Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                    #println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                    #println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                    println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                    println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     flush(stdout)
                     
 
@@ -314,11 +319,12 @@ module Measurements
                         gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
                         plaq = calc_plaquette(Usmr)
                         Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
-                        Qclover= calc_topological_charge_clover(Usmr)
+                        Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                        Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
                         #@time Q = calc_topological_charge(Usmr)
                         τ = iflow*eps_flow*Nflowsteps
-                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
-                        println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
+                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                        println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                         if iflow%10 == 0
                             flush(stdout)
                         end
@@ -373,59 +379,46 @@ module Measurements
         return calc_topological_charge_plaq(U)
     end
 
-    function calc_topological_charge_plaq(U::Array{GaugeFields{S},1},temp_UμνTA) where S <: SUn
-        if S == SU3
-            NC = 3
-        elseif S == SU2
-            NC = 2
-        else
-            NC = U[1].NC
-            #error("NC != 2,3 is not supported")
-        end
+    function calc_topological_charge_clover(U::Array{GaugeFields{S},1}) where S <: SUn
+        UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
+        Q = calc_topological_charge_clover(U,UμνTA)
+        return Q
+    end
 
+    function calc_topological_charge_clover(U::Array{GaugeFields{S},1},temp_UμνTA) where S <: SUn
         UμνTA = temp_UμνTA
+        numofloops = calc_UμνTA!(UμνTA,"clover",U)
+        Q = calc_Q(UμνTA,numofloops,U)
+        return Q
+    end
 
-        for μ=1:4
-            for ν=1:4
-                if ν == μ
-                    continue
-                end
-                UμνTA[μ,ν] = TA(calc_Plaq_notrace_1d(U,μ,ν))
+    function calc_topological_charge_improved(U::Array{GaugeFields{S},1},temp_UμνTA) where S <: SUn
+        UμνTA = temp_UμνTA
+        numofloops = calc_UμνTA!(UμνTA,"clover",U)
+        Qclover = calc_Q(UμνTA,numofloops,U)
+        Q = calc_topological_charge_improved(U,UμνTA,Qclover)
+        return Q
+    end
 
-            end
-        end
+    function calc_topological_charge_improved(U::Array{GaugeFields{S},1},temp_UμνTA,Qclover) where S <: SUn
+        UμνTA = temp_UμνTA
+        #numofloops = calc_UμνTA!(UμνTA,"clover",U)
+        #Qclover = calc_Q(UμνTA,numofloops,U)
 
-        ε(μ,ν,ρ,σ) = epsilon_tensor(μ,ν,ρ,σ)  
-        Q = 0.0
+        numofloops = calc_UμνTA!(UμνTA,"rect",U)
+        Qrect = 2*calc_Q(UμνTA,numofloops,U)
+        c1 = -1/12
+        c0 = 5/3
+        Q = c0*Qclover + c1*Qrect
+        return Q
+    end
 
 
-        NV=UμνTA[1,2].NV
-        for n=1:NV
-            for μ=1:4
-                for ν=1:4
-                    if ν == μ
-                        continue
-                    end
-                    for ρ =1:4
-                        for σ=1:4
-                            if ρ == σ
-                                continue
-                            end
-                            
-                            s = 0im
-                            for i=1:NC
-                                for j=1:NC
-                                    s += UμνTA[μ,ν][i,j,n]*UμνTA[ρ,σ][j,i,n]
-                                end
-                            end
-
-                            Q += ε(μ,ν,ρ,σ)*s#*tr(tmp1*tmp2) 
-                        end
-                    end
-                end
-            end
-        end
-        return -Q/(32*(π^2))
+    function calc_topological_charge_plaq(U::Array{GaugeFields{S},1},temp_UμνTA) where S <: SUn
+        UμνTA = temp_UμνTA
+        numofloops = calc_UμνTA!(UμνTA,"plaq",U)
+        Q = calc_Q(UμνTA,numofloops,U)
+        return Q
     end
 
     function calc_topological_charge_plaq(U::Array{GaugeFields{S},1}) where S <: SUn
@@ -433,7 +426,102 @@ module Measurements
         return calc_topological_charge_plaq(U,UμνTA )
     end
 
-    function calc_topological_charge_clover(U::Array{GaugeFields{S},1}) where S <: SUn
+    function calc_loopset_μν(name)
+        loops_μν= Array{Wilson_loop_set,2}(undef,4,4)
+        if name == "plaq"
+            numofloops = 1
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+                    loop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+                    push!(loops,loop)
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        elseif name == "clover"
+            numofloops = 4
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+
+                    loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+                    loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
+                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
+                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        elseif name == "rect"
+            numofloops = 8
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+
+                    loop_righttop = Wilson_loop([(μ,2),(ν,1),(μ,-2),(ν,-1)])
+                    loop_lefttop = Wilson_loop([(ν,1),(μ,-2),(ν,-1),(μ,2)])
+                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,2),(ν,1),(μ,-2)])
+                    loop_leftbottom= Wilson_loop([(μ,-2),(ν,-1),(μ,2),(ν,1)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loop_righttop = Wilson_loop([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+                    loop_lefttop = Wilson_loop([(ν,2),(μ,-1),(ν,-2),(μ,1)])
+                    loop_rightbottom = Wilson_loop([(ν,-2),(μ,1),(ν,2),(μ,-1)])
+                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-2),(μ,1),(ν,2)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        else
+            error("$name is not supported")
+        end
+        return loops_μν,numofloops
+    end
+
+
+
+    function calc_UμνTA!(temp_UμνTA,loops_μν,U)
+        UμνTA = temp_UμνTA
+        for μ=1:4
+            for ν=1:4
+                if ν == μ
+                    continue
+                end
+                loopset = Loops(U,loops_μν[μ,ν])
+                UμνTA[μ,ν] = evaluate_loops(loopset,U)
+                UμνTA[μ,ν] = TA(UμνTA[μ,ν])
+            end
+        end
+        return 
+    end
+
+    function calc_UμνTA!(temp_UμνTA,name::String,U)
+        loops_μν,numofloops = calc_loopset_μν(name)
+        calc_UμνTA!(temp_UμνTA,loops_μν,U)
+        return numofloops
+    end
+
+    function calc_Q(UμνTA,numofloops,U::Array{GaugeFields{S},1}) where S <: SUn
         if S == SU3
             NC = 3
         elseif S == SU2
@@ -443,77 +531,9 @@ module Measurements
             #error("NC != 2,3 is not supported")
         end
 
-
-        UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
-        numofloops = 4
-        G = zeros(ComplexF64,NC,NC)
-
-        for μ=1:4
-            for ν=1:4
-                if ν == μ
-                    continue
-                end
-
-                #=
-
-                loops = Wilson_loop_set()
-
-                loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
-                loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
-                loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
-                loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
-                push!(loops,loop_righttop)
-                push!(loops,loop_lefttop)
-                push!(loops,loop_rightbottom)
-                push!(loops,loop_leftbottom)
-
-                G .= 0
-
-                evaluate_wilson_loops!(G,loops,U,ix,iy,iz,it)
-
-
-
-                =#
-
-                
-
-                origin_lefttop = zeros(Int8,4)
-                for i=1:4
-                    if i == μ
-                        origin_lefttop[i] = -1
-                    end
-                end
-
-                origin_rightbottom = zeros(Int8,4)
-                for i=1:4
-                    if i == ν
-                        origin_rightbottom[i] = -1
-                    end
-                end
-
-                origin_leftbottom = zeros(Int8,4)
-                for i=1:4
-                    if i == ν
-                        origin_leftbottom[i] = -1
-                    end
-                    if i == μ
-                        origin_leftbottom[i] = -1
-                    end
-                end
-
-                UμνTA[μ,ν] = calc_Plaq_notrace_1d(U,μ,ν)
-                add!(UμνTA[μ,ν],calc_Plaq_notrace_1d(U,μ,ν,origin_lefttop))
-                add!(UμνTA[μ,ν],calc_Plaq_notrace_1d(U,μ,ν,origin_rightbottom))
-                add!(UμνTA[μ,ν],calc_Plaq_notrace_1d(U,μ,ν,origin_leftbottom))
-                UμνTA[μ,ν] = TA(UμνTA[μ,ν])
-                
-            end
-        end
-
-        ε(μ,ν,ρ,σ) = epsilon_tensor(μ,ν,ρ,σ)  
         Q = 0.0
 
-
+        ε(μ,ν,ρ,σ) = epsilon_tensor(μ,ν,ρ,σ)  
         NV=UμνTA[1,2].NV
         for n=1:NV
             for μ=1:4
@@ -542,6 +562,8 @@ module Measurements
         end
         return -Q/(32*(π^2))
     end
+
+
 
     
 
