@@ -16,6 +16,7 @@ module Measurements
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Smearing:gradientflow!
+    import ..Wilsonloops:Wilson_loop,Wilson_loop_set
 
     #=
     abstract type MeasureMethod end
@@ -445,12 +446,35 @@ module Measurements
 
         UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
         numofloops = 4
+        G = zeros(ComplexF64,NC,NC)
 
         for μ=1:4
             for ν=1:4
                 if ν == μ
                     continue
                 end
+
+                #=
+
+                loops = Wilson_loop_set()
+
+                loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+                loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
+                loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
+                loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+                push!(loops,loop_righttop)
+                push!(loops,loop_lefttop)
+                push!(loops,loop_rightbottom)
+                push!(loops,loop_leftbottom)
+
+                G .= 0
+
+                evaluate_wilson_loops!(G,loops,U,ix,iy,iz,it)
+
+
+
+                =#
+
                 
 
                 origin_lefttop = zeros(Int8,4)

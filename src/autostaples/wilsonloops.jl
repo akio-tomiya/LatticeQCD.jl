@@ -9,6 +9,7 @@ module Wilsonloops
         Wilson_loop(loop,origin) = new([Tuple(loop)],origin)
         #Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(loop,(0,0,0,0))
         Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(make_links(loop),(0,0,0,0))
+        Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(make_links(loop),origin)
         Wilson_loop(loop) = new([Tuple(loop)],(0,0,0,0))
     end 
 
