@@ -2271,6 +2271,9 @@ c-----------------------------------------------------c
     end
 
     function calc_Plaq_notrace_1d(U::Array{T,1},μ,ν) where T <: GaugeFields
+        origin = [0,0,0,0]
+        return calc_Plaq_notrace_1d(U,μ,ν,origin)
+        
 
         NC = U[1].NC
         NX = U[1].NX
