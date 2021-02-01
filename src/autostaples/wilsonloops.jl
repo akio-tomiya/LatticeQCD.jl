@@ -5,7 +5,7 @@ module Wilsonloops
         wilson_loop::Array{Tuple{Int8,Int8},1}
         origin::NTuple{4,Int8}
         Wilson_loop() = new([],(0,0,0,0))
-        Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(loop,origin)
+        #Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(loop,origin)
         Wilson_loop(loop,origin) = new([Tuple(loop)],origin)
         #Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(loop,(0,0,0,0))
         Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(make_links(loop),(0,0,0,0))
