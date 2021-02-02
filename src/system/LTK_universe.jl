@@ -15,7 +15,7 @@ module LTK_universe
                         evaluate_wilson_loops!
     import ..Gaugefields
                         
-    import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!
+    import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!
     import ..Fermionfields
     import ..Actions:GaugeActionParam,FermiActionParam,
                 Setup_Gauge_action,Setup_Fermi_action,
@@ -33,6 +33,8 @@ module LTK_universe
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
     import ..SUN_generator:Generator
+
+    import ..RationalApprox:calc_exactvalue,calc_Anϕ
 
 
 
@@ -500,6 +502,9 @@ module LTK_universe
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
         @time Sfnew = -real(logdet(WdagW))
+
+       
+
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
                 Sfnew /= 2
