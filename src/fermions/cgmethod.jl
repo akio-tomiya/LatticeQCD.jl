@@ -129,6 +129,10 @@ module CGmethods
 
     end
 
+    function Base.:*(x::Array{T,1},y::Array{T,1}) where T <: Number
+        return x'*y
+    end
+
     function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         println_verbose3(verbose,"--------------------------------------")
         println_verbose3(verbose,"shifted cg method")

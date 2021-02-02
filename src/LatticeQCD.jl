@@ -4,6 +4,9 @@ module LatticeQCD
     include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
     include("./fermions/cgmethod.jl")
+
+    
+
     include("./autostaples/wilsonloops.jl")
     
     include("./system/system_parameters.jl")
@@ -16,6 +19,10 @@ module LatticeQCD
     #include("gaugefields.jl")
     include("./fermions/fermionfields.jl")
     include("./liealgebra/liealgebrafields.jl")
+
+    include("./rationalapprox/rationalapprox.jl")
+
+    
     include("./fermions/clover.jl")
     
     include("./fermions/diracoperator.jl")
@@ -48,6 +55,8 @@ module LatticeQCD
 
     include("./system/mainrun.jl")
     include("./output/analyze.jl")
+
+    
     
 
     
@@ -80,6 +89,7 @@ module LatticeQCD
     import .IOmodule:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD
+    import .RationalApprox:calc_exactvalue,calc_Anϕ,calc_det
     #,run_LQCD!
 
     import .Analyze:analyze,get_plaquette,get_polyakov,get_trjs

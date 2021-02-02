@@ -399,7 +399,9 @@ module Mainrun
 
             if itrj % parameters.saveU_every == 0 && parameters.saveU_format != nothing && parameters.update_method != "Fileloading"
                 itrjsavecount += 1
-                itrjstring = lpad(itrjsavecount,8,"0")
+                
+                itrjstring = lpad(itrj,8,"0")
+                #itrjstring = lpad(itrjsavecount,8,"0")
                 if parameters.saveU_format == "JLD"
                     filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
                     saveU(filename,univ.U)

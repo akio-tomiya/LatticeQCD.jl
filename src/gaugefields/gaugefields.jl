@@ -471,7 +471,7 @@ module Gaugefields
                 for iy=1:NY
                     for id=1:NDW
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 u[k1,k2,-NDW+id,iy,iz,it] = u[k1,k2,NX+(id-NDW),iy,iz,it]
                             end
                         end
@@ -485,7 +485,7 @@ module Gaugefields
                 for iy=1:NY
                     for id=1:NDW
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 u[k1,k2,NX+id,iy,iz,it] = u[k1,k2,id,iy,iz,it]
                             end
                         end
@@ -502,7 +502,7 @@ module Gaugefields
                 for ix=-NDW+1:NX+NDW
                     for id=1:NDW
                         for k1=1:NC
-                            for k2=1:NC
+                            @simd for k2=1:NC
                                 u[k1,k2,ix,-NDW+id,iz,it] = u[k1,k2,ix,NY+(id-NDW),iz,it]
                             end
                         end
@@ -516,7 +516,7 @@ module Gaugefields
                 for ix=-NDW+1:NX+NDW
                     for id=1:NDW
                         for k1=1:NC
-                            for k2=1:NC
+                            @simd for k2=1:NC
                                 u[k1,k2,ix,NY+id,iz,it] = u[k1,k2,ix,id,iz,it]
                             end
                         end
@@ -532,7 +532,7 @@ module Gaugefields
                 for iy=-NDW+1:NY+NDW
                     for ix=-NDW+1:NX+NDW
                         for k1=1:NC
-                            for k2=1:NC
+                            @simd for k2=1:NC
                                 u[k1,k2,ix,iy,id-NDW,it] = u[k1,k2,ix,iy,NZ+(id-NDW),it]
                                 u[k1,k2,ix,iy,NZ+id,it] = u[k1,k2,ix,iy,id,it]
                             end
@@ -548,7 +548,7 @@ module Gaugefields
                 for iy=-NDW+1:NY+NDW
                     for ix=-NDW+1:NX+NDW
                         for k1=1:NC
-                            for k2=1:NC
+                            @simd for k2=1:NC
                                 u[k1,k2,ix,iy,iz,id-NDW] = u[k1,k2,ix,iy,iz,NT+(id-NDW)]
                                 u[k1,k2,ix,iy,iz,NT+id] = u[k1,k2,ix,iy,iz,id]
                             end
@@ -620,7 +620,7 @@ module Gaugefields
                     for ix=1:NX               
                         icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix 
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 a[k1,k2,ix,iy,iz,it] = b[k1,k2,icum]
                             end
                         end
@@ -650,7 +650,7 @@ module Gaugefields
 
 
                         for j=1:NC
-                            for i=1:NC
+                            @simd for i=1:NC
                                 a[i,j,icum] = b[i,j,ix,iy,iz,it]
                             end
                         end
@@ -667,7 +667,7 @@ module Gaugefields
 
         for i3=1:n3
             for i2=1:n2
-                for i1=1:n1
+                @simd for i1=1:n1
                     a.g[i1,i2,i3]= α*b.g[i1,i2,i3]
                 end
             end
@@ -692,7 +692,7 @@ module Gaugefields
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        for ic=1:NC
+                        @simd for ic=1:NC
                             U[ic,ic,ix,iy,iz,it] = 1 
                         end
                     end
@@ -710,7 +710,7 @@ module Gaugefields
                 for iy=1:NY
                     for ix=1:NX
                         for j=1:NC
-                            for i=1:NC
+                            @simd for i=1:NC
                                 U[i,j,ix,iy,iz,it] = rand()-0.5 + im*(rand()-0.5)
                             end
                         end
@@ -815,7 +815,7 @@ module Gaugefields
 
         for i=1:NV
             for k1=1:NC
-                for k2=1:NC
+                @simd for k2=1:NC
                     s[i] += real(u[k1,k2,i]*conj(v[k1,k2,i]))
                 end
             end
@@ -837,7 +837,7 @@ module Gaugefields
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        for k=1:NC
+                        @simd for k=1:NC
                             s += a[k,k,ix,iy,iz,it]
                         end
                     end
@@ -855,7 +855,7 @@ module Gaugefields
 
         for i=1:NV
 
-            for k=1:NC
+            @simd for k=1:NC
                 s += a[k,k,i]
             end
 
@@ -876,7 +876,7 @@ module Gaugefields
                 for iy=1:NY
                     for ix=1:NX   
                         for j=1:NC
-                            for i=1:NC
+                            @simd for i=1:NC
                                 func!(a,i,j,ix,iy,iz,it,b...)
                             end
                         end
@@ -898,7 +898,7 @@ module Gaugefields
             for k2=1:NC                            
                 for k1=1:NC
                     c[k1,k2,i] = 0
-                    for k3=1:NC
+                    @simd for k3=1:NC
                         c[k1,k2,i] += a[k1,k3,i]*b[k3,k2,i]
                     end
                 end
@@ -915,7 +915,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = a[1,1,i] * b[1,1,i] +
                 a[1,2,i] * b[2,1,i] +
                 a[1,3,i] * b[3,1,i]
@@ -954,7 +954,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = a[1,1,i] * b[1,1,i] +
                 a[1,2,i] * b[2,1,i] 
 
@@ -982,7 +982,7 @@ module Gaugefields
             for k2=1:NC                            
                 for k1=1:NC
                     c[k1,k2,i] = 0
-                    for k3=1:NC
+                    @simd for k3=1:NC
                         c[k1,k2,i] += a[k1,k3,i]*conj(b.parent[k2,k3,i])
                     end
                 end
@@ -1003,7 +1003,7 @@ module Gaugefields
 
         for i=1:NV
             for k2= 1:NC
-                for k1=1:NC
+                @simd for k1=1:NC
                     c[k1,k2,i] *= a
                 end
             end                        
@@ -1018,7 +1018,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul_aconjb(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = a[1,1,i] * conj(b.parent[1,1,i]) +
                 a[1,2,i] * conj(b.parent[1,2,i]) +
                 a[1,3,i] * conj(b.parent[1,3,i])
@@ -1060,7 +1060,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul_aconjb(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = a[1,1,i] * conj(b.parent[1,1,i]) +
                 a[1,2,i] * conj(b.parent[1,2,i]) 
             c[1,2,i] = a[1,1,i] * conj(b.parent[2,1,i]) + 
@@ -1082,7 +1082,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul_aconjb(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = conj(a.parent[1,1,i]) * conj(b.parent[1,1,i]) +
                 conj(a.parent[2,1,i] )* conj(b.parent[1,2,i]) 
             c[1,2,i] = conj(a.parent[1,1,i]) * conj(b.parent[2,1,i]) + 
@@ -1103,7 +1103,7 @@ module Gaugefields
         #NC=a.NC
         #mulabc! = NCmul_aconjb(NC)
 
-        for i=1:NV
+        @simd for i=1:NV
             c[1,1,i] = conj(a.parent[1,1,i]) * conj(b.parent[1,1,i]) +
                 conj(a.parent[2,1,i] )* conj(b.parent[1,2,i]) +
                 conj(a.parent[3,1,i] )* conj(b.parent[1,3,i]) 
@@ -1146,6 +1146,7 @@ module Gaugefields
 
         NV=c.NV
         #NC=c.NC
+        #println(NC)
 
 
         for i=1:NV
@@ -1155,7 +1156,7 @@ module Gaugefields
             for k2=1:NC                            
                 for k1=1:NC
                     c[k1,k2,i] = 0
-                    for k3=1:NC
+                    @simd for k3=1:NC
                         c[k1,k2,i] += conj(a.parent[k3,k1,i])*conj(b.parent[k2,k3,i])
                     end
                 end
@@ -1180,7 +1181,7 @@ module Gaugefields
             for k2=1:NC                            
                 for k1=1:NC
                     c[k1,k2,i] = 0
-                    for k3=1:NC
+                    @simd for k3=1:NC
                         c[k1,k2,i] += conj(a.parent[k3,k1,i])*b[k3,k2,i]
                     end
                 end
@@ -1197,7 +1198,7 @@ module Gaugefields
 
         #mulabc! = NCmul_conjab(c.NC)
 
-        for i=1:NV
+        @simd for i=1:NV
 
             c[1,1,i] = conj(a.parent[1,1,i]) * b[1,1,i] +
                 conj(a.parent[2,1,i]) * b[2,1,i] +
@@ -1249,7 +1250,7 @@ module Gaugefields
 
         #mulabc! = NCmul_conjab(c.NC)
 
-        for i=1:NV
+        @simd for i=1:NV
 
             c[1,1,i] = conj(a.parent[1,1,i]) * b[1,1,i] +
                 conj(a.parent[2,1,i]) * b[2,1,i] 
@@ -1268,15 +1269,7 @@ module Gaugefields
 
     end
 
-    function add!(c::GaugeFields_1d{T},a::GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
-        end
+    function add!(c::GaugeFields_1d{SU{NC}},a::GaugeFields_1d{SU{NC}}) where NC
 
         NV=c.NV
 
@@ -1284,7 +1277,7 @@ module Gaugefields
             #ncadd!(a,c,i)
             
             for k2=1:NC                            
-                for k1=1:NC
+                @simd for k1=1:NC
                     c[k1,k2,i] += a[k1,k2,i] 
                 end
             end
@@ -1302,7 +1295,7 @@ module Gaugefields
             #ncadd!(a,c,i)
             
             for k2=1:NC                            
-                for k1=1:NC
+                @simd for k1=1:NC
                     c[k1,k2,i] += α*a[k1,k2,i] 
                 end
             end
@@ -1367,6 +1360,7 @@ module Gaugefields
         NY = b.NY
         NX = b.NX
         #NC = b.NC
+        #println(NC)
 
 
         
@@ -1384,7 +1378,7 @@ module Gaugefields
                         
                         
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 a[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
                             end
                         end
@@ -1454,7 +1448,7 @@ module Gaugefields
 
                         
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 a[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
                             end
                         end
@@ -1519,7 +1513,7 @@ module Gaugefields
 
                         
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 a[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
                             end
                         end
@@ -1679,7 +1673,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
                         v11 = vin[1,1,ix,iy,iz,it]
                         v22 = vin[2,2,ix,iy,iz,it]
                         v33 = vin[3,3,ix,iy,iz,it]
@@ -1697,7 +1691,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
 
                         v12 = vin[1,2,ix,iy,iz,it]
                         v13 = vin[1,3,ix,iy,iz,it]
@@ -1734,7 +1728,7 @@ c-----------------------------------------------------c
         fac13 = 1/3
         nv = vin.NV
 
-        for i=1:nv
+        @simd for i=1:nv
             v11 = vin[1,1,i]
             v22 = vin[2,2,i]
             v33 = vin[3,3,i]
@@ -1747,7 +1741,7 @@ c-----------------------------------------------------c
 
         end
 
-        for i=1:nv
+        @simd for i=1:nv
             v12 = vin[1,2,i]
             v13 = vin[1,3,i]
             v21 = vin[2,1,i]
@@ -1780,11 +1774,11 @@ c-----------------------------------------------------c
 
         for i=1:nv
             tri = 0.0
-            for k=1:NC
+            @simd for k=1:NC
                 tri += imag(vin[k,k,i])
             end
             tri *= fac1N
-            for k=1:NC
+            @simd for k=1:NC
                 vout[k,k,i] = (imag(vin[k,k,i])-tri)*im
             end
 
@@ -1792,7 +1786,7 @@ c-----------------------------------------------------c
 
         for i=1:nv
             for k1=1:NC
-                for k2=k1+1:NC
+                @simd for k2=k1+1:NC
                     vv = 0.5*(vin[k1,k2,i] - conj(vin[k2,k1,i]))
                     vout[k1,k2,i] = vv
                     vout[k2,k1,i] = -conj(vv)
@@ -1822,7 +1816,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
                         v11 = vin[1,1,ix,iy,iz,it]
                         v22 = vin[2,2,ix,iy,iz,it]
 
@@ -1838,7 +1832,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
 
                         v12 = vin[1,2,ix,iy,iz,it]
                         #v13 = vin[1,3,ix,iy,iz,it]
@@ -1866,7 +1860,7 @@ c-----------------------------------------------------c
         fac12 = 1/2
         nv = vin.NV
 
-        for i=1:nv
+        @simd for i=1:nv
             v11 = vin[1,1,i]
             v22 = vin[2,2,i]
 
@@ -1877,7 +1871,7 @@ c-----------------------------------------------------c
 
         end
 
-        for i=1:nv
+        @simd for i=1:nv
             v12 = vin[1,2,i]
             v21 = vin[2,1,i]
 
@@ -1909,7 +1903,7 @@ c-----------------------------------------------------c
         NV = a.NV
 
         if k==1
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = 0.5 * a[2,1,i] 
                 b[1,2,i] = 0.5 * a[2,2,i]
                 b[1,3,i] = 0.5 * a[2,3,i]
@@ -1921,7 +1915,7 @@ c-----------------------------------------------------c
                 b[3,3,i] = 0
             end
         elseif k==2
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = -0.5*im * a[2,1,i] 
                 b[1,2,i] = -0.5*im * a[2,2,i]
                 b[1,3,i] = -0.5*im * a[2,3,i]
@@ -1933,7 +1927,7 @@ c-----------------------------------------------------c
                 b[3,3,i] = 0
             end
         elseif k==3
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] =  0.5 * a[1,1,i] 
                 b[1,2,i] =  0.5 * a[1,2,i]
                 b[1,3,i] =  0.5 * a[1,3,i]
@@ -1945,7 +1939,7 @@ c-----------------------------------------------------c
                 b[3,3,i] = 0
             end
         elseif k==4
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = 0.5 * a[3,1,i] 
                 b[1,2,i] = 0.5 * a[3,2,i]
                 b[1,3,i] = 0.5 * a[3,3,i]
@@ -1957,7 +1951,7 @@ c-----------------------------------------------------c
                 b[3,3,i] = 0.5 * a[1,3,i]
             end
         elseif k==5
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = -0.5*im * a[3,1,i] 
                 b[1,2,i] = -0.5*im * a[3,2,i]
                 b[1,3,i] = -0.5*im * a[3,3,i]
@@ -1969,7 +1963,7 @@ c-----------------------------------------------------c
                 b[3,3,i] =  0.5*im * a[1,3,i]
             end
         elseif k==6
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = 0
                 b[1,2,i] = 0
                 b[1,3,i] = 0
@@ -1981,7 +1975,7 @@ c-----------------------------------------------------c
                 b[3,3,i] = 0.5 * a[2,3,i]
             end
         elseif k==7
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = 0
                 b[1,2,i] = 0
                 b[1,3,i] = 0
@@ -1993,7 +1987,7 @@ c-----------------------------------------------------c
                 b[3,3,i] =  0.5*im * a[2,3,i]
             end
         elseif k==8
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] =  sr3ih * a[1,1,i] 
                 b[1,2,i] =  sr3ih * a[1,2,i]
                 b[1,3,i] =  sr3ih * a[1,3,i]
@@ -2022,7 +2016,7 @@ c-----------------------------------------------------c
     
     
         if k==1
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = -0.5*im* a[2,1,i]*im
                 b[1,2,i] = -0.5*im * a[2,2,i]*im
     
@@ -2032,7 +2026,7 @@ c-----------------------------------------------------c
     
             end
         elseif k==2
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] = -0.5 * a[2,1,i] *im
                 b[1,2,i] = -0.5 * a[2,2,i]*im
     
@@ -2041,7 +2035,7 @@ c-----------------------------------------------------c
     
             end
         elseif k==3
-            for i=1:NV
+            @simd for i=1:NV
                 b[1,1,i] =  -0.5*im * a[1,1,i] *im
                 b[1,2,i] =  -0.5*im * a[1,2,i]*im
     
@@ -2070,7 +2064,7 @@ c-----------------------------------------------------c
             for k2=1:NC
                 for k1=1:NC
                     b[k1,k2,i] = 0
-                    for l=1:NC
+                    @simd for l=1:NC
                         b[k1,k2,i] += matrix[k1,l]*a[l,k2,i]/2
                     end
                 end
@@ -2101,7 +2095,7 @@ c-----------------------------------------------------c
             for iy=1:NY
                 for ix=1:NX
                     for k2=1:NC
-                        for k1=1:NC
+                        @simd for k1=1:NC
                             Pol[k1,k2,ix,iy,iz] = u[4][k1,k2,ix,iy,iz,1]
                         end
                     end
@@ -2114,7 +2108,7 @@ c-----------------------------------------------------c
                 for iy=1:NY
                     for ix=1:NX
                         for k2=1:NC
-                            for k1=1:NC
+                            @simd for k1=1:NC
                                 tmp1[k1,k2] = Pol[k1,k2,ix,iy,iz]
                                 tmp2[k1,k2] = u[4][k1,k2,ix,iy,iz,it]
                             end
@@ -2129,7 +2123,7 @@ c-----------------------------------------------------c
         for iz=1:NX
             for iy=1:NY
                 for ix=1:NX
-                    for k1=1:NC
+                    @simd for k1=1:NC
                         avePol += Pol[k1,k1,ix,iy,iz]
                     end
                 end
@@ -2164,24 +2158,6 @@ c-----------------------------------------------------c
     function calc_Plaq_notrace_1d(U::Array{T,1},μ,ν) where T <: GaugeFields
         origin = [0,0,0,0]
         return calc_Plaq_notrace_1d(U,μ,ν,origin)
-        
-
-        NC = U[1].NC
-        NX = U[1].NX
-        NY = U[1].NY
-        NZ = U[1].NZ
-        NT = U[1].NT
-
-        temp1 = GaugeFields_1d(NC,NX,NY,NZ,NT)
-        temp2 = GaugeFields_1d(NC,NX,NY,NZ,NT)
-        temp3 = GaugeFields_1d(NC,NX,NY,NZ,NT)
-        plaq = GaugeFields_1d(NC,NX,NY,NZ,NT)
-
-        loop = make_plaq(μ,ν)
-
-        evaluate_wilson_loops!(plaq,loop ,U,[temp1,temp2,temp3])
-
-        return plaq
     end
 
     function calc_Plaq_notrace_1d(U::Array{T,1}) where T <: GaugeFields
@@ -2392,7 +2368,7 @@ c-----------------------------------------------------c
 
                         w1 = 0
                         w2 = 0
-                        for ic=1:3
+                        @simd for ic=1:3
                             w1 += u[2,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
                             w2 += u[1,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
                         end
@@ -2461,7 +2437,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
 
                         α = u[1,1,ix,iy,iz,it]
                         β = u[2,1,ix,iy,iz,it]
@@ -2480,7 +2456,7 @@ c-----------------------------------------------------c
     function gramschmidt!(v)
         n = size(v)[1]
         for i=1:n
-            for j=1:i-1
+            @simd for j=1:i-1
                 v[:,i] = v[:,i] - v[:,j]'*v[:,i]*v[:,j]
             end
             v[:,i] = v[:,i]/norm(v[:,i])
@@ -2496,7 +2472,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
                         A = u[:,:,ix,iy,iz,it]
                         gramschmidt!(A)
                         u[:,:,ix,iy,iz,it] = A[:,:]
@@ -2553,7 +2529,7 @@ c-----------------------------------------------------c
         for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
-                    for ix=1:NX
+                    @simd for ix=1:NX
     
                         aa[ 1] = real( a[1,1,ix,iy,iz,it])
                         aa[ 2] = imag(a[1,1,ix,iy,iz,it])

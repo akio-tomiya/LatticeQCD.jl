@@ -18,7 +18,7 @@ module MD
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
-            StaggeredFermion,Wx!,clear!,WdagWx!
+            StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
     using ..Fermionfields
     import ..Heatbath:heatbath!
 
@@ -30,6 +30,7 @@ module MD
     import ..Diracoperators:Wilson_operator,Adjoint_Wilson_operator,WilsonClover_operator,
                 Dirac_operator,DdagD_operator
     import ..CGmethods:bicg,cg,shiftedcg
+    import ..RationalApprox:calc_exactvalue,calc_Anϕ
 
     abstract type MD_parameters end
 
@@ -37,11 +38,21 @@ module MD
         Δτ ::Float64
         MDsteps::Int64 
         N_SextonWeingargten::Int64
+        QPQ::Bool
+
+        function MD_parameters_SextonWeingargten(Δτ,MDsteps,N_SextonWeingargten;QPQ=true)
+            return new(Δτ,MDsteps,N_SextonWeingargten,QPQ)
+        end
     end
 
     struct MD_parameters_standard  <: MD_parameters
         Δτ ::Float64
         MDsteps::Int64 
+        QPQ::Bool
+
+        function MD_parameters_standard(Δτ,MDsteps;QPQ=true)
+            return new(Δτ,MDsteps,QPQ)
+        end
     end
 
     struct MD_parameters_IntegratedHMC  <: MD_parameters
@@ -124,7 +135,7 @@ module MD
 
     function md!(univ::Universe,mdparams::MD_parameters_standard)
         #Sold = md_initialize!(univ::Universe)
-        QPQ = true
+        QPQ = mdparams.QPQ #true
         if QPQ 
             for istep=1:mdparams.MDsteps
                 #println("istep = $istep")
@@ -186,7 +197,7 @@ module MD
 
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
-        QPQ = true
+        QPQ = mdparams.QPQ
         if QPQ != true
             for istep=1:mdparams.MDsteps
                 
@@ -385,7 +396,122 @@ module MD
         @time Sfnew = calc_IntegratedFermionAction(univ)
         #println("Sfnew comparison: $Sfnew,$Sfnew2")
 
+        #=
+        function debug_gauss()
+            WdagW = make_WdagWmatrix(univ)
+            
+            #WdagWold = make_WdagWmatrix(univ,univ.Uold)
+            #ldet = logdet(WdagW)
+            #ldetold = logdet(WdagWold)
+            #ldetsa= ldetold -ldet
+            #println(ldetsa)
+            #exit()
 
+            N,_ = size(WdagW)
+            n = 8
+
+            e,v = eigen(WdagW)
+            en = e.^(-1/n)
+            esa = 1 .- en
+            #println(esa)
+            #exit()
+
+
+            x = deepcopy(univ.η)
+            ϕ = zeros(ComplexF64,N)
+            gauss_distribution_fermi!(x,univ.ranf)
+            substitute_fermion!(ϕ,x)
+            ϕ2 = calc_exactvalue(-n,WdagW,ϕ) 
+            println(ϕ2'*ϕ)
+
+            WdagW2 = DdagD_operator(univ.U,univ.η,univ.fparam)
+            
+            ϕ4 = calc_Anϕ(-n,WdagW2,x)   
+            
+            println(ϕ4*x)
+            ldet = logdet(WdagW)/n
+            detex = det(WdagW)
+            #println(detex,"\t",detex^(1/n))
+            println(ldet)
+            
+
+            itemax = 1000000
+            detAprrox = 0
+            gaussdata = zeros(ComplexF64,n,itemax)
+            #gaussdata2 = zeros(ComplexF64,itemax)
+            
+
+            
+            
+            fp = open("detn.dat","w")
+            for ite=1:itemax
+            
+                rexp = 0
+                k = 1
+                #for k=1:n
+                    gauss_distribution_fermi!(x,univ.ranf)
+                    substitute_fermion!(ϕ,x)
+                    vx = v'*ϕ
+                    vx2 = vx .* esa
+                    #ed = Diagonal(en)
+                    #wda = v*ed*v'
+                    #display(sum(v*ed*v'- WdagW^(1/n)))
+                    #exit()
+
+
+                    
+                    #ϕ2 = calc_exactvalue(-n,WdagW,ϕ) 
+                    #println(ϕ'*ϕ2)
+                    #println("\t")
+                    #println(vx'*ed*vx)
+                    #println(ϕ'*WdagW^(1/n)*ϕ)
+                    #exit()
+                    #ϕ3 = calc_exactvalue(n,WdagWold,ϕ2) 
+                    
+                    #ϕWϕ = ϕ'*ϕ - ϕ'*ϕ3
+                    #ϕWϕ = ϕ'*ϕ - (univ.fparam.mass^2)^(1/n)*ϕ'*ϕ2
+                    
+
+                    #Wϕ = calc_Anϕ(-n,WdagW2,x)   
+                    #ϕWϕ =  x*x - (univ.fparam.mass^2)^(1/n)*(x*Wϕ)
+                    #ϕWϕ2 = ϕ'*ϕ - ϕ'*ϕ2
+                    ϕWϕ =vx'*vx2
+                    #println(ϕWϕ,"\t",ϕWϕ2)
+                    #exit()
+
+                    #println("xWϕ = ",x*Wϕ,"\t",x*x)
+
+                    #println(ϕWϕ)
+                    gaussdata[k,ite] = ϕWϕ 
+                    #gaussdata2[ite]= x*x
+                    ϕWϕmax = maximum(real.(gaussdata[k,1:ite]))
+                    #ϕϕmax = maximum(real.(gaussdata2[1:ite]))
+
+                    csum = sum(exp.(gaussdata[k,1:ite] .- ϕWϕmax))
+                    csumlog = ϕWϕmax + log(csum) -log(ite) #+ N*log(2) #  + N*(2/n)*log(univ.fparam.mass) -N*log(pi)
+                    #csumlog = ϕWϕmax + log(csum) #-log(ite) + N*(2/n)*log(univ.fparam.mass) -log(pi)
+                    rexp += csumlog
+                #end
+                #csumlog = ϕWϕmax + log(csum) -log(ite) + N*(2/n)*log(univ.fparam.mass)
+                #detAprrox += rexp
+                
+                if ite % 100 == 0
+                    #println("$ite ",real(rexp),"\t",ldet*n,"\t",real(ldet*n-rexp))
+                    #println(fp,ite,"\t",real(rexp),"\t",real(ldet*n))
+                    println("$ite ",real(rexp),"\t",ldet,"\t",real(ldet-rexp))
+                    println(fp,ite,"\t",real(rexp),"\t",real(ldet))
+                end
+                #println("$ite ",real(rexp),"\t",ldetsa,"\t",real(ldetsa-rexp))
+            end
+            close(fp)
+
+
+            #e,_ = eigen(WdagW)
+            #println(e)
+            exit()
+        end
+        debug_gauss()
+        =#
         
         #
 
@@ -403,7 +529,7 @@ module MD
 
             WdagW = make_WdagWmatrix(univ)
             #e,_ = eigen(WdagW)
-            #println(e)
+            
             Sfold = -real(logdet(WdagW))
             #Uold = deepcopy(univ.U)
             if univ.Dirac_operator == "Staggered" 
@@ -431,6 +557,8 @@ module MD
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
         println("Calculating logdet")
+
+        
         @time Sfnew = -real(logdet(WdagW))
         if univ.Dirac_operator == "Staggered" 
             if univ.fparam.Nf == 4
