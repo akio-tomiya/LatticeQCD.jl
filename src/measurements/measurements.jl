@@ -521,6 +521,10 @@ module Measurements
         return numofloops
     end
 
+    #=
+    implementation of topological charge is based on
+    https://arxiv.org/abs/1509.04259
+    =#
     function calc_Q(UμνTA,numofloops,U::Array{GaugeFields{S},1}) where S <: SUn
         if S == SU3
             NC = 3
