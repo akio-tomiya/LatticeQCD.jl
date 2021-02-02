@@ -9,12 +9,11 @@ module Gaugefields
 
     abstract type SUn end
 
-    abstract type SU2 <: SUn
+    abstract type SU{N} <: SUn
     end
 
-    abstract type SU3 <: SUn
-    end
-
+    const SU2 = SU{2}
+    const SU3 = SU{3}
 
 
     struct GaugeFields{T <: SUn} 
@@ -29,15 +28,7 @@ module Gaugefields
 
 
         function GaugeFields(NC,NDW,NX,NY,NZ,NT)
-            if NC == 3
-                sutype = SU3
-            elseif NC == 2
-                sutype = SU2
-            elseif NC ≥ 4
-                sutype = SUn
-            else
-                error("NC = $NC")
-            end 
+            sutype = SU{NC}
                 
             NV = NX*NY*NZ*NT
             g = zeros(ComplexF64,NC,NC,NX+2NDW,NY+2NDW,NZ+2NDW,NT+2NDW)
@@ -50,7 +41,7 @@ module Gaugefields
 
     const SU2GaugeFields  = GaugeFields{SU2}
     const SU3GaugeFields  = GaugeFields{SU3}
-    const SUNGaugeFields  = GaugeFields{SUn}
+    const SUNGaugeFields{N}  = GaugeFields{SU{N}}
 
 
 
@@ -72,15 +63,7 @@ module Gaugefields
         NV::Int64
     
         function GaugeFields_1d(NC,NX,NY,NZ,NT)
-            if NC == 3
-                sutype = SU3
-            elseif NC == 2
-                sutype = SU2
-            elseif NC ≥ 4
-                sutype = SUn
-            else
-                error("NC = $NC")
-            end 
+            sutype = SU{NC}
 
             NV = NX*NY*NZ*NT
             g = zeros(ComplexF64,NC,NC,NV)
@@ -88,14 +71,7 @@ module Gaugefields
         end
     
         function GaugeFields_1d(NC,NV) 
-            if NC == 3
-                sutype = SU3
-            elseif NC == 2
-                sutype = SU2
-            else
-                sutype = SUn
-            end 
-
+            sutype = SU{NC}
             g = zeros(ComplexF64,NC,NC,NV)
             return new{sutype}(g,NC,NV)
         end
@@ -103,7 +79,7 @@ module Gaugefields
 
     const SU2GaugeFields_1d  = GaugeFields_1d{SU2}
     const SU3GaugeFields_1d  = GaugeFields_1d{SU3}
-    const SUNGaugeFields_1d  = GaugeFields_1d{SUn}
+    const SUNGaugeFields_1d{N}  = GaugeFields_1d{SU{N}}
 
     struct Adjoint_GaugeFields_1d{T <: SUn} 
         parent::GaugeFields_1d{T}
@@ -213,9 +189,7 @@ module Gaugefields
         for i=1:num
             wi = w[i]
             numloops = length(wi)    
-            #println("loops ",wi)
-            #coordinates = calc_coordinate(wi)
-            #println("positions ",coordinates)        
+    
             shifts = calc_shift(wi)
             #println("shift ",shifts)
             
@@ -223,14 +197,6 @@ module Gaugefields
             k = 1
             #println("k = $k shift: ",shifts[k])
             gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
-
-
-            #ix,iy,iz,it = 3,3,3,3
-            #icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
-            ##println("all i = $i")
-            #display(temp1[:,:,icum])
-            #println("\t")
-
 
             
             loopk1_2 = loopk[2]
@@ -314,9 +280,7 @@ module Gaugefields
 
             
             temp1[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
-            #println("part i = $i")
-            #display(temp1[:,:])
-            #println("\t")
+
 
             loopk1_2 = loopk[2]
 
@@ -349,21 +313,13 @@ module Gaugefields
 
 
 
-    function set_wing!(u::GaugeFields{T},ix,iy,iz,it) where T <: SUn
+    function set_wing!(u::GaugeFields{SU{NC}},ix,iy,iz,it) where NC#where T <: SUn
         NT = u.NT
         NY = u.NY
         NZ = u.NZ
         NX = u.NX
         NDW = u.NDW
 
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = u.NC
-            #error("NC >3 is not supported")
-        end
 
         function update!(u,ixp,iyp,izp,itp,ix,iy,iz,it)
             for k2=1:NC
@@ -499,21 +455,13 @@ module Gaugefields
 
     end
 
-    function set_wing!(u::GaugeFields{T}) where T <: SUn
+    #function set_wing!(u::GaugeFields{T}) where T <: SUn
+    function set_wing!(u::GaugeFields{SU{NC}}) where NC
         NT = u.NT
         NY = u.NY
         NZ = u.NZ
         NX = u.NX
         NDW = u.NDW
-
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = u.NC
-            #error("NC >3 is not supported")
-        end
     
         #X direction 
         #Now we send data
@@ -616,20 +564,12 @@ module Gaugefields
         return
     end
     
-    function Base.display(x::GaugeFields{T}) where T <: SUn
+    function Base.display(x::GaugeFields{SU{NC}}) where NC
         NX=x.NX
         NY=x.NY
         NZ=x.NZ
         NT=x.NT
 
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = x.NC
-            #error("NC >3 is not supported")
-        end
 
         icum = 0
         for it=1:NT
@@ -662,38 +602,17 @@ module Gaugefields
     end
 
     function substitute!(a::GaugeFields,b::GaugeFields)
-        n1,n2,n3,n4,n5,n6 = size(a.g)
-        #println(size(a.g))
-        #println(size(b.g))
-        for i6=1:n6
-            for i5=1:n5
-                for i4=1:n4
-                    for i3=1:n3
-                        for i2=1:n2
-                            for i1=1:n1
-                                a.g[i1,i2,i3,i4,i5,i6]= b.g[i1,i2,i3,i4,i5,i6]
-                            end
-                        end
-                    end
-                end
-            end
-        end
+        a.g[:,:,:,:,:,:] = copy(b.g)
+        return 
     end
 
 
-    function substitute!(a::GaugeFields{T},b::GaugeFields_1d{T}) where T <: SUn
+    function substitute!(a::GaugeFields{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
         NT = a.NT
         NY = a.NY
         NZ = a.NZ
         NX = a.NX
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
+
 
         for it=1:NT
             for iz=1:NZ
@@ -715,21 +634,13 @@ module Gaugefields
 
     end
 
-    function substitute!(a::GaugeFields_1d{T},b::GaugeFields{T}) where T <: SUn
+    function substitute!(a::GaugeFields_1d{SU{NC}},b::GaugeFields{SU{NC}}) where NC
 
         NT = b.NT
         NY = b.NY
         NZ = b.NZ
         NX = b.NX
 
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
 
         for it=1:NT
             for iz=1:NZ
@@ -898,15 +809,7 @@ module Gaugefields
         return
     end
 
-    function elementwise_tr!(s,u::GaugeFields_1d{T},v::GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = u.NC
-            #error("NC >3 is not supported")
-        end
+    function elementwise_tr!(s,u::GaugeFields_1d{SU{NC}},v::GaugeFields_1d{SU{NC}}) where NC
 
         NV=u.NV
 
@@ -922,19 +825,12 @@ module Gaugefields
     end
 
 
-    function LinearAlgebra.tr(a::GaugeFields{T}) where T <: SUn
+    function LinearAlgebra.tr(a::GaugeFields{SU{NC}}) where NC
         NX=a.NX
         NY=a.NY
         NZ=a.NZ
         NT=a.NT
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
+
 
         s = 0
         for it=1:NT
@@ -952,16 +848,9 @@ module Gaugefields
 
     end
 
-    function LinearAlgebra.tr(a::GaugeFields_1d{T}) where T <: SUn
+    function LinearAlgebra.tr(a::GaugeFields_1d{SU{NC}}) where NC
         NV=a.NV
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
+
         s = 0
 
         for i=1:NV
@@ -975,19 +864,12 @@ module Gaugefields
 
     end
 
-    function elementwise_apply!(a::GaugeFields{T},func!::Function) where T <: SUn
+    function elementwise_apply!(a::GaugeFields{SU{NC}},func!::Function) where NC
         NT = a.NT
         NY = a.NY
         NZ = a.NZ
         NX = a.NX
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
+
 
         for it=1:NT
             for iz=1:NZ
@@ -1005,20 +887,11 @@ module Gaugefields
         return
     end
 
-    function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::GaugeFields_1d{T},b::GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
-        end
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::GaugeFields_1d{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
+
 
         NV=a.NV
         
-
-
         for i=1:NV
             #mulabc!(a,b,c,i)
             
@@ -1098,15 +971,8 @@ module Gaugefields
 
     end
 
-    function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::GaugeFields_1d{T},b::Adjoint_GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
-        end
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::GaugeFields_1d{SU{NC}},b::Adjoint_GaugeFields_1d{SU{NC}}) where NC
+
         NV=a.NV
 
 
@@ -1128,16 +994,9 @@ module Gaugefields
 
     end
 
-    function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::Number) where T <: SUn
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Number) where NC
         NV=c.NV
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
-        end
+
 
         #NC=a.NC
         #mulabc! = NCmul_aconjb(NC)
@@ -1283,16 +1142,32 @@ module Gaugefields
     
     end
 
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Adjoint_GaugeFields_1d{SU{NC}},b::Adjoint_GaugeFields_1d{SU{NC}}) where NC
 
-    function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::Adjoint_GaugeFields_1d{T},b::GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
+        NV=c.NV
+        #NC=c.NC
+
+
+        for i=1:NV
+            #mulabc!(a,b,c,i)
+            
+    
+            for k2=1:NC                            
+                for k1=1:NC
+                    c[k1,k2,i] = 0
+                    for k3=1:NC
+                        c[k1,k2,i] += conj(a.parent[k3,k1,i])*conj(b.parent[k2,k3,i])
+                    end
+                end
+            end
+            
+                        
         end
+
+    end
+
+
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Adjoint_GaugeFields_1d{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
 
         NV=c.NV
         #NC=c.NC
@@ -1419,15 +1294,8 @@ module Gaugefields
 
     end
 
-    function muladd!(c::GaugeFields_1d{T},α::Number,a::GaugeFields_1d{T}) where T <: SUn
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = c.NC
-            #error("NC >3 is not supported")
-        end
+    function muladd!(c::GaugeFields_1d{SU{NC}},α::Number,a::GaugeFields_1d{SU{NC}}) where NC
+
         NV=c.NV
 
         for i=1:NV
@@ -1478,15 +1346,8 @@ module Gaugefields
         return η#*boundary_factor_x*boundary_factor_y*boundary_factor_z*boundary_factor_t
     end
 
-    function gauge_shift!(a::GaugeFields_1d{T},ν::N,b::GaugeFields{T}) where {N <: Int,T <: SUn}
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
+    function gauge_shift!(a::GaugeFields_1d{SU{NC}},ν::N,b::GaugeFields{SU{NC}}) where {N <: Int,NC}
+
 
         if ν == 0
             substitute!(a,b)
@@ -1537,16 +1398,7 @@ module Gaugefields
         return
     end
 
-    function gauge_shift!(a::GaugeFields_1d{T},dir::Tuple,b::GaugeFields{T}) where T <: SUn 
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
-
+    function gauge_shift!(a::GaugeFields_1d{SU{NC}},dir::Tuple,b::GaugeFields{SU{NC}}) where NC 
 
         #....  Stop for the exceptional case   ...
         if dir[1] != 0 && dir[2] != 0
@@ -1634,16 +1486,7 @@ module Gaugefields
         return ix1
     end
 
-    function gauge_shift!(a::GaugeFields_1d{T},shift::Shift_set,b::GaugeFields{T}) where T <: SUn 
-        if T == SU3
-            NC = 3
-        elseif T == SU2
-            NC = 2
-        else
-            NC = a.NC
-            #error("NC >3 is not supported")
-        end
-
+    function gauge_shift!(a::GaugeFields_1d{SU{NC}},shift::Shift_set,b::GaugeFields{SU{NC}}) where NC 
 
         
         NT = b.NT
@@ -1930,8 +1773,8 @@ c-----------------------------------------------------c
         end
     end
 
-    function projlink!(vout::SUNGaugeFields_1d,vin::SUNGaugeFields_1d)
-        NC = vout.NC
+    function projlink!(vout::SUNGaugeFields_1d{NC},vin::SUNGaugeFields_1d{NC}) where NC
+        #NC = vout.NC
         fac1N = 1/NC
         nv = vin.NV
 
@@ -2213,7 +2056,7 @@ c-----------------------------------------------------c
         return
     end
 
-    function lambdamul(b::SUNGaugeFields_1d,a::SUNGaugeFields_1d,k,generator)
+    function lambdamul(b::SUNGaugeFields_1d{NC},a::SUNGaugeFields_1d{NC},k,generator) where NC
         #=
         c----------------------------------------------------------------------c
         c     b = (lambda_k/2)*a
@@ -2221,7 +2064,7 @@ c-----------------------------------------------------c
         c----------------------------------------------------------------------c
         =#
         NV = a.NV
-        NC = generator.NC
+        #NC = generator.NC
         matrix = generator.generator[k]
         for i=1:NV
             for k2=1:NC
@@ -2239,18 +2082,13 @@ c-----------------------------------------------------c
     end
     
 
-        
-
-
-
-
-
-    function calc_Polyakov(u::Array{T,1}) where T <: GaugeFields
+    #function calc_Polyakov(u::Array{T,1}) where T <: GaugeFields
+    function calc_Polyakov(u::Array{GaugeFields{SU{NC}},1}) where NC
         NX = u[1].NX
         NY = u[1].NY
         NZ = u[1].NZ
         NT = u[1].NT
-        NC = u[1].NC
+        #NC = u[1].NC
 
         Pol = zeros(ComplexF64,NC,NC,NX,NY,NZ)
         

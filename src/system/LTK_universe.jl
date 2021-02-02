@@ -320,8 +320,8 @@ module LTK_universe
             U = Array{SU2GaugeFields,1}(undef,4)
             _temporal_gauge = Array{SU2GaugeFields_1d,1}(undef,num_tempfield_g)
         elseif NC ≥ 4
-            U = Array{SUNGaugeFields,1}(undef,4)
-            _temporal_gauge = Array{SUNGaugeFields_1d,1}(undef,num_tempfield_g)
+            U = Array{SUNGaugeFields{NC},1}(undef,4)
+            _temporal_gauge = Array{SUNGaugeFields_1d{NC},1}(undef,num_tempfield_g)
         end
         
 #        Uold = Array{GaugeFields,1}(undef,4)
