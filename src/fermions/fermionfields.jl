@@ -7,7 +7,7 @@ module Fermionfields
     import ..Actions:FermiActionParam,FermiActionParam_Wilson,
                 FermiActionParam_WilsonClover,FermiActionParam_Staggered
     import ..Gaugefields:GaugeFields,GaugeFields_1d,SU3GaugeFields,SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
-                            staggered_phase,SUn,SU2,SU3,SUNGaugeFields,SUNGaugeFields_1d
+                            staggered_phase,SUn,SU2,SU3,SUNGaugeFields,SUNGaugeFields_1d,SU
     #import ..Parallel:get_looprange
 
     #include("cg.jl")
@@ -129,7 +129,7 @@ module Fermionfields
                 for iz=1:a.NZ
                     for iy=1:a.NY
                         for ix=1:a.NX
-                            for ic=1:a.NC
+                            @simd for ic=1:a.NC
                                 c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
                             end
                         end
@@ -151,7 +151,7 @@ module Fermionfields
             for iz=1:a.NZ
                 for iy=1:a.NY
                     for ix=1:a.NX
-                        for ic=1:a.NC
+                        @simd for ic=1:a.NC
                             c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
                         end
                     end
@@ -180,7 +180,7 @@ module Fermionfields
                 for i4=1:n4
                     for i3=1:n3
                         for i2=1:n2
-                            for i1=1:n1
+                            @simd for i1=1:n1
                                 a.f[i1,i2,i3,i4,i5,i6]= 0
                             end
                         end
@@ -197,7 +197,7 @@ module Fermionfields
                 for iy=1:x.NY
                     xran =1+(1+ibush+iy+iz+it)%2:2:x.NX
                     for ix in xran
-                        for ic=1:x.NC
+                        @simd for ic=1:x.NC
                             x[ic,ix,iy,iz,it,1] = 0
                         end
                     end
@@ -236,7 +236,7 @@ module Fermionfields
                 for iz=1:x.NZ
                     for iy=1:x.NY
                         for ix=1:x.NX
-                            for ic=1:x.NC
+                            @simd for ic=1:x.NC
                                 i += 1
                                 H[i,j] = x[ic,ix,iy,iz,it,ialpha]
                             end
@@ -254,9 +254,27 @@ module Fermionfields
                 for iz=1:x.NZ
                     for iy=1:x.NY
                         for ix=1:x.NX
-                            for ic=1:x.NC
+                            @simd for ic=1:x.NC
                                 i += 1
                                 H[i,j] = x[ic,ix,iy,iz,it,ialpha]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function substitute_fermion!(y::Vector,x::StaggeredFermion)
+        i = 0
+        for ialpha = 1:1
+            for it=1:x.NT
+                for iz=1:x.NZ
+                    for iy=1:x.NY
+                        for ix=1:x.NX
+                            @simd for ic=1:x.NC
+                                i += 1
+                                y[i] = x[ic,ix,iy,iz,it,ialpha] 
                             end
                         end
                     end
@@ -273,7 +291,7 @@ module Fermionfields
                 for i4=1:n4
                     for i3=1:n3
                         for i2=1:n2
-                            for i1=1:n1
+                            @simd for i1=1:n1
                                 #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
                                 c.f[i1,i2,i3,i4,i5,i6] += alpha*a.f[i1,i2,i3,i4,i5,i6] +beta*b.f[i1,i2,i3,i4,i5,i6] 
                             end
@@ -299,7 +317,7 @@ module Fermionfields
                 for i4=1:n4
                     for i3=1:n3
                         for i2=1:n2
-                            for i1=1:n1
+                            @simd for i1=1:n1
                                 #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
                                 c.f[i1,i2,i3,i4,i5,i6] += alpha*a.f[i1,i2,i3,i4,i5,i6] 
                             end
@@ -324,7 +342,7 @@ module Fermionfields
                 for i4=1:n4
                     for i3=1:n3
                         for i2=1:n2
-                            for i1=1:n1
+                            @simd for i1=1:n1
                                 #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
                                 c.f[i1,i2,i3,i4,i5,i6] = coeff*c.f[i1,i2,i3,i4,i5,i6] + alpha*a.f[i1,i2,i3,i4,i5,i6] 
                             end
@@ -827,7 +845,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        for ix=1:NX
+                        @simd for ix=1:NX
                             y[ic,ix,iy,iz,it,1] = -1*x[ic,ix,iy,iz,it,1]
                             y[ic,ix,iy,iz,it,2] = -1*x[ic,ix,iy,iz,it,2]
                             y[ic,ix,iy,iz,it,3] = x[ic,ix,iy,iz,it,3]
@@ -865,7 +883,7 @@ c--------------------------------------------------------------------------c
 
                             for k1=1:n6
                                 f[k1] = 0
-                                for k2=1:n6
+                                @simd for k2=1:n6
                                     f[k1] += A[k1,k2]*e[k2]
                                 end
                                 xout[ic,ix,iy,iz,it,k1] = f[k1]
@@ -893,7 +911,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        for ix=1:NX
+                        @simd for ix=1:NX
                                 e1 = x[ic,ix,iy,iz,it,1]
                                 e2 = x[ic,ix,iy,iz,it,2]
                                 e3 = x[ic,ix,iy,iz,it,3]
@@ -946,13 +964,13 @@ c--------------------------------------------------------------------------c
                     for iy=1:NY
                         for ix=1:NX
                             
-                            for k1=1:n6
+                            @simd for k1=1:n6
                                 e[k1] = x[ic,ix,iy,iz,it,k1]
                             end
 
                             for k1=1:n6
                                 f[k1] = 0
-                                for k2=1:n6
+                                @simd for k2=1:n6
                                     f[k1] += e[k2]*A[k2,k1]
                                 end
                                 xout[ic,ix,iy,iz,it,k1] = f[k1]
@@ -981,7 +999,7 @@ c--------------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        for ix=1:NX
+                        @simd for ix=1:NX
                             e1 = x[ic,ix,iy,iz,it,1]
                             e2 = x[ic,ix,iy,iz,it,2]
                             e3 = x[ic,ix,iy,iz,it,3]
@@ -1022,7 +1040,7 @@ c--------------------------------------------------------------------------c
                 for i4=1:n4
                     for i3=1:n3
                         for i2=1:n2
-                            for i1=1:n1
+                            @simd for i1=1:n1
                                 a.f[i1,i2,i3,i4,i5,i6] = α*b.f[i1,i2,i3,i4,i5,i6]
                             end
                         end
@@ -1067,10 +1085,10 @@ c-----------------------------------------------------c
                     for iy=1:NY
                         for ix=1:NX
                             is += 1
-                                for ia=1:NC
-                                    for ib=1:NC
+                            for ia=1:NC
+                                for ib=1:NC
                                     vv[ia,ib,is] = 0
-                                    for k=1:4
+                                    @simd for k=1:4
                                         vv[ia,ib,is] += v1[ia,ix,iy,iz,it,k]*conj(v2[ib,ix,iy,iz,it,k]) 
                                     end
 
@@ -1085,15 +1103,15 @@ c-----------------------------------------------------c
 
                     is = 0
 
-                    for it=1:NT
-                        for iz=1:NZ
-                            for iy=1:NY
-                                for ix=1:NX
-                                    is += 1
-                                    for ia=1:NC
-                                        for ib=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            is += 1
+                            for ia=1:NC
+                                for ib=1:NC
                                     vv[ia,ib,is] = 0
-                                    for k=1:4
+                                    @simd for k=1:4
                                         vv[ia,ib,is] += v1[ia,ix,iy,iz,it,k]*v2[ib,ix,iy,iz,it,k]
                                     end
                                 end
@@ -1136,7 +1154,7 @@ c-----------------------------------------------------c
                                 for ia=1:NC
                                     for ib=1:NC
                                     vv[ia,ib,is] = 0
-                                    for k=1:1
+                                    @simd for k=1:1
                                         vv[ia,ib,is] += v1[ia,ix,iy,iz,it,k]*conj(v2[ib,ix,iy,iz,it,k]) 
                                     end
 
@@ -1151,15 +1169,15 @@ c-----------------------------------------------------c
 
                     is = 0
 
-                    for it=1:NT
-                        for iz=1:NZ
-                            for iy=1:NY
-                                for ix=1:NX
-                                    is += 1
-                                    for ia=1:NC
-                                        for ib=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            is += 1
+                            for ia=1:NC
+                                for ib=1:NC
                                     vv[ia,ib,is] = 0
-                                    for k=1:1
+                                    @simd for k=1:1
                                         vv[ia,ib,is] += v1[ia,ix,iy,iz,it,k]*v2[ib,ix,iy,iz,it,k]
                                     end
                                 end
@@ -1172,7 +1190,7 @@ c-----------------------------------------------------c
     end
 
 
-    function fermion_shift!(b::F,u::Array{T,1},μ,a::F) where {T <: GaugeFields,F <: FermionFields}
+    function fermion_shift!(b::F,u::Array{GaugeFields{SU{NC}},1},μ,a::F) where {NC,F <: FermionFields}
         if μ == 0
             substitute!(b,a)
             return
@@ -1182,7 +1200,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
         if μ > 0
             idel = zeros(Int64,4)
@@ -1200,7 +1218,7 @@ c-----------------------------------------------------c
                                 ix1 = ix + idel[1]
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += u[μ][k1,k2,ix,iy,iz,it]*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1226,7 +1244,7 @@ c-----------------------------------------------------c
                         
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += conj(u[-μ][k2,k1,ix1,iy1,iz1,it1])*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1240,7 +1258,7 @@ c-----------------------------------------------------c
     end
 
     
-    function fermion_shift!(b::F,evensite::Bool,u::Array{T,1},μ,a::F) where {T <: GaugeFields,F <: FermionFields}
+    function fermion_shift!(b::F,evensite::Bool,u::Array{GaugeFields{SU{NC}},1},μ,a::F) where {NC,F <: FermionFields}
         if μ == 0
             substitute!(b,a)
             return
@@ -1251,7 +1269,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
         if μ > 0
             idel = zeros(Int64,4)
@@ -1270,7 +1288,7 @@ c-----------------------------------------------------c
                                 ix1 = ix + idel[1]
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += u[μ][k1,k2,ix,iy,iz,it]*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1297,7 +1315,7 @@ c-----------------------------------------------------c
                         
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += conj(u[-μ][k2,k1,ix1,iy1,iz1,it1])*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1321,7 +1339,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        NC = 3#a.NC
 
         #NTrange = get_looprange(NT)
         #println(NTrange)
@@ -1338,7 +1356,7 @@ c-----------------------------------------------------c
                         iz1 = iz + ifelse(μ ==3,1,0) #idel[3]
                         for iy=1:NY
                             iy1 = iy + ifelse(μ ==2,1,0) #idel[2]
-                            for ix=1:NX
+                            @simd for ix=1:NX
                                 ix1 = ix + ifelse(μ ==1,1,0) #idel[1]
 
                                 b[1,ix,iy,iz,it,ialpha] = u[μ][1,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
@@ -1378,7 +1396,7 @@ c-----------------------------------------------------c
                         iz1 = iz - ifelse(-μ ==3,1,0) #idel[3]
                         for iy=1:NY
                             iy1 = iy - ifelse(-μ ==2,1,0)  #idel[2]
-                            for ix=1:NX
+                            @simd for ix=1:NX
                                 ix1 = ix - ifelse(-μ ==1,1,0) #idel[1]
 
                                 b[1,ix,iy,iz,it,ialpha] = conj(u[-μ][1,1,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
@@ -1436,7 +1454,7 @@ c-----------------------------------------------------c
                         iz1 = iz + ifelse(μ ==3,1,0) #idel[3]
                         for iy=1:NY
                             iy1 = iy + ifelse(μ ==2,1,0) #idel[2]
-                            for ix=1:NX
+                            @simd for ix=1:NX
                                 ix1 = ix + ifelse(μ ==1,1,0) #idel[1]
                                 η = staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
 
@@ -1477,7 +1495,7 @@ c-----------------------------------------------------c
                         iz1 = iz - ifelse(-μ ==3,1,0) #idel[3]
                         for iy=1:NY
                             iy1 = iy - ifelse(-μ ==2,1,0)  #idel[2]
-                            for ix=1:NX
+                            @simd for ix=1:NX
                                 ix1 = ix - ifelse(-μ ==1,1,0) #idel[1]
 
                                 η = staggered_phase(-μ,ix1,iy1,iz1,it1,NX,NY,NZ,NT)
@@ -1510,7 +1528,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion) where T <: SUNGaugeFields
+    function fermion_shift!(b::StaggeredFermion,u::Array{SUNGaugeFields{NC},1},μ::Int,a::StaggeredFermion) where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -1520,7 +1538,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
         #NTrange = get_looprange(NT)
         #println(NTrange)
@@ -1543,7 +1561,7 @@ c-----------------------------------------------------c
                                 
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += η*u[μ][k1,k2,ix,iy,iz,it]*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1573,7 +1591,7 @@ c-----------------------------------------------------c
                                 
                                 for k1=1:NC
                                     b[k1,ix,iy,iz,it,ialpha] = 0
-                                    for k2=1:NC
+                                    @simd for k2=1:NC
                                         b[k1,ix,iy,iz,it,ialpha] += η*conj(u[-μ][k2,k1,ix1,iy1,iz1,it1])*a[k2,ix1,iy1,iz1,it1,ialpha]
                                     end
                                 end
@@ -1617,7 +1635,7 @@ c-----------------------------------------------------c
                         for iy=1:NY
                             iy1 = iy + ifelse(μ ==2,1,0) #idel[2]
                             xran =1+(1+ibush+iy+iz+it)%2:2:NX
-                            for ix in xran
+                            @simd for ix in xran
                             #for ix=1:NX
                                 ix1 = ix + ifelse(μ ==1,1,0) #idel[1]
                                 η = staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
@@ -1660,7 +1678,7 @@ c-----------------------------------------------------c
                         for iy=1:NY
                             iy1 = iy - ifelse(-μ ==2,1,0)  #idel[2]
                             xran =1+(1+ibush+iy+iz+it)%2:2:NX
-                            for ix in xran
+                            @simd for ix in xran
                                 ix1 = ix - ifelse(-μ ==1,1,0) #idel[1]
 
                                 η = staggered_phase(-μ,ix1,iy1,iz1,it1,NX,NY,NZ,NT)
@@ -3191,72 +3209,6 @@ c----------------------------------------------------------------------c
 
     end
 
-    #=
-    function cloverterm!(vec,fparam,x)
-        NT = x.NT
-        NZ = x.NZ
-        NY = x.NY
-        NX = x.NX
-        NC = x.NC
-
-        
-        i  =0
-        for it=1:NT
-            for iz=1:NZ
-                for iy=1:NZ
-                    for ix=1:NZ
-                        i += 1
-                        for k1=1:NC
-                            for k2=1:NC
-
-                                c1 = x[k2,ix,iy,iz,it,1]
-                                c2 = x[k2,ix,iy,iz,it,2]
-                                c3 = x[k2,ix,iy,iz,it,3]
-                                c4 = x[k2,ix,iy,iz,it,4]
-
-                                vec[k1,ix,iy,iz,it,1] += fparam.CloverFμν[k1,k2,i,1]*(-   c1) + 
-                                                            + fparam.CloverFμν[k1,k2,i,2]*(-im*c2) + 
-                                                            + fparam.CloverFμν[k1,k2,i,3]*(-   c2) + 
-                                                            + fparam.CloverFμν[k1,k2,i,4]*(-   c2) + 
-                                                            + fparam.CloverFμν[k1,k2,i,5]*( im*c2) + 
-                                                            + fparam.CloverFμν[k1,k2,i,6]*(-   c1)
-                
-                                
-
-                                vec[k1,ix,iy,iz,it,2] += fparam.CloverFμν[k1,k2,i,1]*(   c2) + 
-                                                            + fparam.CloverFμν[k1,k2,i,2]*(im*c1) + 
-                                                            + fparam.CloverFμν[k1,k2,i,3]*(-   c1) + 
-                                                            + fparam.CloverFμν[k1,k2,i,4]*(-   c1) + 
-                                                            + fparam.CloverFμν[k1,k2,i,5]*(-im*c1) + 
-                                                            + fparam.CloverFμν[k1,k2,i,6]*(   c2)
-
-                                vec[k1,ix,iy,iz,it,3] += fparam.CloverFμν[k1,k2,i,1]*(   -c3) + 
-                                                            + fparam.CloverFμν[k1,k2,i,2]*(-im*c4) + 
-                                                            + fparam.CloverFμν[k1,k2,i,3]*(   c4) + 
-                                                            + fparam.CloverFμν[k1,k2,i,4]*(-   c4) + 
-                                                            + fparam.CloverFμν[k1,k2,i,5]*(-im*c4) + 
-                                                            + fparam.CloverFμν[k1,k2,i,6]*(   c3)
-
-                                vec[k1,ix,iy,iz,it,4] += fparam.CloverFμν[k1,k2,i,1]*(   c4) + 
-                                                            + fparam.CloverFμν[k1,k2,i,2]*(im*c3) + 
-                                                            + fparam.CloverFμν[k1,k2,i,3]*(   c3) + 
-                                                            + fparam.CloverFμν[k1,k2,i,4]*(-   c3) + 
-                                                            + fparam.CloverFμν[k1,k2,i,5]*(im*c3) + 
-                                                            + fparam.CloverFμν[k1,k2,i,6]*( -  c4)
-
-
-                            end
-                        end
-                    end
-                end
-
-            end
-        end
-
-        #println("vec = ",vec*vec)
-
-    end
-    =#
 
     function cloverterm!(vec,CloverFμν,x)
         NT = x.NT
@@ -3431,7 +3383,7 @@ c----------------------------------------------------------------------c
             for it=1:NT
                 for iz = 1:NZ
                     for iy=1:NY
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,0,iy,iz,it,ialpha] = a.BoundaryCondition[1]*a[k,NX,iy,iz,it,ialpha]
                         end
                     end
@@ -3443,7 +3395,7 @@ c----------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,NX+1,iy,iz,it,ialpha] = a.BoundaryCondition[1]*a[k,1,iy,iz,it,ialpha]
                         end
                     end
@@ -3456,7 +3408,7 @@ c----------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for ix=1:NX
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,ix,0,iz,it,ialpha] = a.BoundaryCondition[2]*a[k,ix,NY,iz,it,ialpha]
                         end
                     end
@@ -3468,7 +3420,7 @@ c----------------------------------------------------------------------c
             for it=1:NT
                 for iz=1:NZ
                     for ix=1:NX
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,ix,NY+1,iz,it,ialpha] = a.BoundaryCondition[2]*a[k,ix,1,iz,it,ialpha]
                         end
                     end
@@ -3482,7 +3434,7 @@ c----------------------------------------------------------------------c
             for it=1:NT
                 for iy=1:NY
                     for ix=1:NX
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,ix,iy,0,it,ialpha] = a.BoundaryCondition[3]*a[k,ix,iy,NZ,it,ialpha]
                             a[k,ix,iy,NZ+1,it,ialpha] = a.BoundaryCondition[3]*a[k,ix,iy,1,it,ialpha]
 
@@ -3495,7 +3447,7 @@ c----------------------------------------------------------------------c
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        for k=1:NC
+                        @simd for k=1:NC
                             a[k,ix,iy,iz,0,ialpha] = a.BoundaryCondition[4]*a[k,ix,iy,iz,NT,ialpha]
                             a[k,ix,iy,iz,NT+1,ialpha] = a.BoundaryCondition[4]*a[k,ix,iy,iz,1,ialpha]
                         end
