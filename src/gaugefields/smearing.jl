@@ -143,7 +143,7 @@ module Smearing
         elseif normalize_method == "special unitary"
             project!(A) = normalize(A)
         else
-            error("Invalid: normalize_method = $normalize_method")
+            error("Invalid: normalize_method = $normalize_method, which should be unitary or special unitary")
         end
 
         for μ=1:4
@@ -154,7 +154,8 @@ module Smearing
                         for ix=1:NX
                             Vtemp .= 0
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
-                            Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]'
+                            Vtemp = Vtemp'
+                            Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
                             project!(Vtemp)
                             Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
                         end
