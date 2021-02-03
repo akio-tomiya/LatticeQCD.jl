@@ -315,6 +315,7 @@ module Measurements
                     flush(stdout)
                     smearing_type = "gradient_flow"
                     #smearing_type = "APE"
+                    smearing_type = "stout"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
                             gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
@@ -333,7 +334,8 @@ module Measurements
                     elseif smearing_type == "APE" # TODO this should be commonized to gradient flow
                         α = 0.1 # 6/13 # magic number from hep-lat/9907019 for reproduction. This should be an input parameter
                         for iflow = 1:method["numflow"]
-                            Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary")
+                            #Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary")
+                            calc_fatlink_APE!(Usmr,Usmr,α,α,normalize_method="special unitary")
                             plaq = calc_plaquette(Usmr)
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
@@ -345,10 +347,10 @@ module Measurements
                                 flush(stdout)
                             end
                         end
-                        ρ = α/13 
-                        Usmr = deepcopy(U)
+                    elseif smearing_type == "stout" # TODO this should be commonized to gradient flow
+                        ρ = 0.05
                         for iflow = 1:method["numflow"]
-                            Usmr = calc_stout(Usmr,ρ)
+                            calc_stout!(Usmr,Usmr,ρ)
                             plaq = calc_plaquette(Usmr)
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
@@ -361,7 +363,7 @@ module Measurements
                             end
                         end
                     else
-                        error("Invalid smearing_type = $gradient_flow")
+                        error("Invalid smearing_type = $smearing_type")
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
