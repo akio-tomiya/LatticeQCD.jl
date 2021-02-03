@@ -315,7 +315,7 @@ module Measurements
                     flush(stdout)
                     smearing_type = "gradient_flow"
                     #smearing_type = "APE"
-                    smearing_type = "stout"
+                    #smearing_type = "stout"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
                             gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
