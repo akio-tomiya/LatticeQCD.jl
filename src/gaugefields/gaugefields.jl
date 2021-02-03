@@ -2305,7 +2305,7 @@ c-----------------------------------------------------c
             end
 
         end
-        return Uout
+        return 
     end
 
     function calc_fatlink_APE(U::Array{GaugeFields{SU{NC}},1},α,β) where NC
