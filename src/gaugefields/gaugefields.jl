@@ -2282,39 +2282,6 @@ c-----------------------------------------------------c
         
     end
 
-    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β) where NC
-        NX = U[1].NX
-        NY = U[1].NY
-        NZ = U[1].NZ
-        NT = U[1].NT
-        Vtemp = zeros(ComplexF64,NC,NC)
-        
-
-        for μ=1:4
-            loops = make_plaq_staple(μ)
-            for it=1:NT
-                for iz=1:NZ
-                    for iy=1:NY
-                        for ix=1:NX
-                            Vtemp .= 0
-                            evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
-                            Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
-                            normalize!(Vtemp)
-                            Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
-                        end
-                    end
-                end
-            end
-
-        end
-        return 
-    end
-
-    function calc_fatlink_APE(U::Array{GaugeFields{SU{NC}},1},α,β) where NC
-        Uout = similar(U)
-        calc_fatlink_APE!(Uout,U,α,β)
-        return Uout
-    end
 
     function normalize!(u::Array{ComplexF64,2})
         NC,_ = size(u)
