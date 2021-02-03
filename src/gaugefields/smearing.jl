@@ -126,16 +126,24 @@ module Smearing
         return
     end
 
+    function normalize(A)
+        B = deepcopy(A)
+        normalize!(B)
+        return B
+    end
     function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary") where NC
         NX = U[1].NX
         NY = U[1].NY
         NZ = U[1].NZ
         NT = U[1].NT
         Vtemp = zeros(ComplexF64,NC,NC)
+        project!(A) = A
         if normalize_method == "unitary"
-            nmethod(A) = A*inv(sqrt(A'*A))
+            project!(A) = A*inv(sqrt(A'*A))
         elseif normalize_method == "special unitary"
-            nmethod(A) = normalize!(A)
+            project!(A) = normalize(A)
+        else
+            error("Invalid: normalize_method = $normalize_method")
         end
 
         for μ=1:4
@@ -147,7 +155,7 @@ module Smearing
                             Vtemp .= 0
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
                             Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
-                            nmethod(Vtemp)
+                            project!(Vtemp)
                             Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
                         end
                     end

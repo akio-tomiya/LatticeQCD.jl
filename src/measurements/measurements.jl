@@ -314,6 +314,7 @@ module Measurements
                     println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     flush(stdout)
                     smearing_type = "gradient_flow"
+                    #smearing_type = "APE"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
                             gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
