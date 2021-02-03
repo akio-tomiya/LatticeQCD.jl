@@ -1,7 +1,7 @@
 module Smearing
     import ..LTK_universe:Universe,calc_gaugeforce!,expF_U!
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add!
-    import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!
+    import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
 
     function add!(a::Array{N,1},α,b::Array{N,1}) where N <: LieAlgebraFields
@@ -93,6 +93,38 @@ module Smearing
     end
     =#
 
+    function calc_stout(U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        Uout = similar(U)
+        calc_stout!(Uout,U,ρ)
+        return Uout
+    end
+
+    function calc_stout!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        Q = zeros(ComplexF64,NC,NC)
+        Vtemp = zeros(ComplexF64,NC,NC)
+
+        for μ=1:4
+            loops = make_plaq_staple(μ)
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            Vtemp .= 0
+                            evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
+                            TA!(Q,(ρ/im)*Vtemp[:,:]*U[μ][:,:,ix,iy,iz,it]')
+                            
+                            Uout[μ][:,:,ix,iy,iz,it] = exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                        end
+                    end
+                end
+            end
+        end
+        return
+    end
 
     function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary") where NC
         NX = U[1].NX
@@ -105,8 +137,6 @@ module Smearing
         elseif normalize_method == "special unitary"
             nmethod(A) = normalize!(A)
         end
-
-
 
         for μ=1:4
             loops = make_plaq_staple(μ)
@@ -123,7 +153,6 @@ module Smearing
                     end
                 end
             end
-
         end
         return 
     end
