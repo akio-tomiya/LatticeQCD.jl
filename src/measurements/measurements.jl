@@ -338,8 +338,23 @@ module Measurements
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
                             Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
                             τ = iflow
-                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
+                        end
+                        ρ = α/13 
+                        Usmr = deepcopy(U)
+                        for iflow = 1:method["numflow"]
+                            calc_stout!(Usmr,Usmr,ρ)
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            τ = iflow
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
                             if iflow%10 == 0
                                 flush(stdout)
                             end
