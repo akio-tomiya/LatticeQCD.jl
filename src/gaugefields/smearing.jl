@@ -118,6 +118,7 @@ module Smearing
                             TA!(Q,(ρ/im)*Vtemp[:,:]*U[μ][:,:,ix,iy,iz,it]')
                             
                             Uout[μ][:,:,ix,iy,iz,it] = exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            normalize!(Uout[μ][:,:,ix,iy,iz,it])
                         end
                     end
                 end
@@ -137,11 +138,11 @@ module Smearing
         NZ = U[1].NZ
         NT = U[1].NT
         Vtemp = zeros(ComplexF64,NC,NC)
-        project!(A) = A
+        project(A) = A
         if normalize_method == "unitary"
-            project!(A) = A*inv(sqrt(A'*A))
+            project(A) = A*inv(sqrt(A'*A))
         elseif normalize_method == "special unitary"
-            project!(A) = normalize(A)
+            project(A) = normalize(A)
         else
             error("Invalid: normalize_method = $normalize_method, which should be unitary or special unitary")
         end
@@ -156,7 +157,7 @@ module Smearing
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
                             Vtemp = Vtemp'
                             Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
-                            project!(Vtemp)
+                            Vtemp = project(Vtemp)
                             Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
                         end
                     end
