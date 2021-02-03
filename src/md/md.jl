@@ -349,54 +349,7 @@ module MD
 
     function md!(univ::Universe,Sfold,Sgold,mdparams::MD_parameters_SLMC)
         @assert univ.quench == true "quench should be true!"
-        #@assert univ.NC == 2 "Only SU(2) is supported now."
-        if Sfold == nothing       
-            @time Sfold = calc_IntegratedFermionAction(univ)
-            #=
 
-            WdagW = make_WdagWmatrix(univ)
-            #e,_ = eigen(WdagW)
-            #println(e)
-            Sfold = -real(logdet(WdagW))
-            #Uold = deepcopy(univ.U)
-            if univ.Dirac_operator == "Staggered" 
-                if univ.fparam.Nf == 4
-                    Sfold /= 2
-                end
-            end
-            =#
-        end
-
-        β = univ.gparam.β
-        Sgold,plaq = calc_GaugeAction(univ)
-
-        set_β!(univ,mdparams.βeff)
-        Sgeffold,plaq = calc_GaugeAction(univ)
-
-        heatbath!(univ)
-        #heatbath!(univ)
-
-        Sgeffnew,plaq = calc_GaugeAction(univ)
-        set_β!(univ,β)
-
-        Sgnew,plaq = calc_GaugeAction(univ)
-
-        #=
-        println("Making W^+W matrix...")
-        @time WdagW = make_WdagWmatrix(univ)
-        println("Calculating logdet")
-        @time Sfnew = -real(logdet(WdagW))
-        if univ.Dirac_operator == "Staggered" 
-            if univ.fparam.Nf == 4
-                Sfnew /= 2
-            end
-        end
-        =#
-
-        @time Sfnew = calc_IntegratedFermionAction(univ)
-        #println("Sfnew comparison: $Sfnew,$Sfnew2")
-
-        #=
         function debug_gauss()
             WdagW = make_WdagWmatrix(univ)
             
@@ -411,6 +364,8 @@ module MD
             n = 8
 
             e,v = eigen(WdagW)
+            println(e)
+            exit()
             en = e.^(-1/n)
             esa = 1 .- en
             #println(esa)
@@ -511,7 +466,58 @@ module MD
             exit()
         end
         debug_gauss()
+
+        
+        #@assert univ.NC == 2 "Only SU(2) is supported now."
+        if Sfold == nothing       
+            @time Sfold = calc_IntegratedFermionAction(univ)
+            #=
+
+            WdagW = make_WdagWmatrix(univ)
+            #e,_ = eigen(WdagW)
+            #println(e)
+            Sfold = -real(logdet(WdagW))
+            #Uold = deepcopy(univ.U)
+            if univ.Dirac_operator == "Staggered" 
+                if univ.fparam.Nf == 4
+                    Sfold /= 2
+                end
+            end
+            =#
+        end
+
+        β = univ.gparam.β
+        Sgold,plaq = calc_GaugeAction(univ)
+
+        set_β!(univ,mdparams.βeff)
+        Sgeffold,plaq = calc_GaugeAction(univ)
+
+        heatbath!(univ)
+        #heatbath!(univ)
+
+        Sgeffnew,plaq = calc_GaugeAction(univ)
+        set_β!(univ,β)
+
+        Sgnew,plaq = calc_GaugeAction(univ)
+
+        #=
+        println("Making W^+W matrix...")
+        @time WdagW = make_WdagWmatrix(univ)
+        println("Calculating logdet")
+        @time Sfnew = -real(logdet(WdagW))
+        if univ.Dirac_operator == "Staggered" 
+            if univ.fparam.Nf == 4
+                Sfnew /= 2
+            end
+        end
         =#
+
+        @time Sfnew = calc_IntegratedFermionAction(univ)
+        #println("Sfnew comparison: $Sfnew,$Sfnew2")
+
+        
+
+        
         
         #
 

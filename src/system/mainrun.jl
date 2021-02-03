@@ -9,7 +9,7 @@ module Mainrun
     import  ..MD:md_initialize!,MD_parameters_standard,md!,metropolis_update!,construct_MD_parameters
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
-    import ..Smearing:gradientflow!
+    import ..Smearing:gradientflow!,calc_fatlink_APE
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!
     import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
@@ -246,6 +246,7 @@ module Mainrun
                     trs_site = calc_looptrvalues_site(loopactions,univ)
                     print_trainingdata_site(trainingfp2,trs_site,Sg,Sf)
                 end
+
 
                 accept = metropolis_update!(univ,Hold,Hnew)
                 numaccepts += ifelse(accept,1,0)
