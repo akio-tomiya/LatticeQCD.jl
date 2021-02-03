@@ -360,7 +360,7 @@ module Measurements
                             end
                         end
                     else
-                        error("Invalid smearing_type = $gradient_flow)
+                        error("Invalid smearing_type = $gradient_flow")
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
