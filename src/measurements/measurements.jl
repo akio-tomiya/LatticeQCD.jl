@@ -313,21 +313,39 @@ module Measurements
                     println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     flush(stdout)
-                    
-
-                    for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                        gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
-                        plaq = calc_plaquette(Usmr)
-                        Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
-                        Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
-                        Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                        #@time Q = calc_topological_charge(Usmr)
-                        τ = iflow*eps_flow*Nflowsteps
-                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                        println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                        if iflow%10 == 0
-                            flush(stdout)
+                    smearing_type = "gradient_flow"
+                    if smearing_type == "gradient_flow"
+                        for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
+                            gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            #@time Q = calc_topological_charge(Usmr)
+                            τ = iflow*eps_flow*Nflowsteps
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
                         end
+                    elseif smearing_type == "APE" # TODO this should be commonized to gradient flow
+                        α = 6/13 # magic number from hep-lat/9907019 for reproduction. This should be an input parameter
+                        for iflow = 1:method["numflow"]
+                            calc_fatlink_APE!(Usmr,Usmr,α,α,normalize_method="special unitary")
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            τ = iflow
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
+                        end
+                    else
+                        error("Invalid smearing_type = $gradient_flow)
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
