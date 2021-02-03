@@ -2298,7 +2298,9 @@ c-----------------------------------------------------c
                         for ix=1:NX
                             Vtemp .= 0
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
-                            Uout[μ][:,:,ix,iy,iz,it] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
+                            Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
+                            normalize!(Vtemp)
+                            Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
                         end
                     end
                 end
@@ -2312,6 +2314,18 @@ c-----------------------------------------------------c
         Uout = similar(U)
         calc_fatlink_APE!(Uout,U,α,β)
         return Uout
+    end
+
+    function normalize!(u::Array{ComplexF64,2})
+        NC,_ = size(u)
+        if NC == 2
+            normalize2!(u)
+        elseif NC == 3
+            normalize3!(u)
+        else
+            normalizeN!(u)
+        end
+        return 
     end
 
     function normalize2!(u)
