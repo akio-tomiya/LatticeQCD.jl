@@ -9,7 +9,7 @@ module Mainrun
     import  ..MD:md_initialize!,MD_parameters_standard,md!,metropolis_update!,construct_MD_parameters
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
-    import ..Smearing:gradientflow!,calc_fatlink_APE
+    import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!
     import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops

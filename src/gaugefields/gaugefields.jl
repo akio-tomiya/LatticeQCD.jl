@@ -1767,6 +1767,27 @@ c-----------------------------------------------------c
         end
     end
 
+    function TA!(vout::Array{T,2},vin::Array{T,2}) where T <: Number
+        NC,_ = size(vout)
+        fac1N = 1/NC
+        tri = 0.0
+        @simd for k=1:NC
+            tri += imag(vin[k,k])
+        end
+        tri *= fac1N
+        @simd for k=1:NC
+            vout[k,k] = (imag(vin[k,k])-tri)*im
+        end
+        for k1=1:NC
+            @simd for k2=k1+1:NC
+                vv = 0.5*(vin[k1,k2] - conj(vin[k2,k1]))
+                vout[k1,k2] = vv
+                vout[k2,k1] = -conj(vv)
+            end
+        end
+
+    end
+
     function projlink!(vout::SUNGaugeFields_1d{NC},vin::SUNGaugeFields_1d{NC}) where NC
         #NC = vout.NC
         fac1N = 1/NC
