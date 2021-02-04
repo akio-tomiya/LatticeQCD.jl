@@ -163,7 +163,7 @@ module Smearing
                     end
                     
 
-        println(normalize_method)
+        #println(normalize_method)
 
         for μ=1:4
             loops = make_plaq_staple_prime(μ)
