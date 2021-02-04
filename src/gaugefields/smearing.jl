@@ -173,6 +173,7 @@ module Smearing
                         for ix=1:NX
                             Vtemp .= 0
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
+                            #Vtemp = Vtemp'
                             Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
                             #nmethod!(Vtemp)
                             Uout[μ][:,:,ix,iy,iz,it] = nmethod(Vtemp)#Vtemp[:,:]

@@ -16,7 +16,7 @@ module Measurements
     import ..Diracoperators:Dirac_operator
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
-    import ..Smearing:gradientflow!
+    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set
 
     #=
@@ -313,21 +313,58 @@ module Measurements
                     println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
                     flush(stdout)
-                    
-
-                    for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                        gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
-                        plaq = calc_plaquette(Usmr)
-                        Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
-                        Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
-                        Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                        #@time Q = calc_topological_charge(Usmr)
-                        τ = iflow*eps_flow*Nflowsteps
-                        println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                        println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                        if iflow%10 == 0
-                            flush(stdout)
+                    smearing_type = "gradient_flow"
+                    #smearing_type = "APE"
+                    #smearing_type = "stout"
+                    if smearing_type == "gradient_flow"
+                        for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
+                            gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            #@time Q = calc_topological_charge(Usmr)
+                            τ = iflow*eps_flow*Nflowsteps
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
                         end
+                    elseif smearing_type == "APE" # TODO this should be commonized to gradient flow
+                        α = 0.1 # 6/13 # magic number from hep-lat/9907019 for reproduction. This should be an input parameter
+                        for iflow = 1:method["numflow"]
+                            Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary")
+                            #calc_fatlink_APE!(Usmr,α,α,normalize_method="special unitary")
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            τ = iflow
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
+                        end
+                    elseif smearing_type == "stout" # TODO this should be commonized to gradient flow
+                        ρ = 0.01
+                        for iflow = 1:method["numflow"]
+                            Usmr = calc_stout(Usmr,ρ)
+                            #calc_stout!(Usmr,Usmr,ρ)
+                            plaq = calc_plaquette(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            τ = iflow
+                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
+                            if iflow%10 == 0
+                                flush(stdout)
+                            end
+                        end
+                    else
+                        error("Invalid smearing_type = $smearing_type")
                     end
                 elseif method["methodname"] == "Chiral_condensate" 
                     #fermiontype = method["fermiontype"]
