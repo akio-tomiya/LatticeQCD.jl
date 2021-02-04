@@ -137,7 +137,7 @@ module Smearing
                 end
             end
         end
-        display(Uout[1][:,:,1,1,1,1])
+        #display(Uout[1][:,:,1,1,1,1])
         return
     end
 
