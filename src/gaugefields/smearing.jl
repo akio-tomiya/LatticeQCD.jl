@@ -1,7 +1,8 @@
 module Smearing
+    using LinearAlgebra
     import ..LTK_universe:Universe,calc_gaugeforce!,expF_U!
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add!
-    import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!
+    import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!,set_wing!
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
 
     function add!(a::Array{N,1},α,b::Array{N,1}) where N <: LieAlgebraFields
@@ -99,47 +100,73 @@ module Smearing
         return Uout
     end
 
+    function calc_stout!(Uout::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        Uin = deepcopy(Uout)
+        calc_stout!(Uout,Uin,ρ)
+    end
+
     function calc_stout!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        @assert Uout != U "input U and output U should not be same!"
+
         NX = U[1].NX
         NY = U[1].NY
         NZ = U[1].NZ
         NT = U[1].NT
         Q = zeros(ComplexF64,NC,NC)
-        Vtemp = zeros(ComplexF64,NC,NC)
+        C = zeros(ComplexF64,NC,NC)
 
         for μ=1:4
-            loops = make_plaq_staple(μ)
+            loops = make_plaq_staple_prime(μ)
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
                         for ix=1:NX
-                            Vtemp .= 0
-                            evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
-                            TA!(Q,(ρ/im)*Vtemp[:,:]*U[μ][:,:,ix,iy,iz,it]')
-                            
+                            C .= 0
+                            evaluate_wilson_loops!(C,loops,U,ix,iy,iz,it)
+                            #display(C)
+                            #println("\t")
+
+                            Ω = ρ*C[:,:]*U[μ][:,:,ix,iy,iz,it]'
+                            Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)
                             Uout[μ][:,:,ix,iy,iz,it] = exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            set_wing!(Uout[μ],ix,iy,iz,it)
+
+                            
                         end
                     end
                 end
             end
         end
+        display(Uout[1][:,:,1,1,1,1])
         return
     end
 
+    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary") where NC
+        Uin = deepcopy(Uout)
+        calc_fatlink_APE!(Uout,Uin,α,β,normalize_method=normalize_method)
+    end
+
     function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary") where NC
+        @assert Uout != U "input U and output U should not be same!"
         NX = U[1].NX
         NY = U[1].NY
         NZ = U[1].NZ
         NT = U[1].NT
         Vtemp = zeros(ComplexF64,NC,NC)
-        if normalize_method == "unitary"
-            nmethod(A) = A*inv(sqrt(A'*A))
-        elseif normalize_method == "special unitary"
-            nmethod(A) = normalize!(A)
-        end
+        nmethod(A) = if normalize_method == "unitary"
+                        A*(A'*A)^(-1/2)#inv(sqrt(A'*A))
+                    elseif normalize_method == "special unitary"
+                        normalize!(A)
+                        A
+                    else
+                        error("normalize_method should be unitary or special unitary. Now, $normalize_method")
+                    end
+                    
+
+        println(normalize_method)
 
         for μ=1:4
-            loops = make_plaq_staple(μ)
+            loops = make_plaq_staple_prime(μ)
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
@@ -147,8 +174,9 @@ module Smearing
                             Vtemp .= 0
                             evaluate_wilson_loops!(Vtemp,loops,U,ix,iy,iz,it)
                             Vtemp[:,:] = (1-α)*U[μ][:,:,ix,iy,iz,it] .+ (β/6)*Vtemp[:,:]
-                            nmethod(Vtemp)
-                            Uout[μ][:,:,ix,iy,iz,it] = Vtemp[:,:]
+                            #nmethod!(Vtemp)
+                            Uout[μ][:,:,ix,iy,iz,it] = nmethod(Vtemp)#Vtemp[:,:]
+                            set_wing!(Uout[μ],ix,iy,iz,it)
                         end
                     end
                 end
