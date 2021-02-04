@@ -137,7 +137,7 @@ module Smearing
                 end
             end
         end
-        display(Uout[1][:,:,1,1,1,1])
+        #display(Uout[1][:,:,1,1,1,1])
         return
     end
 
@@ -163,7 +163,7 @@ module Smearing
                     end
                     
 
-        println(normalize_method)
+        #println(normalize_method)
 
         for μ=1:4
             loops = make_plaq_staple_prime(μ)
