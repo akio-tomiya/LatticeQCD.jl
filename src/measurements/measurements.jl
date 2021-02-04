@@ -332,7 +332,8 @@ module Measurements
                             end
                         end
                     elseif smearing_type == "APE" # TODO this should be commonized to gradient flow
-                        α = 0.1 # 6/13 # magic number from hep-lat/9907019 for reproduction. This should be an input parameter
+                        Usmr = deepcopy(U)
+                        α = 1/(7/6+1) # magic number from hep-lat/9907019 for reproduction. This should be an input parameter
                         for iflow = 1:method["numflow"]
                             Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary")
                             #calc_fatlink_APE!(Usmr,α,α,normalize_method="special unitary")
@@ -348,7 +349,8 @@ module Measurements
                             end
                         end
                     elseif smearing_type == "stout" # TODO this should be commonized to gradient flow
-                        ρ = 0.01
+                        Usmr = deepcopy(U)
+                        ρ = 1/(7/6+1)/6
                         for iflow = 1:method["numflow"]
                             Usmr = calc_stout(Usmr,ρ)
                             #calc_stout!(Usmr,Usmr,ρ)
