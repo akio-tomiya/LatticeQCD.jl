@@ -166,6 +166,8 @@ module Measurements
                     measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","w")
                 elseif method["methodname"] == "Pion_correlator" 
                     measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","w")
+                elseif method["methodname"] == "Wilson_loop"
+                    measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","w")
                 else
                     error("$(method["methodname"]) is not supported in measurement functions")
                 end
@@ -286,6 +288,14 @@ module Measurements
                     plaq = calc_plaquette(U)
                     println_verbose1(verbose,"$itrj $plaq # plaq")
                     println(measfp,"$itrj $plaq # plaq")
+                elseif method["methodname"] == "Wilson_loop"
+                    for T=1:method["Tmax"]+1
+                        for R=1:method["Rmax"]+1
+                            WL = calc_Wilson_loop(U,T,R) # calculate TxR Wilson loop
+                            println_verbose1(verbose,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
+                            println(measfp,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
+                        end
+                    end
                 elseif method["methodname"] == "Polyakov_loop"
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
@@ -397,6 +407,71 @@ module Measurements
 
     function calc_factor_plaq(U)
         factor = 2/(U[1].NV*4*3*U[1].NC)
+    end
+
+    function calc_Wilson_loop(U::Array{T,1},Lt,Ls) where T <: GaugeFields
+        WL = 0
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NV = U[1].NV
+        NC = U[1].NC
+        Wmat = Array{GaugeFields_1d,2}(undef,4,4)
+        calc_large_wiloson_loop!(Wmat,Lt,Ls,U)
+        WL = calc_Wloop(Wmat,U,NV)
+        NDir = 6.0
+        sgn = 1.0
+        if real(WL)≤0.0
+            sgn=-1
+            println("Warning! Wilson loop takes negative value!")
+        end
+        #return -log(real(sgn*WL)/NV/NDir/NC)
+        return real(sgn*WL)/NV/NDir/NC
+    end
+    function calc_Wloop(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+        if S == SU3
+            NC = 3
+        elseif S == SU2
+            NC = 2
+        else
+            NC = U[1].NC
+            #error("NC != 2,3 is not supported")
+        end
+        W = 0.0 + 0.0im
+        for n=1:NV
+            for μ=1:3
+                for ν=4
+                    W += tr(Wmat[μ,ν][:,:,n])
+                end
+            end
+        end
+        return W
+    end
+    function make_Wilson_loop(Lt,Ls)
+        Wmatset= Array{Wilson_loop_set,2}(undef,4,4)
+        for μ=1:3
+            ν=4 # T-direction is not summed over
+            loops = Wilson_loop_set()
+            loop = Wilson_loop([(μ,Ls),(ν,Lt),(μ,-Ls),(ν,-Lt)])
+            push!(loops,loop)
+            Wmatset[μ,ν] = loops
+        end
+        return Wmatset
+    end
+    function calc_large_wiloson_loop!(temp_Wmat,Lt,Ls,U)
+        Wmat = make_Wilson_loop(Lt,Ls)
+        calc_large_wiloson_loop!(temp_Wmat,Wmat,U)
+        return 
+    end
+    function calc_large_wiloson_loop!(temp_UμνTA,loops_μν,U)
+        UμνTA = temp_UμνTA
+        for μ=1:3
+            for ν=4
+                loopset = Loops(U,loops_μν[μ,ν])
+                UμνTA[μ,ν] = evaluate_loops(loopset,U)
+            end
+        end
+        return 
     end
 
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
@@ -536,8 +611,6 @@ module Measurements
         end
         return loops_μν,numofloops
     end
-
-
 
     function calc_UμνTA!(temp_UμνTA,loops_μν,U)
         UμνTA = temp_UμνTA
