@@ -232,6 +232,7 @@ module Mainrun
         end
         
         for itrj=1:Nsteps
+            println("# itrj = $itrj")
             # Update for different updaters
             # HMC: Hybrid Monte-Carlo
             if parameters.update_method == "HMC"
