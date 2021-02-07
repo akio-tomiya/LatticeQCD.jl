@@ -11,7 +11,7 @@ module Mainrun
     import ..Print_config:write_config
     import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
-    import ..Heatbath:heatbath!
+    import ..Heatbath:heatbath!,overrelaxation!
     import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
     import ..IOmodule:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
@@ -257,6 +257,9 @@ module Mainrun
             # Heatbath
             elseif parameters.update_method == "Heatbath"
                 @time heatbath!(univ)
+                for ior=1:3
+                    @time overrelaxation!(univ)
+                end
 
                 if parameters.integratedFermionAction
                     trs,Sg,Sf = calc_trainingdata(loopactions,univ)
