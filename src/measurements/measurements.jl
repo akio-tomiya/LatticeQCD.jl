@@ -291,7 +291,7 @@ module Measurements
                 elseif method["methodname"] == "Wilson_loop"
                     for T=1:method["Tmax"]+1
                         for R=1:method["Rmax"]+1
-                            WL = calc_Wilson_loop(U,T,R) # calculate TxR Wilson loop
+                            WL = calc_Wilson_loop(U,T,R) # calculate RxT Wilson loop
                             println_verbose1(verbose,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
                             println(measfp,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
                         end
@@ -410,25 +410,18 @@ module Measurements
     end
 
     function calc_Wilson_loop(U::Array{T,1},Lt,Ls) where T <: GaugeFields
-        WL = 0
-        NX = U[1].NX
-        NY = U[1].NY
-        NZ = U[1].NZ
+        # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+        WL = 0.0+0.0im
         NV = U[1].NV
         NC = U[1].NC
         Wmat = Array{GaugeFields_1d,2}(undef,4,4)
-        calc_large_wiloson_loop!(Wmat,Lt,Ls,U)
-        WL = calc_Wloop(Wmat,U,NV)
-        NDir = 6.0
-        sgn = 1.0
-        if real(WL)≤0.0
-            sgn=-1
-            println("Warning! Wilson loop takes negative value!")
-        end
-        #return -log(real(sgn*WL)/NV/NDir/NC)
-        return real(sgn*WL)/NV/NDir/NC
+        #
+        calc_large_wiloson_loop!(Wmat,Lt,Ls,U) # make wilon loop operator and evaluate as a field, not traced.
+        WL = calc_Wilson_loop_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+        NDir = 3.0 # in 4 diemension, 3 associated staples. t-x plane, t-y plane, t-z plane
+        return real(WL)/NV/NDir/NC
     end
-    function calc_Wloop(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+    function calc_Wilson_loop_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
         if S == SU3
             NC = 3
         elseif S == SU2
@@ -439,17 +432,31 @@ module Measurements
         end
         W = 0.0 + 0.0im
         for n=1:NV
-            for μ=1:3
-                for ν=4
-                    W += tr(Wmat[μ,ν][:,:,n])
-                end
+            for μ=1:3 # spatial directions
+                ν=4  # T-direction is not summed over
+                W += tr(Wmat[μ,ν][:,:,n])
             end
         end
         return W
     end
+    function calc_large_wiloson_loop!(Wmat,Lt,Ls,U)
+        W_operator = make_Wilson_loop(Lt,Ls)
+        calc_large_wiloson_loop!(Wmat,W_operator,U)
+        return 
+    end
     function make_Wilson_loop(Lt,Ls)
+        #= Making a Wilson loop operator for potential calculations
+            Ls × Lt
+            ν=4
+            ↑
+            +--+ 
+            |  |
+            |  |
+            |  |
+            +--+ → μ=1,2,3 (averaged)
+        =#
         Wmatset= Array{Wilson_loop_set,2}(undef,4,4)
-        for μ=1:3
+        for μ=1:3 # spatial directions
             ν=4 # T-direction is not summed over
             loops = Wilson_loop_set()
             loop = Wilson_loop([(μ,Ls),(ν,Lt),(μ,-Ls),(ν,-Lt)])
@@ -458,18 +465,12 @@ module Measurements
         end
         return Wmatset
     end
-    function calc_large_wiloson_loop!(temp_Wmat,Lt,Ls,U)
-        Wmat = make_Wilson_loop(Lt,Ls)
-        calc_large_wiloson_loop!(temp_Wmat,Wmat,U)
-        return 
-    end
-    function calc_large_wiloson_loop!(temp_UμνTA,loops_μν,U)
-        UμνTA = temp_UμνTA
-        for μ=1:3
-            for ν=4
-                loopset = Loops(U,loops_μν[μ,ν])
-                UμνTA[μ,ν] = evaluate_loops(loopset,U)
-            end
+    function calc_large_wiloson_loop!(temp_Wmat,loops_μν,U)
+        W = temp_Wmat
+        for μ=1:3 # spatial directions
+            ν=4 # T-direction is not summed over
+            loopset = Loops(U,loops_μν[μ,ν])
+            W[μ,ν] = evaluate_loops(loopset,U)
         end
         return 
     end
