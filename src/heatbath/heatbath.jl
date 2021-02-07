@@ -16,6 +16,11 @@ module Heatbath
         #heatbath!(univ.U,univ.ranf,univ.gparam.β,univ._temporal_gauge)
     end
 
+    function overrelaxation!(univ::Universe)
+        overrelaxation!(univ.U,univ.ranf,univ.gparam,univ._temporal_gauge)
+        #heatbath!(univ.U,univ.ranf,univ.gparam.β,univ._temporal_gauge)
+    end
+
     function heatbath!(u::Array{T,1},ranf,gparam::GaugeActionParam,temps::Array{T_1d,1}) where {T <: SU2GaugeFields,T_1d <: SU2GaugeFields_1d}
         beta = gparam.β
 
@@ -444,6 +449,132 @@ module Heatbath
                                 AU = A*u[mu][:,:,ix,iy,iz,it]
 
                                 u[mu][:,:,ix,iy,iz,it] = AU
+                                #println("det U ",det(AU))
+
+                            end
+
+                            AU = u[mu][:,:,ix,iy,iz,it]
+                            normalizeN!(AU)
+                            u[mu][:,:,ix,iy,iz,it] = AU
+
+                            #exit()
+                            #set_wing!(u[mu])
+                            set_wing!(u[mu],ix,iy,iz,it)
+
+                        end
+
+                    end
+                    #set_wing_y!(u[mu],iz,it)
+                    
+                end
+                #set_wing_z!(u[mu],it)
+            end
+            #set_wing_t!(u[mu])
+
+            normalize!(u[mu])
+            
+        end
+
+    end
+
+    function overrelaxation!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SUNGaugeFields,T_1d <: SUNGaugeFields_1d}
+        #println("OR is called!")
+        #println("Warning!!!!!!!!")
+        #error("Heatbath update for SU(3) is not implemented")
+        beta = gparam.β
+
+    
+        staple= temps[1]
+        temp1= temps[2]
+        temp2 = temps[3]
+        temp3 = temps[4]
+
+
+
+        NV = staple.NV
+        ITERATION_MAX = 10000
+        Wnew = zeros(ComplexF64,2,2)
+        NX = u[1].NX
+        NY = u[1].NY
+        NZ = u[1].NZ
+        NT = u[1].NT
+
+        NC = u[1].NC
+        V = zeros(ComplexF64,NC,NC)
+        Vtemp = zeros(ComplexF64,NC,NC)
+
+        a = zeros(Float64,4)
+
+
+        for mu=1:4
+            #make_staple_double!(staple,u,mu,temp1,temp2,temp3)
+            if typeof(gparam) == GaugeActionParam_standard
+                loops = make_plaq_staple(mu)
+            end
+
+            
+            #for i=1:NV
+            i = 0
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix = 1:NX
+                            i += 1 
+
+                            if typeof(gparam) == GaugeActionParam_standard
+                                V .= 0
+                                evaluate_wilson_loops!(V,loops,u,ix,iy,iz,it)
+                            elseif typeof(gparam) == GaugeActionParam_autogenerator
+                                V .= 0
+                                Vtemp .= 0
+                                for iloop = 1:gparam.numactions
+                                    evaluate_wilson_loops!(Vtemp,gparam.staples[iloop][mu],u,ix,iy,iz,it)
+                                    @. V += (gparam.βs[iloop]/beta)*Vtemp
+                                end
+                            end
+
+                            #println("#Heatbath for one SU(3) link started")
+                            for l=1:NC
+                            #for l=1:2NC
+                            
+
+                                UV = u[mu][:,:,ix,iy,iz,it]*V
+
+                                n = rand(1:NC-1)#l
+                                m = rand(n:NC)
+                                while(n==m)
+                                    m = rand(n:NC)
+                                end
+                                
+                                #=
+                                if l < NC
+                                    n = l
+                                    m = l+1
+                                else
+                                    n = rand(1:NC)#l
+                                    m = rand(1:NC)
+                                    while(n==m)
+                                        m = rand(1:NC)
+                                    end
+                                end
+                                =#
+
+
+                                # we emplay DeGrand's textbook notation
+                                w = make_submatrix(UV,n,m)
+                                #gramschmidt_special!(S)
+                                project_onto_SU2!(w)
+
+                                #h = SU2update_KP(w,beta,NC,ITERATION_MAX)
+                                # following two lines are only difference to HB
+                                h = w'*w'
+                                normalizeN!(h)
+
+                                H = make_largematrix(h,n,m,NC)
+
+                                HU = H*u[mu][:,:,ix,iy,iz,it]
+
+                                u[mu][:,:,ix,iy,iz,it] = HU
                                 #println("det U ",det(AU))
 
                             end
