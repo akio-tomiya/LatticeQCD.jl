@@ -289,8 +289,8 @@ module Measurements
                     println_verbose1(verbose,"$itrj $plaq # plaq")
                     println(measfp,"$itrj $plaq # plaq")
                 elseif method["methodname"] == "Wilson_loop"
-                    for T=1:method["Tmax"]+1
-                        for R=1:method["Rmax"]+1
+                    for T=1:method["Tmax"]
+                        for R=1:method["Rmax"]
                             WL = calc_Wilson_loop(U,T,R) # calculate RxT Wilson loop
                             println_verbose1(verbose,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
                             println(measfp,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
