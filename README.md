@@ -131,7 +131,7 @@ julia run.jl PARAMETER_FILE
 
 then, you get results though standard I/O. The "PARAMETER_FILE" can be created through the wizard "julia run_wizard.jl"  or you can write by yourself.
 
-One needs to perform following before the execution:
+One needs to perform following before the execution in Julia REPL:
 ```
 import Pkg; Pkg.add("Requires"); Pkg.add("JLD"); Pkg.add("CLIME_jll"); Pkg.add("EzXML")
 ```
