@@ -238,7 +238,7 @@ module Wizard
         end
 
 
-        fileloading = request("Do you want to load configurations from files?",RadioMenu([
+        fileloading = request("Do you perform only measurements on configurations in a directory? (no update)",RadioMenu([
                         "No",
                         "Yes",
                     ]))
