@@ -340,6 +340,15 @@ module Wizard
                         system["update_method"] = "HMC"
                     else
                         system["update_method"] = "Heatbath"
+                        or = request("Use overrelazation method?",RadioMenu([
+                                "true",
+                                "false",
+                            ]))
+                        system["useOR"] = ifelse(or==1,true,false)
+                        if system["useOR"]
+                            system["numOR"] = parse(Int64,Base.prompt("How many times do you want to do the OR?", default="3"))
+                        end
+
                     end
                 else
                     methodtype = request("Choose an update method",RadioMenu([
@@ -388,16 +397,20 @@ module Wizard
                     
                     #SextonWeingargten = parse(Bool,Base.prompt("Use SextonWeingargten method? true or false", default="false"))
 
-                    SW = request("Use SextonWeingargten method? multi-time scale",RadioMenu([
-                            "false",
-                            "true",
-                        ]))
-                    SextonWeingargten = ifelse(SW==1,false,true)
-                    
-                    if SextonWeingargten
-                        N_SextonWeingargten = parse(Int64,Base.prompt("Input number of SextonWeingargten steps", default="2"))
-                    else
-                        N_SextonWeingargten = 2
+                    if system["Dirac_operator"] != nothing
+                        SW = request("Use SextonWeingargten method? multi-time scale",RadioMenu([
+                                "false",
+                                "true",
+                            ]))
+                        SextonWeingargten = ifelse(SW==1,false,true)
+                        
+                        if SextonWeingargten
+                            N_SextonWeingargten = parse(Int64,Base.prompt("Input number of SextonWeingargten steps", default="2"))
+                        else
+                            N_SextonWeingargten = 2
+                        end
+                        md["SextonWeingargten"] = SextonWeingargten
+                        md["N_SextonWeingargten"] = N_SextonWeingargten
                     end
 
                     if MDsteps<=0
@@ -409,8 +422,7 @@ module Wizard
 
                     md["MDsteps"] = MDsteps
                     md["Δτ"] = Δτ
-                    md["SextonWeingargten"] = SextonWeingargten
-                    md["N_SextonWeingargten"] = N_SextonWeingargten
+                    
                 end
             else
                 system["Dirac_operator"] = "Wilson"

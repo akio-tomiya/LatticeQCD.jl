@@ -3,7 +3,7 @@ module System_parameters
     export Params
 
     # Physical setting 
-    printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","update_method","Nwing"]
+    printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
     printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition"]
     # System Control
@@ -175,6 +175,8 @@ module System_parameters
         measuredir::String
         integratedFermionAction::Bool
         training_data_name::String
+        useOR::Bool
+        numOR::Int64
 
 
 
@@ -306,6 +308,14 @@ module System_parameters
 
                 if system["quench"] == false
                     error("system[\"quench\"] = false. The Heatbath method needs the quench update. Put the other system[\"update_method\"] != \"Heatbath\" or system[\"quench\"] = true")
+                end
+
+                if haskey(system,"useOR")
+                    useOR = system["useOR"]
+                    numOR = system["numOR"]
+                else
+                    useOR = false
+                    numOR = 0
                 end
             elseif update_method == "IntegratedHMC"
                 println("IntegratedHMC will be used")
@@ -449,6 +459,8 @@ module System_parameters
 
 
 
+
+
             
             return new(
                 L,# = system["L"] #::Tuple  = (2,2,2,2) # Mandatory
@@ -494,7 +506,9 @@ module System_parameters
                 load_fp,
                 measuredir,
                 integratedFermionAction,
-                training_data_name
+                training_data_name,
+                useOR,
+                numOR
             )
 
         end
@@ -603,6 +617,38 @@ module System_parameters
         end
     end
 
+    function print_measurementinfo(fp,fp2,key)
+        string = "measurement[\"measurement_methods\"] = Dict[ "
+        setprint(fp,fp2,string)
+        for (i,data) in enumerate(key)
+            string = "  Dict{Any,Any}(\"methodname\" => \"$(data["methodname"])\","
+            setprint(fp,fp2,string)
+            count = 0
+            println(data)
+            for (name,key_i) in data
+                println(name)
+                println(key_i)
+                if name != "methodname"
+                    count += 1
+                    paramstring = get_stringfromkey(key_i)
+                    string = "    \"$(name)\" => "*paramstring
+                    if count != length(data) -1
+                        string *= ","
+                    end
+                    setprint(fp,fp2,string)
+                end
+            end
+            string = "  )"
+            if i != length(key)
+                string *= ","
+            end 
+            setprint(fp,fp2,string)
+            
+        end
+        string = "]"
+        setprint(fp,fp2,string)
+    end
+
     function print_parameters_list(params_set::Params_set,p=nothing;filename=nothing)
         if filename == nothing 
             @assert p != nothing "wrong input!"
@@ -620,9 +666,13 @@ module System_parameters
             for name in printlist_i
                 headstring,key = get_header(params_set,name)
                 if headstring != nothing
-                    string = get_stringfromkey(key)
-                    paramstring = headstring*"[\"$name\"] = "*string
-                    setprint(fp,fp2,paramstring)
+                    if name == "measurement_methods"
+                        print_measurementinfo(fp,fp2,key)
+                    else
+                        string = get_stringfromkey(key)
+                        paramstring = headstring*"[\"$name\"] = "*string
+                        setprint(fp,fp2,paramstring)
+                    end
                 end
             end
             setprint(fp,fp2,"\t" )
