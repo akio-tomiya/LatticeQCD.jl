@@ -297,9 +297,9 @@ module Wizard
             elseif initialconf == 2
                 system["initial"] = "hot"
             elseif initialconf == 3
-                system["initial trj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
+                system["initialtrj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
 
-                system["initial"] = Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld")
+                system["initial"] = String(Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld"))
             elseif initialconf == 4
                 system["initial"] = "Start from one instanton"
             end
