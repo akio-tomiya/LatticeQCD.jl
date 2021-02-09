@@ -297,7 +297,7 @@ module Wizard
             elseif initialconf == 2
                 system["initial"] = "hot"
             elseif initialconf == 3
-                system["initialtrj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
+                
 
                 loadtype = request("Choose a configuration format for loading",RadioMenu([
                     "JLD",
@@ -312,6 +312,7 @@ module Wizard
                     system["loadU_format"] = "ILDG"
                     system["initial"] = String(Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.ildg"))
                 end
+                system["initialtrj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
 
                 
             elseif initialconf == 4
