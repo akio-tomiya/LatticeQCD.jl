@@ -257,8 +257,10 @@ module Mainrun
             # Heatbath
             elseif parameters.update_method == "Heatbath"
                 @time heatbath!(univ)
-                for ior=1:3
-                    @time overrelaxation!(univ)
+                if parameters.useOR
+                    for ior=1:parameters.numOR
+                        @time overrelaxation!(univ)
+                    end
                 end
 
                 if parameters.integratedFermionAction
