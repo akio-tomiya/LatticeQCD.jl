@@ -304,6 +304,10 @@ module System_parameters
             firstlearn = 0
 
             update_method = system["update_method"]
+            useOR = false
+            numOR = 0
+
+
             if update_method == "HMC"
                 println("HMC will be used")
             elseif update_method == "Heatbath"
