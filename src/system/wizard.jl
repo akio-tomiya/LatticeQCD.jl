@@ -297,6 +297,8 @@ module Wizard
             elseif initialconf == 2
                 system["initial"] = "hot"
             elseif initialconf == 3
+                system["initial trj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
+
                 system["initial"] = Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.jld")
             elseif initialconf == 4
                 system["initial"] = "Start from one instanton"
@@ -333,10 +335,10 @@ module Wizard
 
                 if system["quench"] == true
                     methodtype = request("Choose an update method",RadioMenu([
-                        "Hybrid Monte Carlo",
                         "Heatbath",
+                        "Hybrid Monte Carlo",
                     ]))
-                    if methodtype == 1
+                    if methodtype == 2
                         system["update_method"] = "HMC"
                     else
                         system["update_method"] = "Heatbath"
