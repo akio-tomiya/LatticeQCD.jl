@@ -35,6 +35,7 @@ module LTK_universe
     import ..SUN_generator:Generator
 
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
+    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
 
 
 
@@ -353,6 +354,9 @@ module LTK_universe
             elseif loadU_format == "ILDG"
                 ildg = ILDG(initial)
                 i = 1
+                for μ=1:4
+                    U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+                end
                 load_gaugefield!(U,i,ildg,L,NC)
             else
                 error("loadU_format should be JLD or ILDG")
