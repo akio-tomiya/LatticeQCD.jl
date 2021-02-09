@@ -162,19 +162,19 @@ module Measurements
                 
 
                 if method["methodname"] == "Plaquette"
-                    measurementfps[i] = open(measurement_dir*"/Plaquette.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Plaquette.txt","a")
                 elseif method["methodname"] == "Polyakov_loop"
-                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.txt","a")
                 elseif method["methodname"] == "Topological_charge"
-                    measurementfps[i] = open(measurement_dir*"/Topological_charge.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Topological_charge.txt","a")
                 elseif method["methodname"] == "Chiral_condensate" 
-                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","a")
                     @assert fermiontype != nothing "fermiontype should be set in Chiral_condensate measurement"
                 elseif method["methodname"] == "Pion_correlator" 
-                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","a")
                     @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
                 elseif method["methodname"] == "Wilson_loop"
-                    measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","w")
+                    measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","a")
                 else
                     error("$(method["methodname"]) is not supported in measurement functions")
                 end

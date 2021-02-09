@@ -94,9 +94,7 @@ module Mainrun
 
     end
 
-    function load_file!(parameters,univ,mdparams,meas,verbose)
-        
-    end
+
 
     function run_init_Fileloading!(parameters,univ,mdparams,meas,verbose)
         ildg = nothing

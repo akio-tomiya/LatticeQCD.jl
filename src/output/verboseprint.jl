@@ -6,21 +6,21 @@ module Verbose_print
     struct Verbose_3  <: Verbose_level
         fp::Union{Nothing,IOStream}
         Verbose_3() = new(nothing)
-        Verbose_3(filename::String) = new(open(filename,"w"))
+        Verbose_3(filename::String) = new(open(filename,"a"))
         Verbose_3(fp::IOStream) = new(fp)
     end
 
     struct Verbose_2  <: Verbose_level
         fp::Union{Nothing,IOStream}
         Verbose_2() = new(nothing)
-        Verbose_2(filename::String) = new(open(filename,"w"))
+        Verbose_2(filename::String) = new(open(filename,"a"))
         Verbose_2(fp::IOStream) = new(fp)
     end
 
     struct Verbose_1  <: Verbose_level
         fp::Union{Nothing,IOStream}
         Verbose_1() = new(nothing)
-        Verbose_1(filename::String) = new(open(filename,"w"))
+        Verbose_1(filename::String) = new(open(filename,"a"))
         Verbose_1(fp::IOStream) = new(fp)
     end
 

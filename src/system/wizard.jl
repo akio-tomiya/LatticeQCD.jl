@@ -236,6 +236,7 @@ module Wizard
         if β<0
             error("Invalid value for β=$β. This has to be positive or zero")
         end
+        system["initialtrj"] = 1
 
 
         fileloading = request("Do you perform only measurements on configurations in a directory? (no update)",RadioMenu([
@@ -294,6 +295,7 @@ module Wizard
             end
             if initialconf == 1
                 system["initial"] = "cold"
+                
             elseif initialconf == 2
                 system["initial"] = "hot"
             elseif initialconf == 3
@@ -395,7 +397,7 @@ module Wizard
 
                 if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
                     Nthermalization = parse(Int64,Base.prompt("Input the number of thermalization steps (no mearurement)", default="0"))
-                    Nsteps = parse(Int64,Base.prompt("Input the number of total trajectories afterthermalization", default="100"))
+                    Nsteps = parse(Int64,Base.prompt("Input the number of total trajectories afterthermalization", default="$(100+system["initialtrj"])"))
 
                     if Nthermalization<0
                         error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")

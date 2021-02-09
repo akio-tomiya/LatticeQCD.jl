@@ -193,7 +193,7 @@ module LTK_universe
             end
         end
 
-        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp)
+        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format)
 
     end
 
