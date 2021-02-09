@@ -639,10 +639,10 @@ module System_parameters
             string = "  Dict{Any,Any}(\"methodname\" => \"$(data["methodname"])\","
             setprint(fp,fp2,string)
             count = 0
-            println(data)
+            #println(data)
             for (name,key_i) in data
-                println(name)
-                println(key_i)
+                #println(name)
+                #println(key_i)
                 if name != "methodname"
                     count += 1
                     paramstring = get_stringfromkey(key_i)
