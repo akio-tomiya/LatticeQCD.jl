@@ -465,7 +465,7 @@ module MD
             #println(e)
             exit()
         end
-        debug_gauss()
+        #debug_gauss()
 
         
         #@assert univ.NC == 2 "Only SU(2) is supported now."
