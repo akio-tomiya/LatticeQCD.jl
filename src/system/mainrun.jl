@@ -207,7 +207,7 @@ module Mainrun
 
         numaccepts = 0
 
-        if parameters.Nthermalization ≤ 0
+        if parameters.Nthermalization ≤ 0 && parameters.initialtrj == 1
             plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
         end
 
