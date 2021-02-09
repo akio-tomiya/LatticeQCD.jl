@@ -154,7 +154,12 @@ module Measurements
             for i=1:nummeasurement
  
                 method = measurement_methods[i]
-                fermiontype = method["fermiontype"] 
+                if haskey(method,"fermiontype")
+                    fermiontype = method["fermiontype"] 
+                else
+                    fermiontype = nothing
+                end
+                
 
                 if method["methodname"] == "Plaquette"
                     measurementfps[i] = open(measurement_dir*"/Plaquette.txt","w")
@@ -164,8 +169,10 @@ module Measurements
                     measurementfps[i] = open(measurement_dir*"/Topological_charge.txt","w")
                 elseif method["methodname"] == "Chiral_condensate" 
                     measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","w")
+                    @assert fermiontype != nothing "fermiontype should be set in Chiral_condensate measurement"
                 elseif method["methodname"] == "Pion_correlator" 
                     measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","w")
+                    @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
                 elseif method["methodname"] == "Wilson_loop"
                     measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","w")
                 else
