@@ -348,7 +348,16 @@ module LTK_universe
         else #if initial == "file"
             println(".....  File start")
             println("File name is $initial")
-            U = loadU(initial,NX,NY,NZ,NT,NC)
+            if loadU_format == "JLD"
+                U = loadU(initial,NX,NY,NZ,NT,NC)
+            elseif loadU_format == "ILDG"
+                ildg = ILDG(initial)
+                i = 1
+                load_gaugefield!(U,i,ildg,L,NC)
+            else
+                error("loadU_format should be JLD or ILDG")
+            end
+
             #error("not supported yet.")
         end
 
