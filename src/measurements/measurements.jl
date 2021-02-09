@@ -709,7 +709,7 @@ module Measurements
         return ic-1 + (is-1)*univ.NC + 1
     end
 
-    function calc_chiral_cond(univ::Universe,meas,measfp,Nr = 10, verbose = Verbose_2())
+    function calc_chiral_cond(univ::Universe,meas,measfp,itrj, Nr = 10, verbose = Verbose_2())
         #error("calc_chiral_cond is not implemented!")
         #
         # pbp = (1/Nr) Σ_i p_i
@@ -728,16 +728,17 @@ module Measurements
             #set_wing_fermi!(r) 
             bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
             tmp = r*p # hemitian inner product
-            println_verbose2(verbose,"$(real(tmp)/univ.NV) # chiralcond $ir")
-            println(measfp,"$(real(tmp)/univ.NV) # chiralcond $ir")
-            pbp+=tmp 
+            println_verbose2(verbose,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
+            println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
+            pbp+=tmp
         end
         return real(pbp/Nr)/univ.NV
     end
     function measure_chiral_cond(univ::Universe,meas::Measurement,itrj,measfp,verbose = Verbose_2())
         Nr = 10
-        pbp = calc_chiral_cond(univ,meas,measfp,Nr,verbose)
-        println_verbose1(verbose,"$itrj $pbp # pbp")
+        pbp = calc_chiral_cond(univ,meas,measfp,itrj,Nr,verbose)
+        println_verbose1(verbose,"$itrj $pbp # pbp Nr=$Nr")
+        println(measfp,"$itrj $pbp # pbp Nr=$Nr")
         flush(stdout)
     end
 
