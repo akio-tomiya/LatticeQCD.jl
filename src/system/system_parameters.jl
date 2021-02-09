@@ -3,7 +3,7 @@ module System_parameters
     export Params
 
     # Physical setting 
-    printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","update_method","useOR","numOR","Nwing"]
+    printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","initialtrj","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
     printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition"]
     # System Control
