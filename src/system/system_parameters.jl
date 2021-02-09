@@ -431,7 +431,7 @@ module System_parameters
             else
                 error("system[\"logfile\"] should be set")
             end
-            load_fp = open(logfile,"w")
+            load_fp = open(logfile,"a")
 
 
             if haskey(measurement,"measurement_basedir")
@@ -547,7 +547,7 @@ module System_parameters
 
     function print_parameters_file(p)
         filename = p.logfile*"_parameters.jl"# "parameters_used.jl"
-        fp = open(filename,"w")
+        fp = open(filename,"a")
         println(fp,"# - - parameters - - - - - - - - - - - ")
         pdict,pnames = make_parametersdict(p)
         for param in pdict
@@ -677,7 +677,7 @@ module System_parameters
         else
             fp2 = nothing
         end
-        fp = open(filename,"w")
+        fp = open(filename,"a")
         
         setprint(fp,fp2,"# - - parameters - - - - - - - - - - - ")
         for (i,printlist_i) in enumerate(printlists)
