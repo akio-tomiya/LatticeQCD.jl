@@ -53,6 +53,8 @@ module System_parameters
     system["saveU_every"] = 1
     system["saveU_dir"] = "./confs"
 
+    system["initialtrj"] = 1
+
     #system["loadU_format"] = "JLD"
     #system["loadU_dir"] = "./confs"
 
@@ -177,6 +179,7 @@ module System_parameters
         training_data_name::String
         useOR::Bool
         numOR::Int64
+        initialtrj::Int64
 
 
 
@@ -457,6 +460,12 @@ module System_parameters
                 training_data_name = pwd()*"/"*"trainingdata.txt"
             end
 
+            if haskey(system,"initialtrj")
+                initialtrj = system["initialtrj"]
+            else
+                initialtrj  = 1
+            end
+
 
 
 
@@ -508,7 +517,8 @@ module System_parameters
                 integratedFermionAction,
                 training_data_name,
                 useOR,
-                numOR
+                numOR,
+                initialtrj
             )
 
         end
@@ -635,7 +645,11 @@ module System_parameters
                     if count != length(data) -1
                         string *= ","
                     end
-                    setprint(fp,fp2,string)
+                    if name == "fermiontype" && key_i == nothing
+                    else
+                        setprint(fp,fp2,string)
+                    end
+                    
                 end
             end
             string = "  )"
