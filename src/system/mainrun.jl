@@ -94,6 +94,10 @@ module Mainrun
 
     end
 
+    function load_file!(parameters,univ,mdparams,meas,verbose)
+        
+    end
+
     function run_init_Fileloading!(parameters,univ,mdparams,meas,verbose)
         ildg = nothing
         println_verbose1(verbose,"load U from ",parameters.loadU_dir)
@@ -231,7 +235,7 @@ module Mainrun
             Sfold = nothing
         end
         
-        for itrj=1:Nsteps
+        for itrj=parameters.initialtrj:Nsteps
             println("# itrj = $itrj")
             # Update for different updaters
             # HMC: Hybrid Monte-Carlo

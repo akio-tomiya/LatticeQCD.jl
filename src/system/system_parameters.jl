@@ -408,7 +408,12 @@ module System_parameters
                 end
                 
             else
-                loadU_format = nothing
+                if haskey(system,"loadU_format")
+                    loadU_format = system["loadU_format"]
+                else
+                    loadU_format = nothing
+                end
+                
                 loadU_dir = "."
             end
 
