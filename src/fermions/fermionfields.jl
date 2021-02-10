@@ -3050,14 +3050,14 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-    function gauss_distribution_fermi!(x::FermionFields,randomfunc)
+    function gauss_distribution_fermi!(x::FermionFields,randomfunc,σ)
         NC = x.NC
         NX = x.NX
         NY = x.NY
         NZ = x.NZ
         NT = x.NT
         n6 = size(x.f)[6]
-        σ = sqrt(1/2)
+        #σ = sqrt(1/2)
 
         for mu = 1:n6
             for ic=1:NC
@@ -3071,7 +3071,7 @@ c-------------------------------------------------c
                                 xr = v1*cos(v2)
                                 xi = v1 * sin(v2)
 
-                                x[ic,ix,iy,iz,it,mu] = xr + im*xi
+                                x[ic,ix,iy,iz,it,mu] = σ*xr + σ*im*xi
                             end
                         end
                     end
@@ -3082,6 +3082,11 @@ c-------------------------------------------------c
         set_wing_fermi!(x)
 
         return
+    end
+
+    function gauss_distribution_fermi!(x::FermionFields,randomfunc)
+        σ = 1
+        gauss_distribution_fermi!(x,randomfunc,σ)
     end
 
     """

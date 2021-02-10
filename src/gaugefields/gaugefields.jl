@@ -1821,9 +1821,9 @@ c-----------------------------------------------------c
     c-----------------------------------------------------c
     c     !!!!!   vin and vout should be different vectors
     c
-    c     Projectin of the etraceless antiermite part 
+    c     Projection of the traceless antiermite part 
     c     vout = x/2 - Tr(x)/6
-    c     wher   x = vin - Conjg(vin)      
+    c     where   x = vin - Conjg(vin)      
     c-----------------------------------------------------c
     """
     function projlink!(vout::SU2GaugeFields,vin::SU2GaugeFields)
