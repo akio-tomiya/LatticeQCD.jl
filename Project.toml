@@ -6,6 +6,7 @@ version = "0.5.0"
 [deps]
 CLIME_jll = "3c6ae550-c37b-5556-a07e-d40b4910cf1c"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
 GR = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 InteractiveUtils = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
