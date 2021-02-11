@@ -19,7 +19,7 @@ module Smearing
         NZ = univ.NZ
         NT = univ.NT
 
-        g2 = (2*NC)/univ.gparam.β # β = 2Nc/g^2
+        g2 = 1.0 #(2*NC)/univ.gparam.β # β = 2Nc/g^2
 
         #W0 = deepcopy(U)
         W1 = tempW1
