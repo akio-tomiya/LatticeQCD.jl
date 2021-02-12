@@ -512,7 +512,7 @@ function  make_energy_density_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S
                 if μ == ν
                     continue
                 end
-                W += tr(Wmat[μ,ν][:,:,n])
+                W += tr(Wmat[μ,ν][:,:,n]*Wmat[μ,ν][:,:,n])/4
             end
         end
     end
