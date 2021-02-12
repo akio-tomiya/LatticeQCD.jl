@@ -132,6 +132,7 @@ module Wilsonloops
                     continue
                 end
                 push!(loopset,[(μ,1),(ν,N),(μ,-1),(ν,-N)])
+                push!(loopset,[(μ,N),(ν,1),(μ,-N),(ν,-1)])
             end
         end
         return loopset
