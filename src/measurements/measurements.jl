@@ -325,10 +325,11 @@ module Measurements
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
                     Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                    E = calc_energy_density(Usmr)
                     #println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     #println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
-                    println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                    println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                    println_verbose1(verbose,"$itrj $τ $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println(measfp,"$itrj $τ $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                     flush(stdout)
                     smearing_type = "gradient_flow"
                     #smearing_type = "APE"
@@ -340,10 +341,11 @@ module Measurements
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
                             Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
+                            E = calc_energy_density(Usmr)
                             #@time Q = calc_topological_charge(Usmr)
                             τ = iflow*eps_flow*Nflowsteps
-                            println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
-                            println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq Qplaq Qclov Qimproved")
+                            println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                             if iflow%10 == 0
                                 flush(stdout)
                             end
@@ -481,7 +483,62 @@ module Measurements
         end
         return 
     end
-
+# = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
+    # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+    WL = 0.0+0.0im
+    NV = U[1].NV
+    NC = U[1].NC
+    Wmat = Array{GaugeFields_1d,2}(undef,4,4)
+    #
+    make_energy_density!(Wmat,U) # make wilon loop operator and evaluate as a field, not traced.
+    WL =  make_energy_density_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+    NDir = 4.0*3.0/2 # choice of 2 axis from 4.
+    return real(WL)/NV/NDir/NC/8
+end
+function  make_energy_density_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+    if S == SU3
+        NC = 3
+    elseif S == SU2
+        NC = 2
+    else
+        NC = U[1].NC
+        #error("NC != 2,3 is not supported")
+    end
+    W = 0.0 + 0.0im
+    for n=1:NV
+        for μ=1:4 # all directions
+            for ν=1:4
+                if μ == ν
+                    continue
+                end
+                W += tr(Wmat[μ,ν][:,:,n])
+            end
+        end
+    end
+    return W
+end
+function make_energy_density!(Wmat,U)
+    W_operator,numofloops = calc_loopset_μν("clover")#make_Wilson_loop(Lt,Ls)
+    calc_large_wiloson_loop4d!(Wmat,W_operator,U)
+    return 
+end
+function calc_large_wiloson_loop4d!(temp_Wmat,W_operator,U)
+    W = temp_Wmat
+    for μ=1:4
+        for ν=1:4
+            if μ == ν
+                continue
+            end
+            #println(typeof(μ)," ",typeof(ν))
+            #exit()
+            loopset = Loops(U,W_operator[μ,ν])
+            W[μ,ν] = evaluate_loops(loopset,U)
+        end
+    end
+    return 
+end
+# = = = end of energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
         plaq = 0
         factor = calc_factor_plaq(U)
