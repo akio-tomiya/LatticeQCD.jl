@@ -59,7 +59,7 @@ Choose parameters as you want!
 5.Start simulation with created your parameter file!
 
 ```
- run_LQCD("parameters_used.jl")
+ run_LQCD("my_parameters.jl")
 ```
 
 You'll get results!
