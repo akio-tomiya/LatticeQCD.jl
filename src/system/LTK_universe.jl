@@ -29,7 +29,8 @@ module LTK_universe
     import ..Rand:Random_LCGs
     import ..System_parameters:Params
     import ..Diracoperators:DdagD_operator
-    import ..Wilsonloops:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops
+    import ..Wilsonloops:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
+                make_cloverloops
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
     import ..SUN_generator:Generator
@@ -181,12 +182,20 @@ module LTK_universe
                     SUNgenerator = nothing
                 end
 
+                _cloverloops = Array{Wilson_loop_set,2}(undef,3,4)
+                for μ=1:3
+                    for ν=μ+1:4
+                        _cloverloops[μ,ν] = make_cloverloops(μ,ν)
+                    end
+                end
+
+
                 #fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,CloverFμν,
                 #                internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                 #                p.quench)
                 fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
                                 internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                                p.quench,SUNgenerator)
+                                p.quench,SUNgenerator,_cloverloops)
             elseif p.Dirac_operator == "Staggered"
                 fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
             else
