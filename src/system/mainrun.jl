@@ -108,6 +108,9 @@ module Mainrun
         #println(filename)
         numfiles = length(filename_load)
         println_verbose1(verbose,"Num of files = $numfiles")
+        for file in filename_load
+            println_verbose1(verbose,"$file")
+        end
         #println("Num of files = $numfiles")
         Nsteps = numfiles-1
         filename_i = filename_load[1]
