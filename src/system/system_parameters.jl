@@ -560,7 +560,7 @@ module System_parameters
 
     function print_parameters_file(p)
         filename = p.logfile*"_parameters.jl"# "parameters_used.jl"
-        fp = open(filename,"a")
+        fp = open(filename,"w")
         println(fp,"# - - parameters - - - - - - - - - - - ")
         pdict,pnames = make_parametersdict(p)
         for param in pdict
@@ -690,7 +690,7 @@ module System_parameters
         else
             fp2 = nothing
         end
-        fp = open(filename,"a")
+        fp = open(filename,"w")
         
         setprint(fp,fp2,"# - - parameters - - - - - - - - - - - ")
         for (i,printlist_i) in enumerate(printlists)
