@@ -13,7 +13,7 @@ module Rand
     end
 
     function (g::Random_LCGs)()
-        return rand()
+        #return rand()
         return ranf!(g.crand_public)
     end
 

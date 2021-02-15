@@ -5,7 +5,9 @@ module Clover
     import ..Gaugefields:GaugeFields_1d,GaugeFields,set_wing!,
                 substitute!,gauge_shift!,lambdamul,
                 SU3GaugeFields_1d,SU2GaugeFields_1d,
-                SUNGaugeFields_1d
+                SUNGaugeFields_1d,
+                Loops,evaluate_loops!,evaluate_loops,SU
+    import ..Wilsonloops:Wilson_loop,Wilson_loop_set
 
     function Make_CloverFμν(fparam::FermiActionParam_WilsonClover,U,temps::Array{T,1})  where T <: GaugeFields_1d
         NV = temps[1].NV
@@ -21,7 +23,7 @@ module Clover
         work3 = temps[3]
         work4 = temps[4]
 
-        CloverFμν .= 0
+        #CloverFμν .= 0
         set_wing!(U)
 
         NV = work1.NV
@@ -36,100 +38,10 @@ module Clover
                     error("μν > 6 ?")
                 end
 
-                #=
-                     1) First leaf, which is located on the right up side.
-                                             
-                                      (1,3)---------+
-                                        |           |
-                     nu                 |           | 
-                      |                 |    (1)    |
-                      |                 |           | 
-                      |                 |           |
-                      +----> mu       (1,1)-------(1,2)
+                loopset = Loops(U,fparam._cloverloops[μ,ν],[work2,work3,work4])
+                evaluate_loops!(work1,loopset,U)
+                setFμν!(CloverFμν,μν,work1)
                 
-                =#
-                substitute!(work1,U[μ])
-                gauge_shift!(work2,μ,U[ν])
-                mul!(work3,work1,work2)
-
-                substitute!(work1,U[ν])
-                gauge_shift!(work2,ν,U[μ])
-                mul!(work4,work3,work2')
-                mul!(work3,work4,work1')
-
-                addFμν!(CloverFμν,μν,work3)
-
-                #=
-                     2) Second leaf, which is located on the left up side.
-                                             
-                                      (1,4)--------(1,2)
-                                        |            |
-                     nu                 |            | 
-                      |                 |    (2)     |
-                      |                 |            | 
-                      |                 |            |
-                      +----> mu       (1,3)--------(1,1)
-                 
-                =#
-
-                substitute!(work1,U[ν])
-                dir = (-μ,ν)
-                gauge_shift!(work2,dir,U[μ])
-                mul!(work3,work1,work2')
-                gauge_shift!(work2,-μ,U[ν])
-                gauge_shift!(work4,-μ,U[μ])
-                mul!(work1,work3,work2')
-                mul!(work2,work1,work4)
-                addFμν!(CloverFμν,μν,work2)
-
-                #=
-                     3) Third leaf, which is located on the left down side.
-                                             
-                                      (1,2)--------(1,1)
-                                        |            |
-                     nu                 |            | 
-                      |                 |    (3)     |
-                      |                 |            | 
-                      |                 |            |
-                      +----> mu       (1,3)--------(1,4)
-                
-                 
-                =#
-                gauge_shift!(work1,-ν,U[ν])
-                dir = (-μ,-ν)
-                gauge_shift!(work2,dir,U[μ])
-                mul!(work3,work2,work1)
-                gauge_shift!(work4,dir,U[ν])
-                mul!(work1,work4',work3)
-                gauge_shift!(work2,-μ,U[μ])
-                mul!(work3,work2',work1)
-
-                addFμν!(CloverFμν,μν,work3)
-
-                #=
-                     4) Fourth leaf, which is located on the right down side.
-                                             
-                                      (1,1)--------(1,4)
-                                        |            |
-                     nu                 |            | 
-                      |                 |    (4)     |
-                      |                 |            | 
-                      |                 |            |
-                      +----> mu       (1,2)--------(1,3)
-                
-                 
-                =#
-                gauge_shift!(work1,-ν,U[ν])
-                gauge_shift!(work2,-ν,U[μ])
-                mul!(work3,work1',work2)
-                dir = (μ,-ν)
-                gauge_shift!(work4,dir,U[ν])
-                mul!(work1,work3,work4)
-                substitute!(work2,U[μ])
-                mul!(work3,work1,work2')
-                addFμν!(CloverFμν,μν,work3)
-
-
             end
         end
 
@@ -212,6 +124,19 @@ module Clover
         end
         return
     end
+
+    function setFμν!(Fμν,μν,v::GaugeFields_1d{SU{NC}}) where NC
+        NV=v.NV
+        for i=1:NV
+            for k2=1:NC
+                for k1=1:NC
+                    Fμν[k1,k2,i,μν] = v[ k1,k2,i]
+                end
+            end
+        end
+        return
+    end
+
 
     function addFμν!(Fμν,μν,v::SU3GaugeFields_1d)
         NV=v.NV

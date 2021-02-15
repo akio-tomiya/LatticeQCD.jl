@@ -125,6 +125,11 @@ module Gaugefields
             T_1d = typeof(temp1)
             return new{T_1d}(loopset,[temp1,temp2,temp3])
         end
+
+        function Loops(U::Array{GaugeFields{S},1},loopset::Wilson_loop_set,temps) where {S <: SUn}
+            T_1d = typeof(temps[1])
+            return new{T_1d}(loopset,temps)
+        end
     end
 
     function evaluate_loops(loops::Loops,U::Array{GaugeFields{S},1})  where {S <: SUn}
@@ -141,6 +146,8 @@ module Gaugefields
     function evaluate_loops!(xout::T_1d,loops::Loops,U::Array{GaugeFields{S},1})  where {S <: SUn,T_1d <: GaugeFields_1d}
         evaluate_wilson_loops!(xout,loops.loopset,U,loops.temps)
     end
+
+    
 
     function evaluate_loops!(V,loops::Loops,U::Array{T,1},ix,iy,iz,it) where T <: GaugeFields
         evaluate_wilson_loops!(V,loops.loopset,U,ix,iy,iz,it)

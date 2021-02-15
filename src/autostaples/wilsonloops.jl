@@ -70,6 +70,19 @@ module Wilsonloops
         return
     end
 
+    function make_cloverloops(μ,ν)
+        loops = Wilson_loop_set()
+        loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+        loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
+        loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
+        loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+        push!(loops,loop_righttop)
+        push!(loops,loop_lefttop)
+        push!(loops,loop_rightbottom)
+        push!(loops,loop_leftbottom)
+        return loops
+    end
+
     function make_originalactions_fromloops(coupling_loops)
         actions = Array{Wilson_loop_set,1}(undef,length(coupling_loops))
         for (i,loopset) in enumerate(coupling_loops)
