@@ -346,9 +346,9 @@ module Measurements
                             τ = iflow*eps_flow*Nflowsteps
                             println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                             println(measfp,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                            if iflow%10 == 0
-                                flush(stdout)
-                            end
+                            #if iflow%10 == 0
+                            flush(stdout)
+                            #end
                         end
                     elseif smearing_type == "APE" # TODO this should be commonized to gradient flow
                         Usmr = deepcopy(U)
@@ -363,9 +363,9 @@ module Measurements
                             τ = iflow
                             println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
                             println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #ape itrj flowtime plaq Qplaq Qclov Qimproved")
-                            if iflow%10 == 0
-                                flush(stdout)
-                            end
+                            #if iflow%10 == 0
+                            flush(stdout)
+                            #end
                         end
                     elseif smearing_type == "stout" # TODO this should be commonized to gradient flow
                         Usmr = deepcopy(U)
@@ -380,9 +380,9 @@ module Measurements
                             τ = iflow
                             println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
                             println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #stout itrj flowtime plaq Qplaq Qclov Qimproved")
-                            if iflow%10 == 0
-                                flush(stdout)
-                            end
+                            #if iflow%10 == 0
+                            flush(stdout)
+                            #end
                         end
                     else
                         error("Invalid smearing_type = $smearing_type")
