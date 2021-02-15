@@ -325,11 +325,11 @@ module Measurements
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclover= calc_topological_charge_clover(Usmr)
                     Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                    E = calc_energy_density(Usmr)
+                    clov = calc_energy_density(Usmr)
                     #println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     #println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
-                    println_verbose1(verbose,"$itrj $τ $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                    println(measfp,"$itrj $τ $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println_verbose1(verbose,"$itrj $τ $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println(measfp,"$itrj $τ $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                     flush(stdout)
                     smearing_type = "gradient_flow"
                     #smearing_type = "APE"
@@ -341,11 +341,11 @@ module Measurements
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
                             Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                            E = calc_energy_density(Usmr)
+                            clov = calc_energy_density(Usmr)
                             #@time Q = calc_topological_charge(Usmr)
                             τ = iflow*eps_flow*Nflowsteps
-                            println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                            println(measfp,"$itrj $(round(τ, digits=3)) $plaq $E $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                            println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                             #if iflow%10 == 0
                             flush(stdout)
                             #end
