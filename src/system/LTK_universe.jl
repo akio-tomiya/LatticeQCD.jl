@@ -1,5 +1,6 @@
 module LTK_universe
     using LinearAlgebra
+    using SparseArrays
     #export Universe
     
 
@@ -37,6 +38,7 @@ module LTK_universe
 
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    import ..Othermethods:tdlogdet
 
 
 
@@ -519,11 +521,68 @@ module LTK_universe
         return real(S),real(plaq)
     end
 
-    function calc_IntegratedFermionAction(univ::Universe)
+
+    function calc_IntegratedFermionAction(univ::Universe;debug = false,M=16,m=100,nc=20,nonc=false)
         println("Making W^+W matrix...")
         @time WdagW = make_WdagWmatrix(univ)
-        println("Calculating logdet")
-        @time Sfnew = -real(logdet(WdagW))
+        Sfnew = calc_IntegratedFermionAction(univ,WdagW,debug = debug,M=M,m=m,nc=nc,nonc=nonc)
+        return Sfnew
+    end
+
+
+    function calc_IntegratedFermionAction(univ::Universe,WdagW;debug = false,M=16,m=100,nc=20,nonc=false)
+        if debug
+            WdagWsp = sparse(WdagW)
+            N,_ = size(WdagW)
+            tempvecs = Array{Array{ComplexF64,1}}(undef,3)
+            for i=1:3
+                tempvecs[i] = zeros(ComplexF64,N)
+            end
+            println("Calculating approximated logdet")
+            @time Sfnew = -tdlogdet(WdagWsp,M,m,tempvecs,nc=nc,nonc=nonc)
+            #=
+
+
+            M = 8*2
+            #M = 4#8*2
+            m = 100
+            NX = univ.U[1].NX
+            #m = 20
+            N,_ = size(WdagW)
+            tempvecs = Array{Array{ComplexF64,1}}(undef,3)
+            for i=1:3
+                tempvecs[i] = zeros(ComplexF64,N)
+            end
+
+            nc = 20
+            nonc = false
+
+            @time ldet = logdet(WdagW)
+            if nonc
+                fp = open("deltavalue_m$(m)_nonc_NX$(NX)_6.dat","w")
+            else
+                fp = open("deltavalue_m$(m)_nc$(nc)_NX$(NX)_6.dat","w")
+            end
+
+            for M in [4,8,16,32,64,128]
+                if nonc
+                    filename="delta_$(NX)$(NX)$(NX)$(NX)_$(M)_m$(m)_nonc_6.dat"
+                else
+                    filename="delta_$(NX)$(NX)$(NX)$(NX)_$(M)_m$(m)_nc$(nc)_6.dat"
+                end
+                a = tdlogdet(WdagWsp,M,m,tempvecs,filename=filename,nc=nc,nonc=nonc)
+                println("$M $a $ldet")
+                println(fp,"$M $a $ldet")
+            end
+            close(fp)
+
+            exit()
+            @time Sfnew = -tdlogdet(WdagWsp,M,m,tempvecs)
+            =#
+        else
+            println("Calculating logdet")
+            @time Sfnew = -real(logdet(WdagW))
+        end
 
        
 
@@ -629,10 +688,14 @@ module LTK_universe
         return make_WdagWmatrix(U,univ._temporal_fermi,univ.fparam)
     end
 
-    
     function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
         x0 = temps[7]
         xi = temps[8]
+        return make_WdagWmatrix(U,x0,xi,fparam) 
+    end
+    
+    function make_WdagWmatrix(U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+        
         Fermionfields.clear!(x0)
         NX = x0.NX
         NY = x0.NY

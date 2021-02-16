@@ -66,6 +66,11 @@ module MD
 
     mutable struct MD_parameters_SLMC  <: MD_parameters
         βeff::Union{Float64,Array{Float64,1}}
+        debug::Bool
+        function MD_parameters_SLMC(βeff)
+            debug = true
+            return new(βeff,debug)
+        end
     end
 
     mutable struct MD_parameters_SLHMC  <: MD_parameters
@@ -356,7 +361,7 @@ module MD
         
         #@assert univ.NC == 2 "Only SU(2) is supported now."
         if Sfold == nothing       
-            @time Sfold = calc_IntegratedFermionAction(univ)
+            @time Sfold = calc_IntegratedFermionAction(univ,debug=mdparams.debug)
             #=
 
             WdagW = make_WdagWmatrix(univ)
@@ -386,198 +391,9 @@ module MD
 
         Sgnew,plaq = calc_GaugeAction(univ)
 
-        #=
-        println("Making W^+W matrix...")
-        @time WdagW = make_WdagWmatrix(univ)
-        println("Calculating logdet")
-        @time Sfnew = -real(logdet(WdagW))
-        if univ.Dirac_operator == "Staggered" 
-            if univ.fparam.Nf == 4
-                Sfnew /= 2
-            end
-        end
-        =#
-
-        function debug_gauss2()
-            WdagW = make_WdagWmatrix(univ)
-            WdagWold = make_WdagWmatrix(univ,univ.Uold)
-            WdagWinv = inv(WdagW)
-
-            n = 8
-
-            ldet = logdet(WdagW)
-            ldetold = logdet(WdagWold)
-            ldetsa= ldetold -ldet
-            println(ldetsa/n)
-
-            #e,v = eigen(WdagWinv*WdagWold)
-            e,v = eigen(WdagW^(1/n)*inv(WdagWold)^(1/n))
-            println(e)
-            println(log.(e))
-            println(sum(log.(e)))
-            
-
-            #e,v = eigen(WdagW^(1/n))
-            #println("loge ",log.(e))
-            #println(sum(log.(e)))
-            #println(ldet/n)
-
-            exit()
 
 
-
-            N,_ = size(WdagW)
-            x = deepcopy(univ.η)
-            ϕ = zeros(ComplexF64,N)
-
-            itemax = 10000
-            gaussdata = zeros(ComplexF64,itemax)
-
-            for ite=1:itemax
-                gauss_distribution_fermi!(x,univ.ranf)
-                substitute_fermion!(ϕ,x)
-                ϕ2 = WdagWold*WdagWinv*ϕ 
-                ϕWWϕ = ϕ'*ϕ2 - ϕ'*ϕ
-                gaussdata[ite] = -ϕWWϕ 
-                ϕWWϕmax = maximum(real.(gaussdata[1:ite]))
-                csum = sum(exp.(gaussdata[1:ite] .- ϕWWϕmax))
-                csumlog = ϕWWϕmax + log(csum) -log(ite)
-                println("$ite ",real(csumlog),"\t",real(ldetsa),"\t",real(ldetsa-csumlog ))
-            end
-
-            exit()
-        end
-        #debug_gauss2()
-
-        function debug_gauss()
-            WdagW = make_WdagWmatrix(univ)
-            σ2 = 2*1/2
-            σ = sqrt(σ2)
-            d = Normal(0,σ)
-            
-            #WdagWold = make_WdagWmatrix(univ,univ.Uold)
-            #ldet = logdet(WdagW)
-            #ldetold = logdet(WdagWold)
-            #ldetsa= ldetold -ldet
-            #println(ldetsa)
-            #exit()
-
-            N,_ = size(WdagW)
-            n = 8
-            #σ = 10
-
-            e,v = eigen(WdagW)
-            #println(e)
-            #exit()
-            en = e.^(-1/n)
-            #esa = 1/σ^2 .- en
-            #esa = 1/(2σ2) .- en
-            esa = 1/(2σ2) .- en
-            #println(esa)
-            #exit()
-
-
-            x = deepcopy(univ.η)
-            ϕ = zeros(ComplexF64,N)
-            gauss_distribution_fermi!(x,univ.ranf,σ)
-            
-            substitute_fermion!(ϕ,x)
-            ϕ2 = calc_exactvalue(-n,WdagW,ϕ) 
-            println(ϕ2'*ϕ)
-
-            WdagW2 = DdagD_operator(univ.U,univ.η,univ.fparam)
-            
-            ϕ4 = calc_Anϕ(-n,WdagW2,x)   
-            
-            println(ϕ4*x)
-            ldet = logdet(WdagW)/n
-            detex = det(WdagW)
-            #println(detex,"\t",detex^(1/n))
-            println(ldet)
-            
-
-            itemax = 1000000
-            detAprrox = 0
-            gaussdata = zeros(ComplexF64,n,itemax)
-            #gaussdata2 = zeros(ComplexF64,itemax)
-            
-
-            
-            
-            fp = open("detn.dat","w")
-            
-            for ite=1:itemax
-            
-                rexp = 0#N*log(2σ2)
-                k = 1
-                #for k=1:n
-                    gauss_distribution_fermi!(x,univ.ranf,σ)
-                    #gauss_distribution_fermi!(x,univ.ranf)
-                    substitute_fermion!(ϕ,x)
-                    #ϕ = randn(ComplexF64,length(ϕ))
-                    ϕ = rand(d,length(ϕ)) .+ im* rand(d,length(ϕ))
-                    vx = v'*ϕ
-                    vx2 = vx .* esa
-                    #ed = Diagonal(en)
-                    #wda = v*ed*v'
-                    #display(sum(v*ed*v'- WdagW^(1/n)))
-                    #exit()
-
-
-                    
-                    #ϕ2 = calc_exactvalue(-n,WdagW,ϕ) 
-                    #println(ϕ'*ϕ2)
-                    #println("\t")
-                    #println(vx'*ed*vx)
-                    #println(ϕ'*WdagW^(1/n)*ϕ)
-                    #exit()
-                    #ϕ3 = calc_exactvalue(n,WdagWold,ϕ2) 
-                    
-                    #ϕWϕ = ϕ'*ϕ - ϕ'*ϕ3
-                    #ϕWϕ = ϕ'*ϕ - (univ.fparam.mass^2)^(1/n)*ϕ'*ϕ2
-                    
-
-                    #Wϕ = calc_Anϕ(-n,WdagW2,x)   
-                    #ϕWϕ =  x*x - (univ.fparam.mass^2)^(1/n)*(x*Wϕ)
-                    #ϕWϕ2 = ϕ'*ϕ - ϕ'*ϕ2
-                    ϕWϕ =vx'*vx2
-                    #println(ϕWϕ,"\t",ϕWϕ2)
-                    #exit()
-
-                    #println("xWϕ = ",x*Wϕ,"\t",x*x)
-
-                    #println(ϕWϕ)
-                    gaussdata[k,ite] = ϕWϕ 
-                    #gaussdata2[ite]= x*x
-                    ϕWϕmax = maximum(real.(gaussdata[k,1:ite]))
-                    #ϕϕmax = maximum(real.(gaussdata2[1:ite]))
-
-                    csum = sum(exp.(gaussdata[k,1:ite] .- ϕWϕmax))
-                    csumlog = ϕWϕmax + log(csum) -log(ite) + N*log(2σ2) #+ N*log(2) #  + N*(2/n)*log(univ.fparam.mass) -N*log(pi)
-                    #csumlog = ϕWϕmax + log(csum) #-log(ite) + N*(2/n)*log(univ.fparam.mass) -log(pi)
-                    rexp += csumlog
-                #end
-                #csumlog = ϕWϕmax + log(csum) -log(ite) + N*(2/n)*log(univ.fparam.mass)
-                #detAprrox += rexp
-                
-                if ite % 100 == 0
-                    #println("$ite ",real(rexp),"\t",ldet*n,"\t",real(ldet*n-rexp))
-                    #println(fp,ite,"\t",real(rexp),"\t",real(ldet*n))
-                    println("$ite ",real(rexp),"\t",ldet,"\t",real(ldet-rexp))
-                    println(fp,ite,"\t",real(rexp),"\t",real(ldet))
-                end
-                #println("$ite ",real(rexp),"\t",ldetsa,"\t",real(ldetsa-rexp))
-            end
-            close(fp)
-
-
-            #e,_ = eigen(WdagW)
-            #println(e)
-            exit()
-        end
-        #debug_gauss()
-
-        @time Sfnew = calc_IntegratedFermionAction(univ)
+        @time Sfnew = calc_IntegratedFermionAction(univ,debug=mdparams.debug)
         #println("Sfnew comparison: $Sfnew,$Sfnew2")
 
         
