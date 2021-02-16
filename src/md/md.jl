@@ -68,7 +68,7 @@ module MD
         βeff::Union{Float64,Array{Float64,1}}
         debug::Bool
         function MD_parameters_SLMC(βeff)
-            debug = true
+            debug = false
             return new(βeff,debug)
         end
     end
