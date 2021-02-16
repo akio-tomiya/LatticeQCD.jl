@@ -1,6 +1,7 @@
 module Measurements
     using LinearAlgebra
-    import ..LTK_universe:Universe
+    using SparseArrays
+    import ..LTK_universe:Universe,make_WdagWmatrix,calc_IntegratedFermionAction
     import ..Gaugefields:GaugeFields,set_wing!,substitute!,
             make_staple!,calc_Plaq!,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
@@ -175,6 +176,8 @@ module Measurements
                     @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
                 elseif method["methodname"] == "Wilson_loop"
                     measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","a")
+                elseif method["methodname"] == "integrated_fermion_action"
+                    measurementfps[i] = open(measurement_dir*"/Fermion_actions.txt","w")
                 else
                     error("$(method["methodname"]) is not supported in measurement functions")
                 end
@@ -295,6 +298,10 @@ module Measurements
                     plaq = calc_plaquette(U)
                     println_verbose1(verbose,"$itrj $plaq # plaq")
                     println(measfp,"$itrj $plaq # plaq")
+                elseif method["methodname"] == "integrated_fermion_action"
+                    Sfexact,Sfapprox = calc_fermionaction(univ,measset.fermions[i],method)
+                    println_verbose1(verbose,"$itrj $(real(Sfexact)) $(real(Sfapprox)) # fermion action")
+                    println(measfp,"$itrj $(real(Sfexact)) $(real(Sfapprox)) # fermion action")
                 elseif method["methodname"] == "Wilson_loop"
                     for T=1:method["Tmax"]
                         for R=1:method["Rmax"]
@@ -791,12 +798,52 @@ end
         end
         return real(pbp/Nr)/univ.NV
     end
+
+
+
+
     function measure_chiral_cond(univ::Universe,meas::Measurement,itrj,measfp,verbose = Verbose_2())
         Nr = 10
         pbp = calc_chiral_cond(univ,meas,measfp,itrj,Nr,verbose)
         println_verbose1(verbose,"$itrj $pbp # pbp Nr=$Nr")
         println(measfp,"$itrj $pbp # pbp Nr=$Nr")
         flush(stdout)
+    end
+
+    function calc_fermionaction(univ::Universe,meas::Measurement,method)        
+        println("Making W^+W matrix...")
+        @time WdagW = make_WdagWmatrix(univ.U,meas._temporal_fermi2[1],meas._temporal_fermi2[2],meas.fparam)
+        
+        if haskey(method,"nc")
+            nc = method["nc"]
+        else
+            nc = 20
+        end
+
+        if haskey(method,"M")
+            M = method["M"]
+        else
+            M = 16
+        end
+
+        if haskey(method,"nonc")
+            nonc = method["nonc"]
+        else
+            nonc = false
+        end
+
+        if haskey(method,"m")
+            m = method["m"]
+        else
+            m = 100
+        end
+
+        
+        Sfexact = calc_IntegratedFermionAction(univ,WdagW;debug = false)
+        
+        Sfapprox = calc_IntegratedFermionAction(univ,WdagW;debug = true,M=M,m=m,nc=nc,nonc=nonc)
+        return Sfexact,Sfapprox
+
     end
 
     function calc_quark_propagators_point_source_each(M,meas,i,NC,verbose)

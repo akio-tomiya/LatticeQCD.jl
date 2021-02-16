@@ -1,12 +1,16 @@
 module LatticeQCD
     using Requires
+    
 
     #include("./SLMC/logdet.jl")
 
+    
 
     include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
     include("./fermions/cgmethod.jl")
+
+    include("./fermions/misc.jl")
 
     
 
