@@ -424,7 +424,80 @@ module Measurements
     function calc_factor_plaq(U)
         factor = 2/(U[1].NV*4*3*U[1].NC)
     end
-
+#=
+# - - - Polyakov loop correlator
+# DING, H.-Q. (1991). (6.1)
+function calc_Polyakov_loop_correlator(U::Array{T,1},Lt,Ls) where T <: GaugeFields
+    # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+    WL = 0.0+0.0im
+    NV = U[1].NV
+    NC = U[1].NC
+    Wmat = Array{GaugeFields_1d,2}(undef,4,4)
+    #
+    construct_Polyakov_correlator(Wmat,R,U) # make wilon loop operator and evaluate as a field, not traced.
+    WL = calc_Polyakov_loop_correlator_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+    NDir = 3.0 # in 4 diemension, 3 associated staples. t-x plane, t-y plane, t-z plane
+    return real(WL)/NV/NDir/NC
+end
+function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+    if S == SU3
+        NC = 3
+    elseif S == SU2
+        NC = 2
+    else
+        NC = U[1].NC
+        #error("NC != 2,3 is not supported")
+    end
+    W = 0.0 + 0.0im
+    for n=1:NV
+        for μ=1:3 # spatial directions
+            ν=4  # T-direction is not summed over
+            W += tr(Wmat[μ,ν][:,:,n])
+        end
+    end
+    return W
+end
+function construct_Polyakov_correlator!(Wmat,R,U)
+    NX = U[1].NX
+    NY = U[1].NY
+    NZ = U[1].NZ
+    NT = U[1].NT
+    W_operator = make_2Polyakov_loop(R,NX,NY,NZ,NT)
+    calc_2Polyakov_loop!(Wmat,W_operator,U)
+    return 
+end
+function make_2Polyakov_loop(R,NX,NY,NZ,NT)
+    #= Making a Wilson loop operator for potential calculations
+        Ls × Lt
+        ν=4
+        ↑
+        +--+ 
+        |  |
+        |  |
+        |  |
+        +--+ → μ=1,2,3 (averaged)
+    =#
+    Wmatset= Array{Wilson_loop_set,2}(undef,4,4)
+    for μ=1 # spatial directions
+        ν=4 # T-direction is not summed over
+        loops = Wilson_loop_set()
+        loop = Wilson_loop([(t,NT)]) #plakov loop    # This part is under construction.
+        push!(loops,loop)
+        Wmatset[μ,ν] = loops
+    end
+    return Wmatset
+end
+function calc_2Polyakov_loop!(temp_Wmat,loops_μν,U)
+    W = temp_Wmat
+    for μ=1:3 # spatial directions
+        ν=4 # T-direction is not summed over
+        loopset = Loops(U,loops_μν[μ,ν])
+        W[μ,ν] = evaluate_loops(loopset,U)
+    end
+    return 
+end
+# - - - end Polyakov loop correlator
+=#
     function calc_Wilson_loop(U::Array{T,1},Lt,Ls) where T <: GaugeFields
         # Making a ( Ls × Lt) Wilson loop operator for potential calculations
         WL = 0.0+0.0im
