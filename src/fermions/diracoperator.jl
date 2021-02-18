@@ -1,7 +1,7 @@
 module Diracoperators
     import ..Gaugefields:GaugeFields,GaugeFields_1d
     import ..Fermionfields:FermionFields,WilsonFermion,Wx!,Wdagx!,WdagWx!,
-                            StaggeredFermion,set_wing_fermi!,Dx!,add!,clear!
+                            StaggeredFermion,set_wing_fermi!,Dx!,add!,clear!,Dxplus!
     import ..Clover:Make_CloverFμν
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_WilsonClover,
                 FermiActionParam_Staggered
@@ -102,7 +102,7 @@ module Diracoperators
         mass::Float64
 
         function Staggered_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
-            num = 6
+            num = 9
             _temporal_fermi = Array{StaggeredFermion,1}(undef,num)
             for i=1:num
                 _temporal_fermi[i] = similar(x)
@@ -111,11 +111,50 @@ module Diracoperators
         end
     end
 
-    struct DdagD_Staggered_operator <: DdagD_operator 
+
+    struct DdagD_Staggered_operator{perturb} <: DdagD_operator 
         dirac::Staggered_operator
-        function DdagD_Staggered_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
-            return new(Staggered_operator(U,x,fparam))
+        t::Float64
+        function DdagD_Staggered_operator(U::Array{T,1},x,fparam;t=1) where  T <: GaugeFields
+            if t == 1
+                perturb = false
+            else
+                perturb = true
+            end
+
+            return new{perturb}(Staggered_operator(U,x,fparam),t)
         end
+
+        function DdagD_Staggered_operator(A::DdagD_Staggered_operator,t)
+            if t == 1
+                perturb = false
+            else
+                perturb = true
+            end
+            return new{perturb}(A.dirac,t)
+        end
+    end
+
+    
+    struct DdagDND_Staggered_operator <: DdagD_operator #nondiagonal part of DdagD
+        dirac::Staggered_operator
+
+        function DdagDND_Staggered_operator(A::DdagD_Staggered_operator)
+            return new(A.dirac)
+        end
+    end
+
+    function Base.size(A::Staggered_operator)
+        NX = A.U[1].NX
+        NY = A.U[1].NY
+        NZ = A.U[1].NZ
+        NT = A.U[1].NT
+        NC = A.U[1].NC
+        return NX*NY*NZ*NT*NC,NX*NY*NZ*NT*NC
+    end
+
+    function Base.size(A::DdagD_operator)
+        return size(A.dirac)
     end
 
 
@@ -172,6 +211,56 @@ module Diracoperators
         temp = A.dirac._temporal_fermi[5]
         mul!(temp,A.dirac,x)
         mul!(y,A.dirac',temp)
+
+        return
+    end
+
+    function LinearAlgebra.mul!(y::FermionFields,A::DdagD_Staggered_operator{perturb},x::FermionFields)  where perturb
+        temps = A.dirac._temporal_fermi
+        temp = temps[5]
+        temp2 = temps[6]
+        Dx!(temp,A.dirac.U,x,temps)
+        Dx!(temp2,A.dirac.U,temp,temps)
+        clear!(y)
+
+
+        if perturb
+            add!(y,A.dirac.mass^2,x,-A.t,temp2)
+            
+
+            for ν=1:4
+                Dxplus!(temp,ν,A.dirac.U,x,temps)
+                Dxplus!(temp2,ν,A.dirac.U,temp,temps)
+
+                add!(y,1,x,-(1-A.t),temp2)
+            end
+
+            set_wing_fermi!(y)
+        else
+
+            add!(y,A.dirac.mass^2,x,-1,temp2)
+            set_wing_fermi!(y)
+        end
+
+        return
+    end
+
+    function LinearAlgebra.mul!(y::FermionFields,A::DdagDND_Staggered_operator,x::FermionFields)  where perturb
+        temps = A.dirac._temporal_fermi
+        temp = temps[5]
+        temp2 = temps[6]
+        Dx!(temp,A.dirac.U,x,temps)
+        Dx!(temp2,A.dirac.U,temp,temps)
+        clear!(y)
+        add!(y,1,x,-1,temp2)
+
+        for ν=1:4
+            Dxplus!(temp,ν,A.dirac.U,x,temps)
+            Dxplus!(temp2,ν,A.dirac.U,temp,temps)
+
+            add!(y,1,x,1,temp2)
+        end
+        set_wing_fermi!(y)
 
         return
     end

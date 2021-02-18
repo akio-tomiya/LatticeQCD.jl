@@ -468,6 +468,26 @@ module Fermionfields
         return
     end
 
+    function Dxplus!(xout::StaggeredFermion,ν::Int64,U::Array{G,1},
+        x::StaggeredFermion,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        #temp = temps[4]
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        #clear!(temp)
+        set_wing_fermi!(x)
+
+        fermion_shift!(temp1,U,ν,x)
+
+        fermion_shift!(temp2,U,-ν,x)
+
+        add!(xout,0.5,temp1,-0.5,temp2)
+            
+        set_wing_fermi!(xout)
+
+        return
+    end
+
     function Dx!(xout::StaggeredFermion,U::Array{G,1},
         x::StaggeredFermion,temps::Array{T,1},indices) where  {T <: FermionFields,G <: GaugeFields}
         #temp = temps[4]
@@ -659,6 +679,8 @@ module Fermionfields
     
         return
     end
+
+
 
     
     function WdagWx!(xout::T,U::Array{G,1},x::T,temps::Array{T,1},mass::Number,indices) where {T <: StaggeredFermion,G <: GaugeFields}
@@ -3087,6 +3109,34 @@ c-------------------------------------------------c
     function gauss_distribution_fermi!(x::FermionFields,randomfunc)
         σ = 1
         gauss_distribution_fermi!(x,randomfunc,σ)
+    end
+
+    function gauss_distribution_fermi_Z2!(x::FermionFields) 
+        NC = x.NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f)[6]
+        #σ = sqrt(1/2)
+
+        for mu = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                x[ic,ix,iy,iz,it,mu] = rand([-1,1])
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermi!(x)
+
+        return
     end
 
     """

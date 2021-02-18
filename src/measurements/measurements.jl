@@ -896,7 +896,7 @@ end
         if haskey(method,"M")
             M = method["M"]
         else
-            M = 16
+            M = 128
         end
 
         if haskey(method,"nonc")
