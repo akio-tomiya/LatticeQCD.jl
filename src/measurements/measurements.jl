@@ -310,6 +310,20 @@ module Measurements
                             println(measfp,"$itrj $T $R $WL # WL # itrj T R W(T,R)")
                         end
                     end
+                elseif method["methodname"] == "smeared_Wilson_loop"
+                    Usmr = deepcopy(U)
+                    # arXiv:hep-lat/0107006
+                    α = 0.5
+                    for iflow = 1:4 #method["numflow"]
+                        Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary", spatial_smear=false)
+                    end
+                    for T=1:method["Tmax"]
+                        for R=1:method["Rmax"]
+                            WL = calc_Wilson_loop(Usmr,T,R) # calculate RxT Wilson loop
+                            println_verbose1(verbose,"$itrj $T $R $WL # sWL # itrj T R W(T,R)")
+                            println(measfp,"$itrj $T $R $WL # sWL # itrj T R W(T,R)")
+                        end
+                    end
                 elseif method["methodname"] == "Polyakov_loop"
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
