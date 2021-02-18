@@ -152,7 +152,7 @@ module LTK_universe
             #println(loops)
             loops = make_originalactions_fromloops(p.coupling_loops)
             
-            gparam = GaugeActionParam_autogenerator(p.couplingcoeff,loops,p.NC)#,p.couplinglist)
+            gparam = GaugeActionParam_autogenerator(p.couplingcoeff,loops,p.NC,p.couplinglist)
         else
             gparam =  GaugeActionParam_standard(β,NTRACE)
         end
@@ -524,7 +524,22 @@ module LTK_universe
 
     function calc_IntegratedFermionAction(univ::Universe;debug = false,M=16,m=100,nc=20,nonc=false)
         println("Making W^+W matrix...")
-        @time WdagW = make_WdagWmatrix(univ)
+        NX = univ.U[1].NX
+        NY = univ.U[1].NY
+        NZ = univ.U[1].NZ
+        NT = univ.U[1].NT
+        NC = univ.U[1].NC
+        T = eltype(univ._temporal_fermi)
+        if T == StaggeredFermion
+            NG = 1
+        else
+            NG = 4
+        end
+        Nsize = NX*NY*NZ*NT*NC*NG
+
+        WdagW = zeros(ComplexF64,Nsize,Nsize)
+        @time  make_WdagWmatrix!(WdagW,univ)
+        #@time WdagW = make_WdagWmatrix(univ)
         Sfnew = calc_IntegratedFermionAction(univ,WdagW,debug = debug,M=M,m=m,nc=nc,nonc=nonc)
         return Sfnew
     end
@@ -532,6 +547,12 @@ module LTK_universe
 
     function calc_IntegratedFermionAction(univ::Universe,WdagW;debug = false,M=16,m=100,nc=20,nonc=false)
         if debug
+
+            #WdagW = DdagD_operator(univ.U,univ.η,univ.fparam)
+            #println("Calculating approximated logdet")
+            #@time Sfnew = -tdlogdet(WdagW,M,m,nc=nc,nonc=nonc)
+            #exit()
+
             WdagWsp = sparse(WdagW)
             N,_ = size(WdagW)
             tempvecs = Array{Array{ComplexF64,1}}(undef,3)
@@ -539,7 +560,15 @@ module LTK_universe
                 tempvecs[i] = zeros(ComplexF64,N)
             end
             println("Calculating approximated logdet")
+
+            #@time Sfnew = -tdlogdet(WdagWsp,M2,m2,tempvecs,nc=nc2,nonc=nonc)
+
+            #M2 = 100
+            #m2 = 100
+            #nc2 = 100
             @time Sfnew = -tdlogdet(WdagWsp,M,m,tempvecs,nc=nc,nonc=nonc)
+
+            #exit()
             #=
 
 
@@ -684,6 +713,11 @@ module LTK_universe
         return make_WdagWmatrix(univ.U,univ._temporal_fermi,univ.fparam)
     end
 
+    function make_WdagWmatrix!(WdagW,univ::Universe)
+        make_WdagWmatrix!(WdagW,univ.U,univ._temporal_fermi,univ.fparam)
+        return
+    end
+
     function make_WdagWmatrix(univ::Universe,U::Array{T,1}) where T <: GaugeFields
         return make_WdagWmatrix(U,univ._temporal_fermi,univ.fparam)
     end
@@ -693,8 +727,33 @@ module LTK_universe
         xi = temps[8]
         return make_WdagWmatrix(U,x0,xi,fparam) 
     end
-    
+
+    function make_WdagWmatrix!(WdagW,U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
+        x0 = temps[7]
+        xi = temps[8]
+        make_WdagWmatrix!(WdagW,U,x0,xi,fparam) 
+        return
+    end
+
     function make_WdagWmatrix(U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+        NX = x0.NX
+        NY = x0.NY
+        NZ = x0.NZ
+        NT = x0.NT
+        NC = x0.NC
+        if T == StaggeredFermion
+            NG = 1
+        else
+            NG = 4
+        end
+        Nsize = NX*NY*NZ*NT*NC*NG
+        
+        WdagW = zeros(ComplexF64,Nsize,Nsize)
+        make_WdagWmatrix!(WdagW,U,x0,xi,fparam)
+        return WdagW
+    end
+    
+    function make_WdagWmatrix!(WdagW,U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
         
         Fermionfields.clear!(x0)
         NX = x0.NX
@@ -708,7 +767,7 @@ module LTK_universe
             NG = 4
         end
         Nsize = NX*NY*NZ*NT*NC*NG
-        WdagW = zeros(ComplexF64,Nsize,Nsize)
+        #WdagW = zeros(ComplexF64,Nsize,Nsize)
         WdagWoperator = DdagD_operator(U,x0,fparam)
         
         
@@ -749,7 +808,7 @@ module LTK_universe
         end
 
 
-        return WdagW
+        #return WdagW
 
     end
 
