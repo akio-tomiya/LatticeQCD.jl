@@ -133,6 +133,8 @@ module CGmethods
         return x'*y
     end
 
+
+
     function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
         println_verbose3(verbose,"--------------------------------------")
         println_verbose3(verbose,"shifted cg method")
@@ -155,6 +157,7 @@ module CGmethods
         ρm = ones(ComplexF64,N)
         ρ0 = ones(ComplexF64,N)
         ρp = ones(ComplexF64,N)
+        residual = 0
 
 
         for i=1:maxsteps
@@ -210,7 +213,106 @@ module CGmethods
         
         error("""
         The shifted CG is not converged! with maxsteps = $(maxsteps)
-        residual is $rnorm
+        residual is $residual
+        maxsteps should be larger.""")
+
+
+    end
+
+    function reducedshiftedcg(leftvec,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+        println_verbose3(verbose,"--------------------------------------")
+        println_verbose3(verbose,"shifted cg method")
+        N = length(vec_β)
+        temp1 = similar(b)
+        r = deepcopy(b)
+        p = deepcopy(b)
+        q = similar(b)
+
+        #=
+        vec_r = Array{typeof(r),1}(undef,N)
+        vec_p = Array{typeof(p),1}(undef,N)
+        for j=1:N
+            vec_r[j] = deepcopy(b)
+            vec_p[j] = deepcopy(b)
+        end
+        =#
+
+        Σ = leftvec ⋅ b
+
+        θ = zeros(ComplexF64,N)
+        Π = ones(ComplexF64,N) .* Σ
+
+
+        αm = 1.0
+        βm = 0.0
+
+        ρm = ones(ComplexF64,N)
+        ρ0 = ones(ComplexF64,N)
+        ρp = ones(ComplexF64,N)
+        residual = 0
+
+
+        for i=1:maxsteps
+            mul!(q,A,p)
+
+            pAp = p ⋅ q
+            rr = r*r
+            αk = rr / pAp
+
+            #! ...  x   = x   + alpha * p   
+            add!(x,αk,p)
+
+            #...  r = r - alpha * q 
+            add!(r,-αk,q)
+
+            βk = (r*r)/ rr
+            add!(βk,p,1,r) #p = beta*p + r
+
+            Σ = leftvec ⋅ r
+
+            for j=1:N
+                ρkj = ρ0[j]
+                if abs(ρkj) < eps
+                    continue
+                end
+                ρkmj =ρm[j]
+                ρp[j] = ρkj*ρkmj*αm/(ρkmj*αm*(1.0+αk*vec_β[j])+αk*βm*(ρkmj-ρkj))
+                αkj = (ρp[j]/ρkj)*αk
+                θ[j] += αkj*Π[j]
+
+                #add!(vec_x[j],αkj,vec_p[j])
+                βkj = (ρp[j]/ρkj)^2*βk
+                Π[j] = βkj*Π[j] + ρp[j]*Σ
+
+                #mul!(Π,ρp[j],Σ,1,βkj)
+                #Π[:] = 
+                #add!(βkj,vec_p[j],ρp[j],r) 
+
+            end
+
+            ρm[:] = ρ0[:]
+            ρ0[:] = ρp[:]
+            αm = αk
+            βm = βk
+
+
+            ρMAX = maximum(abs.(ρp))^2
+            residual = abs(rr*ρMAX)
+            println_verbose3(verbose,"$i-th eps: $residual")
+
+            if abs(residual) < eps
+                println_verbose3(verbose,"Converged at $i-th step. eps: $residual")
+                println_verbose3(verbose,"--------------------------------------")
+                return θ
+            end
+
+
+        end
+
+        
+        error("""
+        The shifted CG is not converged! with maxsteps = $(maxsteps)
+        residual is $residual
         maxsteps should be larger.""")
 
 

@@ -20,7 +20,7 @@ module Actions
         NTRACE::Int64
         loops::Array{Wilson_loop_set,1}
         staples::Array{Array{Wilson_loop_set,1},1}
-        #couplinglist::Array{String,1}
+        couplinglist::Array{String,1}
     end
 
     
@@ -86,7 +86,7 @@ module Actions
     end
 
 
-    function GaugeActionParam_autogenerator(βs,loops,NC)#,couplinglist)
+    function GaugeActionParam_autogenerator(βs,loops,NC,couplinglist)
         @assert length(βs) == length(loops) "The number of loops should be the number of βs!"
         numactions = length(loops)
         β = βs[1]
@@ -104,7 +104,7 @@ module Actions
             =#
         end
 
-        return GaugeActionParam_autogenerator(βs,β,numactions,NC,loops,staples)#,couplinglist)
+        return GaugeActionParam_autogenerator(βs,β,numactions,NC,loops,staples,couplinglist)
     end
 
     function show_parameters_action(fparam::FermiActionParam_Staggered)
