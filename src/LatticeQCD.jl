@@ -10,9 +10,6 @@ module LatticeQCD
     include("./output/verboseprint.jl")
     include("./fermions/cgmethod.jl")
 
-    include("./fermions/misc.jl")
-
-    
 
     include("./autostaples/wilsonloops.jl")
     
@@ -33,6 +30,8 @@ module LatticeQCD
     include("./fermions/clover.jl")
     
     include("./fermions/diracoperator.jl")
+    include("./fermions/misc.jl")
+
 
     include("./output/io.jl")
     include("./output/ildg_format.jl")

@@ -95,7 +95,7 @@ module SLMC
         
         if typeof(gparam) == GaugeActionParam_autogenerator
             effectiveterms = gparam.couplinglist
-            #println(gparam.couplinglist )
+            println(gparam.couplinglist )
         elseif typeof(gparam) == GaugeActionParam_standard
             effectiveterms = ["plaq"]
         else

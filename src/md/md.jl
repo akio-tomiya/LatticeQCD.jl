@@ -69,6 +69,7 @@ module MD
         debug::Bool
         function MD_parameters_SLMC(βeff)
             debug = false
+            #debug = true
             return new(βeff,debug)
         end
     end
@@ -512,6 +513,7 @@ module MD
                         end
                     end
                     #shifttest()
+                    #exit()
 
                     evensite = false
                     W = Dirac_operator(univ.U,univ.η,univ.fparam)
