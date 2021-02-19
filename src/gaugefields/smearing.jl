@@ -141,12 +141,12 @@ module Smearing
         return
     end
 
-    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",spatial_smear=true) where NC
+    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",temporal_dir_smear=true) where NC
         Uin = deepcopy(Uout)
-        calc_fatlink_APE!(Uout,Uin,α,β,normalize_method=normalize_method,spatial_smear=spatial_smear)
+        calc_fatlink_APE!(Uout,Uin,α,β,normalize_method=normalize_method,temporal_dir_smear=temporal_dir_smear)
     end
 
-    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",spatial_smear=true) where NC
+    function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",temporal_dir_smear=true) where NC
         @assert Uout != U "input U and output U should not be same!"
         NX = U[1].NX
         NY = U[1].NY
@@ -165,7 +165,7 @@ module Smearing
 
         #println(normalize_method)
         d=3
-        if spatial_smear
+        if temporal_dir_smear
             d=4
         end
         for μ=1:d
@@ -189,9 +189,9 @@ module Smearing
         return 
     end
 
-    function calc_fatlink_APE(U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",spatial_smear=true) where NC
+    function calc_fatlink_APE(U::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",temporal_dir_smear=true) where NC
         Uout = similar(U)
-        calc_fatlink_APE!(Uout,U,α,β,normalize_method=normalize_method,spatial_smear)
+        calc_fatlink_APE!(Uout,U,α,β,normalize_method=normalize_method,temporal_dir_smear=temporal_dir_smear)
         return Uout
     end
 end
