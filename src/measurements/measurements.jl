@@ -176,6 +176,8 @@ module Measurements
                     @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
                 elseif method["methodname"] == "Wilson_loop"
                     measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","a")
+                elseif method["methodname"] == "smeared_Wilson_loop"
+                    measurementfps[i] = open(measurement_dir*"/smeared_Wilson_loop.txt","a")
                 elseif method["methodname"] == "integrated_fermion_action"
                     measurementfps[i] = open(measurement_dir*"/Fermion_actions.txt","w")
                 else
