@@ -134,7 +134,7 @@ then, you get results though standard I/O. The "PARAMETER_FILE" can be created t
 
 One needs to perform following before the execution in Julia REPL:
 ```
-import Pkg; Pkg.add("Requires"); Pkg.add("JLD"); Pkg.add("CLIME_jll"); Pkg.add("EzXML");Pkg.add("Distributions")
+import Pkg; Pkg.add("Requires"); Pkg.add("JLD"); Pkg.add("CLIME_jll"); Pkg.add("EzXML");Pkg.add("Distributions");Pkg.add("FastGaussQuadrature")
 ```
 
 # Purpose of the code
