@@ -316,7 +316,7 @@ module Measurements
                     Usmr = deepcopy(U)
                     # arXiv:hep-lat/0107006
                     α = 0.5
-                    for iflow = 1:4 #method["numflow"]
+                    for iflow = 1:5 #method["numflow"]
                         calc_fatlink_APE!(Usmr,α,α,normalize_method="special unitary", temporal_dir_smear=false)
                     end
                     for T=1:method["Tmax"]
