@@ -50,6 +50,14 @@ module Analyze
         end
     end
 
+    function get_plaquette_average(dirname::String)
+        return mean( get_plaquette(dirname) )
+    end
+
+    function get_polyakove_average(dirname::String)
+        return mean( get_polyakov(dirname) )
+    end
+
     function get_plaquette(dirname::String)
         a = analyze(dirname)
         return a.plaquette
