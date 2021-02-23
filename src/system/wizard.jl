@@ -262,6 +262,22 @@ module Wizard
                 system["loadU_dir"] = String(Base.prompt("Loading directory", default="./confs"))
             end
 
+
+            filelist = request("Which configurations do you use?",RadioMenu([
+                        "All configurations in the directory",
+                        "Configurations written in a list",
+                    ]))
+            
+            if filelist==1
+                system["loadU_fromfile"] = false
+            else
+                system["loadU_fromfile"] = true
+
+                system["loadU_filename"] = String(Base.prompt("name of the list in $(system["loadU_dir"])", default="filelist.txt"))
+            end
+
+
+
             #system["β"] = 2.6
             system["initial"] = "cold"
             system["BoundaryCondition"] = [1,1,1,-1]
@@ -498,11 +514,11 @@ module Wizard
                 elseif i == 2
                     measurement_methods[count] = poly_wizard()
                 elseif i == 3
-                    measurement_methods[count] = topo_wizard(L)
+                    measurement_methods[count] = topo_wizard(L,system)
                 elseif i == 4
-                    measurement_methods[count] = chiral_wizard(staggered)
+                    measurement_methods[count] = chiral_wizard(staggered,system)
                 elseif i == 5
-                    measurement_methods[count] = pion_wizard(wilson)
+                    measurement_methods[count] = pion_wizard(wilson,system)
                 end
             end
         else
@@ -659,11 +675,19 @@ module Wizard
         return method
     end
 
-    function  topo_wizard(L)
+    function  topo_wizard(L,system)
         method = Dict()
+
+        if system["update_method"] == "Fileloading"
+            defaultvalue = 1
+        else
+            defaultvalue = 10
+        end
+
+
         println("You measure a topological charge")
         method["methodname"] = "Topological_charge"
-        method["measure_every"] = parse(Int64,Base.prompt("How often measure a topological charge?", default="10"))
+        method["measure_every"] = parse(Int64,Base.prompt("How often measure a topological charge?", default="$defaultvalue"))
         method["fermiontype"] = nothing
         method["numflow"]  = parse(Int64,Base.prompt("How many times do you want to flow gauge fields to measure the topological charge?", default="10"))
 
@@ -678,7 +702,7 @@ module Wizard
         return method
     end
 
-    function  chiral_wizard(staggered)
+    function  chiral_wizard(staggered,system)
         if haskey(staggered,"mass")
             mass_default = staggered["mass"]
         else
@@ -690,7 +714,14 @@ module Wizard
         println("You measure chiral condensates with the statteggred fermion")
 
         method["methodname"] = "Chiral_condensate" 
-        method["measure_every"] = parse(Int64,Base.prompt("How often measure chiral condensates?", default="10"))
+
+        if system["update_method"] == "Fileloading"
+            defaultvalue = 1
+        else
+            defaultvalue = 10
+        end
+
+        method["measure_every"] = parse(Int64,Base.prompt("How often measure chiral condensates?", default="$defaultvalue"))
         method["fermiontype"] = "Staggered"
         method["mass"] = parse(Float64,Base.prompt("Input mass for the measurement of chiral condensates", default="$mass_default"))
         method["Nf"] = 4
@@ -709,19 +740,26 @@ module Wizard
 
         return method
     end
-    function  pion_wizard(wilson)
+    function  pion_wizard(wilson,system)
         if haskey(wilson,"hop")
             hop_default = wilson["hop"]
         else
             hop_default = 0.141139
         end
 
+        if system["update_method"] == "Fileloading"
+            defaultvalue = 1
+        else
+            defaultvalue = 10
+        end
+
+
         method = Dict()
 
         println("You measure Pion_correlator with the Wilson quark operator")
 
         method["methodname"] = "Pion_correlator" 
-        method["measure_every"] = parse(Int64,Base.prompt("How often measure Pion_correlator?", default="10"))
+        method["measure_every"] = parse(Int64,Base.prompt("How often measure Pion_correlator?", default="$defaultvalue"))
         wtype = request("Choose Wilson fermion type for the measurement of Pion_correlator",RadioMenu([
                     "Standard Wilson fermion action",
                     "Wilson+Clover fermion action",
@@ -761,6 +799,7 @@ module Wizard
         else
             hop_default = 0.141139
         end
+
 
         method = Dict()
 
