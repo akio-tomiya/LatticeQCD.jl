@@ -94,16 +94,69 @@ module Mainrun
 
     end
 
+    function checkfile(filename,list)
+        for name in list
+
+        end
+    end
+
 
 
     function run_init_Fileloading!(parameters,univ,mdparams,meas,verbose)
         ildg = nothing
         println_verbose1(verbose,"load U from ",parameters.loadU_dir)
         if parameters.loadU_format == "JLD"
+            datatype = "JLD"
             filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
         elseif parameters.loadU_format == "ILDG"
+            datatype = "ILDG"
             filename_load =  filter(f -> contains(f,"ildg"),readdir("./$(parameters.loadU_dir)"))
         end
+
+        if parameters.loadU_fromfile
+            data = readlines("./$(parameters.loadU_dir)/$(parameters.loadU_filename)")
+            datafromlist = String[]
+
+            for (i,datai) in enumerate(data)
+                havesharp = findfirst('#',datai)
+                #println("havesharp: $havesharp")
+                if havesharp == 1
+                    datau = ""
+                elseif havesharp != nothing
+                    datau = datai[begin:havesharp-1]    
+                else
+                    datau = datai
+                end
+
+                datau = strip(datau)
+
+                if datatype == "JLD"
+                    doescontains = contains(datau,".jld")
+                elseif datatype == "ILDG"
+                    doescontains = contains(datau,".ildg")
+                end
+
+                
+
+                #println(doescontains)
+                if doescontains 
+                    if isfile("./$(parameters.loadU_dir)/$(datau)")
+                        push!(datafromlist,datau)
+                    else
+                        println("Warning! $(datau) does not exist in $(parameters.loadU_dir)! We ignore this.")
+                    end
+                    #println(datau)
+                    
+                end                                
+            end
+            filename_load = datafromlist
+            #println(datafromlist)
+
+        end
+
+        #exit()
+
+
         #filename = filter(f -> isfile(f), readdir("./$(parameters.loadU_dir)"))
         #println(filename)
         numfiles = length(filename_load)
@@ -210,7 +263,7 @@ module Mainrun
 
         numaccepts = 0
 
-        if parameters.Nthermalization ≤ 0 && parameters.initialtrj == 1
+        if (parameters.Nthermalization ≤ 0 && parameters.initialtrj == 1) || parameters.update_method == "Fileloading"
             plaq,poly = measurements(0,univ.U,univ,meas;verbose = univ.kind_of_verboselevel) # check consistency of preparation.
         end
 
@@ -404,7 +457,7 @@ module Mainrun
                 Sfold = ifelse(accept,Sfnew,Sfold)
             end# update end
 
-            if itrj ≥ parameters.Nthermalization
+            if (itrj ≥ parameters.Nthermalization) || parameters.update_method == "Fileloading"
                 plaq,poly = measurements(itrj,univ.U,univ,meas;verbose = univ.kind_of_verboselevel)
             end
 
