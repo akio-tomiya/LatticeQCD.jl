@@ -7,7 +7,7 @@ module System_parameters
     # Physical setting(fermions)
     printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition"]
     # System Control
-    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
+    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
     # HMC related
     printlist_HMCrelated = ["Δτ","SextonWeingargten","N_SextonWeingargten","MDsteps","eps","MaxCGstep"]
     # Action parameter for SLMC
@@ -180,6 +180,9 @@ module System_parameters
         useOR::Bool
         numOR::Int64
         initialtrj::Int64
+        loadU_fromfile::Bool
+        loadU_filename::String
+
 
 
 
@@ -495,6 +498,18 @@ module System_parameters
                 initialtrj  = 1
             end
 
+            if haskey(system,"loadU_fromfile")
+                loadU_fromfile = system["loadU_fromfile"] 
+            else
+                loadU_fromfile = false
+            end
+
+            if haskey(system,"loadU_filename")
+                loadU_filename = system["loadU_filename"]
+            else
+                loadU_filename = ""
+            end
+
 
 
 
@@ -547,7 +562,9 @@ module System_parameters
                 training_data_name,
                 useOR,
                 numOR,
-                initialtrj
+                initialtrj,
+                loadU_fromfile,
+                loadU_filename
             )
 
         end
