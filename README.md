@@ -95,7 +95,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) with a general gauge action
   - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for a general gauge action</s> (This will be supported)
   - Fermion integrated HMC with a general gauge action
-  - Self-learning Monte-Carlo with plaquette action (simpler version of [this paper](https://arxiv.org/abs/2010.11900) )
+  - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
 - Measurements
   - Plaquette
@@ -130,7 +130,7 @@ add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
 Then, LatticeQCD.jl is installed on your machine. 
 
-You write the following code:
+You write the following code (save as ``run.jl``):
 ```julia:run.jl
 using LatticeQCD
 run_LQCD(ARGS[1])
@@ -144,7 +144,7 @@ julia run.jl PARAMETER_FILE
 
 then, you get results though standard I/O. 
 
-The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code: 
+The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (save as ``wizard.jl``): 
 
 ```julia:wizard.jl
 using LatticeQCD
