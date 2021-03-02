@@ -1,6 +1,7 @@
 module Analyze
     #using Plots
     using Requires
+    using Distributions
 
     function analyze(dirname)
         return Analyze_data(dirname)
@@ -48,6 +49,14 @@ module Analyze
 
             return new(plaquette,polyakov,trjs,length(trjs),dirname)
         end
+    end
+
+    function get_plaquette_average(dirname::String)
+        return mean( get_plaquette(dirname) )
+    end
+
+    function get_polyakov_average(dirname::String)
+        return mean( get_polyakov(dirname) )
     end
 
     function get_plaquette(dirname::String)

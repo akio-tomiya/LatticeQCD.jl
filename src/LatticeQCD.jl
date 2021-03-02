@@ -98,7 +98,7 @@ module LatticeQCD
     import .RationalApprox:calc_exactvalue,calc_Anϕ,calc_det
     #,run_LQCD!
 
-    import .Analyze:analyze,get_plaquette,get_polyakov,get_trjs
+    import .Analyze:analyze,get_plaquette,get_polyakov,get_plaquette_average,get_polyakov_average,get_trjs
     
     
     #import .Fermionfields:make_WdagWmatrix
@@ -123,7 +123,7 @@ module LatticeQCD
 
     export write_config
     export run_wizard
-    export analyze,get_plaquette,get_polyakov,get_trjs
+    export analyze,get_plaquette,get_polyakov,get_plaquette_average,get_polyakov_average,get_trjs
 
 
 
