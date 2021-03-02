@@ -380,6 +380,17 @@ module Wilsonloops
         return staplesset
     end
 
+    function make_staple_staple(staples::Array{Wilson_loop,1})
+        staplestaple = Array{Wilson_loop,2}(undef,4,4)
+        for ν=1:4
+            staple = make_staples(staples[ν])
+            for μ=1:4
+                staplestaple[ν,μ] = staple[μ]
+            end 
+        end
+        return staplestaple
+    end
+
     function make_staples(w::Wilson_loop)
         staples = make_staples(w.wilson_loop)
         return staples[1],staples[2],staples[3],staples[4]
