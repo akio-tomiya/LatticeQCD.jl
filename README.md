@@ -130,6 +130,19 @@ add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
 Then, LatticeQCD.jl is installed on your machine. 
 
+The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (save as ``wizard.jl``): 
+
+```julia:wizard.jl
+using LatticeQCD
+run_wizard()
+```
+
+Then, you can run the wizard:
+
+```
+julia wizard.jl
+```
+
 You write the following code (save as ``run.jl``):
 ```julia:run.jl
 using LatticeQCD
@@ -143,19 +156,6 @@ julia run.jl PARAMETER_FILE
 ```
 
 then, you get results though standard I/O. 
-
-The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (save as ``wizard.jl``): 
-
-```julia:wizard.jl
-using LatticeQCD
-run_wizard()
-```
-
-Then, you can run the wizard:
-
-```
-julia wizard.jl
-```
 
 # Purpose of the code
 We develop this code to achive following things:
