@@ -141,6 +141,44 @@ module Smearing
         return
     end
 
+    function calc_multihit!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        @assert Uout != U "input U and output U should not be same!"
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        Q = zeros(ComplexF64,NC,NC)
+        A = zeros(ComplexF64,NC,NC)
+
+        for μ=1:4
+            loops = make_plaq_staple_prime(μ)
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            A .= 0
+                            evaluate_wilson_loops!(A,loops,U,ix,iy,iz,it)
+                            K = sqrt(det(A))
+
+                            #display(C)
+                            #println("\t")
+
+                            #Ω = ρ*C[:,:]*U[μ][:,:,ix,iy,iz,it]'
+                            #Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)
+                            Uout[μ][:,:,ix,iy,iz,it] = 0  #exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            set_wing!(Uout[μ],ix,iy,iz,it)
+
+                            
+                        end
+                    end
+                end
+            end
+        end
+        #display(Uout[1][:,:,1,1,1,1])
+        return
+    end
+
     function calc_fatlink_APE!(Uout::Array{GaugeFields{SU{NC}},1},α,β;normalize_method= "special unitary",temporal_dir_smear=true) where NC
         Uin = deepcopy(Uout)
         calc_fatlink_APE!(Uout,Uin,α,β,normalize_method=normalize_method,temporal_dir_smear=temporal_dir_smear)
