@@ -495,12 +495,12 @@ function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,R)
         μ=1
         ix2=(ix+R-1)%NX+1
         i2= (((it-1)NZ+iz-1)NY+iy-1)*NX + ix2
-        W += tr(Wmat[μ][:,:,i])*tr(Wmat[μ][:,:,i2])
+        W += tr(Wmat[μ][:,:,i]')*tr(Wmat[μ][:,:,i2])
         #
         μ=2
         iy2=(iy+R-1)%NY+1
-        i2= (((it-1)NZ+iz-1)NY+iy-1)*NX + ix
-        W += tr(Wmat[μ][:,:,i])*tr(Wmat[μ][:,:,i2])
+        i2= (((it-1)NZ+iz-1)NY+iy2-1)*NX + ix
+        W += tr(Wmat[μ][:,:,i]')*tr(Wmat[μ][:,:,i2])
         #
         μ=3
         iz2=(iz+R-1)%NZ+1
