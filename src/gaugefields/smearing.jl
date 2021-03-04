@@ -1,5 +1,5 @@
 module Smearing
-    using LinearAlgebra
+    using LinearAlgebra, SpecialFunctions
     import ..LTK_universe:Universe,calc_gaugeforce!,expF_U!
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add!
     import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!,set_wing!
@@ -141,8 +141,9 @@ module Smearing
         return
     end
 
-    function calc_multihit!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+    function calc_multihit!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},β) where NC
         @assert Uout != U "input U and output U should not be same!"
+        @assert U[1].NC == 2 "NC=2 is required for now but $(U[1].NC)"
 
         NX = U[1].NX
         NY = U[1].NY
@@ -159,14 +160,15 @@ module Smearing
                         for ix=1:NX
                             A .= 0
                             evaluate_wilson_loops!(A,loops,U,ix,iy,iz,it)
-                            K = sqrt(det(A))
+                            K = sqrt(abs(det(A)))
 
                             #display(C)
                             #println("\t")
 
                             #Ω = ρ*C[:,:]*U[μ][:,:,ix,iy,iz,it]'
                             #Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)
-                            Uout[μ][:,:,ix,iy,iz,it] = 0  #exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            Uout[μ][:,:,ix,iy,iz,it] = K*inv(A)*besseli(2, β*K)/besseli(1, β*K)
+                            #0  #exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
                             set_wing!(Uout[μ],ix,iy,iz,it)
 
                             
