@@ -18,7 +18,7 @@ module Measurements
     import ..Diracoperators:Dirac_operator
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
-    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE
+    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set
 
     #=
@@ -177,6 +177,8 @@ module Measurements
                 elseif method["methodname"] == "Pion_correlator" 
                     measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","a")
                     @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
+                elseif method["methodname"] == "Polyakov_loop_correlator"
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop_correlator.txt","a")
                 elseif method["methodname"] == "Wilson_loop"
                     measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","a")
                 elseif method["methodname"] == "smeared_Wilson_loop"
@@ -333,6 +335,17 @@ module Measurements
                     poly = calc_Polyakov(U)
                     println_verbose1(verbose,"$itrj $(real(poly)) $(imag(poly)) # poly")
                     println(measfp,"$itrj $(real(poly)) $(imag(poly)) # poly")
+                elseif method["methodname"] == "Polyakov_loop_correlator"
+                    Usmr = deepcopy(U)
+                    β=univ.gparam.β
+                    calc_multihit!(Usmr,U,β)
+                    #α = 0.5
+                    #calc_fatlink_APE!(Usmr,α,α,normalize_method="special unitary", temporal_dir_smear=false)
+                    for R=1:method["Rmax"]
+                        PP=calc_Polyakov_loop_correlator(Usmr, R)
+                        println_verbose1(verbose,"$itrj $R $PP # PP # itrj R PP(R)")
+                        println(measfp,"$itrj $R $PP # PP # itrj R PP(R)")
+                    end
                 elseif method["methodname"] == "Topological_charge"
                     Nflowsteps = method["Nflowsteps"]#50
                     eps_flow =  method["eps_flow"] #0.01
@@ -443,22 +456,27 @@ module Measurements
     function calc_factor_plaq(U)
         factor = 2/(U[1].NV*4*3*U[1].NC)
     end
-#=
+
+
 # - - - Polyakov loop correlator
-# DING, H.-Q. (1991). (6.1)
-function calc_Polyakov_loop_correlator(U::Array{T,1},Lt,Ls) where T <: GaugeFields
-    # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+function calc_Polyakov_loop_correlator(U::Array{T,1}, R) where T <: GaugeFields
     WL = 0.0+0.0im
     NV = U[1].NV
     NC = U[1].NC
     Wmat = Array{GaugeFields_1d,2}(undef,4,4)
     #
-    construct_Polyakov_correlator(Wmat,R,U) # make wilon loop operator and evaluate as a field, not traced.
-    WL = calc_Polyakov_loop_correlator_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+    construct_Polyakov_correlator!(Wmat,U) # make wilon loop operator and evaluate as a field, not traced.
+    WL = calc_Polyakov_loop_correlator_core(Wmat,U,R) # tracing over color and average over spacetime and x,y,z.
     NDir = 3.0 # in 4 diemension, 3 associated staples. t-x plane, t-y plane, t-z plane
     return real(WL)/NV/NDir/NC
 end
-function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+function construct_Polyakov_correlator!(Wmat,U)
+    NT = U[1].NT
+    W_operator = make_2Polyakov_loop(NT)
+    calc_2Polyakov_loop!(Wmat,W_operator,U)
+    return 
+end
+function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,R) where S <: SUn
     if S == SU3
         NC = 3
     elseif S == SU2
@@ -468,55 +486,65 @@ function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,NV
         #error("NC != 2,3 is not supported")
     end
     W = 0.0 + 0.0im
-    for n=1:NV
-        for μ=1:3 # spatial directions
-            ν=4  # T-direction is not summed over
-            W += tr(Wmat[μ,ν][:,:,n])
-        end
-    end
-    return W
-end
-function construct_Polyakov_correlator!(Wmat,R,U)
     NX = U[1].NX
     NY = U[1].NY
     NZ = U[1].NZ
-    NT = U[1].NT
-    W_operator = make_2Polyakov_loop(R,NX,NY,NZ,NT)
-    calc_2Polyakov_loop!(Wmat,W_operator,U)
-    return 
+    it=1
+    for ix=1:NX
+    for iy=1:NY
+    for iz=1:NZ
+        i = (((it-1)NZ+iz-1)NY+iy-1)*NX + ix
+        #
+        μ=1
+        ix2=(ix+R-1)%NX+1
+        i2= (((it-1)NZ+iz-1)NY+iy-1)*NX + ix2
+        W += tr(Wmat[μ][:,:,i]')*tr(Wmat[μ][:,:,i2])
+        #
+        μ=2
+        iy2=(iy+R-1)%NY+1
+        i2= (((it-1)NZ+iz-1)NY+iy2-1)*NX + ix
+        W += tr(Wmat[μ][:,:,i]')*tr(Wmat[μ][:,:,i2])
+        #
+        μ=3
+        iz2=(iz+R-1)%NZ+1
+        i2= (((it-1)NZ+iz2-1)NY+iy-1)*NX + ix
+        W += tr(Wmat[μ][:,:,i]')*tr(Wmat[μ][:,:,i2])
+    end
+    end
+    end
+    return W
 end
-function make_2Polyakov_loop(R,NX,NY,NZ,NT)
+function make_2Polyakov_loop(NT)
     #= Making a Wilson loop operator for potential calculations
         Ls × Lt
         ν=4
         ↑
-        +--+ 
-        |  |
-        |  |
-        |  |
-        +--+ → μ=1,2,3 (averaged)
+        +   
+        |  
+        |  
+        |  
+        +   → μ=1,2,3 (averaged)
     =#
-    Wmatset= Array{Wilson_loop_set,2}(undef,4,4)
-    for μ=1 # spatial directions
-        ν=4 # T-direction is not summed over
+    Wmatset= Array{Wilson_loop_set,1}(undef,3)
+    for μ=1:3 #
+        t=4 
         loops = Wilson_loop_set()
         loop = Wilson_loop([(t,NT)]) #plakov loop    # This part is under construction.
         push!(loops,loop)
-        Wmatset[μ,ν] = loops
+        Wmatset[μ] = loops
     end
     return Wmatset
 end
 function calc_2Polyakov_loop!(temp_Wmat,loops_μν,U)
     W = temp_Wmat
     for μ=1:3 # spatial directions
-        ν=4 # T-direction is not summed over
-        loopset = Loops(U,loops_μν[μ,ν])
-        W[μ,ν] = evaluate_loops(loopset,U)
+        loopset = Loops(U,loops_μν[μ])
+        W[μ] = evaluate_loops(loopset,U)
     end
     return 
 end
 # - - - end Polyakov loop correlator
-=#
+
     function calc_Wilson_loop(U::Array{T,1},Lt,Ls) where T <: GaugeFields
         # Making a ( Ls × Lt) Wilson loop operator for potential calculations
         WL = 0.0+0.0im
