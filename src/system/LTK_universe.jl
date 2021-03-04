@@ -13,7 +13,8 @@ module LTK_universe
                         SU2GaugeFields,SU2GaugeFields_1d,
                         SUNGaugeFields,SUNGaugeFields_1d,
                         Oneinstanton,
-                        evaluate_wilson_loops!
+                        evaluate_wilson_loops!,
+                        U1GaugeFields,U1GaugeFields_1d
     import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!
@@ -309,7 +310,8 @@ module LTK_universe
         NZ = L[3]
         NT = L[4]
         NV = NX*NY*NZ*NT
-        NDFALG = NC^2-1
+        NDFALG  = ifelse(NC==1,1,NC^2-1)
+
         num_tempfield_g = 5
         num_tempfield_f = 4
 
@@ -334,6 +336,9 @@ module LTK_universe
         elseif NC ≥ 4
             U = Array{SUNGaugeFields{NC},1}(undef,4)
             _temporal_gauge = Array{SUNGaugeFields_1d{NC},1}(undef,num_tempfield_g)
+        elseif NC == 1
+            U = Array{U1GaugeFields,1}(undef,4)
+            _temporal_gauge = Array{U1GaugeFields_1d,1}(undef,num_tempfield_g)
         end
         
 #        Uold = Array{GaugeFields,1}(undef,4)
@@ -482,6 +487,11 @@ module LTK_universe
         granf[nv] = sqrt(-2*log(univ.ranf())*variance) * cos(2pi*univ.ranf())
         return granf
     end
+
+
+
+
+
 
     function expF_U!(U::Array{T,1},F::Array{N,1},Δτ,univ::Universe) where {T<: GaugeFields, N <: LieAlgebraFields} 
         LieAlgebrafields.expF_U!(U,F,Δτ,univ._temporal_gauge,univ._temporal_algebra[1])

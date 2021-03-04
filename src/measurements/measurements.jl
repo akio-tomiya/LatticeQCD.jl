@@ -7,7 +7,8 @@ module Measurements
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,calc_Polyakov,calc_Plaq,calc_Plaq_notrace_1d,SUn,SU2,SU3,TA,add!,
             SUNGaugeFields,SUNGaugeFields_1d,
-            Loops,evaluate_loops!,evaluate_loops
+            Loops,evaluate_loops!,evaluate_loops,
+            U1GaugeFields,U1GaugeFields_1d
     import ..Fermionfields:clear!,FermionFields,WilsonFermion
     import ..Fermionfields:Z4_distribution_fermi!,gauss_distribution_fermi!,set_wing_fermi!
     import ..CGmethods:bicg
@@ -75,7 +76,9 @@ module Measurements
             elseif NC ≥ 4
                 U = Array{SUNGaugeFields,1}(undef,4)
                 _temporal_gauge = Array{SUNGaugeFields_1d,1}(undef,4)
-            
+            elseif NC == 1
+                U = Array{U1GaugeFields,1}(undef,4)
+                _temporal_gauge = Array{U1GaugeFields_1d,1}(undef,4)
             end
 
             for i=1:length(_temporal_gauge)
