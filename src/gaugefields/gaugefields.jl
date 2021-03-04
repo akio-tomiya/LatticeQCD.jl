@@ -12,6 +12,7 @@ module Gaugefields
     abstract type SU{N} <: SUn
     end
 
+    const U1 = SU{1}
     const SU2 = SU{2}
     const SU3 = SU{3}
 
@@ -39,6 +40,7 @@ module Gaugefields
 
 
 
+    const U1GaugeFields  = GaugeFields{U1}
     const SU2GaugeFields  = GaugeFields{SU2}
     const SU3GaugeFields  = GaugeFields{SU3}
     const SUNGaugeFields{N}  = GaugeFields{SU{N}}
@@ -49,6 +51,7 @@ module Gaugefields
         parent::GaugeFields{T}
     end
 
+    const Adjoint_U1GaugeFields  = Adjoint_GaugeFields{U1}
     const Adjoint_SU2GaugeFields  = Adjoint_GaugeFields{SU2}
     const Adjoint_SU3GaugeFields  = Adjoint_GaugeFields{SU3}
 
@@ -77,6 +80,7 @@ module Gaugefields
         end
     end
 
+    const U1GaugeFields_1d  = GaugeFields_1d{U1}
     const SU2GaugeFields_1d  = GaugeFields_1d{SU2}
     const SU3GaugeFields_1d  = GaugeFields_1d{SU3}
     const SUNGaugeFields_1d{N}  = GaugeFields_1d{SU{N}}
@@ -85,6 +89,7 @@ module Gaugefields
         parent::GaugeFields_1d{T}
     end
 
+    const Adjoint_1U1GaugeFields_1d  = Adjoint_GaugeFields_1d{U1}
     const Adjoint_SU2GaugeFields_1d  = Adjoint_GaugeFields_1d{SU2}
     const Adjoint_SU3GaugeFields_1d  = Adjoint_GaugeFields_1d{SU3}
 
@@ -1824,6 +1829,13 @@ c-----------------------------------------------------c
         end
     end
 
+
+    function projlink!(vout::U1GaugeFields_1d,vin::U1GaugeFields_1d) 
+        for i=1:vin.NV
+            vout[1,1,i] = 2*imag(vin[1,1,i])
+            #imag(vin[1,1,i])
+        end
+    end
     """
     c-----------------------------------------------------c
     c     !!!!!   vin and vout should be different vectors

@@ -482,6 +482,7 @@ module MD
             if univ.Dirac_operator == "Staggered" 
                 if univ.fparam.Nf == 4
 
+                    #=
                     function shifttest()
                         println("Test for ShiftedCD")
                         println("(WdagW+ β_i) x_i = b")
@@ -512,6 +513,7 @@ module MD
                             
                         end
                     end
+                    =#
                     #shifttest()
                     #exit()
 
@@ -589,7 +591,20 @@ module MD
         NV = temp2_g.NV
 
 
+        
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
         W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+        set_wing_fermi!(Y)
+        
+        
+        
+        
+
+        #WdagW =  Dirac_operator(U,φ,fparam)
         
 
         #=
@@ -599,12 +614,15 @@ module MD
         Y = D X = (D^dag)^(-1) ϕ
         Solve D^dag Y = ϕ
         =#
+        #=
+        W = Dirac_operator(U,φ,fparam)
         bicg(Y,W',φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
         set_wing_fermi!(Y)
 
         
         bicg(X,W,Y,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
         set_wing_fermi!(X)
+        =#
 
 
         
