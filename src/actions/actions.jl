@@ -2,6 +2,8 @@ module Actions
     import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
             make_cloverloops
     import ..SUN_generator:Generator
+    import ..Rhmc:RHMC
+
 
     abstract type GaugeActionParam end
 
@@ -76,8 +78,7 @@ module Actions
         _cloverloops::Array{Wilson_loop_set,2}
     end
 
-    struct RHMC
-    end
+
 
     Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
         mass::Float64 = 0.5
@@ -94,14 +95,16 @@ module Actions
             Dirac_operator,
             MaxCGstep,
             quench,
-            Nf;isrhmc = false)
+            Nf;rhmcorder = 1)
 
-            if isrhmc
-                rhmc = RHMC()
-            else
+            #rhmc = RHMC(1,2,n=10)
+
+            if rhmcorder == 1
                 rhmc = nothing
+            else
+                rhmc = RHMC(1,rhmcorder,n=10)
             end
-
+            #exit()
 
             return new(
             mass,
