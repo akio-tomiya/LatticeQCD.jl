@@ -688,7 +688,7 @@ module MD
 
     function  updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
-        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
         ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
 
         temp0_f = temps_fermi[1] #F_field
@@ -719,7 +719,7 @@ module MD
 
 
             #...  p(new) = p(old) + fac * c  .....
-            add!(p[μ],-0.5*τ*mdparams.Δτ,c)
+            add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,c)
 
 
 
@@ -736,7 +736,7 @@ module MD
             projlink!(temp3_g,temp2_g)
             Gauge2Lie!(c,temp3_g)
 
-            add!(p[μ],-0.5*τ*mdparams.Δτ,c)
+            add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,c)
 
 
         end
