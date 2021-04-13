@@ -87,7 +87,8 @@ module Actions
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
         Nf::Int8 = 4
-        rhmc::Union{Nothing,RHMC}
+        rhmc_action::Union{Nothing,RHMC}
+        rhmc_MD::Union{Nothing,RHMC}
 
         function FermiActionParam_Staggered(
             mass,
@@ -100,9 +101,11 @@ module Actions
             #rhmc = RHMC(1,2,n=10)
 
             if rhmcorder == 1
-                rhmc = nothing
+                rhmc_action = nothing
+                rhmc_MD = nothing
             else
-                rhmc = RHMC(1,rhmcorder,n=10)
+                rhmc_action = RHMC(1,rhmcorder,n=15)
+                rhmc_MD = RHMC(1,rhmcorder,n=10)
             end
             #exit()
 
@@ -113,7 +116,9 @@ module Actions
             MaxCGstep,
             quench,
             Nf,
-            rhmc)
+            rhmc_action,
+            rhmc_MD
+            )
         end
     end
 
