@@ -579,6 +579,8 @@ module MD
     end
 
 
+
+
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -684,10 +686,11 @@ module MD
 
     end
 
-    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+    function  updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
         ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
         temp0_f = temps_fermi[1] #F_field
         temp1_f = temps_fermi[2] #F_field
         temp2_g = temps[1] #G_field1
@@ -695,17 +698,8 @@ module MD
         c = temp_a[1]
         NV = temp2_g.NV
 
-        
-        #X = (D^dag D)^(-1) ϕ 
-        #
-
-        WdagW = DdagD_operator(U,φ,fparam)
-        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
-        set_wing_fermi!(X)
-
         W = Dirac_operator(U,φ,fparam)
         mul!(Y,W,X)
-        
 
         for μ=1:4
             #!  Construct U(x,mu)*P1
@@ -746,6 +740,31 @@ module MD
 
 
         end
+        return
+
+    end
+
+    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        
+        #X = (D^dag D)^(-1) ϕ 
+        #
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
+        updateP_fermi_fromX!(Y,φ,X,fparam,
+        p,mdparams,τ,U,
+        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
         return
 
     end
