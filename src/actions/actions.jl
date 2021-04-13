@@ -76,6 +76,9 @@ module Actions
         _cloverloops::Array{Wilson_loop_set,2}
     end
 
+    struct RHMC
+    end
+
     Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
         mass::Float64 = 0.5
         eps::Float64 = 1e-19
@@ -83,6 +86,32 @@ module Actions
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
         Nf::Int8 = 4
+        rhmc::Union{Nothing,RHMC}
+
+        function FermiActionParam_Staggered(
+            mass,
+            eps,
+            Dirac_operator,
+            MaxCGstep,
+            quench,
+            Nf;isrhmc = false)
+
+            if isrhmc
+                rhmc = RHMC()
+            else
+                rhmc = nothing
+            end
+
+
+            return new(
+            mass,
+            eps,
+            Dirac_operator,
+            MaxCGstep,
+            quench,
+            Nf,
+            rhmc)
+        end
     end
 
 
