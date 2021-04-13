@@ -11,8 +11,8 @@ module Rhmc
 
 
     """
-    f(x) = x^(y/z) = coeff_plus.α0 + sum_i^n coeff_plus.α[i]/(x + coeff_plus.β[i])
-    f(x) = x^(-y/z) = coeff_minus.α0 + sum_i^n coeff_minus.α[i]/(x + coeff_minus.β[i])
+    f(x) = x^(y/z) = coeffs.α0 + sum_i^n coeffs.α[i]/(x + coeffs.β[i])
+    f(x) = x^(-y/z) = coeffs_inverse.α0 + sum_i^n coeffs_inverse.α[i]/(x + coeffs_inverse.β[i])
     """
     struct RHMC #type for the rational Hybrid Monte Carlo
         y::Int64
@@ -31,19 +31,19 @@ module Rhmc
             if n == 10 && num == 1 && den == 2
                 coeffs =coeffs_12
                 coeffs_inverse =coeffs_m12
-            elseif n == 10 && num == 1 && den == 4
+            elseif n == 15 && num == 1 && den == 4
                 coeffs =coeffs_14
                 coeffs_inverse =coeffs_m14
-            elseif n == 10 && num == 1 && den == 8
+            elseif n == 15 && num == 1 && den == 8
                 coeffs =coeffs_18
                 coeffs_inverse =coeffs_m18
             elseif n == 10 && num == -1 && den == 2
                 coeffs =coeffs_m12
                 coeffs_inverse =coeffs_12
-            elseif n == 10 && num == -1 && den == 4
+            elseif n == 15 && num == -1 && den == 4
                 coeffs =coeffs_m14
                 coeffs_inverse =coeffs_14
-            elseif n == 10 && num == -1 && den == 8
+            elseif n == 15 && num == -1 && den == 8
                 coeffs =coeffs_18
                 coeffs_inverse =coeffs_18
             else
