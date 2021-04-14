@@ -21,28 +21,7 @@ module Fermionfields
         #values::
     end
 
-    #=
-    ----------------------------------------------------------------------c
-    c     Make gamma matrix
-    c----------------------------------------------------------------------c
-    C     THE CONVENTION OF THE GAMMA MATRIX HERE
-    C     ( EUCLIDEAN CHIRAL REPRESENTATION )
-    C
-    C               (       -i )              (       -1 )
-    C     GAMMA1 =  (     -i   )     GAMMA2 = (     +1   )
-    C               (   +i     )              (   +1     )
-    C               ( +i       )              ( -1       )
-    C
-    C               (     -i   )              (     -1   )
-    C     GAMMA3 =  (       +i )     GAMMA4 = (       -1 )
-    C               ( +i       )              ( -1       )
-    C               (   -i     )              (   -1     )
-    C
-    C               ( -1       )
-    C     GAMMA5 =  (   -1     )
-    C               (     +1   )
-    C               (       +1 )
-    =#
+
 
 
 
@@ -3687,7 +3666,6 @@ c----------------------------------------------------------------------c
         
 
     end
-
 
 
 

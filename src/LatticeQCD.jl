@@ -4,7 +4,8 @@ module LatticeQCD
 
     #include("./SLMC/logdet.jl")
 
-    
+    include("./rhmc/AlgRemez.jl")
+    include("./rhmc/rhmc.jl")
 
     include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
