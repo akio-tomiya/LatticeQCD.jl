@@ -969,12 +969,14 @@ end
     function calc_quark_propagators_point_source_each(M,meas,i,NC,verbose)
         # calculate D^{-1} for a given source at the origin.
         # Nc*4 elements has to be gathered.
+        # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
         b = similar(meas._temporal_fermi2[1]) # source is allocated
         p = similar(b) # sink is allocated (propagator to sink position)
         #k = meas._temporal_fermi2[2]
         clear!(b)
-        is = ((i-1) % 4)+1 # spin index 
-        ic = ((i-is) ÷ 4)+ 1 # color index
+        Nspinor = ifelse( meas.fparam.Dirac_operator == "Staggered" ,1,4)
+        is = ((i-1) % Nspinor)+1 # spin index 
+        ic = ((i-is) ÷ Nspinor)+ 1 # color index
         println_verbose1(verbose,"$ic $is")
         #println("$ic $is")
         b[ic,1,1,1,1,is]=1 # source at the origin
@@ -982,7 +984,7 @@ end
         @time bicg(p,M,b) # solve Mp=b, we get p=M^{-1}b
 
         #@time cg0!(k,b,1, univ.U, meas._temporal_gauge, meas._temporal_fermi1, meas.fparam) # k[x] = M^{-1}b[0]
-        println_verbose1(verbose,"Hadron spectrum: Inversion $(i)/$(NC*4) is done")
+        println_verbose1(verbose,"Hadron spectrum: Inversion $(i)/$(NC*Nspinor) is done")
         #println("Hadron spectrum: Inversion $(i)/$(NC*4) is done")
         flush(stdout)
         return p
@@ -990,7 +992,8 @@ end
 
     function calc_quark_propagators_point_source(D,meas,NC,verbose)
         # D^{-1} for each spin x color element
-        propagators = map(i -> calc_quark_propagators_point_source_each(D,meas,i,NC,verbose),1:NC*4)
+        Nspinor = ifelse( meas.fparam.Dirac_operator == "Staggered" ,1,4)
+        propagators = map(i -> calc_quark_propagators_point_source_each(D,meas,i,NC,verbose),1:NC*Nspinor)
         return propagators
     end
 
@@ -1008,15 +1011,16 @@ end
         M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
 
         # Allocate the Wilson matrix = S
-        S = zeros(ComplexF64, (univ.NX,univ.NY,univ.NZ,univ.NT, 4*univ.NC, 4*univ.NC) )
+        Nspinor = ifelse( meas.fparam.Dirac_operator == "Staggered" ,1,4)
+        S = zeros(ComplexF64, (univ.NX,univ.NY,univ.NZ,univ.NT, Nspinor*univ.NC, Nspinor*univ.NC) )
 
         # calculate quark propagators from a point source at he origin
         propagators = calc_quark_propagators_point_source(M,meas,univ.NC,verbose)
 
         #ctr = 0 # a counter
         for ic=1:univ.NC
-            for is=1:4
-                icum = (ic-1)*4+is
+            for is=1:Nspinor
+                icum = (ic-1)*Nspinor+is
                 
                 #=
                 clear!(b)
@@ -1033,7 +1037,7 @@ end
                         for y=1:univ.NY
                             for x=1:univ.NX
                                 for ic2=1:univ.NC 
-                                    for is2=1:4 # 4 is the number of spinor index in 4d.
+                                    for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
                                         β=spincolor(ic2,is2,univ)
                                         S[x,y,z,t,α0,β]+= propagator[ic,x,y,z,t,is]
                                     end
@@ -1059,10 +1063,10 @@ end
                 for y=1:univ.NY
                     for x=1:univ.NX
                         for ic=1:univ.NC 
-                            for is=1:4 # 4 is the number of spinor index in 4d.
+                            for is=1:Nspinor # Nspinor is the number of spinor index in 4d.
                                 α=spincolor(ic,is,univ)
                                 for ic2=1:univ.NC 
-                                    for is2=1:4 # 4 is the number of spinor index in 4d.
+                                    for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
                                         β=spincolor(ic2,is2,univ)
                                         tmp += S[x,y,z,t,α,β] * S[x,y,z,t,α,β]'#inner product.
                                         # complex conjugate = g5 S g5.
@@ -1074,7 +1078,10 @@ end
                     end
                 end
             end
-            Cpi[t] = real(tmp)
+            # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
+            # we adopt ignoreing the staggering factor. See detail above reference.
+            ksfact = 1.0 #ifelse( meas.fparam.Dirac_operator == "Staggered" , (-1)^(t-1) * 64, 1)
+            Cpi[t] = real(tmp)*ksfact
         end
         #println(typeof(verbose),"\t",verbose)
         println_verbose2(verbose,"Hadron spectrum end")
