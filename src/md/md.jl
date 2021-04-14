@@ -10,7 +10,8 @@ module MD
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
                         GaugeActionParam_autogenerator
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
-                calc_IntegratedFermionAction
+                calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
+                construct_fermionfield_φ!,construct_fermionfield_η!
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
@@ -190,11 +191,7 @@ module MD
         end
 
         if univ.quench == false
-        #if univ.fparam != nothing
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_fermi,univ.fparam)
+            construct_fermionfield_η!(univ)
         end
 
 
@@ -246,9 +243,7 @@ module MD
         end
 
         if univ.quench == false
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
+            construct_fermionfield_η!(univ)
         end
 
         Snew,plaq = calc_Action(univ)
@@ -475,76 +470,10 @@ module MD
 
         if univ.quench == false 
             #if univ.fparam != nothing 
+            construct_fermion_gauss_distribution!(univ) #generate η
+            println(univ.η*univ.η)
+            construct_fermionfield_φ!(univ)  #generate φ
 
-            gauss_distribution_fermi!(univ.η,univ.ranf)
-            #set_wing_fermi!(univ.η) 
-            
-            if univ.Dirac_operator == "Staggered" 
-                if univ.fparam.Nf == 4
-
-                    #=
-                    function shifttest()
-                        println("Test for ShiftedCD")
-                        println("(WdagW+ β_i) x_i = b")
-                        WdagW = DdagD_operator(univ.U,univ.η,univ.fparam)
-                        x = deepcopy(univ.η)
-                        N = 10
-                        vec_β = rand(N)
-                        vec_β[1] = 0
-                        vec_β[2] = 0.1
-                        vec_β[3] = 0.5
-                        vec_β[4] = -0.2
-                        vec_x = Array{typeof(x),1}(undef,N)
-                        for j=1:N
-                            vec_x[j] = similar(x)
-                        end
-                        vec_β[1] = 0
-                        shiftedcg(vec_x,vec_β,x,WdagW,univ.η,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
-
-                        #shiftedcg0_WdagW!(vec_x,x,univ.η,vec_β,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)  #(WdagW + vec_beta)*x = b
-                        for j=1:N
-                            println("β_$j = ",vec_β[j])
-                            mul!(univ.φ,WdagW,vec_x[j])
-                            #WdagWx!(univ.φ,univ.U,vec_x[j],univ._temporal_fermi,univ.fparam)
-
-                            Fermionfields.add!(univ.φ,vec_β[j],vec_x[j])
-                            #println("norm; ", univ.φ*univ.φ)
-                            println("residual: ", univ.φ*univ.φ-univ.η*univ.η)
-                            
-                        end
-                    end
-                    =#
-                    #shifttest()
-                    #exit()
-
-                    evensite = false
-                    W = Dirac_operator(univ.U,univ.η,univ.fparam)
-                    mul!(univ.φ,W',univ.η)
-
-                    #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
-                    clear!(univ.φ,evensite)
-
-                    bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
-
-                    #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
-
-                    
-
-                end
-            end
-
-            #gauss_distribution_fermi!(univ.η,univ.ranf)
-
-            
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-
-            #if typeof(univ.fparam) == FermiActionParam_WilsonClover
-            #    Make_CloverFμν!(univ.fparam,univ.U,univ._temporal_gauge)
-            #end
-            mul!(univ.φ,W',univ.η)
-
-            #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam) #φ = Wdag*η
-            set_wing_fermi!(univ.φ)
         end
 
         Sold,Sg = calc_Action(univ)
