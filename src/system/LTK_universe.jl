@@ -635,9 +635,10 @@ module LTK_universe
        
 
         if univ.Dirac_operator == "Staggered" 
-            if univ.fparam.Nf == 4
-                Sfnew /= 2
-            end
+            #if univ.fparam.Nf == 4
+            #    Sfnew /= 2
+            #end
+            Sfnew /= (8/univ.fparam.Nf)
         end
         return Sfnew
     end
