@@ -98,33 +98,29 @@ module Actions
             quench,
             Nf)
 
-            #rhmc = RHMC(1,2,n=10)
+
 
             if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
                 rhmc_action = nothing
                 rhmc_MD = nothing
             else
-                #Nf = 8 -> alpha = 1 -> power x^{1/2} -> 2 -> 16/8
-                #Nf = 2 -> alpha = 1/4 -> power x^1/8 -> 8  -> 16/2
-                #Nf = 1 -> alpha = 1/8  -> power x^1/16 -> 16 -> 16/1
+                #for action: r_action
+                #Nf = 8 -> alpha = 1 -> power x^{1/2} 
+                #Nf = 2 -> alpha = 1/4 -> power x^1/8 
+                #Nf = 1 -> alpha = 1/8  -> power x^1/16 
                 order = Nf //16
 
-                #rhmcorder = 16 ÷ Nf
-                #rhmc_action = RHMC(1,rhmcorder,n=15)
                 rhmc_action = RHMC(order,n=15)
 
-                #Nf = 8 -> alpha = 1 -> power x^{1} -> 1 -> 8/8
-                #Nf = 2 -> alpha = 1/4 -> power x^1/4 -> 4  -> 8/2
-                #Nf = 1 -> alpha = 1/8  -> power x^1/8 -> 8 -> 8/1
+                #for MD: r_MD
+                #Nf = 8 -> alpha = 1 -> power x^{1} 
+                #Nf = 2 -> alpha = 1/4 -> power x^1/4 
+                #Nf = 1 -> alpha = 1/8  -> power x^1/8 
                 order = Nf // 8
                 #rhmcorder = 8 ÷ Nf
                 rhmc_MD = RHMC(order,n=10)
             end
 
-            #rhmc_action = RHMC(1,4,n=15)
-            #rhmc_MD = RHMC(1,4,n=10)
-
-            #exit()
 
             return new(
             mass,
