@@ -107,14 +107,18 @@ module Actions
                 #Nf = 8 -> alpha = 1 -> power x^{1/2} -> 2 -> 16/8
                 #Nf = 2 -> alpha = 1/4 -> power x^1/8 -> 8  -> 16/2
                 #Nf = 1 -> alpha = 1/8  -> power x^1/16 -> 16 -> 16/1
-                rhmcorder = 16 ÷ Nf
-                rhmc_action = RHMC(1,rhmcorder,n=15)
+                order = Nf //16
+
+                #rhmcorder = 16 ÷ Nf
+                #rhmc_action = RHMC(1,rhmcorder,n=15)
+                rhmc_action = RHMC(order,n=15)
 
                 #Nf = 8 -> alpha = 1 -> power x^{1} -> 1 -> 8/8
                 #Nf = 2 -> alpha = 1/4 -> power x^1/4 -> 4  -> 8/2
                 #Nf = 1 -> alpha = 1/8  -> power x^1/8 -> 8 -> 8/1
-                rhmcorder = 8 ÷ Nf
-                rhmc_MD = RHMC(1,rhmcorder,n=10)
+                order = Nf // 8
+                #rhmcorder = 8 ÷ Nf
+                rhmc_MD = RHMC(order,n=10)
             end
 
             #rhmc_action = RHMC(1,4,n=15)
