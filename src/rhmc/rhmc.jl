@@ -26,6 +26,12 @@ module Rhmc
         coeffs::AlgRemez_coeffs
         coeffs_inverse::AlgRemez_coeffs
 
+        function RHMC(order::Rational;n=10,lambda_low=0.0004,lambda_high=64,precision=42)
+            num = numerator(order)
+            den = denominator(order)
+            return RHMC(num,den,n=n,lambda_low=lambda_low,lambda_high=lambda_high,precision=precision)
+        end
+
         function RHMC(y,z;n=10,lambda_low=0.0004,lambda_high=64,precision=42)
             println("-------------------------------------------------------------")
             println("RHMC mode!")
