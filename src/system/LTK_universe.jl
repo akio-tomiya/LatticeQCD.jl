@@ -325,6 +325,12 @@ module LTK_universe
             num_tempfield_f += 4
         end
 
+        if fparam.Nf != 4 && fparam.Nf != 8
+            N_action = get_order(fparam.rhmc_action)
+            N_MD = get_order(fparam.rhmc_MD)
+            num_tempfield_f += maximum((N_action,N_MD))+1
+        end
+
         if typeof(gparam) == GaugeActionParam_autogenerator
             num_tempfield_g += 1
         end
@@ -860,9 +866,9 @@ module LTK_universe
             N = get_order(univ.fparam.rhmc_action)
 
             x = univ.φ
-            vec_x = Array{typeof(x),1}(undef,N)
+            vec_x = univ._temporal_fermi[end-N+1:end]
             for j=1:N
-                vec_x[j] = similar(x)
+                Fermionfields.clear!(vec_x[j])
             end
 
             # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
@@ -899,9 +905,9 @@ module LTK_universe
             N = get_order(univ.fparam.rhmc_action)
 
             x = univ.η
-            vec_x = Array{typeof(x),1}(undef,N)
+            vec_x = univ._temporal_fermi[end-N+1:end]
             for j=1:N
-                vec_x[j] = similar(x)
+                Fermionfields.clear!(vec_x[j])
             end
 
             # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
