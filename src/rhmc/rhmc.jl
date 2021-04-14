@@ -14,6 +14,8 @@ module Rhmc
     const coeffs_14_n10 = AlgRemez_coeffs(5.7165557622098175, [-1.1472527436322903e-5, -8.22437195900441e-5, -0.0004911917249478209, -0.0028595740550169564, -0.01657546771377983, -0.09632764566721617, -0.5684080282956644, -3.574637513226843, -29.402805614736042, -910.454747964212], [0.00017585352463504747, 0.0012116676043259563, 0.005511731061457466, 0.023034355065820862, 0.09439559579370578, 0.38561054626048247, 1.5842943313284588, 6.695935386170518, 32.015219356384215, 297.1675517580863], 10)
     const coeffs_m14_n10 = AlgRemez_coeffs(0.17493050738884694, [0.000659835331355923, 0.0018359285824308825, 0.0051025759090143645, 0.014493338675151415, 0.04146036428067062, 0.1190535368426458, 0.3449286017982327, 1.0347965655277906, 3.585219290905995, 23.743072811520367], [8.614668677164346e-5, 0.0007996196969643771, 0.0038232149092825908, 0.01615861364506301, 0.06638822575850153, 0.2711990933978193, 1.1113834065181245, 4.644638810303384, 21.127906621091135, 145.57570030585526], 10)
 
+    const coeffs_m18_n10 = AlgRemez_coeffs(2.3792132499634393, [-1.6178331673230056e-5, -9.324673262980408e-5, -0.0004616164445402523, -0.0022470840473836217, -0.01091397032788275, -0.05314702608352868, -0.26225649448725546, -1.3670670699683314, -8.966025770950466, -176.1213306168453], [0.00015069584886010342, 0.0010969629890608236, 0.005038625333107273, 0.021097078414511326, 0.0864633632847519, 0.35303065630397845, 1.4486843270648686, 6.09968682387749, 28.716462343100822, 241.67613686838126], 10)
+    const coeffs_18_n10 = AlgRemez_coeffs(0.4203070069550793, [0.00012205466614334875, 0.0004400966659764438, 0.0014872525305126727, 0.005058114989269569, 0.017260926270113545, 0.05909197271336461, 0.20435471009883857, 0.7359818587930066, 3.136603644754106, 28.83640562962562], [0.0001059268835215699, 0.0008914747121053526, 0.004196936783670219, 0.017671206571184022, 0.07251494889428817, 0.29607916032240045, 1.2134381593989532, 5.080750861110906, 23.33715928002066, 169.8786011269988], 10)
     """
     f(x) = x^(y/z) = coeffs.α0 + sum_i^n coeffs.α[i]/(x + coeffs.β[i])
     f(x) = x^(-y/z) = coeffs_inverse.α0 + sum_i^n coeffs_inverse.α[i]/(x + coeffs_inverse.β[i])
@@ -25,7 +27,9 @@ module Rhmc
         coeffs_inverse::AlgRemez_coeffs
 
         function RHMC(y,z;n=10,lambda_low=0.0004,lambda_high=64,precision=42)
+            println("-------------------------------------------------------------")
             println("RHMC mode!")
+            
             order = y // z # y/z
             num = numerator(order)
             den = denominator(order)
@@ -47,6 +51,9 @@ module Rhmc
             elseif n == 15 && num == 1 && den == 8
                 coeffs =coeffs_18
                 coeffs_inverse =coeffs_m18
+            elseif n == 10 && num == 1 && den == 8
+                coeffs =coeffs_18_n10
+                coeffs_inverse =coeffs_m18_n10
             elseif n == 10 && num == -1 && den == 2
                 coeffs =coeffs_m12
                 coeffs_inverse =coeffs_12
@@ -62,6 +69,9 @@ module Rhmc
             elseif n == 15 && num == -1 && den == 8
                 coeffs =coeffs_18
                 coeffs_inverse =coeffs_18
+            elseif n == 10 && num == -1 && den == 8
+                coeffs =coeffs_18_n10
+                coeffs_inverse =coeffs_18_n10
             else
                 println("$y//$z with the order $n: coefficients for RHMC should be calculated")
                 coeff_plus,coeff_minus = calc_coefficients(abs(num),den,n,lambda_low,lambda_high,precision=precision)
@@ -78,6 +88,7 @@ module Rhmc
             display(coeffs)
             println("the coefficients for x^{-$num/$den}: ")
             display(coeffs_inverse)
+            println("-------------------------------------------------------------")
 
             return new(num,den,coeffs,coeffs_inverse)
         end
@@ -93,6 +104,22 @@ module Rhmc
 
     function get_β(x::RHMC)
         return x.coeffs.β
+    end
+
+    function get_order(x::RHMC)
+        return x.coeffs.n
+    end
+
+    function get_α_inverse(x::RHMC)
+        return x.coeffs_inverse.α
+    end
+
+    function get_α0_inverse(x::RHMC)
+        return x.coeffs_inverse.α0
+    end
+
+    function get_β_inverse(x::RHMC)
+        return x.coeffs_inverse.β
     end
 
 

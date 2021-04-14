@@ -96,17 +96,25 @@ module Actions
             Dirac_operator,
             MaxCGstep,
             quench,
-            Nf;rhmcorder = 1)
+            Nf)
 
             #rhmc = RHMC(1,2,n=10)
 
-            if rhmcorder == 1
+            if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
                 rhmc_action = nothing
                 rhmc_MD = nothing
             else
+                #Nf = 8 -> alpha = 1 -> power x^{1/2} -> 2 -> 16/8
+                #Nf = 2 -> alpha = 1/4 -> power x^1/8 -> 8  -> 16/2
+                #Nf = 1 -> alpha = 1/8  -> power x^1/16 -> 16 -> 16/1
+                rhmcorder = 16 ÷ Nf
                 rhmc_action = RHMC(1,rhmcorder,n=15)
                 rhmc_MD = RHMC(1,rhmcorder,n=10)
             end
+
+            #rhmc_action = RHMC(1,4,n=15)
+            #rhmc_MD = RHMC(1,4,n=10)
+
             #exit()
 
             return new(
