@@ -33,6 +33,8 @@ module MD
                 Dirac_operator,DdagD_operator
     import ..CGmethods:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
+    import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+
 
     abstract type MD_parameters end
 
@@ -471,7 +473,7 @@ module MD
         if univ.quench == false 
             #if univ.fparam != nothing 
             construct_fermion_gauss_distribution!(univ) #generate η
-            println(univ.η*univ.η)
+            #println(univ.η*univ.η)
             construct_fermionfield_φ!(univ)  #generate φ
 
         end
@@ -683,17 +685,36 @@ module MD
         temp3_g = temps[2] #G_field1
         c = temp_a[1]
         NV = temp2_g.NV
-
-        
-        #X = (D^dag D)^(-1) ϕ 
-        #
         WdagW = DdagD_operator(U,φ,fparam)
-        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
-        set_wing_fermi!(X)
 
-        updateP_fermi_fromX!(Y,φ,X,fparam,
-        p,mdparams,τ,U,
-        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        if fparam.Nf == 4 || fparam.Nf == 8
+            #X = (D^dag D)^(-1) ϕ 
+            #
+            cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+            set_wing_fermi!(X)
+
+            updateP_fermi_fromX!(Y,φ,X,fparam,
+            p,mdparams,τ,U,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            N_MD = get_order(fparam.rhmc_MD)
+            #numtemps_fermi = length(temps_fermi)
+            x = temps_fermi[end-N_MD]
+            vec_x = temps_fermi[end-N_MD+1:end]
+            for j=1:N_MD
+                Fermionfields.clear!(vec_x[j])
+            end
+            vec_β = get_β_inverse(fparam.rhmc_MD)
+            vec_α = get_α_inverse(fparam.rhmc_MD)
+            α0 = get_α0_inverse(fparam.rhmc_MD)
+            shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
+            for j=1:N_MD
+                set_wing_fermi!(vec_x[j])
+                updateP_fermi_fromX!(Y,φ,vec_x[j],fparam,
+                    p,mdparams,τ,U,
+                    temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel,coeff=vec_α[j])
+            end
+        end
         return
 
     end
