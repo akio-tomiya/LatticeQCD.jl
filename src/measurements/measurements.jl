@@ -968,7 +968,7 @@ end
 
     function calc_quark_propagators_point_source_each(M,meas,i,NC,verbose)
         # calculate D^{-1} for a given source at the origin.
-        # Nc*4 elements has to be gathered.
+        # Nc*Ns (Ns: dim of spinor, Wilson=4, ks=1) elements has to be gathered.
         # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
         b = similar(meas._temporal_fermi2[1]) # source is allocated
         p = similar(b) # sink is allocated (propagator to sink position)
