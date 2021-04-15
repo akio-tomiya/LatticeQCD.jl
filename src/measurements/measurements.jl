@@ -900,6 +900,12 @@ end
         # p_i = r_i^\dag xi_i
         # xi_i = D^{-1} r_i   # D xi = r : r is a random veccor
         #
+        Nfbase = ifelse( meas.fparam.Dirac_operator == "Staggered",4,1)
+        Nf = meas.fparam.Nf
+        factor = Nf/Nfbase
+        #
+        println_verbose2(verbose,"Chiral condensate for Nf=$(Nf), Dirac_operator=$(meas.fparam.Dirac_operator)")
+        #
         pbp = 0.0
         # setup a massive Dirac operator
         M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
@@ -916,7 +922,7 @@ end
             println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
             pbp+=tmp
         end
-        return real(pbp/Nr)/univ.NV
+        return real(pbp/Nr)/univ.NV * factor
     end
 
 
