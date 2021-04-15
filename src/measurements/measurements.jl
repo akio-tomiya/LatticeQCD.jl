@@ -894,8 +894,6 @@ end
     end
 
     function calc_chiral_cond(univ::Universe,meas,measfp,itrj, Nr = 10, verbose = Verbose_2())
-        #error("calc_chiral_cond is not implemented!")
-        #
         # pbp = (1/Nr) Σ_i p_i
         # p_i = r_i^\dag xi_i
         # xi_i = D^{-1} r_i   # D xi = r : r is a random veccor
@@ -904,7 +902,7 @@ end
         Nf = meas.fparam.Nf
         factor = Nf/Nfbase
         #
-        println_verbose2(verbose,"Chiral condensate for Nf=$(Nf), Dirac_operator=$(meas.fparam.Dirac_operator)")
+        println_verbose2(verbose,"Chiral condensate for Nf = $(Nf), Dirac_operator = $(meas.fparam.Dirac_operator)")
         #
         pbp = 0.0
         # setup a massive Dirac operator
