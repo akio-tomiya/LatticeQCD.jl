@@ -450,6 +450,27 @@ module Wizard
             system["smearing_for_fermion"] = "nothing"
         elseif smearing == 2
             system["smearing_for_fermion"] = "stout"
+            system["stout_numlayers"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+            if system["stout_numlayers"] == 1
+                kindsof_loops = ["plaquette","rectangular","chair","polyakov_x","polyakov_y","polyakov_z","polyakov_t"]
+                stout_menu = MultiSelectMenu(kindsof_loops)
+                choices = request("Select the kinds of loops you want to add in stoutsmearing:", stout_menu)
+                count = 0
+                ρs = Float64[]
+                loops = String[]
+                for  i in choices
+                    count += 1
+                    ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                    push!(ρs,ρ)
+                    push!(loops,kindsof_loops[i])
+                end
+                #println(ρs)
+                system["stout_ρ"] = ρs
+                system["stout_loops"] = loops
+                #system["stout_ρ"] = [parse(Float64,Base.prompt("stout parameter ρ ?", default="0.1"))]
+            else
+                error("system[\"stout_numlayers\"] = $(system["stout_numlayers"]) is not supported yet!")
+            end
         end
     end
 
@@ -475,7 +496,7 @@ module Wizard
                 wilson,cg,staggered,system = staggered_wizard!(system)
                 system["quench"] = false
             end
-            #set_smearing!(system)
+            set_smearing!(system)
         else
             system["Dirac_operator"] = "Wilson"
 
