@@ -1,6 +1,6 @@
 module Actions
     import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
-            make_cloverloops
+            make_cloverloops,Tensor_derivative_set
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC
 
@@ -8,6 +8,23 @@ module Actions
     abstract type GaugeActionParam end
 
     abstract type FermiActionParam end
+
+    abstract type SmearingParam end
+
+    struct SmearingParam_nosmearing <: SmearingParam 
+    end
+
+    mutable struct SmearingParam_stout <: SmearingParam 
+        staples_for_stout::Array{Array{Wilson_loop_set,1},1}
+        tensor_derivative::Array{Tensor_derivative_set,1}
+        staples_for_stout_dag::Array{Array{Wilson_loop_set,1},1}
+        tensor_derivative_dag::Array{Tensor_derivative_set,1}
+        ρs::Array{Array{Float64,1},1}
+        #ρs::Array{Float64,1}
+    end
+
+    const Nosmearing = SmearingParam_nosmearing
+    const Stout = SmearingParam_stout
 
     mutable struct GaugeActionParam_standard <: GaugeActionParam
         β::Float64
@@ -55,6 +72,13 @@ module Actions
         Dirac_operator::String = "Wilson"
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
+        smearing::SmearingParam 
+
+        function FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep,quench)
+            smearing = Nosmearing()
+            return new(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing)
+        end
+
     end
 
     const Clover_coefficient  = 1.5612
@@ -76,6 +100,20 @@ module Actions
         quench::Bool = false
         SUNgenerator::Union{Nothing,Generator}
         _cloverloops::Array{Wilson_loop_set,2}
+        smearing::SmearingParam 
+
+        function FermiActionParam_WilsonClover(hop,r,eps,Dirac_operator,MaxCGstep,
+            Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
+            _is1,_is2,
+            quench, SUNgenerator,_cloverloops)
+
+            smearing = Nosmearing()
+
+            return new(hop,r,eps,Dirac_operator,MaxCGstep,
+            Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
+            _is1,_is2,
+            quench, SUNgenerator,_cloverloops,smearing)
+        end
     end
 
 
@@ -89,6 +127,7 @@ module Actions
         Nf::Int8 = 4
         rhmc_action::Union{Nothing,RHMC}
         rhmc_MD::Union{Nothing,RHMC}
+        smearing::SmearingParam
 
         function FermiActionParam_Staggered(
             mass,
@@ -97,8 +136,6 @@ module Actions
             MaxCGstep,
             quench,
             Nf)
-
-
 
             if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
                 rhmc_action = nothing
@@ -120,6 +157,8 @@ module Actions
                 #rhmcorder = 8 ÷ Nf
                 rhmc_MD = RHMC(order,n=10)
             end
+
+            smearing = Nosmearing()
 
 
             return new(
