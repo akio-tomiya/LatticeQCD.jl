@@ -86,7 +86,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - General gauge action = plaquette + rect + etc action
 - Fermions
   - Wilson/Wilson-clover (2 flavors)
-  - Staggered fermion (1,2,3,4,8 tastes)
+  - Staggered fermion (1-8 tastes$\approx$ flavors)
 - Configuration generation algorithms
   - Cold/Hot start for SU(N). One instanton configuration for SU(2)
   - Heatbath for SU(N) & overrelaxation for a general gauge action
