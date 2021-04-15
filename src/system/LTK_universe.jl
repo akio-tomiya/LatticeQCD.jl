@@ -325,10 +325,12 @@ module LTK_universe
             num_tempfield_f += 4
         end
 
-        if fparam.Nf != 4 && fparam.Nf != 8
-            N_action = get_order(fparam.rhmc_action)
-            N_MD = get_order(fparam.rhmc_MD)
-            num_tempfield_f += maximum((N_action,N_MD))+1
+        if fparam != nothing && fparam.Dirac_operator == "Staggered"
+            if fparam.Nf != 4 && fparam.Nf != 8
+                N_action = get_order(fparam.rhmc_action)
+                N_MD = get_order(fparam.rhmc_MD)
+                num_tempfield_f += maximum((N_action,N_MD))+1
+            end
         end
 
         if typeof(gparam) == GaugeActionParam_autogenerator
