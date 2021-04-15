@@ -112,7 +112,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - ILDG format
   - JLD format (default binary file for Julia, one of HDF5)
 
-*If you specified other than Nf=4, 8, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
+*If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
 
 
 
