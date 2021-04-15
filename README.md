@@ -85,15 +85,16 @@ We support 4 dimensional euclidean spacetime and following things:
   - General SU(N)
   - General gauge action = plaquette + rect + etc action
 - Fermions
-  - Wilson/Wilson-clover (2flavor)
-  - Staggered fermion (4tastes)
+  - Wilson/Wilson-clover (2 flavors)
+  - Staggered fermion (1-8 tastes$\approx$ flavors)
 - Configuration generation algorithms
-  - Cold/Hot start for SU(2), SU(3) and SU(N). One instanton for SU(2)
-  - Heatbath for SU(2), SU(3) and SU(N) & overrelaxation for a general gauge action
-  - Quenched HMC with SU(2), SU(3), SU(N) for a general gauge action
-  - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) with a general gauge action
-  - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) with a general gauge action
-  - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for a general gauge action</s> (This will be supported)
+  - Cold/Hot start for SU(N). One instanton configuration for SU(2)
+  - Heatbath for SU(N) & overrelaxation for a general gauge action
+  - Quenched HMC with SU(N) for a general gauge action
+  - HMC (2 flavor Wilson/Clover) with SU(N) with a general gauge action
+  - HMC (4 flavor Staggered fermions) with SU(N) with a general gauge action
+  - RHMC (any flavor staggered) with SU(N) for a general gauge action*
+  - <s>SU(N) stout smeared dynamical fermions (This will be supported)</s>
   - Fermion integrated HMC with a general gauge action
   - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
@@ -111,7 +112,13 @@ We support 4 dimensional euclidean spacetime and following things:
   - ILDG format
   - JLD format (default binary file for Julia, one of HDF5)
 
+*If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
+
+
+
 Many of smearing and improved fermion actions and parallelazation have not supported yet.
+
+
 
 
 # USAGE/User interface
@@ -173,6 +180,8 @@ This is the first open source Julia code for lattice QCD. High performance is ou
 We compared results to following papers/codes 
 
 - SU(3) staggered HMC with https://inspirehep.net/literature/283285
+- RHMC https://doi.org/10.1051/epjconf/201817507041
+- HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
 
 # Reference
 
