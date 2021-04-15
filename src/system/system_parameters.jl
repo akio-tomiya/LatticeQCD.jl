@@ -5,7 +5,8 @@ module System_parameters
     # Physical setting 
     printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","initialtrj","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
-    printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition"]
+    printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition",
+                                "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
     printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
     # HMC related
@@ -106,6 +107,8 @@ module System_parameters
         end
     end
 
+    
+
 
     struct Params
         L::Tuple  # = (2,2,2,2) # Mandatory
@@ -183,7 +186,10 @@ module System_parameters
         loadU_fromfile::Bool
         loadU_filename::String
 
-
+        smearing_for_fermion::String
+        stout_numlayers::Union{Nothing,Int64}
+        stout_ρ::Union{Nothing,Array{Float64,1}}
+        stout_loops::Union{Nothing,Array{String,1}}
 
 
 
@@ -511,7 +517,10 @@ module System_parameters
             end
 
 
-
+            smearing_for_fermion = set_params(system,"smearing_for_fermion","nothing")
+            stout_numlayers = set_params(system,"stout_numlayers",nothing)
+            stout_ρ = set_params(system,"stout_ρ",nothing)
+            stout_loops = set_params(system,"stout_loops",nothing)
 
 
             
@@ -564,7 +573,11 @@ module System_parameters
                 numOR,
                 initialtrj,
                 loadU_fromfile,
-                loadU_filename
+                loadU_filename,
+                smearing_for_fermion,
+                stout_numlayers,
+                stout_ρ,
+                stout_loops 
             )
 
         end
@@ -573,6 +586,14 @@ module System_parameters
             return Params(params_set.system,params_set.actions,params_set.md,params_set.cg,params_set.wilson,params_set.staggered,params_set.measurement)
         end
 
+    end
+
+    function set_params(dict,string,default)
+        if haskey(dict,string)
+            return dict[string] 
+        else
+            return default
+        end
     end
 
     
