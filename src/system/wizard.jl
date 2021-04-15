@@ -210,20 +210,23 @@ module Wizard
             error("Invalid value for mass=$mass. This has to be strictly positive.")
         end
         staggered["mass"] = mass
-        Nftype = request("Choose number of fermion tastes",RadioMenu([
-                    "4",
-                    "8",
-                    "2 (RHMC will be used in HMC)",
-                    "1 (RHMC will be used in HMC)"
+        Nftype = request("Choose the number number of flavors(tastes)",RadioMenu([
+                    "2 (RHMC will be used)",
+                    "3 (RHMC will be used)",
+                    "4 (HMC will be used)",
+                    "8 (HMC will be used)",
+                    "1 (RHMC will be used)"
                 ]))
 
         if Nftype == 1
-            staggered["Nf"] = 4
-        elseif Nftype == 2
-            staggered["Nf"] = 8
-        elseif Nftype == 3
             staggered["Nf"] = 2
+        elseif Nftype == 2
+            staggered["Nf"] = 3
+        elseif Nftype == 3
+            staggered["Nf"] = 4
         elseif Nftype == 4
+            staggered["Nf"] = 8
+        elseif Nftype == 5
             staggered["Nf"] = 1
         end
 
