@@ -902,7 +902,7 @@ end
         Nf = meas.fparam.Nf
         factor = Nf/Nfbase
         #
-        println_verbose2(verbose,"Chiral condensate for Nf = $(Nf), Dirac_operator = $(meas.fparam.Dirac_operator)")
+        println_verbose2(verbose,"Chiral condensate for Nf = $(Nf), Dirac_operator = $(meas.fparam.Dirac_operator), factor=$factor is multiplied.")
         #
         pbp = 0.0
         # setup a massive Dirac operator
