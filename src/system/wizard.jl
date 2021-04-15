@@ -818,7 +818,14 @@ module Wizard
         method["measure_every"] = parse(Int64,Base.prompt("How often measure chiral condensates?", default="$defaultvalue"))
         method["fermiontype"] = "Staggered"
         method["mass"] = parse(Float64,Base.prompt("Input mass for the measurement of chiral condensates", default="$mass_default"))
+
+        #Nfsystem = system["Nf"]
+        #Nf = parse(Int64,Base.prompt("Number of flavors (tastes) for the measurement of chiral condensates", default="$Nfsystem"))
+        #method["Nf"] = Nf
         method["Nf"] = 4
+        println("Number of flavors (tastes) for the measurement of chiral condensates is $(method["Nf"])")
+        
+        
 
         eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
         MaxCGstep = parse(Int64,Base.prompt("Maximum iteration steps in CG loops", default="3000"))
