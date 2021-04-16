@@ -126,7 +126,7 @@ Many of smearing and improved fermion actions and parallelazation have not suppo
 We support following two user interfaces
 
 1. Julia REPL interface (For beginners, just after the lattice QCD textbook)
-2. Genral run code (Experience with another code, for batch job, customised purpose)
+2. Genral interface (Experience with another code, for batch job, customised purpose)
 
 Usage 1 was already explained. 
 
@@ -137,7 +137,7 @@ add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
 Then, LatticeQCD.jl is installed on your machine. 
 
-The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (save as ``wizard.jl``): 
+The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (& save as ``wizard.jl``): 
 
 ```julia:wizard.jl
 using LatticeQCD
@@ -150,7 +150,7 @@ Then, you can run the wizard:
 julia wizard.jl
 ```
 
-You write the following code (save as ``run.jl``):
+You write the following code (& save as ``run.jl``):
 ```julia:run.jl
 using LatticeQCD
 run_LQCD(ARGS[1])
@@ -167,7 +167,7 @@ then, you get results though standard I/O.
 # Purpose of the code
 We develop this code to achive following things:
 
-1. Good portability (If one has Julia, this code is runnable. All dependence is under control.)
+1. Good portability (If one has Julia, this code is runnable. All dependences are under control.)
 2. Easy to start/ pedagogical (start in 10 minutes)
 3. Suite (configuration generation with and without fermions, and measurements)
 4. Easy to modify (Good for prototyping)
