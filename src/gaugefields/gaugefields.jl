@@ -3390,6 +3390,8 @@ c-----------------------------------------------------c
                 =#
                 e,v = eigen(Q) #
 
+                #=
+
                 A = tmp_matrices[4]
                 A .= 0
                 for i=1:NC
@@ -3405,12 +3407,14 @@ c-----------------------------------------------------c
                         B[j,i] += conj(v[j])*A[j,i]*v[i]
                     end
                 end
+                =#
 
-                #A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
-                #B = v'*A*v
+                A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                B = v'*A*v
                 #println(e)
-                M0 = tmp_matrices[4]
-                M0 .= 0
+                M0 = zero(M)
+                #M0 = tmp_matrices[4]
+                #M0 .= 0
 
                 nmax = 3
                 for n=1:nmax
@@ -3429,13 +3433,15 @@ c-----------------------------------------------------c
                     #println("\t")
                 end
                 #M = deepcopy(M0)
+                #=
                 M .= 0
                 for i=1:NC
                     for j=1:NC
                         M[j,i] += v[j]*M0[j,i]*conj(v[i])
                     end
                 end
-                #M[:,:] = v*M0*v'
+                =#
+                M[:,:] = v*M0*v'
 
                 #error("not supoorted yet")
             end
