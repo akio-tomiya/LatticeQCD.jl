@@ -3276,7 +3276,8 @@ c-----------------------------------------------------c
             #Q .= (1/2)*(Ω' .- Ω)
             #Q = (Ω' .- Ω)
             Q[:,:] = -(Ω' .- Ω)
-        elseif NC == 2
+        #elseif NC == 2
+        else
 
             @. Q[:,:] = -(1/2)*(Ω' - Ω)
             #tr1 = (1/(2NC))*tr(Ω')
@@ -3373,40 +3374,61 @@ c-----------------------------------------------------c
             elseif NC == 1
                 M[:,:] = U[nu][:,:,ix,iy,iz,it]*dSdUnu*exp.(Q)
             else
-                error("not supoorted yet")
+                #=
+                @time begin
+                M .= 0
+                A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                nmax = 3
+                for n=1:nmax
+                    fn = factorial(n)
+                    for m=0:n-1
+                        M += Q^(n-1-m)*A*Q^m/fn
+                    end
+                end
+                println(M)
+                end
+                =#
+
+                
+                e,v = eigen(Q) #
+                A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                B = v'*A*v
+                #println(e)
+                M0 = zero(M)
+                nmax = 3
+                for n=1:nmax
+                    fn = factorial(n)
+                    for l=1:NC
+                        for k=1:NC
+                            factor = B[k,l]*e[k]^(n-1)/fn
+                            elek = e[l]/e[k]
+                            for m=0:n-1
+                                M0[k,l] += elek^m*factor
+                            end
+                        end
+                    end
+                    #println("n = $n")
+                    #display(v*M0*v')
+                    #println("\t")
+                end
+                #M = deepcopy(M0)
+                M[:,:] = v*M0*v'
+
+                #error("not supoorted yet")
             end
         else
             mul!(M,U[nu][:,:,ix,iy,iz,it],dSdUnu)
             #M[:,:] =  U[nu][:,:,ix,iy,iz,it]*dSdUnu
         end
 
-        return
+        #return
 
         #println("M")
         #display(M)
         #println("\t")
         
 
-        e,v = eigen(Q) #
-        A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
-        B = v'*A*v
-        #println(e)
-        M0 = zero(M)
-        nmax = 3
-        for n=1:nmax
-            for l=1:NC
-                for k=1:NC
-                    for m=0:n-1
-                        M0[k,l] += B[k,l]*(e[l]/e[k])^m*e[k]^(n-1)/factorial(n)
-                    end
-                end
-            end
-            #println("n = $n")
-            #display(v*M0*v')
-            #println("\t")
-        end
-        #M = deepcopy(M0)
-        M[:,:] = v*M0*v'
+        
         
 
 
@@ -3463,6 +3485,12 @@ c-----------------------------------------------------c
                 Λ[i,i] += - trM
             end
             #Λ = 2*Λ
+        else
+            @. Λ[:,:] = (1/2)*(M - M')
+            trM = (1/(2NC))*tr(M - M')
+            for i=1:NC
+                Λ[i,i] += - trM
+            end
         end
         #display(Λ)
         #println("\t")
