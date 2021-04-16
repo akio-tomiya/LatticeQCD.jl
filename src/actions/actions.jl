@@ -1,6 +1,6 @@
 module Actions
     import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
-            make_cloverloops,Tensor_derivative_set
+            make_cloverloops,Tensor_derivative_set, make_loops
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC
 
@@ -148,6 +148,8 @@ module Actions
         rhmc_MD::Union{Nothing,RHMC}
         smearing::SmearingParam
 
+
+
         function FermiActionParam_Staggered(
             mass,
             eps,
@@ -155,9 +157,10 @@ module Actions
             MaxCGstep,
             quench,
             Nf;smearingparameters = nothing,
-            loops = nothing,
+            loops_list = nothing,
             coefficients  = nothing,
-            numlayers = 1
+            numlayers = 1,
+            L = nothing
             ) where T <: Real
 
             if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
@@ -185,7 +188,9 @@ module Actions
             if smearingparameters == nothing
                 smearing = Nosmearing()
             else
-                @assert loops != nothing "loops should be put if you want to use smearing schemes"
+                @assert loops_list != nothing "loops should be put if you want to use smearing schemes"
+                loops = make_loops(loops_list,L)
+
                 @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
                 println("stout smearing will be used in MD")
                 if numlayers == 1
@@ -201,6 +206,8 @@ module Actions
                         )
 
                 end
+                #println(smearing )
+                #exit()
             end
 
 
@@ -212,7 +219,8 @@ module Actions
             quench,
             Nf,
             rhmc_action,
-            rhmc_MD
+            rhmc_MD,
+            smearing
             )
         end
     end
