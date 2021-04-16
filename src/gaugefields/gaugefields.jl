@@ -3409,11 +3409,53 @@ c-----------------------------------------------------c
                 end
                 =#
 
-                A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
-                B = v'*A*v
+                for i=1:NC
+                    for j=1:NC
+                        tmp_matrices[4][j,i] = U[nu][j,i,ix,iy,iz,it]
+                    end
+                end
+                mul!(UdSdU,tmp_matrices[4],dSdUnu)
+
+
+                #=
+                A = tmp_matrices[4]
+                A .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for l=1:NC
+                            A[j,i] += U[nu][j,l,ix,iy,iz,it]*dSdUnu[l,i]
+                        end
+                    end
+                end
+                =#
+                mul!(tmp_matrices[4],UdSdU,v)
+                mul!(B,v',tmp_matrices[4])
+                
+                #=
+                B .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for k=1:NC
+                            for l=1:NC
+                                B[j,i] += conj(v[l,j])*UdSdU[l,k]*v[k,i]
+                            end
+                        end
+                    end
+                end
+                =#
+                
+                #println(B)
+                #println(A)
+
+                #A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                #println(A)
+                #B = v'*A*v
+
+                #println(B)
+                #exit()
                 #println(e)
-                M0 = zero(M)
-                #M0 = tmp_matrices[4]
+                #M0 = zero(M)
+                tmp_matrices[4] .= 0
                 #M0 .= 0
 
                 nmax = 3
@@ -3424,7 +3466,7 @@ c-----------------------------------------------------c
                             factor = B[k,l]*e[k]^(n-1)/fn
                             elek = e[l]/e[k]
                             for m=0:n-1
-                                M0[k,l] += elek^m*factor
+                                tmp_matrices[4][k,l] += elek^m*factor
                             end
                         end
                     end
@@ -3441,7 +3483,30 @@ c-----------------------------------------------------c
                     end
                 end
                 =#
-                M[:,:] = v*M0*v'
+                #M[:,:] = v*M0*v'
+                #println(M)
+
+                mul!(UdSdU,tmp_matrices[4],v')
+                mul!(M,v,UdSdU)
+
+                #=
+                M .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for k=1:NC
+                            for l=1:NC
+                                M[j,i] += v[j,l]*tmp_matrices[4][l,k]*conj(v[i,k])
+                            end
+                        end
+                    end
+                end
+                =#
+                #println(M)
+                #exit()
+                
+
+                
+
 
                 #error("not supoorted yet")
             end
