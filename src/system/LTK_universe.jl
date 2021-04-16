@@ -14,7 +14,8 @@ module LTK_universe
                         SUNGaugeFields,SUNGaugeFields_1d,
                         Oneinstanton,
                         evaluate_wilson_loops!,
-                        U1GaugeFields,U1GaugeFields_1d
+                        U1GaugeFields,U1GaugeFields_1d,
+                        apply_smearing
     import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
@@ -25,7 +26,7 @@ module LTK_universe
                 show_parameters_action,
                 FermiActionParam_WilsonClover,
                 FermiActionParam_Staggered,
-                GaugeActionParam_autogenerator
+                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add_gaugeforce!
     import ..LieAlgebrafields
     import ..Rand:Random_LCGs
@@ -43,6 +44,7 @@ module LTK_universe
     import ..Othermethods:tdlogdet
     import ..CGmethods:bicg,cg,shiftedcg
     import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+    #import ..Smearing:apply_smearing
 
 
 
@@ -341,6 +343,10 @@ module LTK_universe
                 N_MD = get_order(fparam.rhmc_MD)
                 num_tempfield_f += maximum((N_action,N_MD))+1
             end
+        end
+
+        if fparam != nothing && fparam.smearing != nothing
+            num_tempfield_g += 4
         end
 
         if typeof(gparam) == GaugeActionParam_autogenerator
@@ -853,8 +859,22 @@ module LTK_universe
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
         gauss_distribution_fermi!(univ.η,univ.ranf)
         if univ.fparam.Nf == 4
+
+            if univ.fparam.smearing != nothing
+                if typeof(univ.fparam.smearing) <: SmearingParam_single
+                    Uout_multi = nothing
+                    U = apply_smearing(univ.U,univ.fparam.smearing)
+                elseif typeof(funiv.param.smearing) <: SmearingParam_multi
+                    Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
+                    U = Uout_multi[end]
+                end
+                set_wing!(U) 
+            else
+                U = univ.U
+            end
+
             evensite = false
-            W = Diracoperators.Dirac_operator(univ.U,univ.η,univ.fparam)
+            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
             mul!(univ.φ,W',univ.η)
 
             #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
@@ -871,11 +891,25 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
+        if univ.fparam.smearing != nothing
+            if typeof(univ.fparam.smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(univ.U,univ.fparam.smearing)
+            elseif typeof(funiv.param.smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
+                U = Uout_multi[end]
+            end
+            set_wing!(U) 
+        else
+            U = univ.U
+        end
+        
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
-            W = Diracoperators.Dirac_operator(univ.U,univ.η,univ.fparam)
+        
+            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
             mul!(univ.φ,W',univ.η)
         else
-            WdagW = Diracoperators.DdagD_operator(univ.U,univ.η,univ.fparam)
+            WdagW = Diracoperators.DdagD_operator(U,univ.η,univ.fparam)
             N = get_order(univ.fparam.rhmc_action)
 
             x = univ.φ
@@ -910,11 +944,24 @@ module LTK_universe
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
+        if univ.fparam.smearing != nothing
+            if typeof(univ.fparam.smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(univ.U,univ.fparam.smearing)
+            elseif typeof(funiv.param.smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
+                U = Uout_multi[end]
+            end
+            set_wing!(U) 
+        else
+            U = univ.U
+        end
+
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
-            W = Diracoperators.Dirac_operator(univ.U,univ.η,univ.fparam)
+            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
             bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
         else
-            WdagW = Diracoperators.DdagD_operator(univ.U,univ.η,univ.fparam)
+            WdagW = Diracoperators.DdagD_operator(U,univ.η,univ.fparam)
             N = get_order(univ.fparam.rhmc_action)
 
             x = univ.η
