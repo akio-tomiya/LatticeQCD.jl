@@ -6,10 +6,16 @@ module Wilsonloops
         origin::NTuple{4,Int8}
         Wilson_loop() = new([],(0,0,0,0))
         #Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(loop,origin)
-        Wilson_loop(loop,origin) = new([Tuple(loop)],origin)
+        #Wilson_loop(loop,origin) = new([Tuple(loop)],origin)
         #Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(loop,(0,0,0,0))
-        Wilson_loop(loop::Array{Tuple{Int,Int},1}) = new(make_links(loop),(0,0,0,0))
-        Wilson_loop(loop::Array{Tuple{Int,Int},1},origin) = new(make_links(loop),origin)
+
+        function Wilson_loop(loop::Array{Tuple{T,T},1}) where T <: Integer
+            return new(make_links(loop),(0,0,0,0))
+        end
+        function  Wilson_loop(loop::Array{Tuple{T,T},1},origin) where T<: Integer
+            return new(make_links(loop),origin)
+        end
+
         Wilson_loop(loop) = new([Tuple(loop)],(0,0,0,0))
     end 
 
@@ -37,6 +43,8 @@ module Wilsonloops
         Tensor_wilson_lines_set() = new([])
     end
 
+
+
     function Base.getindex(g::Tensor_wilson_lines_set,i)
         return g.loopset[i]
     end
@@ -49,6 +57,25 @@ module Wilsonloops
     function Base.push!(g::Tensor_wilson_lines_set,w::Tensor_wilson_lines)
         push!(g.loopset,w)
         return
+    end
+
+    function Base.display(w::Tensor_wilson_lines)
+        println("tensor differenciated by ",w.dUμ)
+        println("relative origin = ",w.origin)
+        println("position = ",w.position)
+        println("startpoint for leftpart: ",w.origin)
+        println("startpoint for rightpart: ",w.rightstart)
+        print("[")
+        for i=1:length(w.left)
+            print(w.left[i],",")
+        end
+        print("] ")
+        print(" ⊗ ")
+        print(" [")
+        for i=1:length(w.right)
+            print(w.right[i],",")
+        end
+        println("]\t")
     end
 
     function Base.display(w::Wilson_loop)
@@ -96,7 +123,6 @@ module Wilsonloops
         return g.tensors[i]
     end
 
-
     function Base.display(w::Wilson_loop_set)
         for i=1:length(w)
             println("$i-th loops")
@@ -130,6 +156,8 @@ module Wilsonloops
         push!(g.loopset,w)
         return
     end
+
+
 
     function make_cloverloops(μ,ν)
         loops = Wilson_loop_set()
@@ -282,8 +310,12 @@ module Wilsonloops
                 end
                 #loop = make_links([(μ,1),(ν,2),(μ,-1),(ν,-2)])
 
+
                 loop1 = Wilson_loop([(μ,1),(ν,2),(μ,-1),(ν,-2)])
                 #loop1 = Wilson_loop(loop,Tuple(origin))
+                push!(loops,loop1)
+
+                loop1 = Wilson_loop([(μ,2),(ν,1),(μ,-2),(ν,-1)])
                 push!(loops,loop1)
             end
         end
@@ -298,6 +330,62 @@ module Wilsonloops
         loop1 = Wilson_loop(loop,Tuple(origin))
         push!(loops,loop1)
         return loops
+    end
+
+    function make_polyakov_xyz(Nμ)
+        loops = Wilson_loop_set()
+        for μ=1:3
+            origin = zeros(Int8,4)
+            loop = make_links([(μ,Nμ)])
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loops,loop1)
+        end
+        
+        return loops
+    end
+
+    function make_chair()
+        #loopset = []
+        loopset = Wilson_loop_set()
+        set1 = (1,2,3)
+        set2 = (1,2,4)
+        set3 = (2,3,4)
+        set4 = (1,3,4)
+    
+        for set in (set1,set2,set3,set4)
+            mu,nu,rho = set
+            origin = zeros(Int8,4)
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+            mu,rho,nu = set
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+            nu,rho,mu = set
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+            nu,mu,rho = set
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+            rho,mu,nu = set
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+            rho,nu,mu = set
+            loop = [(mu,1),(nu,1),(rho,1),(mu,-1),(rho,-1),(nu,-1)]
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loopset,loop1)
+    
+        end
+        return loopset
     end
 
     function make_plaq_staple(μ)
@@ -396,6 +484,7 @@ module Wilsonloops
         return coordinates
     end
 
+
     function calc_shift(w::Wilson_loop)
         numloops = length(w)
         coordinates = calc_coordinate(w)
@@ -419,13 +508,45 @@ module Wilsonloops
         return shifts
     end
 
-    function make_links(segments::Array{Tuple{Int,Int},1})
-        links = Tuple{Int,Int}[]
+    const kindsof_loops = ["plaquette","rectangular","chair","polyakov_x","polyakov_y","polyakov_z","polyakov_t"]
+
+    function make_loops(loops_list,L)
+        loops = []
+        for loopname in loops_list
+            if loopname == "plaquette"
+                loop = make_plaq()
+            elseif loopname == "rectangular"
+                loop = make_rect()
+            elseif loopname == "chair"
+                loop = make_chair()
+            elseif loopname == "polyakov_x"
+                loop = make_polyakov(1,L[1])
+            elseif loopname == "polyakov_y"
+                loop = make_polyakov(2,L[2])
+            elseif loopname == "polyakov_z"
+                loop = make_polyakov(3,L[3])
+            elseif loopname == "polyakov_t"
+                loop = make_polyakov(4,L[4])
+            else
+                error("loop name $(loopname) is not supported!")
+            end
+            push!(loops,loop)
+        end
+        return loops
+    end
+
+
+    function make_links(segments::Array{Tuple{T,T},1}) where T <: Integer
+        links = Tuple{Int8,Int8}[]
         for segment in segments
             s = sign(segment[2])
-            @assert segment[2] != 0
-            for i=1:abs(segment[2])
-                push!(links,(segment[1],s*1))
+            if segment[2] == 0
+                push!(links,(segment[1],0))
+            else
+            #@assert segment[2] != 0
+                for i=1:abs(segment[2])
+                    push!(links,(segment[1],s*1))
+                end
             end
         end
         return links
@@ -489,6 +610,14 @@ module Wilsonloops
         return coor
     end
 
+    #=
+    mutable struct Tensor_wilson_lines
+        left::Array{Tuple{Int8,Int8},1}
+        right::Array{Tuple{Int8,Int8},1}
+        position::NTuple{4,Int8}
+    end
+    =#
+
     function make_tensor_derivative(w::Wilson_loop)
         dVdU = Dict{Tuple{Int8,Int8},Tensor_wilson_lines_set}()
         #display(w)
@@ -501,8 +630,6 @@ module Wilsonloops
         end
         return dVdU
     end
-
-
 
     function make_tensor_Wilson_line(w::Wilson_loop,u::Tuple{T,T}) where T <: Int
         left = Tuple{Int8,Int8}[]

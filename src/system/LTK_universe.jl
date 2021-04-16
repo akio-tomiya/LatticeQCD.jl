@@ -203,7 +203,17 @@ module LTK_universe
                                 internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                                 p.quench,SUNgenerator,_cloverloops)
             elseif p.Dirac_operator == "Staggered"
-                fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
+                if p.smearing_for_fermion == "nothing"
+                    fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
+                else
+                    fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf,
+                                                            smearingparameters = "stout",
+                                                            loops_list = p.stout_loops,
+                                                            coefficients  = p.stout_ρ,
+                                                            numlayers = p.stout_numlayers,
+                                                            L = p.L
+                                                        )
+                end
             else
                 error(p.Dirac_operator," is not supported!")
             end
