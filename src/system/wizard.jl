@@ -454,7 +454,7 @@ module Wizard
             if system["stout_numlayers"] == 1
                 kindsof_loops = ["plaquette","rectangular","chair","polyakov_x","polyakov_y","polyakov_z","polyakov_t"]
                 stout_menu = MultiSelectMenu(kindsof_loops)
-                choices = request("Select the kinds of loops you want to add in stoutsmearing:", stout_menu)
+                choices = request("Select the kinds of loops you want to add in stout smearing:", stout_menu)
                 count = 0
                 ρs = Float64[]
                 loops = String[]
