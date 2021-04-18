@@ -89,10 +89,18 @@ module Actions
         quench::Bool = false
         smearing::SmearingParam 
 
-        function FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep,quench;smearingparameters = nothing)
-            if smearingparameters == nothing
-                smearing = Nosmearing()
-            end
+        function FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep,quench
+            ;smearingparameters = "nothing",
+            loops_list = nothing,
+            coefficients  = nothing,
+            numlayers = 1,
+            L = nothing)
+
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            smearing = Nosmearing()
+            #if smearingparameters == nothing
+            #    smearing = Nosmearing()
+            #end
             return new(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing)
         end
 
@@ -122,11 +130,18 @@ module Actions
         function FermiActionParam_WilsonClover(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
             _is1,_is2,
-            quench, SUNgenerator,_cloverloops;smearingparameters = nothing)
+            quench, SUNgenerator,_cloverloops;smearingparameters = "nothing",
+            loops_list = nothing,
+            coefficients  = nothing,
+            numlayers = 1,
+            L = nothing)
 
-            if smearingparameters == nothing
-                smearing = Nosmearing()
-            end
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            
+            #if smearingparameters == nothing
+            #    smearing = Nosmearing()
+            #end
+            smearing = Nosmearing()
 
             return new(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
@@ -136,6 +151,33 @@ module Actions
     end
 
 
+    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+        if smearingparameters == "nothing"
+            smearing = Nosmearing()
+        else
+            @assert loops_list != nothing "loops should be put if you want to use smearing schemes"
+            loops = make_loops(loops_list,L)
+
+            @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
+            println("stout smearing will be used in MD")
+            if numlayers == 1
+                smearing = SmearingParam_stout(loops,coefficients)
+            else
+                numloops = length(loops)
+                smearing_single = SmearingParam_stout(loops,rand(numloops))
+                smearing = SmearingParam_stout_multi(smearing_single.staples_for_stout,
+                    smearing_single.tensor_derivative,
+                    smearing_single.staples_for_stout_dag,
+                    smearing_single.tensor_derivative_dag,
+                    coefficients
+                    )
+
+            end
+            #println(smearing )
+            #exit()
+        end
+        return smearing
+    end
 
     Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
         mass::Float64 = 0.5
@@ -184,31 +226,7 @@ module Actions
                 rhmc_MD = RHMC(order,n=10)
             end
 
-
-            if smearingparameters == "nothing"
-                smearing = Nosmearing()
-            else
-                @assert loops_list != nothing "loops should be put if you want to use smearing schemes"
-                loops = make_loops(loops_list,L)
-
-                @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
-                println("stout smearing will be used in MD")
-                if numlayers == 1
-                    smearing = SmearingParam_stout(loops,coefficients)
-                else
-                    numloops = length(loops)
-                    smearing_single = SmearingParam_stout(loops,rand(numloops))
-                    smearing = SmearingParam_stout_multi(smearing_single.staples_for_stout,
-                        smearing_single.tensor_derivative,
-                        smearing_single.staples_for_stout_dag,
-                        smearing_single.tensor_derivative_dag,
-                        coefficients
-                        )
-
-                end
-                #println(smearing )
-                #exit()
-            end
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
 
 
             return new(
