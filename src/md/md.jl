@@ -8,7 +8,7 @@ module MD
 
     import ..Actions:GaugeActionParam_standard,
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
-                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi
+                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
                 construct_fermionfield_φ!,construct_fermionfield_η!
@@ -753,13 +753,15 @@ module MD
         c = temp_a[1]
         NV = temp2_g.NV
 
-        if fparam.smearing != nothing
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
             if typeof(fparam.smearing) <: SmearingParam_single
                 Uout_multi = nothing
                 U = apply_smearing(Uin,fparam.smearing)
             elseif typeof(fparam.smearing) <: SmearingParam_multi
                 Uout_multi = apply_smearing(Uin,fparam.smearing)
                 U = Uout_multi[end]
+            else
+                error("something is wrong in updateP_fermi!")
             end
             set_wing!(U)
             #println("length = $(length(temps))")
@@ -776,7 +778,7 @@ module MD
             cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
             set_wing_fermi!(X)
 
-            if fparam.smearing != nothing
+            if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
                 updateP_fermi_fromX!(Y,φ,X,fparam,
                 p,mdparams,τ,U,Uout_multi,dSdU,Uin,
                 temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
@@ -799,7 +801,7 @@ module MD
             shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
             for j=1:N_MD
                 set_wing_fermi!(vec_x[j])
-                if fparam.smearing != nothing
+                if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
                     updateP_fermi_fromX!(Y,φ,vec_x[j],fparam,
                         p,mdparams,τ,U,Uout_multi,dSdU,Uin,
                         temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel,coeff=vec_α[j])
