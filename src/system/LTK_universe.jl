@@ -26,7 +26,7 @@ module LTK_universe
                 show_parameters_action,
                 FermiActionParam_WilsonClover,
                 FermiActionParam_Staggered,
-                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single
+                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single,Nosmearing
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add_gaugeforce!
     import ..LieAlgebrafields
     import ..Rand:Random_LCGs
@@ -860,13 +860,17 @@ module LTK_universe
         gauss_distribution_fermi!(univ.η,univ.ranf)
         if univ.fparam.Nf == 4
 
-            if univ.fparam.smearing != nothing
+            if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
                 if typeof(univ.fparam.smearing) <: SmearingParam_single
                     Uout_multi = nothing
                     U = apply_smearing(univ.U,univ.fparam.smearing)
                 elseif typeof(funiv.param.smearing) <: SmearingParam_multi
                     Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
                     U = Uout_multi[end]
+                #elseif typeof(univ.fparam.smearing) <: Nosmearing
+                #    U = univ.U
+                else
+                    error("something is wrong in construct_fermion_gauss_distribution!")
                 end
                 set_wing!(U) 
             else
@@ -891,13 +895,17 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
-        if univ.fparam.smearing != nothing
+        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
             if typeof(univ.fparam.smearing) <: SmearingParam_single
                 Uout_multi = nothing
                 U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(funiv.param.smearing) <: SmearingParam_multi
+            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
                 Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
                 U = Uout_multi[end]
+            #elseif typeof(univ.fparam.smearing) <: Nosmearing
+            #    U = univ.U
+            else
+                error("something is wrong in construct_fermionfield_φ!")
             end
             set_wing!(U) 
         else
@@ -944,13 +952,17 @@ module LTK_universe
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
-        if univ.fparam.smearing != nothing
+        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
             if typeof(univ.fparam.smearing) <: SmearingParam_single
                 Uout_multi = nothing
                 U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(funiv.param.smearing) <: SmearingParam_multi
+            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
                 Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
                 U = Uout_multi[end]
+            #elseif typeof(univ.fparam.smearing) <: Nosmearing
+            #    U = univ.U
+            else
+                error("something is wrong in construct_fermionfield_η!")
             end
             set_wing!(U) 
         else

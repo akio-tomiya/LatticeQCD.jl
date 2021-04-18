@@ -156,7 +156,7 @@ module Actions
             Dirac_operator,
             MaxCGstep,
             quench,
-            Nf;smearingparameters = nothing,
+            Nf;smearingparameters = "nothing",
             loops_list = nothing,
             coefficients  = nothing,
             numlayers = 1,
@@ -185,7 +185,7 @@ module Actions
             end
 
 
-            if smearingparameters == nothing
+            if smearingparameters == "nothing"
                 smearing = Nosmearing()
             else
                 @assert loops_list != nothing "loops should be put if you want to use smearing schemes"
