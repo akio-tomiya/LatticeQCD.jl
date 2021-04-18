@@ -526,42 +526,95 @@ module MD
         NV = temp2_g.NV
 
 
-        
         WdagW = DdagD_operator(U,φ,fparam)
         cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
         set_wing_fermi!(X)
+
+        updateP_fermi_fromX!(Y,φ,X,fparam,
+        p,mdparams,τ,U,
+        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+        )
+        return
 
         W = Dirac_operator(U,φ,fparam)
         mul!(Y,W,X)
         set_wing_fermi!(Y)
         
         
-        
+
+        for μ=1:4
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            fermion_shift!(temp0_f,U,μ,X)
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp0_f,view(X.rminusγ,:,:,μ),temp0_f)
+            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp1_f,X.hopp[μ],temp0_f)
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            vvmat!(temp2_g,temp1_f,Y,1)
+
+
+            #.....   Projection onto Lie Algebra   .....
+            projlink!(temp3_g,temp2_g)
+
+            Gauge2Lie!(c,temp3_g)
+
+
+            #...  p(new) = p(old) + fac * c  .....
+            add!(p[μ],τ*mdparams.Δτ,c)
+
+
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            fermion_shiftB!(temp0_f,U,-μ,Y)
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_f,temp0_f,view(X.rplusγ,:,:,μ))
+
+            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp1_f,X.hopm[μ],temp0_f)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            vvmat!(temp2_g,X,temp1_f,2)
+
+
+            #.....   Projection onto Lie Algebra   .....
+            projlink!(temp3_g,temp2_g)
+            Gauge2Lie!(c,temp3_g)
+
+            add!(p[μ],-τ*mdparams.Δτ,c)
+
+            if typeof(fparam) == FermiActionParam_WilsonClover
+                dSclover!(c,μ,X,Y,U,fparam,temps)
+                add!(p[μ],-τ*mdparams.Δτ,c)
+            end
+
+
+        end
+
         
 
-        #WdagW =  Dirac_operator(U,φ,fparam)
-        
+    end
 
-        #=
-        X = (D^dag D)^(-1) ϕ = D^(-1) (D^dag)^(-1) ϕ 
-        Y = D X = (D^dag)^(-1) ϕ
-        
-        Y = D X = (D^dag)^(-1) ϕ
-        Solve D^dag Y = ϕ
-        =#
-        #=
+    function updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: WilsonFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+
         W = Dirac_operator(U,φ,fparam)
-        bicg(Y,W',φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        mul!(Y,W,X)
         set_wing_fermi!(Y)
-
         
-        bicg(X,W,Y,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
-        set_wing_fermi!(X)
-        =#
-
-
         
-
 
         for μ=1:4
             #!  Construct U(x,mu)*P1
