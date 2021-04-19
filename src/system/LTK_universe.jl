@@ -215,6 +215,7 @@ module LTK_universe
                                     internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                                     p.quench,SUNgenerator,_cloverloops)
                 else
+                    error("stout for Wilson with clover is not supported yet!")
                     fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
                                     internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                                     p.quench,SUNgenerator,_cloverloops,

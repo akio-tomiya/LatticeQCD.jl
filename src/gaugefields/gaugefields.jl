@@ -3821,7 +3821,7 @@ c-----------------------------------------------------c
         return V,dSdρs
     end
 
-    function calc_smearingU(Uin::Array{GaugeFields{SU{NC}},1},smearing::T;calcdSdU = false,temps = nothing) where {NC,T <: SmearingParam_single}
+    function calc_smearingU(Uin::Array{GaugeFields{SU{NC}},1},smearing;calcdSdU = false,temps = nothing) where NC
         if smearing != nothing && typeof(smearing) != Nosmearing
             if typeof(smearing) <: SmearingParam_single
                 Uout_multi = nothing

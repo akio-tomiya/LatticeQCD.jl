@@ -159,7 +159,7 @@ module Actions
             loops = make_loops(loops_list,L)
 
             @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
-            println("stout smearing will be used in MD")
+            println("stout smearing will be used")
             if numlayers == 1
                 smearing = SmearingParam_stout(loops,coefficients)
             else

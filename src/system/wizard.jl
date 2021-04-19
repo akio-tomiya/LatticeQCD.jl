@@ -492,11 +492,13 @@ module Wizard
             elseif ftype == 2
                 wilson,cg,staggered,system = wilson_wizard!(system)
                 system["quench"] = false
+                set_smearing!(system)
             elseif ftype == 3
                 wilson,cg,staggered,system = staggered_wizard!(system)
                 system["quench"] = false
+                set_smearing!(system)
             end
-            set_smearing!(system)
+            
         else
             system["Dirac_operator"] = "Wilson"
 
@@ -858,6 +860,8 @@ module Wizard
         end
         method["eps"] = eps
         method["MaxCGstep"] = MaxCGstep
+
+        set_smearing!(method)
     
 
         return method
@@ -911,6 +915,8 @@ module Wizard
         end
         method["eps"] = eps
         method["MaxCGstep"] = MaxCGstep
+
+        set_smearing!(method)
 
         return method
     end
