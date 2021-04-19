@@ -8,7 +8,7 @@ module Measurements
             GaugeFields_1d,calc_Polyakov,calc_Plaq,calc_Plaq_notrace_1d,SUn,SU2,SU3,TA,add!,
             SUNGaugeFields,SUNGaugeFields_1d,
             Loops,evaluate_loops!,evaluate_loops,
-            U1GaugeFields,U1GaugeFields_1d
+            U1GaugeFields,U1GaugeFields_1d,calc_smearingU
     import ..Fermionfields:clear!,FermionFields,WilsonFermion
     import ..Fermionfields:Z4_distribution_fermi!,gauss_distribution_fermi!,set_wing_fermi!
     import ..CGmethods:bicg
@@ -20,6 +20,7 @@ module Measurements
             print_verbose1,print_verbose2,print_verbose3
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set
+    import ..System_parameters:set_params
 
     #=
     abstract type MeasureMethod end
@@ -220,7 +221,30 @@ module Measurements
                     
 
                     quench = false
-                    fparam = FermiActionParam_Wilson(hop,r,eps,fermiontype,MaxCGstep,quench)
+
+                    smearing_for_fermion = set_params(method,"smearing_for_fermion","nothing")
+                    stout_numlayers = set_params(method,"stout_numlayers",nothing)
+                    stout_ρ = set_params(method,"stout_ρ",nothing)
+                    stout_loops = set_params(method,"stout_loops",nothing)
+
+
+                    #fparam = FermiActionParam_Wilson(hop,r,eps,fermiontype,MaxCGstep,quench)
+
+
+                    if smearing_for_fermion == "nothing"
+                        fparam = FermiActionParam_Wilson(hop,r,eps,fermiontype,MaxCGstep,quench)
+                    else
+
+                        L = (univ.NX,univ.NY,univ.NZ,univ.NT)
+                        fparam = FermiActionParam_Wilson(hop,r,eps,fermiontype,MaxCGstep,quench,
+                                                            smearingparameters = "stout",
+                                                            loops_list = stout_loops,
+                                                            coefficients  = stout_ρ,
+                                                            numlayers = stout_numlayers,
+                                                            L = L)
+                    end
+
+
                 elseif fermiontype == "WilsonClover"
                     if haskey(method,"hop")
                         hop = method["hop"]
@@ -257,6 +281,30 @@ module Measurements
                     fparam = FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
                                     internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                                     quench)
+
+                    smearing_for_fermion = set_params(method,"smearing_for_fermion","nothing")
+                    stout_numlayers = set_params(method,"stout_numlayers",nothing)
+                    stout_ρ = set_params(method,"stout_ρ",nothing)
+                    stout_loops = set_params(method,"stout_loops",nothing)
+
+                    if smearing_for_fermion == "nothing"
+                        FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
+                                    internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
+                                    quench)
+                    else
+                        error("stout for WilsonClover is not supported yet!")
+                        L = (univ.NX,univ.NY,univ.NZ,univ.NT)
+                        FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
+                                    internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
+                                    quench,
+                                    smearingparameters = "stout",
+                                    loops_list = stout_loops,
+                                    coefficients  = stout_ρ,
+                                    numlayers = stout_numlayers,
+                                    L = L)
+                    end
+
+                
                 elseif fermiontype == "Staggered"
                     if haskey(method,"mass")
                         mass = method["mass"]
@@ -273,9 +321,27 @@ module Measurements
                     end
 
                     quench = false
+
+                    smearing_for_fermion = set_params(method,"smearing_for_fermion","nothing")
+                    stout_numlayers = set_params(method,"stout_numlayers",nothing)
+                    stout_ρ = set_params(method,"stout_ρ",nothing)
+                    stout_loops = set_params(method,"stout_loops",nothing)
+
+                    if smearing_for_fermion == "nothing"
+                        fparam = FermiActionParam_Staggered(mass,eps,fermiontype,MaxCGstep,quench,Nf)
+                    else
+                        L = (univ.NX,univ.NY,univ.NZ,univ.NT)
+                        fparam = FermiActionParam_Staggered(mass,eps,fermiontype,MaxCGstep,quench,Nf,
+                                    smearingparameters = "stout",
+                                    loops_list = stout_loops,
+                                    coefficients  = stout_ρ,
+                                    numlayers = stout_numlayers,
+                                    L = L)
+                    end
+
                     
                     #println("Measurement_set::mass_measurement = $(p.mass_measurement)")
-                    fparam = FermiActionParam_Staggered(mass,eps,fermiontype,MaxCGstep,quench,Nf)
+                    #fparam = FermiActionParam_Staggered(mass,eps,fermiontype,MaxCGstep,quench,Nf)
                                 
                 elseif fermiontype == nothing
                     fparam = nothing
@@ -906,7 +972,9 @@ end
         #
         pbp = 0.0
         # setup a massive Dirac operator
-        M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
+        U,_... = calc_smearingU(univ.U,meas.fparam.smearing)
+        M = Dirac_operator(U,meas._temporal_fermi2[1],meas.fparam)
+        #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
         for ir=1:Nr
             r = similar(meas._temporal_fermi2[1]) 
             p = similar(r) 
@@ -1012,7 +1080,9 @@ end
         #k = meas._temporal_fermi2[2] # sink allocate
 
         # setup a massive Dirac operator
-        M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
+        U,_... = calc_smearingU(univ.U,meas.fparam.smearing)
+        M = Dirac_operator(U,meas._temporal_fermi2[1],meas.fparam)
+        #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
 
         # Allocate the Wilson matrix = S
         Nspinor = ifelse( meas.fparam.Dirac_operator == "Staggered" ,1,4)
