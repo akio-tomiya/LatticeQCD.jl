@@ -15,7 +15,7 @@ module MD
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
-                            calc_GaugeAction,apply_smearing
+                            calc_GaugeAction,apply_smearing,calc_smearingU
     import ..Gaugefields
     import ..LieAlgebrafields:gauss_distribution_lie!,LieAlgebraFields,SU3AlgebraFields,SU2AlgebraFields,
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutfource
@@ -814,26 +814,7 @@ module MD
         c = temp_a[1]
         NV = temp2_g.NV
 
-        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
-            if typeof(fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(Uin,fparam.smearing)
-            elseif typeof(fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(Uin,fparam.smearing)
-                U = Uout_multi[end]
-            else
-                error("something is wrong in updateP_fermi!")
-            end
-            set_wing!(U)
-            #println("length = $(length(temps))")
-            dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
-        else
-            #Uout_multi = nothing
-            #dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
-
-            U = Uin
-        end
-
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
 
 
         WdagW = DdagD_operator(U,φ,fparam)
@@ -871,22 +852,7 @@ module MD
         c = temp_a[1]
         NV = temp2_g.NV
 
-        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
-            if typeof(fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(Uin,fparam.smearing)
-            elseif typeof(fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(Uin,fparam.smearing)
-                U = Uout_multi[end]
-            else
-                error("something is wrong in updateP_fermi!")
-            end
-            set_wing!(U)
-            #println("length = $(length(temps))")
-            dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
-        else
-            U = Uin
-        end
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
 
         WdagW = DdagD_operator(U,φ,fparam)
 

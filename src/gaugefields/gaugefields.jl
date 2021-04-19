@@ -2,7 +2,8 @@ module Gaugefields
     using LinearAlgebra
     using Random
     using JLD
-    import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,SmearingParam
+    import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,
+                        SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                             get_leftstartposition,get_rightstartposition,Wilson_loop
@@ -3819,6 +3820,32 @@ c-----------------------------------------------------c
 
         return V,dSdρs
     end
+
+    function calc_smearingU(Uin::Array{GaugeFields{SU{NC}},1},smearing::T;calcdSdU = false,temps = nothing) where {NC,T <: SmearingParam_single}
+        if smearing != nothing && typeof(smearing) != Nosmearing
+            if typeof(smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(Uin,smearing)
+            elseif typeof(smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(Uin,smearing)
+                U = Uout_multi[end]
+            else
+                error("something is wrong in calc_smearingU")
+            end
+            set_wing!(U) 
+            if calcdSdU 
+                dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
+            else
+                dSdU = nothing
+            end
+        else
+            dSdU = nothing
+            Uout_multi = nothing
+            U = Uin
+        end
+        return U,Uout_multi,dSdU
+    end
+
 
 
     function apply_smearing(U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <: SmearingParam_single}
