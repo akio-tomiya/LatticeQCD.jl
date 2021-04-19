@@ -15,7 +15,7 @@ module LTK_universe
                         Oneinstanton,
                         evaluate_wilson_loops!,
                         U1GaugeFields,U1GaugeFields_1d,
-                        apply_smearing
+                        apply_smearing,calc_smearingU
     import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
@@ -870,7 +870,6 @@ module LTK_universe
 
     end
 
-
     
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
         gauss_distribution_fermi!(univ.η,univ.ranf)
@@ -879,21 +878,7 @@ module LTK_universe
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
         gauss_distribution_fermi!(univ.η,univ.ranf)
         if univ.fparam.Nf == 4
-
-            if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
-                if typeof(univ.fparam.smearing) <: SmearingParam_single
-                    Uout_multi = nothing
-                    U = apply_smearing(univ.U,univ.fparam.smearing)
-                elseif typeof(funiv.param.smearing) <: SmearingParam_multi
-                    Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
-                    U = Uout_multi[end]
-                else
-                    error("something is wrong in construct_fermion_gauss_distribution!")
-                end
-                set_wing!(U) 
-            else
-                U = univ.U
-            end
+            U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
 
             evensite = false
             W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
@@ -907,22 +892,8 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
-            if typeof(univ.fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
-                U = Uout_multi[end]
-            #elseif typeof(univ.fparam.smearing) <: Nosmearing
-            #    U = univ.U
-            else
-                error("something is wrong in construct_fermionfield_φ!")
-            end
-            set_wing!(U) 
-        else
-            U = univ.U
-        end
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+
 
         W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         mul!(univ.φ,W',univ.η)
@@ -930,22 +901,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
-        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
-            if typeof(univ.fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
-                U = Uout_multi[end]
-            #elseif typeof(univ.fparam.smearing) <: Nosmearing
-            #    U = univ.U
-            else
-                error("something is wrong in construct_fermionfield_φ!")
-            end
-            set_wing!(U) 
-        else
-            U = univ.U
-        end
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
         
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
         
@@ -982,40 +938,16 @@ module LTK_universe
 
     
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
-            if typeof(univ.fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
-                U = Uout_multi[end]
-            else
-                error("something is wrong in construct_fermionfield_η!")
-            end
-            set_wing!(U) 
-        else
-            U = univ.U
-        end
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+
 
         W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
-        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
-            if typeof(univ.fparam.smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing(univ.U,univ.fparam.smearing)
-            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
-                U = Uout_multi[end]
-            else
-                error("something is wrong in construct_fermionfield_η!")
-            end
-            set_wing!(U) 
-        else
-            U = univ.U
-        end
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+
 
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
             W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
