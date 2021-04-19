@@ -167,7 +167,16 @@ module LTK_universe
             fparam = nothing
         else
             if p.Dirac_operator == "Wilson"
-                fparam = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench)
+                if p.smearing_for_fermion == "nothing"
+                    fparam = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench)
+                else
+                    fparam = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,
+                                                        smearingparameters = "stout",
+                                                        loops_list = p.stout_loops,
+                                                        coefficients  = p.stout_ρ,
+                                                        numlayers = p.stout_numlayers,
+                                                        L = p.L)
+                end
             elseif p.Dirac_operator == "WilsonClover"
                 #if p.NC == 2
                 #    error("You use NC = 2. But WilsonClover Fermion is not supported in SU2 gauge theory yet. Use NC = 3.")
@@ -201,9 +210,20 @@ module LTK_universe
                 #fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,CloverFμν,
                 #                internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                 #                p.quench)
-                fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
-                                internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                                p.quench,SUNgenerator,_cloverloops)
+                if p.smearing_for_fermion == "nothing"
+                    fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
+                                    internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
+                                    p.quench,SUNgenerator,_cloverloops)
+                else
+                    fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
+                                    internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
+                                    p.quench,SUNgenerator,_cloverloops,
+                                    smearingparameters = "stout",
+                                    loops_list = p.stout_loops,
+                                    coefficients  = p.stout_ρ,
+                                    numlayers = p.stout_numlayers,
+                                    L = p.L)
+                end
             elseif p.Dirac_operator == "Staggered"
                 if p.smearing_for_fermion == "nothing"
                     fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
@@ -867,8 +887,6 @@ module LTK_universe
                 elseif typeof(funiv.param.smearing) <: SmearingParam_multi
                     Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
                     U = Uout_multi[end]
-                #elseif typeof(univ.fparam.smearing) <: Nosmearing
-                #    U = univ.U
                 else
                     error("something is wrong in construct_fermion_gauss_distribution!")
                 end
@@ -889,7 +907,24 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        W = Diracoperators.Dirac_operator(univ.U,univ.η,univ.fparam)
+        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
+            if typeof(univ.fparam.smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(univ.U,univ.fparam.smearing)
+            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
+                U = Uout_multi[end]
+            #elseif typeof(univ.fparam.smearing) <: Nosmearing
+            #    U = univ.U
+            else
+                error("something is wrong in construct_fermionfield_φ!")
+            end
+            set_wing!(U) 
+        else
+            U = univ.U
+        end
+
+        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         mul!(univ.φ,W',univ.η)
         set_wing_fermi!(univ.φ)
     end
@@ -947,7 +982,22 @@ module LTK_universe
 
     
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        W = Diracoperators.Dirac_operator(univ.U,univ.η,univ.fparam)
+        if univ.fparam.smearing != nothing && typeof(univ.fparam.smearing) != Nosmearing
+            if typeof(univ.fparam.smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(univ.U,univ.fparam.smearing)
+            elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
+                U = Uout_multi[end]
+            else
+                error("something is wrong in construct_fermionfield_η!")
+            end
+            set_wing!(U) 
+        else
+            U = univ.U
+        end
+
+        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
     end
 
@@ -959,8 +1009,6 @@ module LTK_universe
             elseif typeof(univ.fparam.smearing) <: SmearingParam_multi
                 Uout_multi = apply_smearing(univ.U,univ.fparam.smearing)
                 U = Uout_multi[end]
-            #elseif typeof(univ.fparam.smearing) <: Nosmearing
-            #    U = univ.U
             else
                 error("something is wrong in construct_fermionfield_η!")
             end

@@ -1644,7 +1644,7 @@ module Gaugefields
 
     end
 
-    function muladd!(c::GaugeFields_1d{SU{NC}},α::Number,a::GaugeFields_1d{SU{NC}}) where NC
+    function muladd!(c::GaugeFields_1d{SU{NC}},α::T,a::GaugeFields_1d{SU{NC}}) where {NC,T <: Number}
 
         NV=c.NV
 
