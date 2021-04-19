@@ -97,7 +97,7 @@ module Actions
             L = nothing)
 
             smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
-            smearing = Nosmearing()
+            #smearing = Nosmearing()
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
@@ -141,7 +141,7 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            smearing = Nosmearing()
+            #smearing = Nosmearing()
 
             return new(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
