@@ -86,23 +86,23 @@ We support 4 dimensional euclidean spacetime and following things:
   - General gauge action = plaquette + rect + etc action
 - Fermions
   - Wilson/Wilson-clover (2 flavors)
-  - Staggered fermion (1-8 tastes$\approx$ flavors)
+  - Staggered fermion (1-8 tastes ~ flavors)
 - Configuration generation algorithms
   - Cold/Hot start for SU(N). One instanton configuration for SU(2)
   - Heatbath for SU(N) & overrelaxation for a general gauge action
   - Quenched HMC with SU(N) for a general gauge action
   - HMC (2 flavor Wilson/Clover) with SU(N) with a general gauge action
-  - HMC (4 flavor Staggered fermions) with SU(N) with a general gauge action
+  - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
   - RHMC (any flavor staggered) with SU(N) for a general gauge action*
-  - <s>SU(N) stout smeared dynamical fermions (This will be supported)</s>
+  - <s>SU(N) stout smeared dynamical fermions </s> (This will be supported)
   - Fermion integrated HMC with a general gauge action
   - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson, Wilson-Clover/Staggered)
-  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion)
+  - Chiral condensates (Wilson, Wilson-Clover, staggered)
+  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, staggered will be supported)
   - Topological charge(plaquette and clover definition)
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
