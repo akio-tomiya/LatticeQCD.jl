@@ -179,7 +179,7 @@ This is the first open source Julia code for lattice QCD. High performance is ou
 
 We compared results to following papers/codes 
 
-- SU(3) staggered HMC with https://inspirehep.net/literature/283285
+- Nf=4 SU(3) staggered HMC with https://inspirehep.net/literature/283285
 - RHMC https://doi.org/10.1051/epjconf/201817507041
 - HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
 
