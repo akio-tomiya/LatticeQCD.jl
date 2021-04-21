@@ -3321,7 +3321,11 @@ c-----------------------------------------------------c
 
     function calc_coefficients_Q(Q)
         @assert size(Q) == (3,3)
-        c0 = det(Q)
+        c0 = Q[1,1]*Q[2,2]*Q[3,3]+Q[1,2]*Q[2,3]*Q[3,1]+Q[1,3]*Q[2,1]*Q[3,2]-Q[1,3]*Q[2,2]*Q[3,1]-Q[1,2]*Q[2,1]*Q[3,3]-Q[1,1]*Q[2,3]*Q[3,2]
+        #@time cdet = det(Q)
+        ##println(c0,"\t",cdet)
+        #exit() 
+        
         c1 = 0.0
         for i=1:3
             for j=1:3
@@ -3399,7 +3403,7 @@ c-----------------------------------------------------c
             r12 - 3*u*r22 - 24*u*f2
             )/(2*denom^2)
 
-        return f0,f1,f2,(b10,b11,b12),(b20,b21,b22)
+        return f0,f1,f2,b10,b11,b12,b20,b21,b22
     end
 
 
@@ -3459,7 +3463,7 @@ c-----------------------------------------------------c
                 #Q = calc_Qmatrix(staple_nu,nu,ρ,U,NC,ix,iy,iz,it)
             elseif NC == 3
                 Q ./= im
-                f0,f1,f2,b1,b2 = calc_coefficients_Q(Q)
+                f0,f1,f2,b10,b11,b12,b20,b21,b22 = calc_coefficients_Q(Q)
                 #
                 
                 #=
@@ -3468,7 +3472,7 @@ c-----------------------------------------------------c
                 for i=1:NC
                     expQ[i,i] =f0
                 end
-                expQ += f1*Qp + f2*Qp^2
+                expQ += f1*Q + f2*Q^2
                 println(expQ)
                 exit()
                 =#
@@ -3479,21 +3483,63 @@ c-----------------------------------------------------c
                     end
                 end
                 mul!(UdSdU,tmp_matrices[4],dSdUnu)
+
+                #B1 += b11*Q + b12*Q^2
+                #B2 += b21*Q + b22*Q^2
+                
+                #println(B1)
+
                 B1 = tmp_matrices[2]
                 B1 .= 0
                 B2 = tmp_matrices[4]
                 B2 .= 0
-
                 for i=1:NC
-                    B1[i,i] = b1[1]
-                    B2[i,i] = b2[1]
+                    B1[i,i] = b10
+                    B2[i,i] = b20
                 end
-                B1 += b1[2]*Q + b1[3]*Q^2
-                B2 += b2[2]*Q + b2[3]*Q^2
+                for j=1:NC
+                    for i=1:NC
+                        B1[i,j] += b11*Q[i,j]
+                        B2[i,j] += b21*Q[i,j]
+                        for k=1:NC  
+                            B1[i,j] += b12*Q[i,k]*Q[k,j]
+                            B2[i,j] += b22*Q[i,k]*Q[k,j]
+                        end
+                    end
+                end
+                #println(B1)
+                
 
-                trB1 = tr(UdSdU*B1)
-                trB2 = tr(UdSdU*B2)
-                M[:,:] = (trB1*Q + trB2*Q^2 + f1*UdSdU+f2*(Q*UdSdU+UdSdU*Q))/im
+
+                #@time trB1 = tr(UdSdU*B1)
+                #println(trB1)
+                trB1 = 0.0
+                trB2 = 0.0
+                for i=1:NC
+                    for j=1:NC
+                        trB1 += UdSdU[i,j]*B1[j,i]
+                        trB2 += UdSdU[i,j]*B2[j,i]
+                    end
+                end
+                #println(trB1)
+                #@time trB2 = tr(UdSdU*B2)
+                
+                #@time M[:,:] = (trB1*Q + trB2*Q^2 + f1*UdSdU+f2*(Q*UdSdU+UdSdU*Q))/im
+                
+
+                for j=1:NC
+                    for i=1:NC
+                        M[i,j] = trB1*Q[i,j] + f1*UdSdU[i,j]
+                        for k=1:NC  
+                            M[i,j] += trB2*Q[i,k]*Q[k,j]+f2*(Q[i,k]*UdSdU[k,j]+UdSdU[i,k]*Q[k,j])
+                        end
+                    end
+                end
+                M ./= im
+                #println(M)
+
+
+                #exit()
             elseif NC == 1
                 M[:,:] = U[nu][:,:,ix,iy,iz,it]*dSdUnu*exp.(Q)
             else
