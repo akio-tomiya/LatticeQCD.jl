@@ -3340,13 +3340,16 @@ c-----------------------------------------------------c
         ξ0 = sin(w)/w
         ξ1 = cos(w)/w^2 - sin(w)/w^3
 
-        h0 = (u^2-w^2)*exp(2*im*u) + exp(-im*u)*(
+        emiu = exp(-im*u)
+        e2iu = exp(2*im*u)
+
+        h0 = (u^2-w^2)*e2iu + emiu*(
             8u^2*cos(w)+2*im*u*(3u^2+w^2)* ξ0
         )
-        h1 = 2u*exp(2*im*u)-exp(-im*u)*(
+        h1 = 2u*e2iu-emiu*(
             2u*cos(w)-im*(3u^2-w^2)* ξ0
         )
-        h2 = exp(2*im*u) - exp(-im*u)*(cos(w)+3*im*u*ξ0)
+        h2 = e2iu - emiu*(cos(w)+3*im*u*ξ0)
 
         denom = 9u^2-w^2
         
@@ -3354,27 +3357,27 @@ c-----------------------------------------------------c
         f1 = h1/denom
         f2 = h2/denom
 
-        r10 = 2*(u+im*(u^2-w^2))*exp(2*im*u) + 
-                2*exp(-im*u)*(
+        r10 = 2*(u+im*(u^2-w^2))*e2iu + 
+                2*emiu*(
                     4u*(2-im*u)*cos(w) + 
                     im*(9u^2+w^2-im*u*(3u^2+w^2))*ξ0
                 )
-        r11 = 2*(1+2*im*u)*exp(2*im*u)+ 
-                exp(-im*u)*(
+        r11 = 2*(1+2*im*u)*e2iu+ 
+                emiu*(
                     -2*(1-im*u)*cos(w)+
                     im*(6u+im*(w^2-3u^2))*ξ0
                 )
-        r12 = 2*im*exp(2*im*u) + im*exp(-im*u)*(
+        r12 = 2*im*e2iu + im*emiu*(
             cos(w) -3*(1-im*u)*ξ0
         )
-        r20 = -2*exp(2*im*u)+2*im*u*exp(-im*u)*(
+        r20 = -2*e2iu+2*im*u*emiu*(
             cos(w)+(1+4*im*u)*ξ0+3u^2*ξ1
         )
-        r21 = -im*exp(-im*u)*(
+        r21 = -im*emiu*(
             cos(w)+(1+2*im*u)*ξ0 - 
             3*u^2*ξ1
         )
-        r22 = exp(-im*u)*(
+        r22 = emiu*(
             ξ0-3*im*u*ξ1
         )
         b10 = (
