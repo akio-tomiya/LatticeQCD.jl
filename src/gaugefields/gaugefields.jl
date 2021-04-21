@@ -3318,6 +3318,91 @@ c-----------------------------------------------------c
     const I0_2 = [1 0;0 1]
 
 
+
+    function calc_coefficients_Q(Q)
+        @assert size(Q) == (3,3)
+        c0 = det(Q)
+        c1 = 0.0
+        for i=1:3
+            for j=1:3
+                c1 += Q[i,j]*Q[j,i]
+            end
+        end
+        c1 /= 2
+        c0max = 2*(c1/3)^(3/2)
+        θ = acos(c0/c0max)
+        u = sqrt(c1/3)*cos(θ/3)
+        w = sqrt(c1)*sin(θ/3)
+        ξ0 = sin(w)/w
+        ξ1 = cos(w)/w^2 - sin(w)/w^3
+
+        h0 = (u^2-w^2)*exp(2*im*u) + exp(-im*u)*(
+            8u^2*cos(w)+2*im*u*(3u^2+w^2)* ξ0
+        )
+        h1 = 2u*exp(2*im*u)-exp(-im*u)*(
+            2u*cos(w)-im*(3u^2-w^2)* ξ0
+        )
+        h2 = exp(2*im*u) - exp(-im*u)*(cos(w)+3*im*u*ξ0)
+
+        denom = 9u^2-w^2
+        
+        f0 = h0/denom
+        f1 = h1/denom
+        f2 = h2/denom
+
+        r10 = 2*(u+im*(u^2-w^2))*exp(2*im*u) + 
+                2*exp(-im*u)*(
+                    4u*(2-im*u)*cos(w) + 
+                    im*(9u^2+w^2-im*u*(3u^2+w^2))*ξ0
+                )
+        r11 = 2*(1+2*im*u)*exp(2*im*u)+ 
+                exp(-im*u)*(
+                    -2*(1-im*u)*cos(w)+
+                    im*(6u+im*(w^2-3u^2))*ξ0
+                )
+        r12 = 2*im*exp(2*im*u) + im*exp(-im*u)*(
+            cos(w) -3*(1-im*u)*ξ0
+        )
+        r20 = -2*exp(2*im*u)+2*im*u*exp(-im*u)*(
+            cos(w)+(1+4*im*u)*ξ0+3u^2*ξ1
+        )
+        r21 = -im*exp(-im*u)*(
+            cos(w)+(1+2*im*u)*ξ0 - 
+            3*u^2*ξ1
+        )
+        r22 = exp(-im*u)*(
+            ξ0-3*im*u*ξ1
+        )
+        b10 = (
+            2*u*r10+(3u^2-w^2)*r20 - 2*(15u^2+w^2)*f0
+            )/(
+                2*denom^2
+            )
+        
+        b11 = (
+                2*u*r11+(3u^2-w^2)*r21 - 2*(15u^2+w^2)*f1
+                )/(
+                    2*denom^2
+                )
+        b12 = (
+            2*u*r12+(3u^2-w^2)*r22 - 2*(15u^2+w^2)*f2
+            )/(
+                2*denom^2
+            )
+        b20 = (
+            r10 - 3*u*r20 - 24*u*f0
+            )/(2*denom^2)
+        b21 = (
+                r11 - 3*u*r21 - 24*u*f1
+                )/(2*denom^2)
+        b22 = (
+            r12 - 3*u*r22 - 24*u*f2
+            )/(2*denom^2)
+
+        return f0,f1,f2,(b10,b11,b12),(b20,b21,b22)
+    end
+
+
     function calc_Mmatrix!(M,dSdUnu,staple_nu_set,nu,ρs,U::Array{GaugeFields{SU{NC}},1},ix,iy,iz,it,tmp_matrices) where NC
         #M = zeros(ComplexF64,NC,NC)
         Q = tmp_matrices[1]
@@ -3372,9 +3457,49 @@ c-----------------------------------------------------c
 
                 #M[:,:] = tr(Unu*dSdUnu*B)*Q + (sin(q)/q)*Unu*dSdUnu
                 #Q = calc_Qmatrix(staple_nu,nu,ρ,U,NC,ix,iy,iz,it)
+            elseif NC == 3
+                Q ./= im
+                f0,f1,f2,b1,b2 = calc_coefficients_Q(Q)
+                #
+                
+                #=
+                println(exp(Q))
+                expQ = zero(Q)
+                for i=1:NC
+                    expQ[i,i] =f0
+                end
+                expQ += f1*Qp + f2*Qp^2
+                println(expQ)
+                exit()
+                =#
+
+                for i=1:NC
+                    for j=1:NC
+                        tmp_matrices[4][j,i] = U[nu][j,i,ix,iy,iz,it]
+                    end
+                end
+                mul!(UdSdU,tmp_matrices[4],dSdUnu)
+                B1 = tmp_matrices[2]
+                B1 .= 0
+                B2 = tmp_matrices[4]
+                B2 .= 0
+
+                for i=1:NC
+                    B1[i,i] = b1[1]
+                    B2[i,i] = b2[1]
+                end
+                B1 += b1[2]*Q + b1[3]*Q^2
+                B2 += b2[2]*Q + b2[3]*Q^2
+
+                trB1 = tr(UdSdU*B1)
+                trB2 = tr(UdSdU*B2)
+                M[:,:] = (trB1*Q + trB2*Q^2 + f1*UdSdU+f2*(Q*UdSdU+UdSdU*Q))/im
             elseif NC == 1
                 M[:,:] = U[nu][:,:,ix,iy,iz,it]*dSdUnu*exp.(Q)
             else
+
+                
+
                 #=
                 @time begin
                 M .= 0
@@ -3389,6 +3514,7 @@ c-----------------------------------------------------c
                 println(M)
                 end
                 =#
+                
                 e,v = eigen(Q) #
 
                 #=
@@ -3489,6 +3615,13 @@ c-----------------------------------------------------c
 
                 mul!(UdSdU,tmp_matrices[4],v')
                 mul!(M,v,UdSdU)
+                
+
+
+
+                #println("M = ",M)
+                #println("Mtest = ",Mtest)
+                #exit()
 
                 #=
                 M .= 0

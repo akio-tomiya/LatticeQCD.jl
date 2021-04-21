@@ -510,13 +510,15 @@ module System_parameters
                 loadU_fromfile = false
             end
 
+            #=
             if haskey(system,"loadU_filename")
                 loadU_filename = system["loadU_filename"]
             else
                 loadU_filename = ""
             end
+            =#
 
-
+            loadU_filename =set_params(system,"loadU_filename","")
             smearing_for_fermion = set_params(system,"smearing_for_fermion","nothing")
             stout_numlayers = set_params(system,"stout_numlayers",nothing)
             stout_ρ = set_params(system,"stout_ρ",nothing)
