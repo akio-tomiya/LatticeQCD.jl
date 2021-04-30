@@ -1,67 +1,72 @@
-module LatticeQCD
+using Distributed
+@everywhere module LatticeQCD
     using Requires
+    using Distributed
+
     
 
     #include("./SLMC/logdet.jl")
 
-    include("./rhmc/AlgRemez.jl")
-    include("./rhmc/rhmc.jl")
+        include("./rhmc/AlgRemez.jl")
+        include("./rhmc/rhmc.jl")
 
-    include("./gaugefields/SUN_generator.jl")
-    include("./output/verboseprint.jl")
-    include("./fermions/cgmethod.jl")
-
-
-    include("./autostaples/wilsonloops.jl")
-    
-    include("./system/system_parameters.jl")
-    #include("parallel.jl")
-    #include("site.jl")
-    include("./system/rand.jl")
-    include("./actions/actions.jl")
-    include("./gaugefields/gaugefields.jl")
-    
-    #include("gaugefields.jl")
-    include("./fermions/fermionfields.jl")
-    include("./liealgebra/liealgebrafields.jl")
-
-    include("./rationalapprox/rationalapprox.jl")
-
-    
-    include("./fermions/clover.jl")
-    
-    include("./fermions/diracoperator.jl")
-    include("./fermions/misc.jl")
+        include("./gaugefields/SUN_generator.jl")
+        include("./output/verboseprint.jl")
+        include("./fermions/cgmethod.jl")
 
 
-    include("./output/io.jl")
-    include("./output/ildg_format.jl")
+        include("./autostaples/wilsonloops.jl")
+        
+        include("./system/system_parameters.jl")
+        #include("parallel.jl")
+        #include("site.jl")
+        include("./system/rand.jl")
+        include("./actions/actions.jl")
+        include("./gaugefields/gaugefields.jl")
+        include("./gaugefields/Dgaugefields.jl")
+        
+        #include("gaugefields.jl")
+        include("./fermions/fermionfields.jl")
+        include("./liealgebra/liealgebrafields.jl")
 
-    
+        include("./rationalapprox/rationalapprox.jl")
 
-    include("./system/LTK_universe.jl")
-    include("./gaugefields/smearing.jl")
+        
+        include("./fermions/clover.jl")
+        
+        include("./fermions/diracoperator.jl")
+        include("./fermions/misc.jl")
+   
 
 
-    include("./output/print_config.jl")
-
+        include("./output/io.jl")
+        include("./output/ildg_format.jl")
 
     
-    
-    #include("cg.jl")
+
+        include("./system/LTK_universe.jl")
+        include("./gaugefields/smearing.jl")
 
 
-    include("./measurements/measurements.jl")
-    include("./heatbath/heatbath.jl")
-    include("./md/md.jl")
-    include("./system/wizard.jl")
-
-    include("./SLMC/SLMC.jl")
+        include("./output/print_config.jl")
 
 
+        
+        
+        #include("cg.jl")
 
-    include("./system/mainrun.jl")
-    include("./output/analyze.jl")
+
+        include("./measurements/measurements.jl")
+        include("./heatbath/heatbath.jl")
+        include("./md/md.jl")
+        include("./system/wizard.jl")
+
+        include("./SLMC/SLMC.jl")
+
+
+
+        include("./system/mainrun.jl")
+        include("./output/analyze.jl")
 
     
     

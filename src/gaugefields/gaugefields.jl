@@ -12,12 +12,14 @@ module Gaugefields
     abstract type SU{N} <: SUn
     end
 
+    abstract type Gauge{T <: SUn} end
+
     const U1 = SU{1}
     const SU2 = SU{2}
     const SU3 = SU{3}
 
 
-    struct GaugeFields{T <: SUn} 
+    struct GaugeFields{T <: SUn}  <: Gauge{T}
         g::Array{ComplexF64,6}
         NX::Int64
         NY::Int64
