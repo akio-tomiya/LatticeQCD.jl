@@ -13,6 +13,8 @@ module Gaugefields
     end
 
     abstract type Gauge{T <: SUn} end
+    abstract type Gauge_1d{T <: SUn} end
+    abstract type Adjoint_Gauge_1d{T <: SUn} end
 
     const U1 = SU{1}
     const SU2 = SU{2}
@@ -62,7 +64,7 @@ module Gaugefields
         Adjoint_GaugeFields{T}(x)
     end
 
-    struct GaugeFields_1d{T <: SUn} 
+    struct GaugeFields_1d{T <: SUn} <: Gauge_1d{T}
         g::Array{ComplexF64,3}
         NC::Int64
         NV::Int64
@@ -87,7 +89,7 @@ module Gaugefields
     const SU3GaugeFields_1d  = GaugeFields_1d{SU3}
     const SUNGaugeFields_1d{N}  = GaugeFields_1d{SU{N}}
 
-    struct Adjoint_GaugeFields_1d{T <: SUn} 
+    struct Adjoint_GaugeFields_1d{T <: SUn} <: Adjoint_Gauge_1d{T}
         parent::GaugeFields_1d{T}
     end
 
@@ -1539,15 +1541,17 @@ module Gaugefields
         return
     end
 
-    function make_staple!(staple::GaugeFields_1d,U,μ,temp1,temp2,temp3)
+    function make_staple!(staple::T,U,μ,temp1,temp2,temp3) where T <: Gauge_1d 
         clear!(staple)
 
         idir2 = zeros(Int64,2)
+        println("T ", T)
 
         for ν=1:4
             if ν == μ
                 continue
             end
+            println("ν =  ", ν)
 
                         #=
             c       x+nu temp2
@@ -1566,6 +1570,7 @@ module Gaugefields
             gauge_shift!(temp1,μ,U[ν])
             mul!(temp2,temp3,temp1')
             add!(staple,temp2)
+            
 
 
 
@@ -2238,11 +2243,13 @@ c-----------------------------------------------------c
         return calc_Plaq!(U::Array{T,1},temp1,temp2,temp3,staple)
     end
 
-    function calc_Plaq!(U::Array{T,1},temp1,temp2,temp3,staple) where T <: GaugeFields
+    function calc_Plaq!(U::Array{T,1},temp1,temp2,temp3,staple) where T <: Gauge
         plaq = 0
+        
         for μ=1:4
             clear!(staple)
             make_staple!(staple,U,μ,temp1,temp2,temp3)
+            
             substitute!(temp1,U[μ])
 
             mul!(temp2,temp1,staple')

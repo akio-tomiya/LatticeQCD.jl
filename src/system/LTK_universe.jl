@@ -16,6 +16,7 @@ module LTK_universe
                         evaluate_wilson_loops!,
                         U1GaugeFields,U1GaugeFields_1d
     import ..Gaugefields
+    import ..DFields:DGaugeFields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
     import ..Fermionfields
@@ -392,9 +393,25 @@ module LTK_universe
             #error("not supported yet.")
         end
 
+        
+
+
         set_wing!(U)
         Uold = similar(U)
         substitute!(Uold,U)
+
+        @time plaq = Gaugefields.calc_Plaq(U)
+        println("plaq = ", plaq)
+
+        println("debug")
+        DU = Array{DGaugeFields,1}(undef,4)
+        for μ=1:4
+            DU[μ] = DGaugeFields(U[μ],[1,1,1,1,1,1])
+        end
+        @time plaq = Gaugefields.calc_Plaq(DU)
+        println("plaq = ", plaq)
+        
+        exit()
 
         
         #=
