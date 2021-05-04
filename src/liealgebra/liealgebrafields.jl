@@ -3,7 +3,7 @@ module LieAlgebrafields
     using LinearAlgebra
     import ..Gaugefields:SU3GaugeFields,SU3GaugeFields_1d,SU2GaugeFields,SU2GaugeFields_1d,GaugeFields,
         GaugeFields_1d,make_staple_double!,substitute!,projlink!,set_wing!, evaluate_wilson_loops!,muladd!,
-        SUNGaugeFields_1d,SUNGaugeFields
+        SUNGaugeFields_1d,SUNGaugeFields,U1GaugeFields_1d,U1GaugeFields
     import ..SUN_generator:Generator,lie2matrix!,matrix2lie!
     import ..Gaugefields
     import ..Actions:GaugeActionParam_autogenerator
@@ -60,6 +60,23 @@ module LieAlgebrafields
         end
     end
 
+    struct U1AlgebraFields <: LieAlgebraFields
+        a::Array{Float64,5}
+        NX::Int64
+        NY::Int64
+        NZ::Int64
+        NT::Int64
+        NC::Int64
+        NumofBasis::Int64
+        #generators::Generator
+
+        function U1AlgebraFields(NC,NX,NY,NZ,NT)
+            NumofBasis = 1
+            #generators = Generator(NC)
+            return new(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis)
+        end
+    end
+
 
     function Base.setindex!(x::LieAlgebraFields,v,i...) 
         x.a[i...] = v
@@ -76,6 +93,8 @@ module LieAlgebrafields
             return SU2AlgebraFields(NC,NX,NY,NZ,NT)
         elseif NC ≥ 4
             return SUNAlgebraFields(NC,NX,NY,NZ,NT)
+        elseif NC == 1
+            return U1AlgebraFields(NC,NX,NY,NZ,NT)
         end
     end
 
@@ -85,6 +104,7 @@ module LieAlgebrafields
 
     function Gaugefields.substitute!(x::LieAlgebraFields,pwork)
         n1,n2,n3,n4,n5 = size(x.a)
+        #println(size(pwork))
         x.a[:,:,:,:,:] = reshape(pwork,(n1,n2,n3,n4,n5))
     end
 
@@ -478,6 +498,32 @@ module LieAlgebrafields
 
     end
 
+    function Gauge2Lie!(c::U1AlgebraFields,x::U1GaugeFields_1d)
+        NX = c.NX
+        NY = c.NY
+        NZ = c.NZ
+        NT = c.NT
+
+        NC = c.NC
+
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i = (((it-1)*NX+iz-1)*NY+iy-1)*NX+ix 
+                        c[1,ix,iy,iz,it] = real(x[1,1,i])
+                    end
+                end
+
+            end
+
+        end
+
+
+    end
+
+
 
 
     function expF_U!(U::Array{T,1},F::Array{N,1},Δτ,temps::Array{T_1d,1},temp_a::N) where {T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
@@ -668,6 +714,28 @@ module LieAlgebrafields
 
                         lie2matrix!(u0,g,a)
                         v[:,:,icum] = exp((im/2)*u0)
+                    end
+                end
+            end
+        end
+
+    end
+
+    function expA!(v::U1GaugeFields_1d ,u::U1AlgebraFields,temp1,temp2)   
+
+    
+        NX=u.NX
+        NY=u.NY
+        NZ=u.NZ
+        NT=u.NT
+        NC=u.NC
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        icum = (((it-1)*NX+iz-1)*NY+iy-1)*NX+ix  
+                        v[1,1,icum] = exp(im*u[1,ix,iy,iz,it])
                     end
                 end
             end

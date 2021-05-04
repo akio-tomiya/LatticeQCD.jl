@@ -16,6 +16,14 @@ module Fermionfields
     abstract type FermionFields end
 
 
+    struct RGammamatrix{ν,pm} 
+        #indices::NTuple{}
+        #values::
+    end
+
+
+
+
 
     struct WilsonFermion <: FermionFields
         NC::Int64
@@ -52,6 +60,8 @@ module Fermionfields
         MaxCGstep::Int64
         BoundaryCondition::Array{Int8,1}
     end
+
+
 
     #include("boundary_fermi.jl")
 
@@ -607,9 +617,42 @@ module Fermionfields
         return
     end
 
+    function Wdagx!(xout::WilsonFermion,U::Array{G,1},
+        x::WilsonFermion,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        temp = temps[4]
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        clear!(temp)
+        set_wing_fermi!(x)
+        for ν=1:4
+            fermion_shift!(temp1,U,ν,x)
+
+            #... Dirac multiplication
+            #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+            mul!(temp1,view(x.rplusγ,:,:,ν),temp1)
+            
+            #
+            fermion_shift!(temp2,U,-ν,x)
+            #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+            mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
+
+            add!(temp,x.hopp[ν],temp1,x.hopm[ν],temp2)
+            
+            
+        end
+
+        clear!(xout)
+        add!(xout,1,x,-1,temp)
+
+        #display(xout)
+        #    exit()
+        return
+    end
+
     
 
-    function Wdagx!(xout::WilsonFermion,U::Array{G,1},
+    function Wdagx_old!(xout::WilsonFermion,U::Array{G,1},
         x::WilsonFermion,temps::Array{T,1}) where {T <: FermionFields,G <: GaugeFields}
         temp = temps[4]
         temp1 = temps[1]
@@ -618,20 +661,25 @@ module Fermionfields
         clear!(temp)
         x5 = temps[3]
 
+        #D^dag = \gamma_5 D \gamma_5
+
+
         mul_γ5x!(x5,x)
         set_wing_fermi!(x5)
 
 
         for ν=1:4
-            fermion_shift!(temp1,U,ν,x5)
+            fermion_shift!(temp1,U,ν,x5) #nu shift
 
             #... Dirac multiplication
-            mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+            #mul!(temp1,view(x.rminusγ,:,:,ν),temp1) #(1 - \gamma)
+            mul!(temp1,view(x.rplusγ,:,:,ν),temp1) #(1 + \gamma)
             
             #
-            fermion_shift!(temp2,U,-ν,x5)
+            fermion_shift!(temp2,U,-ν,x5) #-nu shift
             
-            mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+            #mul!(temp2,view(x.rplusγ,:,:,ν),temp2) #(1 + \gamma)
+            mul!(temp2,view(x.rminusγ,:,:,ν),temp2) #(1 + \gamma)
 
             add!(temp,x.hopp[ν],temp1,x.hopm[ν],temp2)
         end
@@ -1449,6 +1497,107 @@ c-----------------------------------------------------c
 
     end
 
+    function fermion_shift_gamma!(b::WilsonFermion,u::Array{T,1},μ::Int,a::WilsonFermion) where T <: SU3GaugeFields
+        if μ == 0
+            substitute!(b,a)
+            return
+        end
+
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
+        NC = 3#a.NC
+
+        #NTrange = get_looprange(NT)
+        #println(NTrange)
+        if μ > 0
+            #idel = zeros(Int64,4)
+            #idel[μ] = 1
+
+            n6 = size(a.f)[6]
+            for ialpha=1:4
+                #for it=NTrange
+                for it=1:NT
+                    it1 = it + ifelse(μ ==4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz + ifelse(μ ==3,1,0) #idel[3]
+                        for iy=1:NY
+                            iy1 = iy + ifelse(μ ==2,1,0) #idel[2]
+                            @simd for ix=1:NX
+                                ix1 = ix + ifelse(μ ==1,1,0) #idel[1]
+
+                                b[1,ix,iy,iz,it,ialpha] = u[μ][1,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][1,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][1,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha]
+
+                                b[2,ix,iy,iz,it,ialpha] = u[μ][2,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][2,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][2,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha]
+
+                                b[3,ix,iy,iz,it,ialpha] = u[μ][3,1,ix,iy,iz,it]*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][3,2,ix,iy,iz,it]*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            u[μ][3,3,ix,iy,iz,it]*a[3,ix1,iy1,iz1,it1,ialpha]
+
+                                #=
+                                for k1=1:3
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:3
+                                        b[k1,ix,iy,iz,it,ialpha] += u[μ][k1,k2,ix,iy,iz,it]*a[k2,ix1,iy1,iz1,it1,ialpha]
+                                    end
+                                end
+                                =#
+                            end
+                        end
+                    end
+                end
+            end
+            
+        elseif μ < 0
+            #idel = zeros(Int64,4)
+            #idel[-μ] = 1
+            #n6 = size(b.f)[6]
+            for ialpha =1:4
+                for it=1:NT
+                    it1 = it - ifelse(-μ ==4,1,0) #idel[4]
+                    for iz=1:NZ
+                        iz1 = iz - ifelse(-μ ==3,1,0) #idel[3]
+                        for iy=1:NY
+                            iy1 = iy - ifelse(-μ ==2,1,0)  #idel[2]
+                            @simd for ix=1:NX
+                                ix1 = ix - ifelse(-μ ==1,1,0) #idel[1]
+
+                                b[1,ix,iy,iz,it,ialpha] = conj(u[-μ][1,1,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][2,1,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][3,1,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha]
+
+                                b[2,ix,iy,iz,it,ialpha] = conj(u[-μ][1,2,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][2,2,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][3,2,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha]
+
+                                b[3,ix,iy,iz,it,ialpha] = conj(u[-μ][1,3,ix1,iy1,iz1,it1])*a[1,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][2,3,ix1,iy1,iz1,it1])*a[2,ix1,iy1,iz1,it1,ialpha] + 
+                                                            conj(u[-μ][3,3,ix1,iy1,iz1,it1])*a[3,ix1,iy1,iz1,it1,ialpha]
+                                #=
+                                for k1=1:3
+                                    b[k1,ix,iy,iz,it,ialpha] = 0
+                                    for k2=1:3
+                                        b[k1,ix,iy,iz,it,ialpha] += conj(u[-μ][k2,k1,ix1,iy1,iz1,it1])*a[k2,ix1,iy1,iz1,it1,ialpha]
+                                    end
+                                end
+                                =#
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+    end
+
+
+
+
     function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion) where T <: SU3GaugeFields
         if μ == 0
             substitute!(b,a)
@@ -1550,7 +1699,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shift!(b::StaggeredFermion,u::Array{SUNGaugeFields{NC},1},μ::Int,a::StaggeredFermion) where NC
+    function fermion_shift!(b::StaggeredFermion,u::Array{GaugeFields{SU{NC}},1},μ::Int,a::StaggeredFermion) where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -2110,7 +2259,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shift!(b::StaggeredFermion,u::Array{T,1},μ::Int,a::StaggeredFermion,vec_indices) where T <: SUNGaugeFields
+    function fermion_shift!(b::StaggeredFermion,u::Array{GaugeFields{SU{NC}},1},μ::Int,a::StaggeredFermion,vec_indices) where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -2120,7 +2269,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
         #NTrange = get_looprange(NT)
         #println(NTrange)
@@ -2280,7 +2429,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shiftB!(b::WilsonFermion,u::Array{SUNGaugeFields,1},μ,a::WilsonFermion) 
+    function fermion_shiftB!(b::WilsonFermion,u::Array{GaugeFields{SU{NC}},1},μ,a::WilsonFermion) where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -2291,7 +2440,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
 
         if μ > 0
@@ -2331,7 +2480,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shiftB!(b::WilsonFermion,evensite,u::Array{SUNGaugeFields,1},μ,a::WilsonFermion) 
+    function fermion_shiftB!(b::WilsonFermion,evensite,u::Array{GaugeFields{SU{NC}},1},μ,a::WilsonFermion)  where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -2344,7 +2493,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
 
         if μ > 0
@@ -2387,7 +2536,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shiftB!(b::StaggeredFermion,u::Array{SUNGaugeFields,1},μ,a::StaggeredFermion) 
+    function fermion_shiftB!(b::StaggeredFermion,u::Array{GaugeFields{SU{NC}},1},μ,a::StaggeredFermion)  where NC
         if μ == 0
             substitute!(b,a)
             return
@@ -2398,7 +2547,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
 
         if μ > 0
@@ -2439,7 +2588,7 @@ c-----------------------------------------------------c
 
     end
 
-    function fermion_shiftB!(b::StaggeredFermion,evensite,u::Array{SUNGaugeFields,1},μ,a::StaggeredFermion) 
+    function fermion_shiftB!(b::StaggeredFermion,evensite,u::Array{GaugeFields{SU{NC}},1},μ,a::StaggeredFermion)  where NC #T <: Union{SUNGaugeFields,U1GaugeFields}
         if μ == 0
             substitute!(b,a)
             return
@@ -2451,7 +2600,7 @@ c-----------------------------------------------------c
         NY = a.NY
         NZ = a.NZ
         NT = a.NT
-        NC = a.NC
+        #NC = a.NC
 
 
         if μ > 0
@@ -3517,7 +3666,6 @@ c----------------------------------------------------------------------c
         
 
     end
-
 
 
 

@@ -85,23 +85,24 @@ We support 4 dimensional euclidean spacetime and following things:
   - General SU(N)
   - General gauge action = plaquette + rect + etc action
 - Fermions
-  - Wilson/Wilson-clover (2flavor)
-  - Staggered fermion (4tastes)
+  - Wilson/Wilson-clover (2 flavors)
+  - Staggered fermion (1-8 tastes ~ flavors)
 - Configuration generation algorithms
-  - Cold/Hot start for SU(2), SU(3) and SU(N). One instanton for SU(2)
-  - Heatbath for SU(2), SU(3) and SU(N) & overrelaxation for a general gauge action
-  - Quenched HMC with SU(2), SU(3), SU(N) for a general gauge action
-  - HMC (2 flavor Wilson/Clover) with SU(2), SU(3), SU(N) with a general gauge action
-  - HMC (4 flavor Staggered fermions) with SU(2), SU(3), SU(N) with a general gauge action
-  - <s>RHMC (any flavor staggered) with SU(2), SU(3) and SU(N) for a general gauge action</s> (This will be supported)
+  - Cold/Hot start for SU(N). One instanton configuration for SU(2)
+  - Heatbath for SU(N) & overrelaxation for a general gauge action
+  - Quenched HMC with SU(N) for a general gauge action
+  - HMC (2 flavor Wilson/Clover) with SU(N) with a general gauge action
+  - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
+  - RHMC (any flavor staggered) with SU(N) for a general gauge action*
+  - <s>SU(N) stout smeared dynamical fermions </s> (This will be supported)
   - Fermion integrated HMC with a general gauge action
   - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson, Wilson-Clover/Staggered)
-  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion)
+  - Chiral condensates (Wilson, Wilson-Clover, staggered)
+  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, staggered will be supported)
   - Topological charge(plaquette and clover definition)
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
@@ -111,7 +112,13 @@ We support 4 dimensional euclidean spacetime and following things:
   - ILDG format
   - JLD format (default binary file for Julia, one of HDF5)
 
+*If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
+
+
+
 Many of smearing and improved fermion actions and parallelazation have not supported yet.
+
+
 
 
 # USAGE/User interface
@@ -119,7 +126,7 @@ Many of smearing and improved fermion actions and parallelazation have not suppo
 We support following two user interfaces
 
 1. Julia REPL interface (For beginners, just after the lattice QCD textbook)
-2. Genral run code (Experience with another code, for batch job, customised purpose)
+2. Genral interface (Experience with another code, for batch job, customised purpose)
 
 Usage 1 was already explained. 
 
@@ -130,7 +137,7 @@ add https://github.com/akio-tomiya/LatticeQCD.jl
 ```
 Then, LatticeQCD.jl is installed on your machine. 
 
-The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (save as ``wizard.jl``): 
+The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the shell, you write the following code (& save as ``wizard.jl``): 
 
 ```julia:wizard.jl
 using LatticeQCD
@@ -143,7 +150,7 @@ Then, you can run the wizard:
 julia wizard.jl
 ```
 
-You write the following code (save as ``run.jl``):
+You write the following code (& save as ``run.jl``):
 ```julia:run.jl
 using LatticeQCD
 run_LQCD(ARGS[1])
@@ -160,7 +167,7 @@ then, you get results though standard I/O.
 # Purpose of the code
 We develop this code to achive following things:
 
-1. Good portability (If one has Julia, this code is runnable. All dependence is under control.)
+1. Good portability (If one has Julia, this code is runnable. All dependences are under control.)
 2. Easy to start/ pedagogical (start in 10 minutes)
 3. Suite (configuration generation with and without fermions, and measurements)
 4. Easy to modify (Good for prototyping)
@@ -172,7 +179,9 @@ This is the first open source Julia code for lattice QCD. High performance is ou
 
 We compared results to following papers/codes 
 
-- SU(3) staggered HMC with https://inspirehep.net/literature/283285
+- Nf=4 SU(3) staggered HMC with https://inspirehep.net/literature/283285
+- RHMC https://doi.org/10.1051/epjconf/201817507041
+- HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
 
 # Reference
 

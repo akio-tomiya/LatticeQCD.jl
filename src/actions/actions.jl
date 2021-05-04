@@ -2,6 +2,8 @@ module Actions
     import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
             make_cloverloops
     import ..SUN_generator:Generator
+    import ..Rhmc:RHMC
+
 
     abstract type GaugeActionParam end
 
@@ -76,6 +78,8 @@ module Actions
         _cloverloops::Array{Wilson_loop_set,2}
     end
 
+
+
     Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
         mass::Float64 = 0.5
         eps::Float64 = 1e-19
@@ -83,6 +87,52 @@ module Actions
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
         Nf::Int8 = 4
+        rhmc_action::Union{Nothing,RHMC}
+        rhmc_MD::Union{Nothing,RHMC}
+
+        function FermiActionParam_Staggered(
+            mass,
+            eps,
+            Dirac_operator,
+            MaxCGstep,
+            quench,
+            Nf)
+
+
+
+            if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
+                rhmc_action = nothing
+                rhmc_MD = nothing
+            else
+                #for action: r_action
+                #Nf = 8 -> alpha = 1 -> power x^{1/2} 
+                #Nf = 2 -> alpha = 1/4 -> power x^1/8 
+                #Nf = 1 -> alpha = 1/8  -> power x^1/16 
+                order = Nf //16
+
+                rhmc_action = RHMC(order,n=15)
+
+                #for MD: r_MD
+                #Nf = 8 -> alpha = 1 -> power x^{1} 
+                #Nf = 2 -> alpha = 1/4 -> power x^1/4 
+                #Nf = 1 -> alpha = 1/8  -> power x^1/8 
+                order = Nf // 8
+                #rhmcorder = 8 ÷ Nf
+                rhmc_MD = RHMC(order,n=10)
+            end
+
+
+            return new(
+            mass,
+            eps,
+            Dirac_operator,
+            MaxCGstep,
+            quench,
+            Nf,
+            rhmc_action,
+            rhmc_MD
+            )
+        end
     end
 
 
