@@ -59,9 +59,21 @@ using Test
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
 
-        @testset "Staggered SU(3)" begin
+        @testset "Staggered SU(3) with 4 tastes" begin
             @time plaq = run_LQCD("test_staggered.jl")
             plaq_comparison = 0.00624053999484795
+            @test abs(plaq - plaq_comparison)/plaq_comparison < eps
+        end
+
+        @testset "Staggered SU(3) with 2 tastes" begin
+            @time plaq = run_LQCD("test_Nf2.jl")
+            plaq_comparison = 0.5630198767336069
+            @test abs(plaq - plaq_comparison)/plaq_comparison < eps
+        end
+
+        @testset "Staggered SU(3) with 3 tastes" begin
+            @time plaq = run_LQCD("test_Nf3.jl")
+            plaq_comparison = 0.565176584402352
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
     end

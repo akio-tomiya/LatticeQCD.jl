@@ -10,7 +10,8 @@ module MD
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
                         GaugeActionParam_autogenerator
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
-                calc_IntegratedFermionAction
+                calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
+                construct_fermionfield_φ!,construct_fermionfield_η!
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
@@ -32,6 +33,8 @@ module MD
                 Dirac_operator,DdagD_operator
     import ..CGmethods:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
+    import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+
 
     abstract type MD_parameters end
 
@@ -190,11 +193,7 @@ module MD
         end
 
         if univ.quench == false
-        #if univ.fparam != nothing
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_fermi,univ.fparam)
+            construct_fermionfield_η!(univ)
         end
 
 
@@ -246,9 +245,7 @@ module MD
         end
 
         if univ.quench == false
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
-            #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
+            construct_fermionfield_η!(univ)
         end
 
         Snew,plaq = calc_Action(univ)
@@ -475,74 +472,10 @@ module MD
 
         if univ.quench == false 
             #if univ.fparam != nothing 
+            construct_fermion_gauss_distribution!(univ) #generate η
+            #println(univ.η*univ.η)
+            construct_fermionfield_φ!(univ)  #generate φ
 
-            gauss_distribution_fermi!(univ.η,univ.ranf)
-            #set_wing_fermi!(univ.η) 
-            
-            if univ.Dirac_operator == "Staggered" 
-                if univ.fparam.Nf == 4
-
-                    function shifttest()
-                        println("Test for ShiftedCD")
-                        println("(WdagW+ β_i) x_i = b")
-                        WdagW = DdagD_operator(univ.U,univ.η,univ.fparam)
-                        x = deepcopy(univ.η)
-                        N = 10
-                        vec_β = rand(N)
-                        vec_β[1] = 0
-                        vec_β[2] = 0.1
-                        vec_β[3] = 0.5
-                        vec_β[4] = -0.2
-                        vec_x = Array{typeof(x),1}(undef,N)
-                        for j=1:N
-                            vec_x[j] = similar(x)
-                        end
-                        vec_β[1] = 0
-                        shiftedcg(vec_x,vec_β,x,WdagW,univ.η,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
-
-                        #shiftedcg0_WdagW!(vec_x,x,univ.η,vec_β,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)  #(WdagW + vec_beta)*x = b
-                        for j=1:N
-                            println("β_$j = ",vec_β[j])
-                            mul!(univ.φ,WdagW,vec_x[j])
-                            #WdagWx!(univ.φ,univ.U,vec_x[j],univ._temporal_fermi,univ.fparam)
-
-                            Fermionfields.add!(univ.φ,vec_β[j],vec_x[j])
-                            #println("norm; ", univ.φ*univ.φ)
-                            println("residual: ", univ.φ*univ.φ-univ.η*univ.η)
-                            
-                        end
-                    end
-                    #shifttest()
-                    #exit()
-
-                    evensite = false
-                    W = Dirac_operator(univ.U,univ.η,univ.fparam)
-                    mul!(univ.φ,W',univ.η)
-
-                    #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
-                    clear!(univ.φ,evensite)
-
-                    bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
-
-                    #cg0!(univ.η,univ.φ,2,univ.U,univ._temporal_gauge,univ._temporal_fermi,univ.fparam)
-
-                    
-
-                end
-            end
-
-            #gauss_distribution_fermi!(univ.η,univ.ranf)
-
-            
-            W = Dirac_operator(univ.U,univ.η,univ.fparam)
-
-            #if typeof(univ.fparam) == FermiActionParam_WilsonClover
-            #    Make_CloverFμν!(univ.fparam,univ.U,univ._temporal_gauge)
-            #end
-            mul!(univ.φ,W',univ.η)
-
-            #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam) #φ = Wdag*η
-            set_wing_fermi!(univ.φ)
         end
 
         Sold,Sg = calc_Action(univ)
@@ -577,6 +510,8 @@ module MD
     end
 
 
+
+
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -589,7 +524,20 @@ module MD
         NV = temp2_g.NV
 
 
+        
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
         W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+        set_wing_fermi!(Y)
+        
+        
+        
+        
+
+        #WdagW =  Dirac_operator(U,φ,fparam)
         
 
         #=
@@ -599,12 +547,15 @@ module MD
         Y = D X = (D^dag)^(-1) ϕ
         Solve D^dag Y = ϕ
         =#
+        #=
+        W = Dirac_operator(U,φ,fparam)
         bicg(Y,W',φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
         set_wing_fermi!(Y)
 
         
         bicg(X,W,Y,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
         set_wing_fermi!(X)
+        =#
 
 
         
@@ -666,10 +617,11 @@ module MD
 
     end
 
-    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+    function  updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
-        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
         ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
         temp0_f = temps_fermi[1] #F_field
         temp1_f = temps_fermi[2] #F_field
         temp2_g = temps[1] #G_field1
@@ -677,17 +629,8 @@ module MD
         c = temp_a[1]
         NV = temp2_g.NV
 
-        
-        #X = (D^dag D)^(-1) ϕ 
-        #
-
-        WdagW = DdagD_operator(U,φ,fparam)
-        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
-        set_wing_fermi!(X)
-
         W = Dirac_operator(U,φ,fparam)
         mul!(Y,W,X)
-        
 
         for μ=1:4
             #!  Construct U(x,mu)*P1
@@ -707,7 +650,7 @@ module MD
 
 
             #...  p(new) = p(old) + fac * c  .....
-            add!(p[μ],-0.5*τ*mdparams.Δτ,c)
+            add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,c)
 
 
 
@@ -724,9 +667,53 @@ module MD
             projlink!(temp3_g,temp2_g)
             Gauge2Lie!(c,temp3_g)
 
-            add!(p[μ],-0.5*τ*mdparams.Δτ,c)
+            add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,c)
 
 
+        end
+        return
+
+    end
+
+    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+        WdagW = DdagD_operator(U,φ,fparam)
+
+        if fparam.Nf == 4 || fparam.Nf == 8
+            #X = (D^dag D)^(-1) ϕ 
+            #
+            cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+            set_wing_fermi!(X)
+
+            updateP_fermi_fromX!(Y,φ,X,fparam,
+            p,mdparams,τ,U,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            N_MD = get_order(fparam.rhmc_MD)
+            #numtemps_fermi = length(temps_fermi)
+            x = temps_fermi[end-N_MD]
+            vec_x = temps_fermi[end-N_MD+1:end]
+            for j=1:N_MD
+                Fermionfields.clear!(vec_x[j])
+            end
+            vec_β = get_β_inverse(fparam.rhmc_MD)
+            vec_α = get_α_inverse(fparam.rhmc_MD)
+            α0 = get_α0_inverse(fparam.rhmc_MD)
+            shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
+            for j=1:N_MD
+                set_wing_fermi!(vec_x[j])
+                updateP_fermi_fromX!(Y,φ,vec_x[j],fparam,
+                    p,mdparams,τ,U,
+                    temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel,coeff=vec_α[j])
+            end
         end
         return
 
