@@ -105,6 +105,10 @@ module System_parameters
         function Params_set(system,actions,md,cg,wilson,staggered,measurement)
             return new(system,actions,md,cg,wilson,staggered,measurement)
         end
+
+        function Params_set(system,actions,md,cg,measurement;wilson=Dict(),staggered=Dict())
+            return new(system,actions,md,cg,wilson,staggered,measurement)
+        end
     end
 
     
