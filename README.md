@@ -94,7 +94,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - HMC (2 flavor Wilson/Clover) with SU(N) with a general gauge action
   - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
   - RHMC (any flavor staggered) with SU(N) for a general gauge action*
-  - <s>SU(N) stout smeared dynamical fermions </s> (This will be supported)
+  - SU(N) stout smeared dynamical fermions (experimental)
   - Fermion integrated HMC with a general gauge action
   - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
   - Self-learning HMC with plaquette action
