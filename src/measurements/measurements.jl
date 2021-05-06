@@ -165,25 +165,25 @@ module Measurements
                     fermiontype = nothing
                 end
                 
-
+                measure_overwrite = "w"
                 if method["methodname"] == "Plaquette"
-                    measurementfps[i] = open(measurement_dir*"/Plaquette.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Plaquette.txt",measure_overwrite)
                 elseif method["methodname"] == "Polyakov_loop"
-                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop.txt",measure_overwrite)
                 elseif method["methodname"] == "Topological_charge"
-                    measurementfps[i] = open(measurement_dir*"/Topological_charge.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Topological_charge.txt",measure_overwrite)
                 elseif method["methodname"] == "Chiral_condensate" 
-                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Chiral_condensate.txt",measure_overwrite)
                     @assert fermiontype != nothing "fermiontype should be set in Chiral_condensate measurement"
                 elseif method["methodname"] == "Pion_correlator" 
-                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Pion_correlator.txt",measure_overwrite)
                     @assert fermiontype != nothing "fermiontype should be set in Pion_correlator measurement"
                 elseif method["methodname"] == "Polyakov_loop_correlator"
-                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop_correlator.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Polyakov_loop_correlator.txt",measure_overwrite)
                 elseif method["methodname"] == "Wilson_loop"
-                    measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/Wilson_loop.txt",measure_overwrite)
                 elseif method["methodname"] == "smeared_Wilson_loop"
-                    measurementfps[i] = open(measurement_dir*"/smeared_Wilson_loop.txt","a")
+                    measurementfps[i] = open(measurement_dir*"/smeared_Wilson_loop.txt",measure_overwrite)
                 elseif method["methodname"] == "integrated_fermion_action"
                     measurementfps[i] = open(measurement_dir*"/Fermion_actions.txt","w")
                 else
