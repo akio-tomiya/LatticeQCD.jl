@@ -3418,7 +3418,13 @@ c-----------------------------------------------------c
         calc_Qmatrix!(Q,staple_nu_set,nu,ρs,U,ix,iy,iz,it,tmp_matrices[2:end])
         B = tmp_matrices[2]
         UdSdU = tmp_matrices[3]
-        trQ2 = tr(Q^2)
+        #trQ2 = tr(Q^2)
+        trQ2 = 0.0
+        for i=1:NC
+            for j=1:NC
+                trQ2 += Q[i,j]*Q[j,i]
+            end
+        end
         if abs(trQ2) > eps_Q
             #println("Q ")
             #display(Q)
