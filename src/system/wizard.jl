@@ -450,7 +450,8 @@ module Wizard
             system["smearing_for_fermion"] = "nothing"
         elseif smearing == 2
             system["smearing_for_fermion"] = "stout"
-            system["stout_numlayers"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+            system["stout_numlayers"] = 1
+            #system["stout_numlayers"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
             if system["stout_numlayers"] == 1
                 kindsof_loops = ["plaquette","rectangular","chair","polyakov_x","polyakov_y","polyakov_z","polyakov_t"]
                 stout_menu = MultiSelectMenu(kindsof_loops)
