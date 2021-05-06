@@ -22,29 +22,37 @@ module Analyze
             trjs = Int64[]
             filename_plaquette = pwd()*"/"*dirname*"/Plaquette.txt"
             filename_polyakov = pwd()*"/"*dirname*"/Polyakov_loop.txt"
-            open(filename_plaquette) do f
-                for i in eachline(f)
-                    if occursin("plaq",i)
-                        tmp = split(i)
-                        itrj = parse(Int,tmp[1])
-                        plaq = parse(Float64,tmp[2])
-                        append!(trjs,itrj)
-                        append!(plaquette,plaq)
+            if isfile(filename_plaquette) 
+                open(filename_plaquette) do f
+                    for i in eachline(f)
+                        if occursin("plaq",i)
+                            tmp = split(i)
+                            itrj = parse(Int,tmp[1])
+                            plaq = parse(Float64,tmp[2])
+                            append!(trjs,itrj)
+                            append!(plaquette,plaq)
+                        end
+                        
                     end
-                    
                 end
+            else
+                println("$filename_plaquette does not exist")
             end
 
-            open(filename_polyakov) do f
-                for i in eachline(f)
-                    if occursin("poly",i)
-                        tmp = split(i)
-                        itrj = parse(Int,tmp[1])
-                        poly = parse(Float64,tmp[2])+im*parse(Float64,tmp[3])
-                        append!(polyakov,poly)
+            if isfile(filename_polyakov) 
+                open(filename_polyakov) do f
+                    for i in eachline(f)
+                        if occursin("poly",i)
+                            tmp = split(i)
+                            itrj = parse(Int,tmp[1])
+                            poly = parse(Float64,tmp[2])+im*parse(Float64,tmp[3])
+                            append!(polyakov,poly)
+                        end
+                        
                     end
-                    
                 end
+            else
+                println("$filename_polyakov does not exist")
             end
 
             return new(plaquette,polyakov,trjs,length(trjs),dirname)
