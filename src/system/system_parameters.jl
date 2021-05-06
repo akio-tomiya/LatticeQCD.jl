@@ -111,6 +111,10 @@ module System_parameters
         end
     end
 
+    function make_parameters(system,actions,md,cg,measurement;wilson=Dict(),staggered=Dict())
+        return Params_set(system,actions,md,cg,measurement,wilson=wilson,staggered=staggered)
+    end
+
     
 
 
