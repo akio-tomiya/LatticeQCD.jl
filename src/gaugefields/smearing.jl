@@ -4,6 +4,7 @@ module Smearing
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add!
     import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!,set_wing!
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
+    import ..Actions:SmearingParam_single,SmearingParam_multi
 
     function add!(a::Array{N,1},α,b::Array{N,1}) where N <: LieAlgebraFields
         for μ=1:4
@@ -233,5 +234,46 @@ module Smearing
         Uout = similar(U)
         calc_fatlink_APE!(Uout,U,α,β,normalize_method=normalize_method,temporal_dir_smear=temporal_dir_smear)
         return Uout
+    end
+
+
+    function calc_multihit!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},β) where NC
+        @assert Uout != U "input U and output U should not be same!"
+        @assert U[1].NC == 2 "NC=2 is required for now but $(U[1].NC)"
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        Q = zeros(ComplexF64,NC,NC)
+        A = zeros(ComplexF64,NC,NC)
+
+        for μ=1:4
+            loops = make_plaq_staple_prime(μ)
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            A .= 0
+                            evaluate_wilson_loops!(A,loops,U,ix,iy,iz,it)
+                            K = sqrt(abs(det(A)))
+
+                            #display(C)
+                            #println("\t")
+
+                            #Ω = ρ*C[:,:]*U[μ][:,:,ix,iy,iz,it]'
+                            #Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)
+                            Uout[μ][:,:,ix,iy,iz,it] = K*inv(A)*besseli(2, β*K)/besseli(1, β*K)
+                            #0  #exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            set_wing!(Uout[μ],ix,iy,iz,it)
+
+                            
+                        end
+                    end
+                end
+            end
+        end
+        #display(Uout[1][:,:,1,1,1,1])
+        return
     end
 end

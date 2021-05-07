@@ -3,10 +3,10 @@ module LieAlgebrafields
     using LinearAlgebra
     import ..Gaugefields:SU3GaugeFields,SU3GaugeFields_1d,SU2GaugeFields,SU2GaugeFields_1d,GaugeFields,
         GaugeFields_1d,make_staple_double!,substitute!,projlink!,set_wing!, evaluate_wilson_loops!,muladd!,
-        SUNGaugeFields_1d,SUNGaugeFields,U1GaugeFields_1d,U1GaugeFields
+        SUNGaugeFields_1d,SUNGaugeFields,U1GaugeFields_1d,U1GaugeFields,evaluate_tensor_lines,SU
     import ..SUN_generator:Generator,lie2matrix!,matrix2lie!
     import ..Gaugefields
-    import ..Actions:GaugeActionParam_autogenerator
+    import ..Actions:GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,SmearingParam
     import ..Wilsonloops:make_plaq_staple_prime,make_plaq_staple
 
     abstract type LieAlgebraFields end
@@ -964,6 +964,137 @@ c----------------------------------------------------------------c
 
             end
         end
+    end
+
+    
+    function stoutfource(dSdU,U,smearing::T)  where T <: SmearingParam_single
+        dSdUnew = deepcopy(dSdU)
+        dSdρs = stoutfource!(dSdUnew,dSdU,U,smearing,smearing.ρs)
+        return dSdUnew,dSdρs
+    end
+
+    #evaluate_tensor_lines!(V,nu,dSdU::Array{T_1d,1},gparam::GaugeActionParam_autogenerator,U::Array{T,1},umu::Tuple{I,I},ix,iy,iz,it) where {T <: GaugeFields,I <: Int,T_1d <: GaugeFields_1d}
+    function stoutfource!(dSdUnew,dSdU,U,smearing::T,ρs)  where T <: SmearingParam
+        #nu = 1
+        #evaluate_tensor_lines(nu,dSdU,smearing,U,(nu,1),ρs)
+        
+
+        #println("stout force!!")
+        #dSdUnew = deepcopy(dSdU)
+
+        dSdρs = zero(ρs)
+        NX=U[1].NX
+        NY=U[1].NY
+        NZ=U[1].NZ
+        NT=U[1].NT
+        NC=U[1].NC
+        V = zeros(ComplexF64,NC,NC)
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        icum = (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix  
+                        for nu=1:4
+                            
+                            #println(ρs)
+                            #V,dSdρs_site = evaluate_tensor_lines_2(nu,dSdU,smearing,U,(nu,1),ix,iy,iz,it,ρs)
+                            V,dSdρs_site = evaluate_tensor_lines(nu,dSdU,smearing,U,(nu,1),ix,iy,iz,it,ρs)
+                            #V = evaluate_tensor_lines_2(nu,dSdU,gparam,U,(nu,1),ρ,ix,iy,iz,it) 
+                            #V = evaluate_SU2_force(nu,dSdU,gparam,U,(nu,1),ρ,ix,iy,iz,it) 
+                            #V = evaluate_tensor_lines(nu,dSdU,gparam,U,(nu,1),ρ,ix,iy,iz,it) 
+                            #println("dSdU\t")
+                            #println("VV", V)
+                            for i=1:NC
+                                for j=1:NC
+                                    dSdUnew[nu][j,i,icum] = V[j,i]
+                                end
+                            end
+                            
+                            @. dSdρs += dSdρs_site
+                            #dSdUnew[nu][:,:,icum] = V2[:,:]
+                            
+                             #=
+                            if nu == 1
+                                if (ix,iy,iz,it) == (1,1,1,1) || (ix,iy,iz,it) ==(1,2,2,2) || (ix,iy,iz,it) ==(2,2,2,2) || (ix,iy,iz,it) ==(4,4,4,4)
+                                    println("x ",(ix,iy,iz,it))
+                                # #=
+                                    println("U ", U[nu][:,:,ix,iy,iz,it])
+                                    
+                                    println("dS[Ufat]/dUfat ")
+                                    display(dSdU[nu][:,:,icum])
+                                    println("\t")
+                                    println("dS[Ufat]/dU ")
+                                    display(dSdUnew[nu][:,:,icum])
+                                    println("\t")
+                                    println("new2")
+                                    #display(V2)
+                                    println("\t")
+                                    println("old")
+                                    display(V)
+                                    println("\t")
+
+                                    #=
+                                    V = evaluate_tensor_lines(nu,dSdU,gparam,U,(nu,1),-ρ,ix,iy,iz,it) 
+                                    #V = evaluate_tensor_lines(nu,dSdU,gparam,U,(nu,1),-ρ,ix,iy,iz,it) 
+                                    println("new")
+                                    display(V)
+                                    println("\t")
+
+                                    V2 = evaluate_tensor_lines_2(nu,dSdU,gparam,U,(nu,1),-ρ,ix,iy,iz,it) 
+                                    println("new2")
+                                    display(V2)
+                                    println("\t")
+                                    =#
+                                    exit()
+                                    
+                                 # =#
+                                end
+                            end
+                             =#
+                            
+                            
+                            
+                            
+                        end
+
+
+                    end
+                end
+            end
+        end
+        #exit()
+
+        return dSdρs
+        #exit()
+        #exit()
+        #return dSdUnew
+    end
+
+    function stoutfource(dSdU,U_multi,U,smearing::T)  where T <: SmearingParam_multi
+        dSdUnew = deepcopy(dSdU)
+        dSdρs = stoutfource!(dSdUnew,dSdU,U_multi,U,smearing)
+        return dSdUnew,dSdρs
+    end
+    
+
+    function stoutfource!(dSdUnew,dSdU,U_multi,U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <:  SmearingParam_multi}
+        num = length(U_multi)
+        dSdU_m = deepcopy(dSdU) 
+        dSdU_m2 = deepcopy(dSdU)
+        dSdρs = deepcopy(smearing.ρs)
+        if num == 1
+            dSdρs[1] = stoutfource!(dSdUnew,dSdU,U,smearing,smearing.ρs[1])
+        else 
+            for i=num:-1:2
+                #println(i)
+                #println(smearing.ρs[i])
+                dSdρs[i] = stoutfource!(dSdU_m2,dSdU_m,U_multi[i-1],smearing,smearing.ρs[i])
+                dSdU_m,dSdU_m2 = dSdU_m2,dSdU_m
+            end
+            dSdρs[1] =stoutfource!(dSdUnew,dSdU_m,U,smearing,smearing.ρs[1])
+        end
+        return dSdρs
+        
     end
 
 end

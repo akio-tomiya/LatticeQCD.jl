@@ -2,8 +2,11 @@ module Gaugefields
     using LinearAlgebra
     using Random
     using JLD
-    import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator
-    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
+    import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,
+                        SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
+    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
+                            Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
+                            get_leftstartposition,get_rightstartposition,Wilson_loop
     import ..SUN_generator:Generator
     
 
@@ -233,6 +236,53 @@ module Gaugefields
         end
     end
 
+    function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1},temps::Array{T_1d,1}) where {S <: SUn,T_1d <: GaugeFields_1d}
+
+        num = length(w)
+        clear!(xout)
+        temp1 = temps[1]
+        temp2 = temps[2]
+        temp3 = temps[3]
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NC = U[1].NC
+
+
+
+        for i=1:num
+            wi = w[i]
+            numloops = length(wi)    
+    
+            shifts = calc_shift(wi)
+            #println("shift ",shifts)
+            
+            loopk = wi[1]
+            k = 1
+            #println("k = $k shift: ",shifts[k])
+            gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
+
+            
+            loopk1_2 = loopk[2]
+            for k=2:numloops
+                loopk = wi[k]
+                #println("k = $k shift: ",shifts[k])
+                #println("gauge_shift!(temp2,$(shifts[k]),$(loopk[1]) )")
+                clear!(temp2)
+                gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+
+                multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+                temp1,temp3 = temp3,temp1
+
+                
+            end
+            add!(xout,temp1)
+            
+        end
+    end
+
     function shift_xyzt(shift,ix,iy,iz,it)
         ix1 = ix + shift[1]
         iy1 = iy + shift[2]
@@ -318,6 +368,144 @@ module Gaugefields
             #add!(xout,temp1)
             
         end
+    end
+
+    function calc_coordinate_shift(loopk,coordinates)
+        if loopk[2] == 1
+            shifts = coordinates
+        elseif loopk[2] == -1
+            if loopk[1] == 1
+                shifts = (coordinates[1]+loopk[2],coordinates[2],coordinates[3],coordinates[4])
+            elseif loopk[1] == 2
+                shifts = (coordinates[1],coordinates[2]+loopk[2],coordinates[3],coordinates[4])
+            elseif loopk[1] == 3
+                shifts = (coordinates[1],coordinates[2],coordinates[3]+loopk[2],coordinates[4])
+            elseif loopk[1] == 4
+                shifts = (coordinates[1],coordinates[2],coordinates[3],coordinates[4]+loopk[2])
+            end
+        end
+
+        if loopk[1] == 1
+            coordinates = (coordinates[1]+loopk[2],coordinates[2],coordinates[3],coordinates[4])
+        elseif loopk[1] == 2
+            coordinates = (coordinates[1],coordinates[2]+loopk[2],coordinates[3],coordinates[4])
+        elseif loopk[1] == 3
+            coordinates = (coordinates[1],coordinates[2],coordinates[3]+loopk[2],coordinates[4])
+        elseif loopk[1] == 4
+            coordinates = (coordinates[1],coordinates[2],coordinates[3],coordinates[4]+loopk[2])
+        end
+
+        return coordinates,shifts
+    end
+
+
+    function evaluate_wilson_loops!(V,w::Wilson_loop_set,U::Array{GaugeFields{SU{NC}},1},ix,iy,iz,it,temps) where NC
+        num = length(w)
+
+        V .= 0 #zeros(ComplexF64,NC,NC)
+        temp1 = temps[1]
+        temp2 = temps[2]
+        temp3 = temps[3]
+        temp1 .= 0
+        temp2 .= 0
+        temp3 .= 0
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NDW = U[1].NDW
+        #NC = U[1].NDW
+
+
+
+        for i=1:num
+            wi = w[i]
+            numloops = length(wi)    
+            #println("d")
+            #@time coordinates = calc_coordinate(wi)
+            #println("positions ",coordinates)     
+
+
+
+
+            #shifts = calc_shift(wi)
+            #println("shift ",shifts)
+            
+            loopk = wi[1]
+
+
+            
+            coordinates = wi.origin
+
+            coordinates,shifts2 = calc_coordinate_shift(loopk,coordinates)
+            #println(shifts)
+            #println(shifts[1],"\t",shifts2)
+
+            
+            
+            
+            
+
+
+            #println("d3")
+
+            ix1,iy1,iz1,it1 = shift_xyzt(shifts2,ix,iy,iz,it)
+
+            #ix1,iy1,iz1,it1 = shift_xyzt(shifts[1],ix,iy,iz,it)
+            #ix1,iy1,iz1,it1 = shift_xyzt(shifts,ix,iy,iz,it)
+            #println("d4")
+            ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+
+            #println("d5")
+            for k=1:NC
+                for j=1:NC
+                    temp1[j,k] = U[loopk[1]][j,k,ix1,iy1,iz1,it1]
+                end
+            end
+            #println("t ",temp1)
+
+
+            loopk1_2 = loopk[2]
+
+            #gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
+            for k=2:numloops
+                loopk = wi[k]
+                
+                #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+                #println("d6")
+
+                coordinates,shifts2 = calc_coordinate_shift(loopk,coordinates)
+
+                #println(shifts[k],"\t",shifts2)
+
+                ix1,iy1,iz1,it1 = shift_xyzt(shifts2,ix,iy,iz,it)
+                
+                #ix1,iy1,iz1,it1 = shift_xyzt(shifts[k],ix,iy,iz,it)
+                #ix1,iy1,iz1,it1 = shift_xyzt(shifts,ix,iy,iz,it)
+                #println("d7")
+                ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+                
+                #println("d8")
+                for k=1:NC
+                    for j=1:NC
+                        temp2[j,k] = U[loopk[1]][j,k,ix1,iy1,iz1,it1]
+                    end
+                end
+
+                #@time temp2[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
+
+                #println("d9")
+                multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+
+                #println("d10")
+                temp1,temp3 = temp3,temp1
+            end
+            @. V += temp1
+            #add!(xout,temp1)
+            
+        end
+        #exit()
     end
 
 
@@ -924,6 +1112,38 @@ module Gaugefields
 
     end
 
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::GaugeFields{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
+
+
+        NV=a.NV
+        NT = a.NT
+        NZ = a.NZ
+        NY = a.NY
+        NX = a.NX
+        #NC = b.NC
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i= (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                c[k1,k2,i] = 0
+                                @simd for k3=1:NC
+                                    c[k1,k2,i] += a[k1,k3,ix,iy,iz,it]*b[k3,k2,i]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        
+
+    end
+
 
 
     function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::GaugeFields_1d{T},b::GaugeFields_1d{T}) where T <: SU3
@@ -1208,6 +1428,132 @@ module Gaugefields
 
     end
 
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},Udag::Adjoint_GaugeFields{SU{NC}}) where NC #Udag*c
+        NV=c.NV
+        NT = Udag.parent.NT
+        NZ = Udag.parent.NZ
+        NY = Udag.parent.NY
+        NX = Udag.parent.NX
+        #NC = b.NC
+        #println(NC)
+        tmp = zeros(ComplexF64,NC,NC)
+
+
+        
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i= (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                tmp[k1,k2] = 0
+                                @simd for k3=1:NC
+                                    tmp[k1,k2] += conj(Udag.parent[k3,k1,ix,iy,iz,it])*c[k3,k2,i]
+                                end
+                            end
+                        end
+                        @. c[:,:,i] = tmp[:,:]
+                    end
+                end
+            end
+        end
+
+
+    end
+
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},U::GaugeFields{SU{NC}}) where NC #U*c
+        NV=c.NV
+        NT = U.NT
+        NZ = U.NZ
+        NY = U.NY
+        NX = U.NX
+        #NC = b.NC
+        #println(NC)
+        tmp = zeros(ComplexF64,NC,NC)
+
+
+        
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i= (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                tmp[k1,k2] = 0
+                                @simd for k3=1:NC
+                                    tmp[k1,k2] += U[k1,k3,ix,iy,iz,it]*c[k3,k2,i]
+                                end
+                            end
+                        end
+                        @. c[:,:,i] = tmp[:,:]
+                    end
+                end
+            end
+        end
+
+
+    end
+
+
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Adjoint_GaugeFields{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
+
+        NV=c.NV
+        #NC=c.NC
+
+        NT = a.parent.NT
+        NZ = a.parent.NZ
+        NY = a.parent.NY
+        NX = a.parent.NX
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        i= (((it-1)*NZ+iz-1)*NY+iy-1)*NX+ix
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                c[k1,k2,i] = 0
+                                @simd for k3=1:NC
+                                    c[k1,k2,i] += conj(a.parent[k3,k1,ix,iy,iz,it])*b[k3,k2,i]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+
+    end
+
+
+    function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Adjoint_GaugeFields_1d{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
+
+        NV=c.NV
+        #NC=c.NC
+
+
+        for i=1:NV
+            #mulabc!(a,b,c,i)
+            
+    
+            for k2=1:NC                            
+                for k1=1:NC
+                    c[k1,k2,i] = 0
+                    @simd for k3=1:NC
+                        c[k1,k2,i] += conj(a.parent[k3,k1,i])*b[k3,k2,i]
+                    end
+                end
+            end
+            
+                        
+        end
+
+    end
+
+
     function LinearAlgebra.mul!(c::GaugeFields_1d{T},a::Adjoint_GaugeFields_1d{T},b::GaugeFields_1d{T}) where T <: SU3
         NV=c.NV
         #NC=c.NC
@@ -1303,7 +1649,7 @@ module Gaugefields
 
     end
 
-    function muladd!(c::GaugeFields_1d{SU{NC}},α::Number,a::GaugeFields_1d{SU{NC}}) where NC
+    function muladd!(c::GaugeFields_1d{SU{NC}},α::T,a::GaugeFields_1d{SU{NC}}) where {NC,T <: Number}
 
         NV=c.NV
 
@@ -2630,8 +2976,1326 @@ c-----------------------------------------------------c
         end
     end
 
+    function get_insertposition(tensor,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+        ix1 = ix + tensor.position[1]
+        iy1 = iy + tensor.position[2]
+        iz1 = iz + tensor.position[3]
+        it1 = it + tensor.position[4]
+        ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+        return ix1,iy1,iz1,it1
+    end
+
+    function calc_coordinate_tensor(w,origin)
+        numloops = length(w)
+        coordinates = Array{NTuple{4,Int8},1}(undef,numloops)
+        if numloops == 1
+            coordinates[1] = origin
+        end
+        
+        for k=1:numloops-1
+            if k == 1
+                coordinates[k] = origin
+            end
+            loopk = w[k]
+            if loopk[1] == 1
+                coordinates[k+1] = (coordinates[k][1]+loopk[2],coordinates[k][2],coordinates[k][3],coordinates[k][4])
+            elseif loopk[1] == 2
+                coordinates[k+1] = (coordinates[k][1],coordinates[k][2]+loopk[2],coordinates[k][3],coordinates[k][4])
+            elseif loopk[1] == 3
+                coordinates[k+1] = (coordinates[k][1],coordinates[k][2],coordinates[k][3]+loopk[2],coordinates[k][4])
+            elseif loopk[1] == 4
+                coordinates[k+1] = (coordinates[k][1],coordinates[k][2],coordinates[k][3],coordinates[k][4]+loopk[2])
+            end
+        end
+        return coordinates
+    end
+
+    function evaluate_tensor_matrix!(temp2,temp3,U,tensorlist,origin,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+
+        # #=
+        wi = tensorlist
+        
+        numloops = length(wi)    
+        #println(wi)
+        coordinates = calc_coordinate_tensor(wi,origin)
+        shifts = calc_shift_tensor(wi,origin)
+
+        #println("coordinates ",coordinates)
+        #println("shift ",shifts)
+       
+        #exit()
+        loopk = wi[1]
+        ix1,iy1,iz1,it1 = shift_xyzt(shifts[1],ix,iy,iz,it)
+        ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+
+        
+        matrixout= U[loopk[1]][:,:,ix1,iy1,iz1,it1]
+
+        loopk1_2 = loopk[2]
+
+        
+
+        if numloops == 1
+            if loopk1_2 == -1
+                matrixout[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]'
+            end
+            #println("matrixout 1 ",matrixout)
+        else
+            #println("matrixout 2 ",matrixout)
+            #gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
+            for k=2:numloops
+                loopk = wi[k]
+                
+                #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+                ix1,iy1,iz1,it1 = shift_xyzt(shifts[k],ix,iy,iz,it)
+                ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+                #println(loopk[1])
+                
+                temp2[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
+                #println("temp2 ",temp2)
+
+                multiply_12!(temp3,matrixout,temp2,k,loopk,loopk1_2)
+
+                matrixout,temp3 = temp3,matrixout
+            end
+        end
+
+        return  matrixout
+
+        
+    end
+
+    function calc_shift_tensor(w,origin)
+        numloops = length(w)
+        coordinates = calc_coordinate_tensor(w,origin)
+        shifts = Array{NTuple{4,Int8},1}(undef,numloops)
+        for k=1:numloops
+            loopk = w[k]
+            if loopk[2] == 1
+                shifts[k] = coordinates[k]
+            elseif loopk[2] == -1
+                if loopk[1] == 1
+                    shifts[k] = (coordinates[k][1]+loopk[2],coordinates[k][2],coordinates[k][3],coordinates[k][4])
+                elseif loopk[1] == 2
+                    shifts[k] = (coordinates[k][1],coordinates[k][2]+loopk[2],coordinates[k][3],coordinates[k][4])
+                elseif loopk[1] == 3
+                    shifts[k] = (coordinates[k][1],coordinates[k][2],coordinates[k][3]+loopk[2],coordinates[k][4])
+                elseif loopk[1] == 4
+                    shifts[k] = (coordinates[k][1],coordinates[k][2],coordinates[k][3],coordinates[k][4]+loopk[2])
+                end
+            end
+        end
+        return shifts
+    end
+
+    function evaluate_tensor_matrix!(matrixout,temp2,temp3,U::Array{GaugeFields{SU{NC}}},tensorlist,origin,ix,iy,iz,it,NX,NY,NZ,NT,NDW) where NC
+
+        # #=
+        wi = tensorlist
+        
+        numloops = length(wi)    
+        #println(wi)
+        coordinates = calc_coordinate_tensor(wi,origin)
+        shifts = calc_shift_tensor(wi,origin)
+
+        #println("coordinates ",coordinates)
+        #println("shift ",shifts)
+       
+        #exit()
+        loopk = wi[1]
+        ix1,iy1,iz1,it1 = shift_xyzt(shifts[1],ix,iy,iz,it)
+        ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+
+        for i=1:NC
+            for j=1:NC
+                matrixout[j,i]= U[loopk[1]][j,i,ix1,iy1,iz1,it1]
+            end
+        end
+
+        loopk1_2 = loopk[2]
+
+        
+
+        if numloops == 1
+            if loopk1_2 == -1
+                for i=1:NC
+                    for j=1:NC
+                        matrixout[j,i]= conj(U[loopk[1]][i,j,ix1,iy1,iz1,it1])
+                    end
+                end
+
+                #matrixout[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]'
+            end
+            #println("matrixout 1 ",matrixout)
+        else
+            #println("matrixout 2 ",matrixout)
+            #gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
+            for k=2:numloops
+                loopk = wi[k]
+                
+                #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+                ix1,iy1,iz1,it1 = shift_xyzt(shifts[k],ix,iy,iz,it)
+                ix1,iy1,iz1,it1 =periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+                #println(loopk[1])
+
+                for i=1:NC
+                    for j=1:NC
+                        temp2[j,i]= U[loopk[1]][j,i,ix1,iy1,iz1,it1]
+                    end
+                end
+                
+                #temp2[:,:] = U[loopk[1]][:,:,ix1,iy1,iz1,it1]
+                #println("temp2 ",temp2)
+
+                multiply_12!(temp3,matrixout,temp2,k,loopk,loopk1_2)
+
+                #matrixout,temp3 = temp3,matrixout
+                for i=1:NC
+                    for j=1:NC
+                        matrixout[j,i]= temp3[j,i]
+                    end
+                end
+
+            end
+        end
+
+        #return  matrixout
+
+        
+    end
+
+    function evaluate_tensor!(leftmatrix,rightmatrix,tensor::Tensor_wilson_lines,U::Array{GaugeFields{SU{NC}},1},ix,iy,iz,it,mat_tmps) where NC
+        #println(tensor.left)
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NDW = U[1].NDW
+        #NC = U[1].NC
+        #leftmatrix .= 0 
+        #rightmatrix .= 0
+        
+        temp1 = mat_tmps[1] #zeros(ComplexF64,NC,NC)
+        temp2 = mat_tmps[2] #zero(temp1)
+        temp3 = mat_tmps[3] #zero(temp1)
+        
+        loopk1_2 = (0,0)
+
+        if tensor.left[1] == (0,0)
+            #leftmatrix = zero(temp1)
+            leftmatrix .=  0 #zero(temp1)
+            for i=1:NC 
+                leftmatrix[i,i] = 1
+            end
+            #println(leftmatrix)
+        else
+            leftstart = get_leftstartposition(tensor)
+            #println(tensor.left)
+            evaluate_tensor_matrix!(leftmatrix,temp2,temp3,U,tensor.left,leftstart,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+            #leftmatrix = evaluate_tensor_matrix!(temp2,temp3,U,tensor.left,leftstart,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+        end
+        #println("left")
+        #println(leftmatrix)
+
+        if tensor.right[1] == (0,0)
+            rightmatrix .= 0#zero(temp1)
+            #rightmatrix = zero(temp1)
+            for i=1:NC 
+                rightmatrix[i,i] = 1
+            end
+            #println(rightmatrix)
+        else
+            #println("right")
+            #println(tensor.right)
+            rightstart = get_rightstartposition(tensor)
+            evaluate_tensor_matrix!(rightmatrix,temp2,temp3,U,tensor.right,rightstart,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+            #rightmatrix = evaluate_tensor_matrix!(temp2,temp3,U,tensor.right,rightstart,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+        end
+        #println("right")
+        #println(rightmatrix)
+        return #leftmatrix,rightmatrix
+        
+    
+    end
+
+    function calc_Qmatrix(staple_nu_set,nu,ρs,U,NC,ix,iy,iz,it)
+        C = zeros(ComplexF64,NC,NC)
+        Ctmp = zeros(ComplexF64,NC,NC)
+        
+        #evaluate_wilson_loops!(C,loops,U,ix,iy,iz,it)
+        for i=1:length(ρs)
+            Ctmp .= 0
+            evaluate_wilson_loops!(Ctmp,staple_nu_set[i][nu],U,ix,iy,iz,it)
+            C[:,:] .+= ρs[i]*Ctmp[:,:] 
+            
+
+        end
+        #Ω = ρ*C[:,:]*U[nu][:,:,ix,iy,iz,it]'
+        #if (ix,iy,iz,it) == (2,2,2,2) && nu == 1
+        #    println("ρs = ",ρs)
+        #    println("C")
+        #    display(C)
+        #    println("\t")
+        #end
+
+        Ω = C[:,:]*U[nu][:,:,ix,iy,iz,it]'
+        if NC == 1
+            #Q .= (-1/2)*(Ω' .- Ω)
+            #Q .= (1/2)*(Ω' .- Ω)
+            #Q = (Ω' .- Ω)
+            Q = -(Ω' .- Ω)
+        else
+            trterm =-(1/(2NC))*tr(Ω' - Ω)
+            Q = -(1/2)*(Ω' - Ω) 
+            for i=1:NC
+                Q[i,i] += trterm
+            end
+            #+ (1/(2NC))*tr(Ω' - Ω)*I0_2
+            #Q = (1/2)*(Ω' - Ω) - (1/(2NC))*tr(Ω' - Ω)*I0_2
+        end
+        return Q
+    end
+    
+    function calc_Qmatrix!(Q,staple_nu_set,nu,ρs,U::Array{GaugeFields{SU{NC}},1},ix,iy,iz,it,tmp_matrices) where NC
+        C = tmp_matrices[1] #zeros(ComplexF64,NC,NC)
+        Ctmp = tmp_matrices[2] #zeros(ComplexF64,NC,NC)
+        Ω = tmp_matrices[3]
+        
+        
+        #evaluate_wilson_loops!(C,loops,U,ix,iy,iz,it)
+        C .= 0
+        for i=1:length(ρs)
+            Ctmp .= 0
+            #evaluate_wilson_loops!(Ctmp,staple_nu_set[i][nu],U,ix,iy,iz,it)
+            evaluate_wilson_loops!(Ctmp,staple_nu_set[i][nu],U,ix,iy,iz,it,tmp_matrices[4:6])
+
+            C[:,:] .+= ρs[i]*Ctmp #[:,:] 
+        end
+
+        for i=1:NC
+            for j=1:NC
+                tmp_matrices[4][j,i] = conj(U[nu][i,j,ix,iy,iz,it])
+            end
+        end
+
+        #mul!(Ω,C,U[nu][:,:,ix,iy,iz,it]')
+        mul!(Ω,C,tmp_matrices[4])
+        #Ω = C[:,:]*U[nu][:,:,ix,iy,iz,it]'
+        if NC == 1
+            #Q .= (-1/2)*(Ω' .- Ω)
+            #Q .= (1/2)*(Ω' .- Ω)
+            #Q = (Ω' .- Ω)
+            Q[:,:] = -(Ω' .- Ω)
+        #elseif NC == 2
+        else
+
+            @. Q[:,:] = -(1/2)*(Ω' - Ω)
+            #tr1 = (1/(2NC))*tr(Ω')
+            tr2 = (1/(2NC))*tr(Ω)
+            for i=1:NC
+                Q[i,i] += conj(tr2)-tr2
+                #Q[i,i] += tr1-tr2
+            end
+            #Q = -(1/2)*(Ω' - Ω) + (1/(2NC))*tr(Ω' - Ω)*I0_2
+            #Q = (1/2)*(Ω' - Ω) - (1/(2NC))*tr(Ω' - Ω)*I0_2
+        end
+        return 
+        #return Q
+    end
+
+    function calc_Bmatrix(q,Q,NC)
+
+        #q = sqrt((-1/2)*tr(Q^2))
+        B = -(-sin(q)*I0_2 +(cos(q)/q -sin(q)/q^2 )*Q)*(1/2q)
+    end
+
+    function calc_Bmatrix!(B,q,Q,NC)
+        @assert NC == 2 "NC should be 2! now $NC"
+        mul!(B,cos(q)/q -sin(q)/q^2,Q)
+        for i=1:NC
+            B[i,i] += -sin(q)
+        end
+        B .*= -1/2q
+        #B[:,:] .= (cos(q)/q -sin(q)/q^2 )*Q
+
+        #q = sqrt((-1/2)*tr(Q^2))
+        #B = -(-sin(q)*I0_2 +(cos(q)/q -sin(q)/q^2 )*Q)*(1/2q)
+    end
+
+    const eps_Q = 1e-18
+    const I0_1 = zeros(1,1) .+ 1
+    const I0_2 = [1 0;0 1]
 
 
 
+    function calc_coefficients_Q(Q)
+        @assert size(Q) == (3,3)
+        c0 = Q[1,1]*Q[2,2]*Q[3,3]+Q[1,2]*Q[2,3]*Q[3,1]+Q[1,3]*Q[2,1]*Q[3,2]-Q[1,3]*Q[2,2]*Q[3,1]-Q[1,2]*Q[2,1]*Q[3,3]-Q[1,1]*Q[2,3]*Q[3,2]
+        #@time cdet = det(Q)
+        ##println(c0,"\t",cdet)
+        #exit() 
+        
+        c1 = 0.0
+        for i=1:3
+            for j=1:3
+                c1 += Q[i,j]*Q[j,i]
+            end
+        end
+        c1 /= 2
+        c0max = 2*(c1/3)^(3/2)
+        θ = acos(c0/c0max)
+        u = sqrt(c1/3)*cos(θ/3)
+        w = sqrt(c1)*sin(θ/3)
+        ξ0 = sin(w)/w
+        ξ1 = cos(w)/w^2 - sin(w)/w^3
 
+        emiu = exp(-im*u)
+        e2iu = exp(2*im*u)
+
+        h0 = (u^2-w^2)*e2iu + emiu*(
+            8u^2*cos(w)+2*im*u*(3u^2+w^2)* ξ0
+        )
+        h1 = 2u*e2iu-emiu*(
+            2u*cos(w)-im*(3u^2-w^2)* ξ0
+        )
+        h2 = e2iu - emiu*(cos(w)+3*im*u*ξ0)
+
+        denom = 9u^2-w^2
+        
+        f0 = h0/denom
+        f1 = h1/denom
+        f2 = h2/denom
+
+        r10 = 2*(u+im*(u^2-w^2))*e2iu + 
+                2*emiu*(
+                    4u*(2-im*u)*cos(w) + 
+                    im*(9u^2+w^2-im*u*(3u^2+w^2))*ξ0
+                )
+        r11 = 2*(1+2*im*u)*e2iu+ 
+                emiu*(
+                    -2*(1-im*u)*cos(w)+
+                    im*(6u+im*(w^2-3u^2))*ξ0
+                )
+        r12 = 2*im*e2iu + im*emiu*(
+            cos(w) -3*(1-im*u)*ξ0
+        )
+        r20 = -2*e2iu+2*im*u*emiu*(
+            cos(w)+(1+4*im*u)*ξ0+3u^2*ξ1
+        )
+        r21 = -im*emiu*(
+            cos(w)+(1+2*im*u)*ξ0 - 
+            3*u^2*ξ1
+        )
+        r22 = emiu*(
+            ξ0-3*im*u*ξ1
+        )
+        b10 = (
+            2*u*r10+(3u^2-w^2)*r20 - 2*(15u^2+w^2)*f0
+            )/(
+                2*denom^2
+            )
+        
+        b11 = (
+                2*u*r11+(3u^2-w^2)*r21 - 2*(15u^2+w^2)*f1
+                )/(
+                    2*denom^2
+                )
+        b12 = (
+            2*u*r12+(3u^2-w^2)*r22 - 2*(15u^2+w^2)*f2
+            )/(
+                2*denom^2
+            )
+        b20 = (
+            r10 - 3*u*r20 - 24*u*f0
+            )/(2*denom^2)
+        b21 = (
+                r11 - 3*u*r21 - 24*u*f1
+                )/(2*denom^2)
+        b22 = (
+            r12 - 3*u*r22 - 24*u*f2
+            )/(2*denom^2)
+
+        return f0,f1,f2,b10,b11,b12,b20,b21,b22
+    end
+
+
+    function calc_Mmatrix!(M,dSdUnu,staple_nu_set,nu,ρs,U::Array{GaugeFields{SU{NC}},1},ix,iy,iz,it,tmp_matrices) where NC
+        #M = zeros(ComplexF64,NC,NC)
+        Q = tmp_matrices[1]
+        #println("Q in M")
+        #@time Q = calc_Qmatrix(staple_nu_set,nu,ρs,U,NC,ix,iy,iz,it)
+        calc_Qmatrix!(Q,staple_nu_set,nu,ρs,U,ix,iy,iz,it,tmp_matrices[2:end])
+        B = tmp_matrices[2]
+        UdSdU = tmp_matrices[3]
+        #trQ2 = tr(Q^2)
+        trQ2 = 0.0
+        for i=1:NC
+            for j=1:NC
+                trQ2 += Q[i,j]*Q[j,i]
+            end
+        end
+        if abs(trQ2) > eps_Q
+            #println("Q ")
+            #display(Q)
+            #println("\t")
+            if NC == 2
+                q = sqrt((-1/2)*trQ2)
+                calc_Bmatrix!(B,q,Q,NC)
+                #println(B)
+
+                #B = calc_Bmatrix(q,Q,NC)
+                #println(B)
+                #exit()
+                #println("B = ",B)
+                #Unu = U[nu][:,:,ix,iy,iz,it]
+                
+
+                for i=1:NC
+                    for j=1:NC
+                        tmp_matrices[4][j,i] = U[nu][j,i,ix,iy,iz,it]
+                    end
+                end
+
+                mul!(UdSdU,tmp_matrices[4],dSdUnu)
+                #println("Q in M ",Q)
+                #println("q in M ",q)
+                #M[:,:] = tr(Unu*dSdUnu*B)*Q + (sin(q)/q)*Unu*dSdUnu
+                #M[:,:] = (sin(q)/q)*UdSdU
+                trsum = 0.0im
+                for i=1:NC
+                    for j=1:NC
+                        trsum += UdSdU[i,j]*B[j,i]
+                    end
+                end
+                #M[:,:] .+= trsum*Q
+
+                for i=1:NC
+                    for j=1:NC
+                        M[j,i] = (sin(q)/q)*UdSdU[j,i] + trsum*Q[j,i]
+                    end
+                end
+                
+                
+
+                #M[:,:] = tr(Unu*dSdUnu*B)*Q + (sin(q)/q)*Unu*dSdUnu
+                #Q = calc_Qmatrix(staple_nu,nu,ρ,U,NC,ix,iy,iz,it)
+            elseif NC == 3
+                Q ./= im
+                f0,f1,f2,b10,b11,b12,b20,b21,b22 = calc_coefficients_Q(Q)
+                #
+                
+                #=
+                println(exp(Q))
+                expQ = zero(Q)
+                for i=1:NC
+                    expQ[i,i] =f0
+                end
+                expQ += f1*Q + f2*Q^2
+                println(expQ)
+                exit()
+                =#
+
+                for i=1:NC
+                    for j=1:NC
+                        tmp_matrices[4][j,i] = U[nu][j,i,ix,iy,iz,it]
+                    end
+                end
+                mul!(UdSdU,tmp_matrices[4],dSdUnu)
+
+                #B1 += b11*Q + b12*Q^2
+                #B2 += b21*Q + b22*Q^2
+                
+                #println(B1)
+
+                B1 = tmp_matrices[2]
+                B1 .= 0
+                B2 = tmp_matrices[4]
+                B2 .= 0
+                for i=1:NC
+                    B1[i,i] = b10
+                    B2[i,i] = b20
+                end
+                for j=1:NC
+                    for i=1:NC
+                        B1[i,j] += b11*Q[i,j]
+                        B2[i,j] += b21*Q[i,j]
+                        for k=1:NC  
+                            B1[i,j] += b12*Q[i,k]*Q[k,j]
+                            B2[i,j] += b22*Q[i,k]*Q[k,j]
+                        end
+                    end
+                end
+                #println(B1)
+                
+
+
+                #@time trB1 = tr(UdSdU*B1)
+                #println(trB1)
+                trB1 = 0.0
+                trB2 = 0.0
+                for i=1:NC
+                    for j=1:NC
+                        trB1 += UdSdU[i,j]*B1[j,i]
+                        trB2 += UdSdU[i,j]*B2[j,i]
+                    end
+                end
+                #println(trB1)
+                #@time trB2 = tr(UdSdU*B2)
+                
+                #@time M[:,:] = (trB1*Q + trB2*Q^2 + f1*UdSdU+f2*(Q*UdSdU+UdSdU*Q))/im
+                
+
+                for j=1:NC
+                    for i=1:NC
+                        M[i,j] = trB1*Q[i,j] + f1*UdSdU[i,j]
+                        for k=1:NC  
+                            M[i,j] += trB2*Q[i,k]*Q[k,j]+f2*(Q[i,k]*UdSdU[k,j]+UdSdU[i,k]*Q[k,j])
+                        end
+                    end
+                end
+                M ./= im
+                #println(M)
+
+
+                #exit()
+            elseif NC == 1
+                M[:,:] = U[nu][:,:,ix,iy,iz,it]*dSdUnu*exp.(Q)
+            else
+
+                
+
+                #=
+                @time begin
+                M .= 0
+                A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                nmax = 3
+                for n=1:nmax
+                    fn = factorial(n)
+                    for m=0:n-1
+                        M += Q^(n-1-m)*A*Q^m/fn
+                    end
+                end
+                println(M)
+                end
+                =#
+                
+                e,v = eigen(Q) #
+
+                #=
+
+                A = tmp_matrices[4]
+                A .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for l=1:NC
+                            A[j,i] += U[nu][j,l,ix,iy,iz,it]*dSdUnu[l,i]
+                        end
+                    end
+                end
+                B .= 0
+                for i=1:NC
+                    for j=1:NC
+                        B[j,i] += conj(v[j])*A[j,i]*v[i]
+                    end
+                end
+                =#
+
+                for i=1:NC
+                    for j=1:NC
+                        tmp_matrices[4][j,i] = U[nu][j,i,ix,iy,iz,it]
+                    end
+                end
+                mul!(UdSdU,tmp_matrices[4],dSdUnu)
+
+
+                #=
+                A = tmp_matrices[4]
+                A .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for l=1:NC
+                            A[j,i] += U[nu][j,l,ix,iy,iz,it]*dSdUnu[l,i]
+                        end
+                    end
+                end
+                =#
+                mul!(tmp_matrices[4],UdSdU,v)
+                mul!(B,v',tmp_matrices[4])
+                
+                #=
+                B .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for k=1:NC
+                            for l=1:NC
+                                B[j,i] += conj(v[l,j])*UdSdU[l,k]*v[k,i]
+                            end
+                        end
+                    end
+                end
+                =#
+                
+                #println(B)
+                #println(A)
+
+                #A = U[nu][:,:,ix,iy,iz,it]*dSdUnu
+                #println(A)
+                #B = v'*A*v
+
+                #println(B)
+                #exit()
+                #println(e)
+                #M0 = zero(M)
+                tmp_matrices[4] .= 0
+                #M0 .= 0
+
+                nmax = 3
+                for n=1:nmax
+                    fn = factorial(n)
+                    for l=1:NC
+                        for k=1:NC
+                            factor = B[k,l]*e[k]^(n-1)/fn
+                            elek = e[l]/e[k]
+                            for m=0:n-1
+                                tmp_matrices[4][k,l] += elek^m*factor
+                            end
+                        end
+                    end
+                    #println("n = $n")
+                    #display(v*M0*v')
+                    #println("\t")
+                end
+                #M = deepcopy(M0)
+                #=
+                M .= 0
+                for i=1:NC
+                    for j=1:NC
+                        M[j,i] += v[j]*M0[j,i]*conj(v[i])
+                    end
+                end
+                =#
+                #M[:,:] = v*M0*v'
+                #println(M)
+
+                mul!(UdSdU,tmp_matrices[4],v')
+                mul!(M,v,UdSdU)
+                
+
+
+
+                #println("M = ",M)
+                #println("Mtest = ",Mtest)
+                #exit()
+
+                #=
+                M .= 0
+                for i=1:NC
+                    for j=1:NC
+                        for k=1:NC
+                            for l=1:NC
+                                M[j,i] += v[j,l]*tmp_matrices[4][l,k]*conj(v[i,k])
+                            end
+                        end
+                    end
+                end
+                =#
+                #println(M)
+                #exit()
+                
+
+                
+
+
+                #error("not supoorted yet")
+            end
+        else
+            mul!(M,U[nu][:,:,ix,iy,iz,it],dSdUnu)
+            #M[:,:] =  U[nu][:,:,ix,iy,iz,it]*dSdUnu
+        end
+
+        #return
+
+        #println("M")
+        #display(M)
+        #println("\t")
+        
+
+        
+        
+
+
+        #exit()
+
+
+
+        return 
+        #return M
+    end
+
+
+    function calc_matrix_tensors!(leftmatrix,rightmatrix,tensor,U,ix,iy,iz,it,mat_tmps)
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NDW = U[1].NDW
+        evaluate_tensor!(leftmatrix,rightmatrix,tensor,U,ix,iy,iz,it,mat_tmps) 
+        ix1,iy1,iz1,it1 = get_insertposition(tensor,ix,iy,iz,it,NX,NY,NZ,NT,NDW)
+        #display(tensor)
+        #println("insert ", ix1,iy1,iz1,it1)
+        return  ix1,iy1,iz1,it1
+    end
+
+    function get_1dindex(ix,iy,iz,it,NX,NY,NZ,NT)
+        #println("before ",(ix,iy,iz,it))
+
+        ix1 = ix + ifelse(ix < 1,NX,0) + ifelse(ix > NX,-NX,0)
+        iy1 = iy + ifelse(iy < 1,NY,0) + ifelse(iy > NY,-NY,0)
+        iz1 = iz + ifelse(iz < 1,NZ,0) + ifelse(iz > NZ,-NZ,0)
+        it1 = it + ifelse(it < 1,NT,0) + ifelse(it > NT,-NT,0)
+
+        #println("after ",(ix1,iy1,iz1,it1))
+
+        icum = (((it1-1)*NZ+iz1-1)*NY+iy1-1)*NX+ix1 
+
+        #println("1d index ", icum)
+
+        return icum
+    end
+
+    function calc_Λmatrix!(Λ,M,NC)
+        #println("M= ", M)
+        if NC == 1
+            #Λ = -(M - M')
+            @. Λ[:,:] = (M - M')
+        elseif NC == 2
+            #Λ = (1/2)*(M - M') - (1/(2NC))*tr(M - M')*I0_2
+            @. Λ[:,:] = (1/2)*(M - M')
+            trM = (1/(2NC))*(M[1,1]-conj(M[1,1]) + M[2,2] - conj(M[2,2]))#  tr(M - M')
+            #trM = (1/(2NC))*tr(M - M')
+            for i=1:NC
+                Λ[i,i] += - trM
+            end
+            #Λ = 2*Λ
+        else
+            @. Λ[:,:] = (1/2)*(M - M')
+            trM = (1/(2NC))*tr(M - M')
+            for i=1:NC
+                Λ[i,i] += - trM
+            end
+        end
+        #display(Λ)
+        #println("\t")
+        #exit()
+        return 
+#        return Λ
+    end
+
+    function evaluate_tensor_lines(mu,dSdU::Array{T_1d,1},smearing,U::Array{GaugeFields{SU{NC}},1},umu::Tuple{I,I},ix,iy,iz,it,ρs) where {NC,I <: Int,T_1d <: GaugeFields_1d}
+        
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        NDW = U[1].NDW
+        #NC = U[1].NC
+        V = zeros(ComplexF64,NC,NC)
+        Λ = zero(V)
+        M = zero(V)
+        tmpmat = zero(V)
+        leftmatrix = zero(V)
+        rightmatrix = zero(V)
+        dSdUnu = zero(V)
+        n = 7
+        tmp_matrices = Array{Array{ComplexF64,2},1}(undef,n)
+        for i=1:n
+            tmp_matrices[i] = zero(V)
+        end
+
+        t = smearing.tensor_derivative
+        num = length(t)
+        #ρs = smearing.ρs
+
+
+        for i=1:num
+            Ti = t[i]
+            for nu=1:4
+                #staple_nu = gparam.smearing.staples_for_stout[nu]
+                staple_nu_set = smearing.staples_for_stout
+                timu = Ti[nu]
+
+                #println((ix,iy,iz,it))
+
+                for (k,timu_k) in enumerate(timu)
+                    if haskey(timu_k,umu)
+                        timuumu = timu_k[umu]
+                        for m =1:length(timuumu)
+                            tensor = timuumu[m]
+                            #println("tensors")
+                            #leftmatrix,rightmatrix,ix1,iy1,iz1,it1 = calc_matrix_tensors(tensor,U,ix,iy,iz,it)
+                            ix1,iy1,iz1,it1 = calc_matrix_tensors!(leftmatrix,rightmatrix,tensor,U,ix,iy,iz,it,tmp_matrices)
+                            icum = get_1dindex(ix1,iy1,iz1,it1,NX,NY,NZ,NT)
+                            for i=1:NC
+                                for j=1:NC
+                                    dSdUnu[j,i] = dSdU[nu][j,i,icum]
+                                end
+                            end
+
+                            #dSdUnu = dSdU[nu][:,:,icum]
+                            #println("M")
+                            #@time M = calc_Mmatrix(dSdUnu,staple_nu_set,nu,ρs,NC,U,ix1,iy1,iz1,it1)
+                            calc_Mmatrix!(M,dSdUnu,staple_nu_set,nu,ρs,U,ix1,iy1,iz1,it1,tmp_matrices)
+            
+                            #println("Λ")
+                            calc_Λmatrix!(Λ,M,NC)
+                            #@time Λ = calc_Λmatrix(M,NC)
+                            #@time Umu = U[nu][:,:,ix1,iy1,iz1,it1]
+                            #@time Vtmp = ρs[i]*rightmatrix*Umu'*Λ*leftmatrix
+
+                            mul!(tmp_matrices[1],Λ,leftmatrix)
+                            for i=1:NC
+                                for j=1:NC
+                                    tmp_matrices[3][j,i] = conj(U[nu][i,j,ix1,iy1,iz1,it1]) #U[nu][:,:,ix1,iy1,iz1,it1]'
+                                end
+                            end
+                            mul!(tmp_matrices[2],tmp_matrices[3],tmp_matrices[1])
+                            mul!(tmp_matrices[1],rightmatrix,tmp_matrices[2])
+                            tmp_matrices[1] .*= ρs[i]
+
+                            #println("Vtmp $i,$nu")
+                            #display(Vtmp/ρ)
+                            #println("\t")
+
+
+                            @. V += tmp_matrices[1]
+                            #V += Vtmp
+
+                            #=
+                            println("$i $nu $k")
+                            display(leftmatrix)
+                            println("\t")
+                            =#
+                            #println("Vtmp, ", Vtmp)
+                        end
+                    end
+                end
+            end
+            #exit()
+            
+        end
+
+        t = smearing.tensor_derivative_dag
+        num = length(t)
+
+
+        for i=1:num
+            Ti = t[i]
+            for nu=1:4
+                staple_nu_set = smearing.staples_for_stout
+                #staple_nu = gparam.smearing.staples_for_stout[nu]
+                timu = Ti[nu]
+
+                #println((ix,iy,iz,it))
+
+                for (k,timu_k) in enumerate(timu)
+                    if haskey(timu_k,umu)
+                        timuumu = timu_k[umu]
+                        for m =1:length(timuumu)
+                            tensor = timuumu[m]
+                            #leftmatrix,rightmatrix,ix1,iy1,iz1,it1 = calc_matrix_tensors(tensor,U,ix,iy,iz,it)
+                            ix1,iy1,iz1,it1 = calc_matrix_tensors!(leftmatrix,rightmatrix,tensor,U,ix,iy,iz,it,tmp_matrices)
+                            icum = get_1dindex(ix1,iy1,iz1,it1,NX,NY,NZ,NT)
+                            for i=1:NC
+                                for j=1:NC
+                                    dSdUnu[j,i] = dSdU[nu][j,i,icum]
+                                end
+                            end
+                            #dSdUnu = dSdU[nu][:,:,icum]
+                            calc_Mmatrix!(M,dSdUnu,staple_nu_set,nu,ρs,U,ix1,iy1,iz1,it1,tmp_matrices)
+                            #M = calc_Mmatrix(dSdUnu,staple_nu_set,nu,ρs,NC,U,ix1,iy1,iz1,it1)
+            
+                            calc_Λmatrix!(Λ,M,NC)
+                            #Λ = calc_Λmatrix(M,NC)
+                            #Umu = U[nu][:,:,ix1,iy1,iz1,it1]
+                            #Vtmp = -ρs[i]*rightmatrix*Λ*Umu*leftmatrix
+
+                            for i=1:NC
+                                for j=1:NC
+                                    tmp_matrices[3][j,i] = U[nu][j,i,ix1,iy1,iz1,it1] #U[nu][:,:,ix1,iy1,iz1,it1]
+                                end
+                            end
+
+                            mul!(tmp_matrices[1],tmp_matrices[3],leftmatrix)
+                            mul!(tmp_matrices[2],Λ,tmp_matrices[1])
+                            mul!(tmp_matrices[1],rightmatrix,tmp_matrices[2])
+                            tmp_matrices[1] .*= -ρs[i]
+
+                            @. V += tmp_matrices[1]
+
+
+
+                            #println("Vtmp $i,$nu")
+                            #display(Vtmp/ρ)
+                            #println("\t")
+
+                            #V += Vtmp
+                            #println("Vtmp, ", Vtmp)
+                        end
+                    end
+                end
+            end
+            #exit()
+            
+        end
+
+        #println("Theta old = ", V)
+        
+
+        y = ix,iy,iz,it
+        ix1,iy1,iz1,it1 = y
+        #ix1,iy1,iz1,it1 = periodiccheck(ix1,iy1,iz1,it1,NX,NY,NZ,NT,NDW)
+        icum = get_1dindex(ix1,iy1,iz1,it1,NX,NY,NZ,NT)
+        #icum = (((it1-1)*NZ+iz1-1)*NY+iy1-1)*NX+ix1
+
+        staple_mu_set = smearing.staples_for_stout
+        
+        
+        dSdUnu = dSdU[mu][:,:,icum]
+        #M = calc_Mmatrix(dSdUnu,staple_mu_set,mu,ρs,NC,U,y...)
+        calc_Mmatrix!(M,dSdUnu,staple_mu_set,mu,ρs,U,y...,tmp_matrices)
+        calc_Λmatrix!(Λ,M,NC)
+        #Λ = calc_Λmatrix(M,NC)
+        
+
+        dSdρs = zero(ρs)
+        Umu = U[mu][:,:,ix,iy,iz,it]
+
+        C = zeros(ComplexF64,NC,NC)
+        Ctmp = zero(C)
+        for i=1:num
+            Ctmp .= 0
+            staple_mu = staple_mu_set[i][mu]
+            #evaluate_wilson_loops!(Ctmp,staple_nu_set[i][nu],U,ix,iy,iz,it,tmp_matrices[4:6])
+            evaluate_wilson_loops!(Ctmp,staple_mu,U,y...,tmp_matrices[4:6])
+            C[:,:] .+= ρs[i]*Ctmp[:,:]
+            dSdρs[i] += 2*real(tr(Umu'*Λ*Ctmp))
+            
+        end
+
+
+        
+        #Vtmp = -ρ*C'*M
+        Vtmp = -C'*Λ
+
+
+        V += Vtmp
+        #println("Vtmp, ", Vtmp)
+
+        Q = calc_Qmatrix(staple_mu_set,mu,ρs,U,NC,ix,iy,iz,it)
+        #println("Q ", Q)
+        Vtmp = dSdUnu*exp(Q)
+
+        #=
+        if y == (2,2,2,2) && mu == 1
+            println("U,M,Λ,Q")
+            display(Umu)
+            println("\t")
+            display(M)
+            println("\t")
+            display(Λ)
+            println("\t")
+            display(Q)
+            println("\t")
+        end
+        =#
+
+        #println("dSdUnu ",dSdUnu)
+        #println("exp(Q) = ",exp(Q))
+        V+= Vtmp 
+        #println("Vtmp, ", Vtmp)
+        
+
+        return V,dSdρs
+    end
+
+    function calc_smearingU(Uin::Array{GaugeFields{SU{NC}},1},smearing;calcdSdU = false,temps = nothing) where NC
+        if smearing != nothing && typeof(smearing) != Nosmearing
+            if typeof(smearing) <: SmearingParam_single
+                Uout_multi = nothing
+                U = apply_smearing(Uin,smearing)
+            elseif typeof(smearing) <: SmearingParam_multi
+                Uout_multi = apply_smearing(Uin,smearing)
+                U = Uout_multi[end]
+            else
+                error("something is wrong in calc_smearingU")
+            end
+            set_wing!(U) 
+            if calcdSdU 
+                dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
+            else
+                dSdU = nothing
+            end
+        else
+            dSdU = nothing
+            Uout_multi = nothing
+            U = Uin
+        end
+        return U,Uout_multi,dSdU
+    end
+
+
+
+    function apply_smearing(U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <: SmearingParam_single}
+        Uout = similar(U)
+        calc_stout_multi!(Uout,U,smearing.ρs,smearing.staples_for_stout) 
+        return Uout
+    end
+
+
+    function apply_smearing(U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <: SmearingParam_multi}
+        Uout_multi = calc_stout_multi(U,smearing.ρs,smearing.staples_for_stout) 
+        return Uout_multi
+    end
+
+    function calc_stout(U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        Uout = similar(U)
+        calc_stout!(Uout,U,ρ)
+        return Uout
+    end
+
+    function calc_stout!(Uout::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        Uin = deepcopy(Uout)
+        calc_stout!(Uout,Uin,ρ)
+    end
+
+    function calc_stout!(Uout::Array{GaugeFields{SU{NC}},1},U::Array{GaugeFields{SU{NC}},1},ρ) where NC
+        @assert Uout != U "input U and output U should not be same!"
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        Q = zeros(ComplexF64,NC,NC)
+        C = zeros(ComplexF64,NC,NC)
+
+        I0N = zeros(ComplexF64,NC,NC)
+        for i=1:NC
+            I0N[i,i] = 1
+        end
+
+        for μ=1:4
+            loops = make_plaq_staple_prime(μ)
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            C .= 0
+                            evaluate_wilson_loops!(C,loops,U,ix,iy,iz,it)
+                            #display(C)
+                            #println("\t")
+
+                            Ω = ρ*C[:,:]*U[μ][:,:,ix,iy,iz,it]'
+                            Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)*I0N
+                            Uout[μ][:,:,ix,iy,iz,it] = exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            set_wing!(Uout[μ],ix,iy,iz,it)
+
+                            
+                        end
+                    end
+                end
+            end
+        end
+        #display(Uout[1][:,:,1,1,1,1])
+        return
+    end
+
+    const eps_Q = 1e-18
+
+    function calc_stout_multi(Uin::Array{GaugeFields{SU{NC}},1},ρs::Array{Array{T,1},1},staples)  where {NC,T <: Number}
+        numlayer = length(ρs)
+        #println("numlayer = ",numlayer,"\t",ρs)
+        Uout_multi = Array{Array{GaugeFields{SU{NC}},1}}(undef,numlayer)
+        for i=1:numlayer
+            Uout_multi[i] = similar(Uin)
+        end
+        calc_stout_multi!(Uout_multi,Uin,ρs,staples)
+
+        return Uout_multi
+    end
+
+    function calc_stout_multi!(Uout_multi::Array{Array{GaugeFields{SU{NC}},1},1},Uin::Array{GaugeFields{SU{NC}},1},ρs::Array{Array{T,1},1},staples)  where {NC,T <: Number}
+        numlayer = length(ρs)
+        Utmp = similar(Uin)
+        #Uout_multi = Array{Array{GaugeFields{SU{NC}},1}}(undef,numlayer)
+        U = deepcopy(Uin)
+        for i = 1:numlayer
+            if i != numlayer
+                calc_stout_multi!(Utmp,U,ρs[i],staples)
+                set_wing!(Utmp)
+                Uout_multi[i] = deepcopy(Utmp)
+                Utmp,U = U,Utmp            
+            else
+                calc_stout_multi!(Uout_multi[i],U,ρs[i],staples)
+                set_wing!(Uout_multi[i])
+            end
+        end
+    end
+
+    function calc_stout_multi!(Uout::Array{GaugeFields{SU{NC}},1},Uin::Array{GaugeFields{SU{NC}},1},ρs::Array{Array{T,1},1},staples)  where {NC,T <: Number}
+        numlayer = length(ρs)
+        Utmp = similar(Uin)
+        #Uout_multi = Array{Array{GaugeFields{SU{NC}},1}}(undef,numlayer)
+        U = deepcopy(Uin)
+        for i = 1:numlayer
+            if i != numlayer
+                calc_stout_multi!(Utmp,U,ρs[i],staples)
+                set_wing!(Utmp)
+                Utmp,U = U,Utmp            
+            else
+                calc_stout_multi!(Uout,U,ρs[i],staples)
+                set_wing!(Uout)
+            end
+        end
+        
+    end
+
+
+    function calc_stout_multi!(Uout::Array{GaugeFields{SU{NC}},1},
+                U::Array{GaugeFields{SU{NC}},1},ρs::Array{T,1},staples) where {NC,T <: Number}
+        @assert Uout != U "input U and output U should not be same!"
+
+        NX = U[1].NX
+        NY = U[1].NY
+        NZ = U[1].NZ
+        NT = U[1].NT
+        Q = zeros(ComplexF64,NC,NC)
+        C = zeros(ComplexF64,NC,NC)
+        Ctmp = zeros(ComplexF64,NC,NC)
+        Ω = zeros(ComplexF64,NC,NC)
+        I0N = zeros(ComplexF64,NC,NC)
+        for i=1:NC
+            I0N[i,i] = 1
+        end
+        Umu = zeros(ComplexF64,NC,NC)
+        Umutmp = zeros(ComplexF64,NC,NC)
+        tmp_matrices = Array{Array{ComplexF64,2},1}(undef,3)
+        for k=1:3
+            tmp_matrices[k] = zero(C)
+        end
+
+
+        num = length(ρs)
+        
+
+        for μ=1:4
+            #loops = make_plaq_staple_prime(μ)
+            #display(loops)
+            #exit()
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            Ω .= 0
+                            C .= 0
+                            for i=1:num
+                                Ctmp .= 0
+                                evaluate_wilson_loops!(Ctmp,staples[i][μ],U,ix,iy,iz,it,tmp_matrices)
+                                #C[:,:] .+= ρs[i]*Ctmp[:,:]
+                                for j=1:NC
+                                    for k=1:NC
+                                        C[k,j] += ρs[i]*Ctmp[k,j]
+                                    end
+                                end
+                                #@. C[:,:] .+= ρs[i]*Ctmp
+                            end
+                            for i=1:NC
+                                for j=1:NC
+                                    Umu[j,i] =   U[μ][j,i,ix,iy,iz,it]
+                                end
+                            end
+
+                            for i=1:NC
+                                for j=1:NC
+                                    Ω[j,i] = 0
+                                    for k=1:NC
+                                        Ω[j,i] += C[j,k]*conj(Umu[i,k])
+                                    end
+                                end
+                            end
+                            #Ω[:,:] = C[:,:]*U[μ][:,:,ix,iy,iz,it]'
+
+                            #display(Ω)
+                            #println("\t")
+                            if NC == 1
+                                #Q = (im/2)*(Ω' .- Ω) 
+                                #Q = (1/2)*(Ω' .- Ω) 
+                                Q = -(Ω' .- Ω)
+                                #Q = (Ω' .- Ω)
+                                #Q = im*(Ω' .- Ω) 
+                            else
+
+                                #Q = (im/2)*(Ω' .- Ω) .- (im/(2NC))*tr(Ω' .- Ω)
+                                #Q = (1/2)*(Ω' .- Ω) .- (1/(2NC))*tr(Ω' .- Ω)
+                                #
+                                for i=1:NC
+                                    for j=1:NC
+                                        Q[j,i] = -(1/2)*(conj(Ω[i,j])-Ω[j,i])
+                                    end
+                                end
+                                trΩ = tr(Ω)
+                                for i=1:NC
+                                    Q[i,i] += (1/(2NC))*(conj(trΩ)-trΩ)
+                                end
+                                #Q = -(1/2)*(Ω' - Ω) + (1/(2NC))*tr(Ω' - Ω)*I0N
+                                #Q = (1/2)*(Ω' - Ω) - (1/(2NC))*tr(Ω' - Ω)*I0N
+                            end
+                            #println(Q)
+                            trQ2 = 0im
+                            for i=1:NC
+                                for k=1:NC
+                                    trQ2 += Q[i,k]*Q[k,i]
+                                end
+                            end
+                            #trQ2 = tr(Q^2)
+                            #Uout[μ][:,:,ix,iy,iz,it] = exp(im*Q)*U[μ][:,:,ix,iy,iz,it]
+                            if abs(trQ2) > eps_Q
+                                if NC == 2
+                                    #exp(Q) = cosq I + sinq/q Q
+                                    q = sqrt((-1/2)*trQ2)
+                                    for i=1:NC
+                                        for j=1:NC
+                                            tmp_matrices[1][j,i] = (sin(q)/q)*Q[j,i]
+                                        end
+                                    end
+                                    for i=1:NC
+                                        tmp_matrices[1][i,i] += cos(q)
+                                    end
+                                    mul!(Umutmp,tmp_matrices[1],Umu)
+                                    
+                                else
+                                    mul!(Umutmp,exp(Q),Umu)
+                                end
+                                for i=1:NC
+                                    for j=1:NC
+                                        Uout[μ][j,i,ix,iy,iz,it] = Umutmp[j,i]
+                                    end
+                                end
+                                #Uout[μ][:,:,ix,iy,iz,it] = exp(Q)*U[μ][:,:,ix,iy,iz,it]
+                            else
+                                Uout[μ][:,:,ix,iy,iz,it] = U[μ][:,:,ix,iy,iz,it]
+                            end
+                            #display(Uout[μ][:,:,ix,iy,iz,it] )
+                            #println("\t")
+                            set_wing!(Uout[μ],ix,iy,iz,it)
+
+                            
+                        end
+                    end
+                end
+            end
+        end
+
+
+        
+    end
 end
