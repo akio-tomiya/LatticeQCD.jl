@@ -2601,7 +2601,7 @@ c-----------------------------------------------------c
             mul!(temp2,temp1,staple')
             #mul!(temp2,U[μ],staple')
             plaq += tr(temp2)
-            #println(plaq)
+            println(plaq)
             #exit()
         end
         #plaq /= 

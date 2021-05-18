@@ -111,7 +111,7 @@ module DFields
                 for iy in i_local[4]
                     for ix in i_local[3]
                         icum += 1
-                        println("$ix $iy $iz $it")
+                        #println("$ix $iy $iz $it")
                         for j=1:NC
                             for i=1:NC
                                 localpart(a)[i,j,icum] = b[i,j,ix,iy,iz,it]
@@ -127,7 +127,7 @@ module DFields
     function Gaugefields.substitute!(a::DGaugeFields_1d{SU{NC}},b::DGaugeFields{SU{NC}}) where NC
 
         f = []
-        @async for id in workers()
+        for id in workers()
             push!(f,remotecall(loop_substitute!,id,a,b))
         end
 
@@ -143,7 +143,7 @@ module DFields
 
     function Gaugefields.clear!(a::DGaugeFields_1d)
         f = []
-        @async for id in workers()
+        for id in workers()
             push!(f,remotecall(loop_clear!,id,a))
         end
         for fi in f
@@ -161,7 +161,7 @@ module DFields
             icum += 1
             for k2=1:NC                            
                 for k1=1:NC
-                    c[k1,k2,i] = 0
+                    localpart(c)[k1,k2,i] = 0
                     @simd for k3=1:NC
                         localpart(c)[k1,k2,icum] += a[k1,k3,i]*b[k3,k2,i]
                     end
@@ -172,7 +172,7 @@ module DFields
 
     function LinearAlgebra.mul!(c::DGaugeFields_1d{SU{NC}},a::DGaugeFields_1d{SU{NC}},b::DGaugeFields_1d{SU{NC}}) where NC
         f = []
-        @async for id in workers()
+        for id in workers()
             push!(f,remotecall(loop_mul!,id,c,a,b))
         end
         for fi in f
@@ -189,9 +189,12 @@ module DFields
             icum += 1
             for k2=1:NC                            
                 for k1=1:NC
-                    c[k1,k2,i] = 0
+                    localpart(c)[k1,k2,i] = 0
                     @simd for k3=1:NC
                         localpart(c)[k1,k2,icum] += a[k1,k3,i]*conj(b.parent[k3,k2,i])
+                        #println("a = ",a[k1,k3,i])
+                        #println("b = ",conj(b.parent[k3,k2,i]))
+                        #println(localpart(c)[k1,k2,icum])
                     end
                 end
             end
@@ -201,9 +204,11 @@ module DFields
     end
 
     function LinearAlgebra.mul!(c::DGaugeFields_1d{SU{NC}},a::DGaugeFields_1d{SU{NC}},b::Adjoint_DGaugeFields_1d{SU{NC}}) where NC
-
+        #println("mul!")
         f = []
-        @async for id in workers()
+        #println(workers())
+        #w = workers()
+        for id in workers()
             push!(f,remotecall(loop_mul!,id,c,a,b))
         end
         for fi in f
@@ -214,7 +219,7 @@ module DFields
     end
 
     function loop_gauge_shift!(a::DGaugeFields_1d{SU{NC}},ν::N,b::DGaugeFields{SU{NC}}) where {N <: Int,NC}
-        i_local = localindices(a)
+        i_local = localindices(b)
         icum = 0
 
         idel = zeros(Int8,4)
@@ -265,8 +270,8 @@ module DFields
         end
 
         f = []
-        @async for id in workers()
-            push!(f,remotecall(loop_gauge_shift!,id,c,a,b))
+        for id in workers()
+            push!(f,remotecall(loop_gauge_shift!,id,a,ν,b))
         end
         for fi in f
             wait(fi)
@@ -293,7 +298,7 @@ module DFields
     function Gaugefields.add!(c::DGaugeFields_1d{SU{NC}},a::DGaugeFields_1d{SU{NC}}) where NC
 
         f = []
-        @async for id in workers()
+        for id in workers()
             push!(f,remotecall(loop_add!,id,c,a))
         end
         for fi in f
@@ -314,9 +319,12 @@ module DFields
             @simd for k=1:NC
                 
                 s += a[k,k,i]
+                #println(a[k,k,i])
             end
 
         end
+        #println(typeof(s))
+        #println("s = ",s)
         return s
 
     end
@@ -325,14 +333,18 @@ module DFields
 
         f = []
         #s = 0
-        @async for id in workers()
+        for id in workers()
             push!(f,remotecall(loop_tr,id,a))
-
         end
+        #println("workers, ",workers())
+
         s = 0
         for fi in f
             wait(fi)
-            s += fetch(fi)
+            si = fetch(fi)
+            #println("si ",si)
+            s += si
+            #println(s)
         end
         #s = sum(fetch.(f))
         return s

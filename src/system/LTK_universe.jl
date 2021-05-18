@@ -443,7 +443,7 @@ module LTK_universe
         println("debug")
         DU = Array{DGaugeFields,1}(undef,4)
         for μ=1:4
-            DU[μ] = DGaugeFields(U[μ],[1,1,1,1,1,1])
+            DU[μ] = DGaugeFields(U[μ],[1,1,1,1,2,2])
         end
         @time plaq = Gaugefields.calc_Plaq(DU)
         println("plaq = ", plaq)
