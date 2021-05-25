@@ -33,6 +33,8 @@ module DFields
 
         function DGaugeFields(x::GaugeFields{T},parallel) where T
             g_workers = workers()
+            @assert nworkers() == prod(parallel) "There are $(workers()) but $parallel"
+
             g = distribute(x.g[1:x.NC,1:x.NC,1+x.NDW:x.NX+x.NDW,1+x.NDW:x.NY+x.NDW,1+x.NDW:x.NZ+x.NDW,1+x.NDW:x.NT+x.NDW],procs = g_workers,dist = parallel)
             return new{T}(g,x.NX,x.NY,x.NZ,x.NT,x.NC,x.NV,parallel,g_workers)
         end
@@ -43,6 +45,7 @@ module DFields
         NC::Int64
         NV::Int64
         numworkers::Int64
+        glocalindices::NTuple{3,UnitRange{Int64}}
     
         function DGaugeFields_1d(NC,NX,NY,NZ,NT)
             sutype = SU{NC}
@@ -50,13 +53,15 @@ module DFields
             NV = NX*NY*NZ*NT
             numworkers = nworkers()
             g = dzeros(ComplexF64,(NC,NC,NV),workers(),[1,1,numworkers])
-            return new{sutype}(g,NC,NV,numworkers)
+            glocalindices = localindices(g)
+            return new{sutype}(g,NC,NV,numworkers,glocalindices)
         end
     
         function DGaugeFields_1d(NC,NV) 
             sutype = SU{NC}
             g = dzeros(ComplexF64,(NC,NC,NV),workers,[1,1,numworkers])
-            return new{sutype}(g,NC,NV,numworkers)
+            glocalindices = localindices(g)
+            return new{sutype}(g,NC,NV,numworkers,glocalindices)
         end
     end
 
@@ -85,19 +90,42 @@ module DFields
     end
 
     function Base.getindex(x::DGaugeFields,i1,i2,i3,i4,i5,i6)
-        #indices_g = localindices(x.g)
-        return x.g[i1,i2,i3,i4,i5,i6]
+        indices_g = localindices(x.g)
+        #return x.g[i1,i2,i3,i4,i5,i6]
+        if i3 in indices_g[3] && i4 in indices_g[4] && i5 in indices_g[5] && i6 in indices_g[6]
+            return x.g.localpart[i1,i2,i3-indices_g[3][begin]+1,i4-indices_g[4][begin]+1,i5-indices_g[5][begin]+1,i6-indices_g[6][begin]+1]
+        else
+            return x.g[i1,i2,i3,i4,i5,i6]
+        end
     end
 
     function Base.getindex(x::DGaugeFields_1d,i1,i2,i3)
-        #indices_g = localindices(x.g)
-        return x.g[i1,i2,i3]
+        indices_g = localindices(x.g)
+
+        #indices_g = x.glocalindices
+        #println(indices_g)
+        #println((i1,i2,i3))
+        #if i1 in x.glocalindices[1] && i2 in x.glocalindices[2] && i3 in x.glocalindices[3]
+        #    return x.g.localpart[i1-x.glocalindices[1][begin]+1,i2-x.glocalindices[2][begin]+1,i3-x.glocalindices[3][begin]+1]
+        if i1 in indices_g[1] && i2 in indices_g[2] && i3 in indices_g[3]
+            #@time v= x.g.localpart[i1-indices_g[1][begin]+1,i2-indices_g[2][begin]+1,i3-indices_g[3][begin]+1]
+            #@time v = localpart(x.g)[1,1,1]
+            #println(typeof(x.g.localpart))
+            return x.g.localpart[i1-indices_g[1][begin]+1,i2-indices_g[2][begin]+1,i3-indices_g[3][begin]+1]
+        #if i1 in localindices(x.g)[1] && i2 in localindices(x.g)[2] && i3 in localindices(x.g)[3]
+        #    return x.g.localpart[i1-localindices(x.g)[1][begin]+1,i2-localindices(x.g)[2][begin]+1,i3-localindices(x.g)[3][begin]+1]
+        else
+            return x.g[i1,i2,i3]
+        end 
+        #exit()
+        #return x.g[i1,i2,i3]
     end
 
     function Base.setindex!(x::DGaugeFields,v,i1,i2,i3,i4,i5,i6) 
         indices_g = localindices(x.g)
         #println(indices_g)
-        localpart(x.g)[i1,i2,i3-indices_g[3][begin]+1,i4-indices_g[4][begin]+1,i5-indices_g[5][begin]+1,i6-indices_g[6][begin]+1] = v
+        #localpart(x.g)[i1,i2,i3-indices_g[3][begin]+1,i4-indices_g[4][begin]+1,i5-indices_g[5][begin]+1,i6-indices_g[6][begin]+1] = v
+        x.g.localpart[i1,i2,i3-indices_g[3][begin]+1,i4-indices_g[4][begin]+1,i5-indices_g[5][begin]+1,i6-indices_g[6][begin]+1] = v
         return
     end
 
@@ -114,7 +142,8 @@ module DFields
                         #println("$ix $iy $iz $it")
                         for j=1:NC
                             for i=1:NC
-                                localpart(a)[i,j,icum] = b[i,j,ix,iy,iz,it]
+                                a.g.localpart[i,j,icum] = b[i,j,ix,iy,iz,it]
+                                #localpart(a)[i,j,icum] = b[i,j,ix,iy,iz,it]
                             end
                         end
                     end
@@ -161,9 +190,19 @@ module DFields
             icum += 1
             for k2=1:NC                            
                 for k1=1:NC
-                    localpart(c)[k1,k2,i] = 0
+                    c.g.localpart[k1,k2,icum] = 0
+                    #localpart(c)[k1,k2,icum] = 0
                     @simd for k3=1:NC
-                        localpart(c)[k1,k2,icum] += a[k1,k3,i]*b[k3,k2,i]
+                        #=
+                        println("a")
+                        @time a1 = a[k1,k3,i]
+                        println("b")
+                        @time b1 = b[k3,k2,i]
+                        println("c")
+                        @time c.g.localpart[k1,k2,icum] += a1*b1
+                        =#
+                        c.g.localpart[k1,k2,icum] += a[k1,k3,i]*b[k3,k2,i]
+                        #localpart(c)[k1,k2,icum] += a[k1,k3,i]*b[k3,k2,i]
                     end
                 end
             end
@@ -189,9 +228,11 @@ module DFields
             icum += 1
             for k2=1:NC                            
                 for k1=1:NC
-                    localpart(c)[k1,k2,i] = 0
+                    #localpart(c)[k1,k2,icum] = 0
+                    c.g.localpart[k1,k2,icum] = 0
                     @simd for k3=1:NC
-                        localpart(c)[k1,k2,icum] += a[k1,k3,i]*conj(b.parent[k3,k2,i])
+                        #localpart(c)[k1,k2,icum] += a[k1,k3,i]*conj(b.parent[k3,k2,i])
+                        c.g.localpart[k1,k2,icum] += a[k1,k3,i]*conj(b.parent[k3,k2,i])
                         #println("a = ",a[k1,k3,i])
                         #println("b = ",conj(b.parent[k3,k2,i]))
                         #println(localpart(c)[k1,k2,icum])
@@ -252,7 +293,8 @@ module DFields
 
                         for k2=1:NC
                             @simd for k1=1:NC
-                                localpart(a)[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
+                                #localpart(a)[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
+                                a.g.localpart[k1,k2,icum] = b[k1,k2,ix1,iy1,iz1,it1]
                                 #println(localpart(a)[k1,k2,icum])
                             end
                         end

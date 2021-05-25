@@ -119,6 +119,7 @@ module Gaugefields
     end
 
     function Base.getindex(x::GaugeFields_1d,i1,i2,i3)
+        #@time x.g[i1,i2,i3]
         return x.g[i1,i2,i3]
     end
 
@@ -1891,13 +1892,13 @@ module Gaugefields
         clear!(staple)
 
         idir2 = zeros(Int64,2)
-        println("T ", T)
+        #println("T ", T)
 
         for ν=1:4
             if ν == μ
                 continue
             end
-            println("ν =  ", ν)
+            #println("ν =  ", ν)
 
                         #=
             c       x+nu temp2
