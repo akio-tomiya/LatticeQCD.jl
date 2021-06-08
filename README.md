@@ -103,7 +103,7 @@ We support 4 dimensional euclidean spacetime and following things:
   - Plaquette
   - Polyakov loop
   - Chiral condensates (Wilson, Wilson-Clover, staggered)
-  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, staggered will be supported)
+  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, (stout) staggered)
   - Topological charge(plaquette and clover definition)
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
@@ -183,6 +183,7 @@ We compared results to following papers/codes
 - Nf=4 SU(3) staggered HMC with https://inspirehep.net/literature/283285
 - RHMC https://doi.org/10.1051/epjconf/201817507041
 - HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
+- Pion correlator with the staggered Dirac operator https://inspirehep.net/literature/21821
 
 # Reference
 
