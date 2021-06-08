@@ -7,7 +7,7 @@
 
 ![LatticeQCD.jl](logo.png)
 
-This code enabales you to perform lattice QCD calculations! Native Julia code for Lattice QCD.
+This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
