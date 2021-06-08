@@ -660,7 +660,8 @@ module Wizard
                 elseif i == 4
                     measurement_methods[count] = chiral_wizard(staggered,system)
                 elseif i == 5
-                    measurement_methods[count] = pion_wizard(wilson,system)
+                    #measurement_methods[count] = pion_wizard(wilson,system)
+                    measurement_methods[count] = pion_wizard(wilson,staggered,system)
                 end
             end
         else
@@ -867,6 +868,83 @@ module Wizard
 
         return method
     end
+
+
+    function  pion_wizard(wilson,staggered,system)
+        println("You measure Pion_correlator")
+        method = Dict()
+        method["methodname"] = "Pion_correlator" 
+
+        if system["update_method"] == "Fileloading"
+            defaultvalue = 1
+        else
+            defaultvalue = 10
+        end
+
+
+        method["measure_every"] = parse(Int64,Base.prompt("How often measure Pion_correlator?", default="$defaultvalue"))
+
+
+        wtype = request("Choose fermion type for the measurement of Pion_correlator",RadioMenu([
+            "Standard Wilson fermion action",
+            "Wilson+Clover fermion action",
+            "Staggered fermion action",
+        ]))
+
+        
+        if wtype == 1
+            println("Standard Wilson fermion action will be used for the measurement")
+            method["fermiontype"] = "Wilson"
+            isWilson = true
+        elseif wtype == 2
+            println("Wilson+Clover fermion action will be used for the measurement")
+            method["fermiontype"] = "WilsonClover"
+            isWilson = true
+        elseif wtype == 3
+            println("Staggered fermion action will be used for the measurement")
+            method["fermiontype"] = "Staggered"
+            isWilson = false
+        end
+
+        if isWilson
+            if haskey(wilson,"hop")
+                hop_default = wilson["hop"]
+            else
+                hop_default = 0.141139
+            end
+
+            hop = parse(Float64,Base.prompt("Input the hopping parameter κ for the measurement", default="$hop_default"))
+            if hop <= 0
+                error("Invalid parameter κ=$hop")
+            end
+            method["hop"] = hop
+            method["r"] = 1
+        else
+            if haskey(staggered,"mass")
+                mass_default = staggered["mass"]
+            else
+                mass_default = 0.5
+            end
+            method["mass"] = parse(Float64,Base.prompt("Input mass for the measurement of Pion_correlator", default="$mass_default"))
+            method["Nf"] = 4
+        end
+
+        eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
+        MaxCGstep = parse(Int64,Base.prompt("Maximum iteration steps in CG loops", default="3000"))
+        if eps<=0
+            error("Invalid value for eps=$eps. This has to be strictly positive.")
+        end
+        if MaxCGstep<=0
+            error("Invalid value for MaxCGstep=$MaxCGstep. This has to be strictly positive.")
+        end
+        method["eps"] = eps
+        method["MaxCGstep"] = MaxCGstep
+
+        set_smearing!(method)
+
+        return method
+    end
+
     function  pion_wizard(wilson,system)
         if haskey(wilson,"hop")
             hop_default = wilson["hop"]
