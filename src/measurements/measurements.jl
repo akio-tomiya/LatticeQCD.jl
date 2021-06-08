@@ -1053,7 +1053,7 @@ end
         #println("$ic $is")
         b[ic,1,1,1,1,is]=1 # source at the origin
 
-        @time bicg(p,M,b) # solve Mp=b, we get p=M^{-1}b
+        @time bicg(p,M,b,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
 
         #@time cg0!(k,b,1, univ.U, meas._temporal_gauge, meas._temporal_fermi1, meas.fparam) # k[x] = M^{-1}b[0]
         println_verbose1(verbose,"Hadron spectrum: Inversion $(i)/$(NC*Nspinor) is done")
