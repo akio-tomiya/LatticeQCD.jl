@@ -79,8 +79,9 @@ it takes time before showing up the window.
 
 # What is supported?
 
-We support 4 dimensional euclidean spacetime and following things:
+We support 4 dimensional euclidean spacetime.
 
+- Wizard for making parameters
 - Gauge field
   - Optimized SU(2), SU(3)
   - General SU(N)
