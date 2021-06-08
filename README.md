@@ -103,7 +103,7 @@ We support 4 dimensional euclidean spacetime.
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson, Wilson-Clover, staggered)
+  - Chiral condensates (Wilson, Wilson-Clover, (stout) staggered)
   - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, (stout) staggered)
   - Topological charge(plaquette and clover definition)
   - Load & measurement mode (load and measure all configurations in a directory)
