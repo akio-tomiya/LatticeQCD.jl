@@ -7,7 +7,7 @@
 
 ![LatticeQCD.jl](logo.png)
 
-This code enabales you to perform lattice QCD calculations! Native Julia code for Lattice QCD.
+This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
@@ -182,8 +182,10 @@ This is the first open source Julia code for lattice QCD. High performance is ou
 We compared results to following papers/codes 
 
 - Nf=4 SU(3) staggered HMC with https://inspirehep.net/literature/283285
+- Quenched SU(2) improved thermodynamics https://inspirehep.net/literature/1614325
 - RHMC https://doi.org/10.1051/epjconf/201817507041
 - HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
+- Pion correlator with the Wilson-Dirac operator https://inspirehep.net/literature/37901
 - Pion correlator with the staggered Dirac operator https://inspirehep.net/literature/21821
 
 # Reference
