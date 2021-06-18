@@ -431,8 +431,13 @@ module DFields
 
         f = []
         for id in workers()
+            #remote_do(loop_add!,id,c,a)
+            #push!(remote_do(loop_add!,id,c,a))
             push!(f,remotecall(loop_add!,id,c,a))
         end
+        #return 
+
+
         for fi in f
             wait(fi)
         end
