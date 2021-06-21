@@ -11,7 +11,7 @@ module MD
                         GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
-                construct_fermionfield_φ!,construct_fermionfield_η!
+                construct_fermionfield_φ!,construct_fermionfield_η!,get_fparam
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
@@ -147,6 +147,8 @@ module MD
 
     function md!(univ::Universe,mdparams::MD_parameters_standard)
         #Sold = md_initialize!(univ::Universe)
+        fparam = get_fparam(univ)
+
         QPQ = mdparams.QPQ #true
         if QPQ 
             for istep=1:mdparams.MDsteps
@@ -158,7 +160,7 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,1.0)
+                    updateP_fermi!(univ,mdparams,1.0,fparam)
                 end
                 updateU!(univ,mdparams,0.5)
 
@@ -175,7 +177,7 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
                 end
 
 
@@ -186,25 +188,32 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
                 end
-                
-
+            
 
             end
         end
 
         if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sfnew_eff = univ.η*univ.η
+                println("effective ",Sfnew_eff)
+            end
             construct_fermionfield_η!(univ)
         end
 
 
         Snew,plaq = calc_Action(univ)
+        Sf_new = univ.η*univ.η
+        println("original ",Sf_new)
         return Snew
     end
 
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
+        fparam = get_fparam(univ)
         QPQ = mdparams.QPQ
         if QPQ != true
             for istep=1:mdparams.MDsteps
@@ -219,7 +228,7 @@ module MD
                     updateP!(univ,mdparams,0.5/mdparams.N_SextonWeingargten)
                 end
                 if univ.quench == false
-                    updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
                 end
             end
         elseif QPQ
@@ -234,7 +243,7 @@ module MD
                 end
 
                 if univ.quench == false
-                    updateP_fermi!(univ,mdparams,1.0)
+                    updateP_fermi!(univ,mdparams,1.0,fparam)
                 end
 
                 for istep_SW=1:div(mdparams.N_SextonWeingargten,2)
@@ -510,6 +519,18 @@ module MD
 
         return
     end
+
+    function updateP_fermi!(univ::Universe,mdparams::MD_parameters,τ,fparam)
+
+        updateP_fermi!(univ.η,univ.φ,univ.ξ,fparam,
+            univ.p,mdparams,τ,univ.U,
+            univ._temporal_gauge,univ._temporal_algebra,
+            univ._temporal_fermi,kind_of_verboselevel =univ.kind_of_verboselevel
+        )
+
+        return
+    end
+
 
 
 

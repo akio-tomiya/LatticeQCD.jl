@@ -78,7 +78,6 @@ module Wizard
             set_update_method!(system,isexpert)
             if system["isSLHMC"] 
                 system_SLHMC = set_dynamicalfermion_SLGHMC!(system,isexpert)
-                 
             else
                 system_SLHMC = Dict()
             end

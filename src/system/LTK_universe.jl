@@ -51,7 +51,7 @@ module LTK_universe
     """
     Your universe is described in this type.
     """
-    struct Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
+    struct Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC}
         NX::Int64
         NY::Int64
         NZ::Int64
@@ -83,6 +83,8 @@ module LTK_universe
         ranf::Random_LCGs
         verboselevel::Int8
         kind_of_verboselevel::Verbose_level
+        fparam_SLHMC::Union{Nothing,FermiP_SLHMC}
+        isSLHMC::Bool
 
     end
 
@@ -177,6 +179,7 @@ module LTK_universe
                                                         numlayers = p.stout_numlayers,
                                                         L = p.L)
                 end
+
             elseif p.Dirac_operator == "WilsonClover"
                 #if p.NC == 2
                 #    error("You use NC = 2. But WilsonClover Fermion is not supported in SU2 gauge theory yet. Use NC = 3.")
@@ -242,7 +245,42 @@ module LTK_universe
             end
         end
 
-        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format)
+        if p.isSLHMC 
+            if haskey(p.SLHMC_parameters,"smearing_for_fermion_SLHMC")
+                if p.SLHMC_parameters["smearing_for_fermion_SLHMC"] == "nothing"
+                    error("SLHMC parameters are not set!")
+                else
+                    if p.SLHMC_parameters["Dirac_operator"] == "Staggered"
+                        fparam_SLHMC = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf,
+                                                                smearingparameters = "stout",
+                                                                loops_list = p.SLHMC_parameters["stout_loops_SLHMC"],
+                                                                coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
+                                                                numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
+                                                                L = p.L
+                                                            )
+                    elseif p.SLHMC_parameters["Dirac_operator"] == "Wilson"
+                        fparam_SLHMC = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,
+                                                        smearingparameters = "stout",
+                                                        loops_list = p.SLHMC_parameters["stout_loops_SLHMC"],
+                                                        coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
+                                                        numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
+                                                        L = p.L)
+                    elseif p.SLHMC_parameters["Dirac_operator"] == "WilsonClover"
+                        error("SLHMC for Wilson with clover is not supported yet!")
+                    else
+                        error(p.SLHMC_parameters["Dirac_operator"] ," is not supported!")
+                    end
+
+                    
+                end
+            else
+                error("SLHMC parameters are not set!")
+            end
+        else
+            fparam_SLHMC = nothing
+        end
+
+        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format,fparam_SLHMC)
 
     end
 
@@ -325,7 +363,7 @@ module LTK_universe
     end
 
 
-    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel,load_fp,loadU_format)
+    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel,load_fp,loadU_format,fparam_SLHMC)
         #(L::Tuple,gparam::GaugeActionParam;
         #   Nwing = 1,fparam=nothing,
         #  BoundaryCondition=[1,1,1,-1],initial="cold",NC =3)
@@ -454,6 +492,14 @@ module LTK_universe
             _temporal_algebra[i] = similar(p[1])
         end
 
+        if fparam_SLHMC != nothing
+            isSLHMC = true
+            if fparam.Dirac_operator != fparam_SLHMC.Dirac_operator
+                error("Fermion parameters for the action and the effective one should be same in this code. Fermion for the action is $(fparam.Dirac_operator) but one for the effective action is $(fparam_SLHMC.Dirac_operator)")
+            end
+        else
+            isSLHMC = false
+        end
 
         if fparam == nothing
             Dirac_operator = nothing
@@ -483,10 +529,11 @@ module LTK_universe
         GaugeP = typeof(gparam)
         FermiP = typeof(fparam)
         Gauge_temp = eltype(_temporal_gauge)
+        FermiP_SLHMC = typeof(fparam_SLHMC)
 
 
 
-        return Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}(
+        return Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC}(
             NX,
             NY,
             NZ,
@@ -512,10 +559,20 @@ module LTK_universe
             _temporal_algebra,
             ranf,
             verboselevel,
-            kind_of_verboselevel
+            kind_of_verboselevel,
+            fparam_SLHMC,
+            isSLHMC
         )
 
 
+    end
+
+    function get_fparam(univ::Universe)
+        if univ.isSLHMC
+            return univ.fparam_SLHMC
+        else
+            return univ.fparam
+        end
     end
 
     function gauss_distribution(univ::Universe,nv) 
@@ -937,19 +994,58 @@ module LTK_universe
         set_wing_fermi!(univ.φ)
     end
 
-    
-    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC},fparam)  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC}
+        U,_... = calc_smearingU(univ.U,fparam.smearing)
 
+        W = Diracoperators.Dirac_operator(U,univ.η,fparam)
+        bicg(univ.η,W',univ.φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+    end
+    
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC}
+        construct_fermionfield_η!(univ,univ.fparam)
+        #=
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
 
         W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+        =#
     end
 
-    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC},fparam)  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC} # eta = Wdag^{-1} phi
+        U,_... = calc_smearingU(univ.U,fparam.smearing)
+        if fparam.Nf == 4 || fparam.Nf == 8
+            W = Diracoperators.Dirac_operator(U,univ.η,fparam)
+            bicg(univ.η,W',univ.φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+        else
+            WdagW = Diracoperators.DdagD_operator(U,univ.η,fparam)
+            N = get_order(fparam.rhmc_action)
+
+            x = univ.η
+            vec_x = univ._temporal_fermi[end-N+1:end]
+            for j=1:N
+                Fermionfields.clear!(vec_x[j])
+            end
+
+            # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
+            #(MdagM)^{alpha/2} eta ~ α0 eta + sum_k αk (MdagM + βk)^{-1} eta
+            vec_β = get_β_inverse(fparam.rhmc_action)
+            vec_α = get_α_inverse(fparam.rhmc_action)
+            α0 = get_α0_inverse(fparam.rhmc_action)
+            shiftedcg(vec_x,vec_β,x,WdagW,univ.φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
+            Fermionfields.clear!(univ.η)
+            Fermionfields.add!(univ.η,α0,univ.φ)
+            for j=1:N
+                αk = vec_α[j]
+                Fermionfields.add!(univ.η,αk,vec_x[j])
+            end
+        end
+    end
+
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC} # eta = Wdag^{-1} phi
+        construct_fermionfield_η!(univ,univ.fparam)
+
+        #=
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
-
-
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
             W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
             bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
@@ -976,6 +1072,7 @@ module LTK_universe
                 Fermionfields.add!(univ.η,αk,vec_x[j])
             end
         end
+        =#
     end
 
 
