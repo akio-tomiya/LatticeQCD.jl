@@ -76,10 +76,18 @@ module Wizard
 
             wilson,cg,staggered,system = set_dynamicalfermion!(system,isexpert)
             set_update_method!(system,isexpert)
+            if system["update_method"] == "SLGHMC"
+                system_SLHMC = set_dynamicalfermion_SLGHMC!(system,isexpert)
+                 
+            else
+                system_SLHMC = Dict()
+            end
+            system["SLHMC_parameters"] = system_SLHMC
+            
             set_nthermalization!(system,isexpert)
             set_totaltrajectoy!(system,isexpert)
 
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC" || system["update_method"] == "SLGHMC"
                 set_MDparams!(system,md,isexpert)
             end
         end
@@ -589,6 +597,68 @@ module Wizard
 
     end
 
+    function set_dynamicalfermion_SLGHMC!(system,isexpert)
+        system_SLHMC = Dict()
+
+        if isexpert 
+            println("-----------------------------------------------------------------")
+            println("Setup: Fermion parameters in effective actions for SLHMC")
+            ftype = request("Choose a dynamical fermion",RadioMenu([
+                        "Nothing (quenched approximation)",
+                        "Wilson Fermion (2-flavor)",
+                        "Staggered Fermion",
+                    ]))
+            if ftype == 1
+                cg_SLHMC = Dict()
+                wilson_SLHMC = Dict()
+                staggered_SLHMC = Dict()
+                
+                system_SLHMC["Dirac_operator"] = nothing
+                system_SLHMC["quench"] = true
+
+                
+            elseif ftype == 2
+                system_SLHMC["fermiontype"] = "wilson"
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC)
+                system_SLHMC["quench"] = false
+                set_SLHMC_smearing!(system_SLHMC)
+                
+                #set_smearing!(system)
+            elseif ftype == 3
+                system_SLHMC["fermiontype"] = "staggered"
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = staggered_wizard!(system_SLHMC)
+                system_SLHMC["quench"] = false
+                set_SLHMC_smearing!(system_SLHMC)
+                
+                #set_smearing!(system)
+            end
+
+            for (name,key_i) in wilson_SLHMC
+                system_SLHMC[name] = key_i
+            end
+            for (name,key_i) in cg_SLHMC
+                system_SLHMC[name] = key_i
+            end
+            for (name,key_i) in staggered_SLHMC
+                system_SLHMC[name] = key_i
+            end
+
+            println("Done: Fermion parameters in effective actions for SLHMC")
+            println("-----------------------------------------------------------------")
+            
+            
+        else
+            error("Please do the expert mode")
+            #system["Dirac_operator"] = "Wilson"
+
+            #wilson,cg,staggered,system = wilson_wizard_simple!(system)
+            #system["quench"] = false
+        end
+
+        return system_SLHMC
+
+    end
+
     function set_update_method!(system,isexpert)
         if isexpert
             if system["quench"] == true
@@ -616,6 +686,7 @@ module Wizard
                     "Integrated HMC",
                     "Self-learning Hybrid Monte Carlo (SLHMC)",
                     "Self-learning Monte Carlo (SLMC)",
+                    "Self-learning Gauge-covariant Hybrid Monte Carlo (SLGHMC)",
                 ]))
                 if methodtype == 1
                     system["update_method"] = "HMC"
@@ -631,6 +702,11 @@ module Wizard
                     system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
                     system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
                     system["quench"] = true
+                elseif methodtype == 5
+                    system["update_method"] = "SLGHMC"
+                    #system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                    #system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                    #system["quench"] = true
                 end
             end
         else
@@ -642,7 +718,7 @@ module Wizard
     function set_nthermalization!(system,isexpert)
         Nthermalization = 0
         if isexpert
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" || system["update_method"] == "SLGHMC"
                 Nthermalization = parse(Int64,Base.prompt("Input the number of thermalization steps (no mearurement)", default="0"))
                 if Nthermalization<0
                     error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
@@ -654,7 +730,7 @@ module Wizard
 
     function set_totaltrajectoy!(system,isexpert)
         if isexpert
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" || system["update_method"] == "SLGHMC"
                 Nsteps = parse(Int64,Base.prompt("Input the number of total trajectories afterthermalization", default="$(100+system["initialtrj"])"))
                 if Nsteps<=0
                     error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
