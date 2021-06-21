@@ -76,7 +76,7 @@ module Wizard
 
             wilson,cg,staggered,system = set_dynamicalfermion!(system,isexpert)
             set_update_method!(system,isexpert)
-            if system["update_method"] == "SLGHMC"
+            if system["isSLHMC"] 
                 system_SLHMC = set_dynamicalfermion_SLGHMC!(system,isexpert)
                  
             else
@@ -87,7 +87,7 @@ module Wizard
             set_nthermalization!(system,isexpert)
             set_totaltrajectoy!(system,isexpert)
 
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC" || system["update_method"] == "SLGHMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"
                 set_MDparams!(system,md,isexpert)
             end
         end
@@ -660,6 +660,7 @@ module Wizard
     end
 
     function set_update_method!(system,isexpert)
+        system["isSLHMC"] = false
         if isexpert
             if system["quench"] == true
                 methodtype = request("Choose an update method",RadioMenu([
@@ -703,7 +704,8 @@ module Wizard
                     system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
                     system["quench"] = true
                 elseif methodtype == 5
-                    system["update_method"] = "SLGHMC"
+                    system["update_method"] = "HMC"
+                    system["isSLHMC"] = true
                     #system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
                     #system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
                     #system["quench"] = true
@@ -713,12 +715,13 @@ module Wizard
             system["update_method"] = "HMC"
 
         end
+        
     end
 
     function set_nthermalization!(system,isexpert)
         Nthermalization = 0
         if isexpert
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" || system["update_method"] == "SLGHMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" 
                 Nthermalization = parse(Int64,Base.prompt("Input the number of thermalization steps (no mearurement)", default="0"))
                 if Nthermalization<0
                     error("Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.")
@@ -730,7 +733,7 @@ module Wizard
 
     function set_totaltrajectoy!(system,isexpert)
         if isexpert
-            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" || system["update_method"] == "SLGHMC"
+            if system["update_method"] == "HMC" || system["update_method"] == "IntegratedHMC" || system["update_method"] == "SLHMC"|| system["update_method"] == "Heatbath" || system["update_method"] == "SLMC" 
                 Nsteps = parse(Int64,Base.prompt("Input the number of total trajectories afterthermalization", default="$(100+system["initialtrj"])"))
                 if Nsteps<=0
                     error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
