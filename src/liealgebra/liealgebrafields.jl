@@ -967,14 +967,14 @@ c----------------------------------------------------------------c
     end
 
     
-    function stoutfource(dSdU,U,smearing::T)  where T <: SmearingParam_single
+    function stoutforce(dSdU,U,smearing::T)  where T <: SmearingParam_single
         dSdUnew = deepcopy(dSdU)
-        dSdρs = stoutfource!(dSdUnew,dSdU,U,smearing,smearing.ρs)
+        dSdρs = stoutforce!(dSdUnew,dSdU,U,smearing,smearing.ρs)
         return dSdUnew,dSdρs
     end
 
     #evaluate_tensor_lines!(V,nu,dSdU::Array{T_1d,1},gparam::GaugeActionParam_autogenerator,U::Array{T,1},umu::Tuple{I,I},ix,iy,iz,it) where {T <: GaugeFields,I <: Int,T_1d <: GaugeFields_1d}
-    function stoutfource!(dSdUnew,dSdU,U,smearing::T,ρs)  where T <: SmearingParam
+    function stoutforce!(dSdUnew,dSdU,U,smearing::T,ρs)  where T <: SmearingParam
         #nu = 1
         #evaluate_tensor_lines(nu,dSdU,smearing,U,(nu,1),ρs)
         
@@ -1070,28 +1070,28 @@ c----------------------------------------------------------------c
         #return dSdUnew
     end
 
-    function stoutfource(dSdU,U_multi,U,smearing::T)  where T <: SmearingParam_multi
+    function stoutforce(dSdU,U_multi,U,smearing::T)  where T <: SmearingParam_multi
         dSdUnew = deepcopy(dSdU)
-        dSdρs = stoutfource!(dSdUnew,dSdU,U_multi,U,smearing)
+        dSdρs = stoutforce!(dSdUnew,dSdU,U_multi,U,smearing)
         return dSdUnew,dSdρs
     end
     
 
-    function stoutfource!(dSdUnew,dSdU,U_multi,U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <:  SmearingParam_multi}
+    function stoutforce!(dSdUnew,dSdU,U_multi,U::Array{GaugeFields{SU{NC}},1},smearing::T) where {NC,T <:  SmearingParam_multi}
         num = length(U_multi)
         dSdU_m = deepcopy(dSdU) 
         dSdU_m2 = deepcopy(dSdU)
         dSdρs = deepcopy(smearing.ρs)
         if num == 1
-            dSdρs[1] = stoutfource!(dSdUnew,dSdU,U,smearing,smearing.ρs[1])
+            dSdρs[1] = stoutforce!(dSdUnew,dSdU,U,smearing,smearing.ρs[1])
         else 
             for i=num:-1:2
                 #println(i)
                 #println(smearing.ρs[i])
-                dSdρs[i] = stoutfource!(dSdU_m2,dSdU_m,U_multi[i-1],smearing,smearing.ρs[i])
+                dSdρs[i] = stoutforce!(dSdU_m2,dSdU_m,U_multi[i-1],smearing,smearing.ρs[i])
                 dSdU_m,dSdU_m2 = dSdU_m2,dSdU_m
             end
-            dSdρs[1] =stoutfource!(dSdUnew,dSdU_m,U,smearing,smearing.ρs[1])
+            dSdρs[1] =stoutforce!(dSdUnew,dSdU_m,U,smearing,smearing.ρs[1])
         end
         return dSdρs
         

@@ -196,9 +196,14 @@ module System_parameters
 
         smearing_for_fermion::String
         stout_numlayers::Union{Nothing,Int64}
-        stout_ρ::Union{Nothing,Array{Float64,1}}
+        stout_ρ::Union{Nothing,Array{Float64,1},Array{Array{Float64,1},1}}
         stout_loops::Union{Nothing,Array{String,1}}
 
+        
+        stout_numlayers_SLHMC::Union{Nothing,Int64}
+        stout_ρ_SLHMC::Union{Nothing,Array{Float64,1},Array{Array{Float64,1},1}}
+        stout_loops_SLHMC::Union{Nothing,Array{String,1}}
+        
 
 
         
@@ -532,6 +537,10 @@ module System_parameters
             stout_ρ = set_params(system,"stout_ρ",nothing)
             stout_loops = set_params(system,"stout_loops",nothing)
 
+            stout_numlayers_SLHMC = set_params(system,"stout_numlayers",nothing)
+            stout_ρ_SLHMC = set_params(system,"stout_ρ",nothing)
+            stout_loops_SLHMC = set_params(system,"stout_loops",nothing)
+
 
             
             return new(
@@ -587,7 +596,10 @@ module System_parameters
                 smearing_for_fermion,
                 stout_numlayers,
                 stout_ρ,
-                stout_loops 
+                stout_loops,
+                stout_numlayers_SLHMC,
+                stout_ρ_SLHMC,
+                stout_loops_SLHMC 
             )
 
         end

@@ -441,6 +441,59 @@ module Wizard
         end
     end
 
+    function set_SLHMC_smearing!(system)
+        println("SLHMC smearing setting: ")
+        system["smearing_for_fermion_SLHMC"] = "stout"
+        system["stout_numlayers_SLHMC"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+        kindsof_loops = ["plaquette","polyakov_t","polyakov_x","polyakov_y","polyakov_z","rectangular","chair"]
+        stout_menu = MultiSelectMenu(kindsof_loops)
+        choices = request("Select the kinds of loops you want to add in stout smearing:", stout_menu)
+
+        if system["stout_numlayers_SLHMC"] == 1
+                
+            count = 0
+            ρs = Float64[]
+            loops = String[]
+            for  i in choices
+                count += 1
+                ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                push!(ρs,ρ)
+                push!(loops,kindsof_loops[i])
+            end
+            #println(ρs)
+            system["stout_ρ_SLHMC"] = ρs
+            system["stout_loops_SLHMC"] = loops
+            #system["stout_ρ"] = [parse(Float64,Base.prompt("stout parameter ρ ?", default="0.1"))]
+        else
+            vec_ρs = Array{Float64,1}[]
+            loops = String[]
+            count = 0
+            for  i in choices
+                count += 1
+                push!(loops,kindsof_loops[i])
+            end
+            system["stout_loops_SLHMC"] = loops
+
+            for ilayer = 1:system["stout_numlayers_SLHMC"]
+                println("$ilayer-th layer: ")
+                count = 0
+                ρs = Float64[]
+                loops = String[]
+                for  i in choices
+                    count += 1
+                    ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                    push!(ρs,ρ)
+                    push!(loops,kindsof_loops[i])
+                end
+                push!(vec_ρs,ρs)
+            end
+            system["stout_ρ_SLHMC"] = vec_ρs
+            #error("system[\"stout_numlayers\"] = $(system["stout_numlayers"]) is not supported yet!")
+        end
+
+        println("SLHMC smearing setting is done.")
+    end
+
     function set_smearing!(system)
         smearing = request("Choose smearing scheme for fermions",RadioMenu([
                         "nothing",
@@ -450,12 +503,14 @@ module Wizard
             system["smearing_for_fermion"] = "nothing"
         elseif smearing == 2
             system["smearing_for_fermion"] = "stout"
-            system["stout_numlayers"] = 1
-            #system["stout_numlayers"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+            #system["stout_numlayers"] = 1
+            system["stout_numlayers"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+            kindsof_loops = ["plaquette","polyakov_t","polyakov_x","polyakov_y","polyakov_z","rectangular","chair"]
+            stout_menu = MultiSelectMenu(kindsof_loops)
+            choices = request("Select the kinds of loops you want to add in stout smearing:", stout_menu)
+            
             if system["stout_numlayers"] == 1
-                kindsof_loops = ["plaquette","rectangular","chair","polyakov_x","polyakov_y","polyakov_z","polyakov_t"]
-                stout_menu = MultiSelectMenu(kindsof_loops)
-                choices = request("Select the kinds of loops you want to add in stout smearing:", stout_menu)
+                
                 count = 0
                 ρs = Float64[]
                 loops = String[]
@@ -470,7 +525,30 @@ module Wizard
                 system["stout_loops"] = loops
                 #system["stout_ρ"] = [parse(Float64,Base.prompt("stout parameter ρ ?", default="0.1"))]
             else
-                error("system[\"stout_numlayers\"] = $(system["stout_numlayers"]) is not supported yet!")
+                vec_ρs = Array{Float64,1}[]
+                loops = String[]
+                count = 0
+                for  i in choices
+                    count += 1
+                    push!(loops,kindsof_loops[i])
+                end
+                system["stout_loops"] = loops
+
+                for ilayer = 1:system["stout_numlayers"]
+                    println("$ilayer-th layer: ")
+                    count = 0
+                    ρs = Float64[]
+                    loops = String[]
+                    for  i in choices
+                        count += 1
+                        ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                        push!(ρs,ρ)
+                        push!(loops,kindsof_loops[i])
+                    end
+                    push!(vec_ρs,ρs)
+                end
+                system["stout_ρ"] = vec_ρs
+                #error("system[\"stout_numlayers\"] = $(system["stout_numlayers"]) is not supported yet!")
             end
         end
     end

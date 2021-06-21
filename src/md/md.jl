@@ -18,7 +18,7 @@ module MD
                             calc_GaugeAction,apply_smearing,calc_smearingU
     import ..Gaugefields
     import ..LieAlgebrafields:gauss_distribution_lie!,LieAlgebraFields,SU3AlgebraFields,SU2AlgebraFields,
-                                Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutfource
+                                Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutforce
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
             StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
@@ -781,9 +781,9 @@ module MD
 
         
         if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uin,fparam.smearing) 
         elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
         else
             error("$(typeof(fparam.smearing)) is not supported")
         end
