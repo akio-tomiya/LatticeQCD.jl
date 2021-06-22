@@ -396,6 +396,10 @@ module LTK_universe
             num_tempfield_f += 4
         end
 
+        if fparam_SLHMC != nothing
+            num_tempfield_g += 4
+        end
+
         if fparam != nothing && fparam.Dirac_operator == "Staggered"
             if fparam.Nf != 4 && fparam.Nf != 8
                 N_action = get_order(fparam.rhmc_action)
