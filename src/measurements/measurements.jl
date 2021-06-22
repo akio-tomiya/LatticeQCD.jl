@@ -972,7 +972,7 @@ end
         #
         pbp = 0.0
         # setup a massive Dirac operator
-        U,_... = calc_smearingU(univ.U,meas.fparam.smearing)
+        U,_ = calc_smearingU(univ.U,meas.fparam.smearing)
         M = Dirac_operator(U,meas._temporal_fermi2[1],meas.fparam)
         #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
         for ir=1:Nr
@@ -1080,7 +1080,7 @@ end
         #k = meas._temporal_fermi2[2] # sink allocate
 
         # setup a massive Dirac operator
-        U,_... = calc_smearingU(univ.U,meas.fparam.smearing)
+        U,_ = calc_smearingU(univ.U,meas.fparam.smearing)
         M = Dirac_operator(U,meas._temporal_fermi2[1],meas.fparam)
         #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
 

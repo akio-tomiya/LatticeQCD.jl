@@ -396,9 +396,9 @@ module LTK_universe
             num_tempfield_f += 4
         end
 
-        if fparam_SLHMC != nothing
-            num_tempfield_g += 4
-        end
+        #if fparam_SLHMC != nothing
+        #    num_tempfield_g += 4
+        #end
 
         if fparam != nothing && fparam.Dirac_operator == "Staggered"
             if fparam.Nf != 4 && fparam.Nf != 8
@@ -940,7 +940,7 @@ module LTK_universe
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
         gauss_distribution_fermi!(univ.η,univ.ranf)
         if univ.fparam.Nf == 4
-            U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+            U,_ = calc_smearingU(univ.U,univ.fparam.smearing)
 
             evensite = false
             W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
@@ -954,7 +954,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_ = calc_smearingU(univ.U,univ.fparam.smearing)
 
 
         W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
@@ -963,7 +963,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_ = calc_smearingU(univ.U,univ.fparam.smearing)
         
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
         
@@ -999,7 +999,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC},fparam)  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC}
-        U,_... = calc_smearingU(univ.U,fparam.smearing)
+        U,_ = calc_smearingU(univ.U,fparam.smearing)
 
         W = Diracoperators.Dirac_operator(U,univ.η,fparam)
         bicg(univ.η,W',univ.φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
@@ -1016,7 +1016,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC},fparam)  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC} # eta = Wdag^{-1} phi
-        U,_... = calc_smearingU(univ.U,fparam.smearing)
+        U,_ = calc_smearingU(univ.U,fparam.smearing)
         if fparam.Nf == 4 || fparam.Nf == 8
             W = Diracoperators.Dirac_operator(U,univ.η,fparam)
             bicg(univ.η,W',univ.φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
