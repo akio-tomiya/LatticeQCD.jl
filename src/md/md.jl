@@ -8,7 +8,7 @@ module MD
 
     import ..Actions:GaugeActionParam_standard,
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
-                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing
+                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing,update_smearing!
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
                 construct_fermionfield_φ!,construct_fermionfield_η!,get_fparam
@@ -25,8 +25,6 @@ module MD
     using ..Fermionfields
     import ..Heatbath:heatbath!
 
-
-
     #import ..CGfermion:cg0!,cg0_WdagW!,shiftedcg0_WdagW!
     import ..Clover:Make_CloverFμν!,dSclover!
     import ..System_parameters:Params
@@ -36,6 +34,9 @@ module MD
     import ..CGmethods:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+
+    import ..Training:TrainableWeights,TrainableWeights_ADAM,train!
+    using ..Training
 
 
     abstract type MD_parameters end
@@ -216,9 +217,18 @@ module MD
             if univ.isSLHMC
                 diff = Sf_new_eff-Sf_new
                 #println(fp2,real(diff))
-                println("diff: ",diff)
+                println("#diff  ",diff)
                 dCdρs  = -diff .* dSdρs 
-                println("dCdρs = ",dCdρs)
+                println("#dCdρs ",real.(dCdρs))
+                #println(univ.fparam_SLHMC.smearing)
+                if univ.fparam_SLHMC.istrainable
+                    Training.train!(univ.fparam_SLHMC.smearing,dCdρs)
+                    #println(univ.fparam_SLHMC.smearing.ρs)
+                    #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                    update_smearing!(univ.fparam_SLHMC)
+                    println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                end
                 
             end
         end
@@ -663,94 +673,6 @@ module MD
 
         end
         return
-
-        #=
-
-
-        temp0_f = temps_fermi[1] #F_field
-        temp1_f = temps_fermi[2] #F_field
-        temp2_g = temps[1] #G_field1
-        temp3_g = temps[2] #G_field1
-        c = temp_a[1]
-        NV = temp2_g.NV
-        
-
-
-        W = Dirac_operator(U,φ,fparam)
-        mul!(Y,W,X)
-        set_wing_fermi!(Y)
-        
-        
-
-        for μ=1:4
-            #!  Construct U(x,mu)*P1
-
-            # U_{k,μ} X_{k+μ}
-            fermion_shift!(temp0_f,U,μ,X)
-            # (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp0_f,view(X.rminusγ,:,:,μ),temp0_f)
-            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
-            mul!(temp1_f,X.hopp[μ],temp0_f)
-
-            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-            vvmat!(temp2_g,temp1_f,Y,1)
-            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
-
-
-            #!  Construct P2*U_adj(x,mu)
-            # Y_{k+μ}^dag U_{k,μ}^dag
-            fermion_shiftB!(temp0_f,U,-μ,Y)
-            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp0_f,temp0_f,view(X.rplusγ,:,:,μ))
-
-            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            mul!(temp1_f,X.hopm[μ],temp0_f)
-
-            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            vvmat!(temp2_g,X,temp1_f,2)
-
-            mul!(temp3_g,U[μ]',temp2_g)
-            #Gaugefields.add!(dSdU[μ],temp3_g)
-            Gaugefields.muladd!(dSdU[μ],-1,temp3_g)
-
-
-            if typeof(fparam) == FermiActionParam_WilsonClover
-                dSclover!(c,μ,X,Y,U,fparam,temps)
-                Gaugefields.muladd!(dSdU[μ],-1,c)
-                #add!(p[μ],-τ*mdparams.Δτ,c)
-            end
-
-
-
-        end
-
-        if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: Nosmearing
-            dSdUnew = dSdU
-        else
-            error("$(typeof(fparam.smearing)) is not supported")
-        end
-
-
-        for μ=1:4
-
-            mul!(temp2_g,Uin[μ],dSdUnew[μ])
-
-            #.....   Projection onto Lie Algebra   .....
-            projlink!(temp3_g,temp2_g)
-            Gauge2Lie!(c,temp3_g)
-
-
-            #...  p(new) = p(old) + fac * c  .....
-            add!(p[μ],τ*mdparams.Δτ,c)
-
-        end
-
-        =#
-
         
 
     end
@@ -1019,66 +941,7 @@ module MD
         end
         return
 
-        #=
-
-        temp0_f = temps_fermi[1] #F_field
-        temp1_f = temps_fermi[2] #F_field
-        temp2_g = temps[1] #G_field1
-        temp3_g = temps[2] #G_field1
-        c = temp_a[1]
-        NV = temp2_g.NV
-
-        W = Dirac_operator(U,φ,fparam)
-        mul!(Y,W,X)
-
-        for μ=1:4
-            #!  Construct U(x,mu)*P1
-
-            # U_{k,μ} X_{k+μ}
-            fermion_shift!(temp0_f,U,μ,X)
-
-
-            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-            vvmat!(temp2_g,temp0_f,Y,1)
-            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
-
-
-            #!  Construct P2*U_adj(x,mu)
-            # Y_{k+μ}^dag U_{k,μ}^dag
-            fermion_shiftB!(temp0_f,U,-μ,Y)
-
-            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            #vvmat!(UdSdU2[μ],X,temp0_f,2)
-            #if fparam.smearing != nothing
-            vvmat!(temp2_g,X,temp0_f,2)
-
-            mul!(temp3_g,U[μ]',temp2_g)
-            Gaugefields.add!(dSdU[μ],temp3_g)
-        end
-
         
-        if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutforce(dSdU,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
-        else
-            error("$(typeof(fparam.smearing)) is not supported")
-        end
-        
-
-        for μ=1:4
-            mul!(temp2_g,Uin[μ],dSdUnew[μ])
-            projlink!(temp3_g,temp2_g)
-
-
-            Gauge2Lie!(c,temp3_g)
-
-
-            add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,c)
-        end
-        return
-
-        =#
 
     end
 
@@ -1203,7 +1066,6 @@ module MD
                     Gauge2Lie!(c,temp3_g)
                     add!(p[μ],-0.5*τ*mdparams.Δτ,c)
                 end
-
             end
             
             
@@ -1231,7 +1093,7 @@ module MD
         Gaugefields.clear!(temps[end-3])
         U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
 
-        dSdρ = zero(fparam.smearing.ρs)
+        #dSdρ = zero(fparam.smearing.ρs)
 
         WdagW = DdagD_operator(U,φ,fparam)
 
@@ -1264,7 +1126,6 @@ module MD
             for j=1:N_MD
                 set_wing_fermi!(vec_x[j])
                 if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
-
                     calc_dSdU!(dSdU,Y,φ,vec_x[j],fparam,
                                 U,Uout_multi,Uin,
                                 temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff = vec_α[j]

@@ -450,6 +450,7 @@ module Wizard
 
     function set_SLHMC_smearing!(system)
         println("SLHMC smearing setting: ")
+
         system["smearing_for_fermion_SLHMC"] = "stout"
         system["stout_numlayers_SLHMC"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
         kindsof_loops = ["plaquette","polyakov_t","polyakov_x","polyakov_y","polyakov_z","rectangular","chair"]
@@ -463,7 +464,7 @@ module Wizard
             loops = String[]
             for  i in choices
                 count += 1
-                ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="$((2*rand()-1)*1e-2)"))
                 push!(ρs,ρ)
                 push!(loops,kindsof_loops[i])
             end
@@ -488,7 +489,7 @@ module Wizard
                 loops = String[]
                 for  i in choices
                     count += 1
-                    ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"))
+                    ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="$((2*rand()-1)*1e-2)"))
                     push!(ρs,ρ)
                     push!(loops,kindsof_loops[i])
                 end
@@ -705,6 +706,17 @@ module Wizard
                 elseif methodtype == 5
                     system["update_method"] = "HMC"
                     system["isSLHMC"] = true
+                    train = request("are SLHMC parameters trainable?",RadioMenu([
+                        "trainable",
+                        "fixed parameters",
+                    ]))
+                    if train == 1
+                        system["isSLHMCtrainable"]= true
+                        #return run_wizard_simple()
+                    else
+                        system["isSLHMCtrainable"]= false
+                    end
+
                     #system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
                     #system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
                     #system["quench"] = true

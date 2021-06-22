@@ -3,6 +3,8 @@ module Actions
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC
+    import ..Training:TrainableWeights,TrainableWeights_ADAM
+    using ..Training
 
 
     abstract type GaugeActionParam end
@@ -20,26 +22,35 @@ module Actions
     abstract type SmearingParam_multi <: SmearingParam
     end
 
-    mutable struct SmearingParam_stout <: SmearingParam_single
+    mutable struct SmearingParam_stout{TrainableWeights} <: SmearingParam_single
         staples_for_stout::Array{Array{Wilson_loop_set,1},1}
         tensor_derivative::Array{Tensor_derivative_set,1}
         staples_for_stout_dag::Array{Array{Wilson_loop_set,1},1}
         tensor_derivative_dag::Array{Tensor_derivative_set,1}
         ρs::Array{Float64,1}
+        trainableweights::TrainableWeights
         #ρs::Array{Float64,1}
     end
 
-    mutable struct SmearingParam_stout_multi <: SmearingParam_multi
+    mutable struct SmearingParam_stout_multi{TrainableWeights} <: SmearingParam_multi
         staples_for_stout::Array{Array{Wilson_loop_set,1},1}
         tensor_derivative::Array{Tensor_derivative_set,1}
         staples_for_stout_dag::Array{Array{Wilson_loop_set,1},1}
         tensor_derivative_dag::Array{Tensor_derivative_set,1}
         ρs::Array{Array{Float64,1},1}
+        trainableweights::TrainableWeights
         #ρs::Array{Float64,1}
     end
 
     const Nosmearing = SmearingParam_nosmearing
     const Stout = SmearingParam_stout
+
+    function Training.train!(smearing::T,g) where {T <: SmearingParam}
+        Training.train!(smearing.trainableweights,g)
+    end
+
+
+
 
     mutable struct GaugeActionParam_standard <: GaugeActionParam
         β::Float64
@@ -58,7 +69,6 @@ module Actions
     end
 
     
-
 
 
 
@@ -88,20 +98,22 @@ module Actions
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
         smearing::SmearingParam 
+        istrainable::Bool = false
 
         function FermiActionParam_Wilson(hop,r,eps,Dirac_operator,MaxCGstep,quench
             ;smearingparameters = "nothing",
             loops_list = nothing,
             coefficients  = nothing,
             numlayers = 1,
-            L = nothing)
+            L = nothing,
+            isSLHMCtrainable = false)
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable = isSLHMCtrainable)
             #smearing = Nosmearing()
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            return new(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing,isSLHMCtrainable)
         end
 
     end
@@ -126,6 +138,7 @@ module Actions
         SUNgenerator::Union{Nothing,Generator}
         _cloverloops::Array{Wilson_loop_set,2}
         smearing::SmearingParam 
+        istrainable::Bool = false
 
         function FermiActionParam_WilsonClover(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
@@ -134,9 +147,10 @@ module Actions
             loops_list = nothing,
             coefficients  = nothing,
             numlayers = 1,
-            L = nothing)
+            L = nothing,
+            isSLHMCtrainable = false)
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable=isSLHMCtrainable)
             
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
@@ -146,12 +160,12 @@ module Actions
             return new(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
             _is1,_is2,
-            quench, SUNgenerator,_cloverloops,smearing)
+            quench, SUNgenerator,_cloverloops,smearing,isSLHMCtrainable)
         end
     end
 
 
-    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers;trainable = false)
         if smearingparameters == "nothing"
             smearing = Nosmearing()
         else
@@ -161,15 +175,21 @@ module Actions
             @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
             println("stout smearing will be used")
             if numlayers == 1
-                smearing = SmearingParam_stout(loops,coefficients)
+                smearing = SmearingParam_stout(loops,coefficients,trainable = trainable)
             else
                 numloops = length(loops)
                 smearing_single = SmearingParam_stout(loops,rand(numloops))
-                smearing = SmearingParam_stout_multi(smearing_single.staples_for_stout,
+                if trainable
+                    trainableweights = TrainableWeights_ADAM(coefficients)
+                else
+                    trainableweights = nothing
+                end
+                smearing = SmearingParam_stout_multi{typeof(trainableweights)}(smearing_single.staples_for_stout,
                     smearing_single.tensor_derivative,
                     smearing_single.staples_for_stout_dag,
                     smearing_single.tensor_derivative_dag,
-                    coefficients
+                    coefficients,
+                    trainableweights
                     )
 
             end
@@ -189,6 +209,7 @@ module Actions
         rhmc_action::Union{Nothing,RHMC}
         rhmc_MD::Union{Nothing,RHMC}
         smearing::SmearingParam
+        istrainable::Bool = false
 
 
 
@@ -202,7 +223,8 @@ module Actions
             loops_list = nothing,
             coefficients  = nothing,
             numlayers = 1,
-            L = nothing
+            L = nothing,
+            isSLHMCtrainable = false
             ) where T <: Real
 
             if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
@@ -226,7 +248,7 @@ module Actions
                 rhmc_MD = RHMC(order,n=10)
             end
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable = isSLHMCtrainable)
 
 
             return new(
@@ -238,9 +260,28 @@ module Actions
             Nf,
             rhmc_action,
             rhmc_MD,
-            smearing
+            smearing,
+            isSLHMCtrainable
             )
         end
+    end
+
+    function update_smearing!(fparam_SLHMC::T) where {T <: FermiActionParam}
+        update_smearing!(fparam_SLHMC.smearing.ρs,fparam_SLHMC.smearing.trainableweights.ρs)
+        #fparam_SLHMC.smearing.ρs = deepcopy(fparam_SLHMC.smearing.trainableweights.ρs)
+        return
+    end
+
+    function update_smearing!(smearing_ρs::Array{Array{T1,1},1},trained_ρs::Array{Array{T2,1},1}) where {T1 <: Number,T2 <: Number}
+        @assert length(smearing_ρs) == length(trained_ρs)
+        for (i,ρ) in enumerate(trained_ρs)
+            smearing_ρs[i] = deepcopy(ρ)
+        end
+    end
+
+    function update_smearing!(smearing_ρs::Array{T1,1},trained_ρs::Array{Array{T2,1},1}) where {T1 <: Number,T2 <: Number}
+        @assert length(trained_ρs) == 1
+        smearing_ρs[:] = trained_ρs[1][:]
     end
 
 
@@ -415,7 +456,7 @@ module Actions
 
 
 
-    function SmearingParam_stout(loops_smearing,ρs)
+    function SmearingParam_stout(loops_smearing,ρs;trainable = false)
         num = length(loops_smearing)
         @assert num == length(ρs) "number of ρ elements in stout smearing scheme should be $num. Now $(length(ρs))"
         staplesforsmear_set = Array{Wilson_loop_set,1}[]
@@ -454,13 +495,19 @@ module Actions
             push!(staplesforsmear_dag_set,staplesforsmear_dag)
 
         end
+        if trainable
+            trainableweights = TrainableWeights_ADAM([ρs])
+        else
+            trainableweights = nothing
+        end
 
-        return SmearingParam_stout(
+        return SmearingParam_stout{typeof(trainableweights)}(
             staplesforsmear_set, 
             tensor_derivative, 
             staplesforsmear_dag_set, 
             tensor_derivative_dag,
-            ρs 
+            ρs,
+            trainableweights
             ) 
     end
 

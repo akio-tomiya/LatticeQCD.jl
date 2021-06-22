@@ -251,20 +251,34 @@ module LTK_universe
                     error("SLHMC parameters are not set!")
                 else
                     if p.SLHMC_parameters["Dirac_operator"] == "Staggered"
-                        fparam_SLHMC = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf,
+                        fparam_SLHMC = FermiActionParam_Staggered(
+                                                                p.SLHMC_parameters["mass"],
+                                                                p.SLHMC_parameters["eps"],
+                                                                p.SLHMC_parameters["Dirac_operator"],
+                                                                p.SLHMC_parameters["MaxCGstep"],
+                                                                p.SLHMC_parameters["quench"],
+                                                                p.SLHMC_parameters["Nf"],
                                                                 smearingparameters = "stout",
                                                                 loops_list = p.SLHMC_parameters["stout_loops_SLHMC"],
                                                                 coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
                                                                 numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
-                                                                L = p.L
+                                                                L = p.L,
+                                                                isSLHMCtrainable = p.isSLHMCtrainable
                                                             )
                     elseif p.SLHMC_parameters["Dirac_operator"] == "Wilson"
-                        fparam_SLHMC = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,
+                        fparam_SLHMC = FermiActionParam_Wilson(
+                                                        p.SLHMC_parameters["hop"] ,
+                                                        p.SLHMC_parameters["r"] ,
+                                                        p.SLHMC_parameters["eps"] ,
+                                                        p.SLHMC_parameters["Dirac_operator"] ,
+                                                        p.SLHMC_parameters["MaxCGstep"] ,
+                                                        p.SLHMC_parameters["quench"] ,
                                                         smearingparameters = "stout",
                                                         loops_list = p.SLHMC_parameters["stout_loops_SLHMC"],
                                                         coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
                                                         numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
-                                                        L = p.L)
+                                                        L = p.L,
+                                                        isSLHMCtrainable = p.isSLHMCtrainable)
                     elseif p.SLHMC_parameters["Dirac_operator"] == "WilsonClover"
                         error("SLHMC for Wilson with clover is not supported yet!")
                     else
@@ -279,6 +293,8 @@ module LTK_universe
         else
             fparam_SLHMC = nothing
         end
+
+        
 
         univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format,fparam_SLHMC)
 
