@@ -217,7 +217,7 @@ module MD
             if univ.isSLHMC
                 diff = Sf_new_eff-Sf_new
                 #println(fp2,real(diff))
-                println("#diff  ",diff)
+                println("#diff  ",real(diff))
                 dCdρs  = -diff .* dSdρs 
                 println("#dCdρs ",real.(dCdρs))
                 #println(univ.fparam_SLHMC.smearing)
@@ -281,10 +281,41 @@ module MD
         end
 
         if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sf_new_eff = univ.η*univ.η
+                println("effective ",Sf_new_eff)
+
+                dSdUnew,dSdρs = calc_smearedfermionforce!(univ,univ.U,univ.fparam_SLHMC)
+                println("dSdρs = ",dSdρs)
+            end
+
             construct_fermionfield_η!(univ)
         end
 
         Snew,plaq = calc_Action(univ)
+        Sf_new = univ.η*univ.η
+        println("original ",Sf_new)
+
+        if univ.quench == false
+            if univ.isSLHMC
+                diff = Sf_new_eff-Sf_new
+                #println(fp2,real(diff))
+                println("#diff  ",real(diff))
+                dCdρs  = -diff .* dSdρs 
+                println("#dCdρs ",real.(dCdρs))
+                #println(univ.fparam_SLHMC.smearing)
+                if univ.fparam_SLHMC.istrainable
+                    Training.train!(univ.fparam_SLHMC.smearing,dCdρs)
+                    #println(univ.fparam_SLHMC.smearing.ρs)
+                    #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                    update_smearing!(univ.fparam_SLHMC)
+                    println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                end
+                
+            end
+        end
 
         return Snew
     end

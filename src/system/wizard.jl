@@ -166,7 +166,7 @@ module Wizard
         return wilson,cg,staggered,system
     end
 
-    function wilson_wizard!(system,standardonly = false)
+    function wilson_wizard!(system;standardonly = false)
         wilson = Dict()
         cg = Dict()
         staggered = Dict()
