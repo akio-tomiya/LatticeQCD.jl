@@ -76,6 +76,22 @@ using Test
             plaq_comparison = 0.565176584402352
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
+
+    end
+
+    @testset "HMC with stout smearing" begin
+        @testset "Staggered SU(3) with 2 tastes" begin
+            @time plaq = run_LQCD("test_stout_ks.jl")
+            plaq_comparison = 0.6280679913562273
+            @test abs(plaq - plaq_comparison)/plaq_comparison < eps
+        end
+
+        @testset "Wilson SU(3)" begin
+            @time plaq = run_LQCD("test_stout_wilson.jl")
+            plaq_comparison = 0.6259505632849116 
+            @test abs(plaq - plaq_comparison)/plaq_comparison < eps
+        end
+        
     end
 
             
