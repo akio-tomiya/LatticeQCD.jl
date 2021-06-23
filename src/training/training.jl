@@ -28,6 +28,9 @@ module Training
         end
     end
 
+    ```
+    Stochastic Gradient Descent (SGD)
+    ```
     mutable struct TrainableWeights_SGD <: TrainableWeights
         ρs::Array{Array{Float64,1},1}
         η::Float64
@@ -37,6 +40,10 @@ module Training
         end
     end
 
+    ```
+    training with SGD.
+    Stochastic Gradient Descent (SGD)
+    ```
     function train!(tw::T,g) where T <: TrainableWeights_SGD
         for i=1:length(tw.ρs)
             for j=1:length(tw.ρs[i])
