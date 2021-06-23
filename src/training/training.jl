@@ -2,10 +2,10 @@ module Training
     abstract type TrainableWeights
     end
 
-    ```
+    """
     Adam: A Method for Stochastic Optimization
     Diederik P. Kingma, Jimmy Ba, arXiv:1412.6980
-    ```
+    """
     mutable struct TrainableWeights_ADAM <: TrainableWeights
         ρs::Array{Array{Float64,1},1}
         ms::Array{Array{Float64,1},1}
@@ -28,9 +28,9 @@ module Training
         end
     end
 
-    ```
+    """
     Stochastic Gradient Descent (SGD)
-    ```
+    """
     mutable struct TrainableWeights_SGD <: TrainableWeights
         ρs::Array{Array{Float64,1},1}
         η::Float64
@@ -40,10 +40,10 @@ module Training
         end
     end
 
-    ```
+    """
     training with SGD.
     Stochastic Gradient Descent (SGD)
-    ```
+    """
     function train!(tw::T,g) where T <: TrainableWeights_SGD
         for i=1:length(tw.ρs)
             for j=1:length(tw.ρs[i])
@@ -52,11 +52,11 @@ module Training
         end
     end
 
-    ```
+    """
     training with ADAM.
     Adam: A Method for Stochastic Optimization
     Diederik P. Kingma, Jimmy Ba, arXiv:1412.6980
-    ```
+    """
     function train!(tw::T,g) where T <: TrainableWeights_ADAM
         t = tw.t
         for i=1:length(tw.ms)
