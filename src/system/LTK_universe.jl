@@ -263,7 +263,8 @@ module LTK_universe
                                                                 coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
                                                                 numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
                                                                 L = p.L,
-                                                                isSLHMCtrainable = p.isSLHMCtrainable
+                                                                isSLHMCtrainable = p.isSLHMCtrainable,
+                                                                hyperparameters = p.hyperparameters_SLHMC
                                                             )
                     elseif p.SLHMC_parameters["Dirac_operator"] == "Wilson"
                         fparam_SLHMC = FermiActionParam_Wilson(
@@ -278,7 +279,8 @@ module LTK_universe
                                                         coefficients  = p.SLHMC_parameters["stout_ρ_SLHMC"] ,
                                                         numlayers = p.SLHMC_parameters["stout_numlayers_SLHMC"] ,
                                                         L = p.L,
-                                                        isSLHMCtrainable = p.isSLHMCtrainable)
+                                                        isSLHMCtrainable = p.isSLHMCtrainable,
+                                                        hyperparameters = p.hyperparameters_SLHMC)
                     elseif p.SLHMC_parameters["Dirac_operator"] == "WilsonClover"
                         error("SLHMC for Wilson with clover is not supported yet!")
                     else

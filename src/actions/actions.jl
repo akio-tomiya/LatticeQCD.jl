@@ -106,9 +106,12 @@ module Actions
             coefficients  = nothing,
             numlayers = 1,
             L = nothing,
-            isSLHMCtrainable = false)
+            isSLHMCtrainable = false,
+            hyperparameters = nothing)
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable = isSLHMCtrainable)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,
+                                            trainable = isSLHMCtrainable,
+                                            hyperparameters = hyperparameters)
             #smearing = Nosmearing()
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
@@ -148,9 +151,12 @@ module Actions
             coefficients  = nothing,
             numlayers = 1,
             L = nothing,
-            isSLHMCtrainable = false)
+            isSLHMCtrainable = false,
+            hyperparameters = nothing)
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable=isSLHMCtrainable)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,
+                                            trainable=isSLHMCtrainable,
+                                            hyperparameters = hyperparameters)
             
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
@@ -165,7 +171,7 @@ module Actions
     end
 
 
-    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers;trainable = false)
+    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers;trainable = false,hyperparameters = nothing)
         if smearingparameters == "nothing"
             smearing = Nosmearing()
         else
@@ -175,12 +181,26 @@ module Actions
             @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
             println("stout smearing will be used")
             if numlayers == 1
-                smearing = SmearingParam_stout(loops,coefficients,trainable = trainable)
+                smearing = SmearingParam_stout(loops,coefficients,
+                                                trainable = trainable,
+                                                hyperparameters = hyperparameters)
             else
                 numloops = length(loops)
                 smearing_single = SmearingParam_stout(loops,rand(numloops))
                 if trainable
-                    trainableweights = TrainableWeights_ADAM(coefficients)
+                    if hyperparameters == nothing
+                        trainableweights = TrainableWeights_ADAM(coefficients)
+                    else
+                        if hyperparameters["method"] == "ADAM"
+                            trainableweights = TrainableWeights_ADAM(coefficients,
+                                                η = hyperparameters["η"],
+                                                ε = hyperparameters["ε"],
+                                                β1 = hyperparameters["β1"],
+                                                β2 = hyperparameters["β2"])
+                        else
+                            error("optimazation method $(hyperparameters["method"]) is not supported! use ADAM for example")
+                        end
+                    end
                 else
                     trainableweights = nothing
                 end
@@ -224,7 +244,8 @@ module Actions
             coefficients  = nothing,
             numlayers = 1,
             L = nothing,
-            isSLHMCtrainable = false
+            isSLHMCtrainable = false,
+            hyperparameters = nothing
             ) where T <: Real
 
             if Nf == 4 || Nf == 8 # 8 flavors if phi (Mdag M)^{-1} phi
@@ -248,7 +269,9 @@ module Actions
                 rhmc_MD = RHMC(order,n=10)
             end
 
-            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,trainable = isSLHMCtrainable)
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,
+                                            trainable = isSLHMCtrainable,
+                                            hyperparameters = hyperparameters)
 
 
             return new(
@@ -456,7 +479,7 @@ module Actions
 
 
 
-    function SmearingParam_stout(loops_smearing,ρs;trainable = false)
+    function SmearingParam_stout(loops_smearing,ρs;trainable = false,hyperparameters = nothing)
         num = length(loops_smearing)
         @assert num == length(ρs) "number of ρ elements in stout smearing scheme should be $num. Now $(length(ρs))"
         staplesforsmear_set = Array{Wilson_loop_set,1}[]
@@ -496,7 +519,20 @@ module Actions
 
         end
         if trainable
-            trainableweights = TrainableWeights_ADAM([ρs])
+            if hyperparameters == nothing
+                trainableweights = TrainableWeights_ADAM([ρs])
+            else
+                if hyperparameters["method"] == "ADAM"
+                    trainableweights = TrainableWeights_ADAM([ρs],
+                            η = hyperparameters["η"],
+                            ε = hyperparameters["ε"],
+                            β1 = hyperparameters["β1"],
+                            β2 = hyperparameters["β2"])
+                else
+                    error("optimazation method $(hyperparameters["method"]) is not supported! use ADAM for example")
+                end
+            end
+            #trainableweights = TrainableWeights_ADAM([ρs])
         else
             trainableweights = nothing
         end
