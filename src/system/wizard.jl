@@ -742,13 +742,13 @@ module Wizard
                             system["optimazation_SLHMC"] = "ADAM"
                             
                             hyperparameters_SLHMC["η"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: η", default="0.0005"))
-                            hyperparameters_SLHMC["ε"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: ε", default="10e-8"))
+                            hyperparameters_SLHMC["ε"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: ε", default="1e-8"))
                             hyperparameters_SLHMC["β1"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: β1", default="0.9"))
                             hyperparameters_SLHMC["β2"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: β2", default="0.999"))
                         elseif  optimazation == 2
                             println("Optimazation method: SGD is used")
                             system["optimazation_SLHMC"] = "SGD"
-                            hyperparameters_SLHMC["η"] = parse(Float64,Base.prompt("Hyperparameter in SGD: η", default="0.0005"))
+                            hyperparameters_SLHMC["η"] = parse(Float64,Base.prompt("Hyperparameter in SGD: η", default="1e-5"))
                         end
 
                         hyperparameters_SLHMC["method"] = system["optimazation_SLHMC"]
