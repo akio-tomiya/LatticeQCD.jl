@@ -166,14 +166,18 @@ module Wizard
         return wilson,cg,staggered,system
     end
 
-    function wilson_wizard!(system)
+    function wilson_wizard!(system,standardonly = false)
         wilson = Dict()
         cg = Dict()
         staggered = Dict()
-        wtype = request("Choose Wilson fermion type",RadioMenu([
-                    "Standard Wilson fermion action",
-                    "Wilson+Clover fermion action",
-                ]))
+        if standardonly
+            wtype = 1
+        else
+            wtype = request("Choose Wilson fermion type",RadioMenu([
+                        "Standard Wilson fermion action",
+                        "Wilson+Clover fermion action",
+                    ]))
+        end
         if wtype == 1
             println("Standard Wilson fermion action will be used")
             system["Dirac_operator"] = "Wilson"
@@ -603,12 +607,24 @@ module Wizard
         if isexpert 
             println("-----------------------------------------------------------------")
             println("Setup: Fermion parameters in effective actions for SLHMC")
-            ftype = request("Choose a dynamical fermion",RadioMenu([
-                        "Nothing (quenched approximation)",
-                        "Wilson Fermion (2-flavor)",
-                        "Staggered Fermion",
-                    ]))
+            if system["Dirac_operator"] == nothing
+                ftype = 1
+            elseif system["Dirac_operator"] == "Wilson"
+                ftype = 2
+            elseif system["Dirac_operator"] == "Staggered"
+                ftype = 3
+            elseif system["Dirac_operator"] == "WilsonClover"
+                error("We do not support $(system["Dirac_operator"]) fermion, yet")
+            else
+                error("unknown Dirac operator: $(system["Dirac_operator"])")
+            end
+            #ftype = request("Choose a dynamical fermion",RadioMenu([
+            #            "Nothing (quenched approximation)",
+            #            "Wilson Fermion (2-flavor)",
+            #            "Staggered Fermion",
+            #        ]))
             if ftype == 1
+                error("You should consider Fermions if you want to do SLHMC!")
                 cg_SLHMC = Dict()
                 wilson_SLHMC = Dict()
                 staggered_SLHMC = Dict()
@@ -618,13 +634,15 @@ module Wizard
 
                 
             elseif ftype == 2
+                println("Wilson fermion is used for SLHMC")
                 system_SLHMC["fermiontype"] = "wilson"
-                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC)
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC,standardonly=true)
                 system_SLHMC["quench"] = false
                 set_SLHMC_smearing!(system_SLHMC)
                 
                 #set_smearing!(system)
             elseif ftype == 3
+                println("Staggered fermion is used for SLHMC")
                 system_SLHMC["fermiontype"] = "staggered"
                 wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = staggered_wizard!(system_SLHMC)
                 system_SLHMC["quench"] = false

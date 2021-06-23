@@ -797,10 +797,10 @@ module MD
         end
 
         if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,dSdρs = stoutfource(dSdU,Uin,fparam.smearing) 
+            dSdUnew,dSdρs = stoutforce(dSdU,Uin,fparam.smearing) 
             return dSdUnew,dSdρs
         elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,dSdρs = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
+            dSdUnew,dSdρs = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
             return dSdUnew,dSdρs
         elseif typeof(fparam.smearing) <: Nosmearing
             dSdUnew = dSdU
@@ -831,7 +831,6 @@ module MD
 
         for μ=1:4
             #!  Construct U(x,mu)*P1
-
             # U_{k,μ} X_{k+μ}
             fermion_shift!(temp0_f,U,μ,X)
 
@@ -840,19 +839,13 @@ module MD
             vvmat!(temp2_g,temp0_f,Y,1)
             mul!(temp3_g,U[μ]',temp2_g)
 
-            #Gaugefields.mul!(temp2_g,coeff)
-            #mul!(dSdU[μ],U[μ]',temp2_g) #additional term
             Gaugefields.muladd!(dSdU[μ],coeff,temp3_g)
-            
-
 
             #!  Construct P2*U_adj(x,mu)
             # Y_{k+μ}^dag U_{k,μ}^dag
             fermion_shiftB!(temp0_f,U,-μ,Y)
 
             # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-            #vvmat!(UdSdU2[μ],X,temp0_f,2)
-            #if fparam.smearing != nothing
             vvmat!(temp2_g,X,temp0_f,2)
 
             mul!(temp3_g,U[μ]',temp2_g)
@@ -1079,6 +1072,47 @@ module MD
     function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
         Uin::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: WilsonFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        Gaugefields.clear!(temps[end])
+        Gaugefields.clear!(temps[end-1])
+        Gaugefields.clear!(temps[end-2])
+        Gaugefields.clear!(temps[end-3])
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            dSdUnew,dSdρ =calc_dSdUnew!(Y,φ,X,fparam,
+                    U,Uout_multi,dSdU,Uin,
+                    temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+                    )
+                    
+            #updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            #        p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            #        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            error("We need smearing!")
+        end
+
+
+       
+        return dSdUnew,dSdρ
+
+    end
+
+    function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
+        Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
         ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         temp0_f = temps_fermi[1] #F_field
         temp1_f = temps_fermi[2] #F_field
@@ -1104,10 +1138,17 @@ module MD
             set_wing_fermi!(X)
 
             if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
-                dSdUnew,dSdρ = calc_dSdUnew!(Y,φ,X,fparam,
-                                p,mdparams,τ,U,Uout_multi,dSdU,Uin,
-                                temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+                calc_dSdU!(dSdU,Y,φ,X,fparam,
+                                U,Uout_multi,Uin,
+                                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel
                                 )
+                if typeof(fparam.smearing) <: SmearingParam_single
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uin,fparam.smearing) 
+                elseif typeof(fparam.smearing) <: SmearingParam_multi
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+                else
+                    error("$(typeof(fparam.smearing)) is not supported")
+                end
             else
                 error("We need smearing!")
             end
