@@ -210,11 +210,12 @@ module MD
 
 
         Snew,plaq = calc_Action(univ)
-        Sf_new = univ.η*univ.η
-        println("original ",Sf_new)
+
 
         if univ.quench == false
             if univ.isSLHMC
+                Sf_new = univ.η*univ.η
+                println("original ",Sf_new)
                 diff = Sf_new_eff-Sf_new
                 #println(fp2,real(diff))
                 println("#diff  ",real(diff))
@@ -294,11 +295,12 @@ module MD
         end
 
         Snew,plaq = calc_Action(univ)
-        Sf_new = univ.η*univ.η
-        println("original ",Sf_new)
+
 
         if univ.quench == false
             if univ.isSLHMC
+                Sf_new = univ.η*univ.η
+                println("original ",Sf_new)
                 diff = Sf_new_eff-Sf_new
                 #println(fp2,real(diff))
                 println("#diff  ",real(diff))

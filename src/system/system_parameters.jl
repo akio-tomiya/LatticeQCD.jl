@@ -841,9 +841,9 @@ module System_parameters
                 if headstring != nothing
                     if name == "measurement_methods"
                         print_measurementinfo(fp,fp2,key)
-                    elseif name == "SLHMC_parameters"
+                    elseif name == "SLHMC_parameters"  && key != nothing
                         print_SLHMCinfo(fp,fp2,key)
-                    elseif name == "hyperparameters_SLHMC"
+                    elseif name == "hyperparameters_SLHMC" && key != nothing
                         print_traininfo(fp,fp2,key)
                     else
                         string = get_stringfromkey(key)
