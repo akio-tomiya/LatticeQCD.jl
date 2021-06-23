@@ -3,7 +3,7 @@ module Actions
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC
-    import ..Training:TrainableWeights,TrainableWeights_ADAM
+    import ..Training:TrainableWeights,TrainableWeights_ADAM,TrainableWeights_SGD
     using ..Training
 
 
@@ -170,6 +170,28 @@ module Actions
         end
     end
 
+    function construct_trainableweights(coefficients,hyperparameters)
+        if hyperparameters == nothing
+            trainableweights = TrainableWeights_ADAM(coefficients)
+        else
+            if hyperparameters["method"] == "ADAM"
+                println("Optimazation method: ADAM is used")
+                trainableweights = TrainableWeights_ADAM(coefficients,
+                                    η = hyperparameters["η"],
+                                    ε = hyperparameters["ε"],
+                                    β1 = hyperparameters["β1"],
+                                    β2 = hyperparameters["β2"])
+            elseif hyperparameters["method"] == "SGD"
+                println("Optimazation method: SGD is used")
+                trainableweights = TrainableWeights_SGD(coefficients,
+                                    η = hyperparameters["η"])
+            else
+                error("optimazation method $(hyperparameters["method"]) is not supported! use ADAM for example")
+            end
+        end
+        return trainableweights
+    end
+
 
     function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers;trainable = false,hyperparameters = nothing)
         if smearingparameters == "nothing"
@@ -188,6 +210,8 @@ module Actions
                 numloops = length(loops)
                 smearing_single = SmearingParam_stout(loops,rand(numloops))
                 if trainable
+                    trainableweights = construct_trainableweights(coefficients,hyperparameters)
+                    #=
                     if hyperparameters == nothing
                         trainableweights = TrainableWeights_ADAM(coefficients)
                     else
@@ -201,6 +225,7 @@ module Actions
                             error("optimazation method $(hyperparameters["method"]) is not supported! use ADAM for example")
                         end
                     end
+                    =#
                 else
                     trainableweights = nothing
                 end
@@ -519,6 +544,8 @@ module Actions
 
         end
         if trainable
+            trainableweights = construct_trainableweights([ρs],hyperparameters)
+            #=
             if hyperparameters == nothing
                 trainableweights = TrainableWeights_ADAM([ρs])
             else
@@ -532,6 +559,7 @@ module Actions
                     error("optimazation method $(hyperparameters["method"]) is not supported! use ADAM for example")
                 end
             end
+            =#
             #trainableweights = TrainableWeights_ADAM([ρs])
         else
             trainableweights = nothing

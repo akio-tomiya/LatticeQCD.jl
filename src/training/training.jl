@@ -24,6 +24,23 @@ module Training
         end
     end
 
+    mutable struct TrainableWeights_SGD <: TrainableWeights
+        ρs::Array{Array{Float64,1},1}
+        η::Float64
+
+        function TrainableWeights_SGD(ρs::Array{Array{Float64,1},1};η = 0.0005)
+            return new(ρs,η)
+        end
+    end
+
+    function train!(tw::T,g) where T <: TrainableWeights_SGD
+        for i=1:length(tw.ρs)
+            for j=1:length(tw.ρs[i])
+                tw.ρs[i][j] = tw.ρs[i][j] - tw.η*g[i][j]
+            end
+        end
+    end
+
     function train!(tw::T,g) where T <: TrainableWeights_ADAM
         t = tw.t
         for i=1:length(tw.ms)
