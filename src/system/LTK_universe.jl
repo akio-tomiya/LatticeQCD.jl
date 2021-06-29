@@ -547,11 +547,29 @@ module LTK_universe
 
     function calc_gaugeforce!(F::Array{N,1},univ::Universe) where N <: LieAlgebraFields
         clear!(F)
-        add_gaugeforce!(F,univ.U,univ._temporal_gauge,univ._temporal_algebra[1]) 
+        calc_gaugeforce!(F,univ.U,univ)
+        #add_gaugeforce!(F,univ.U,univ._temporal_gauge,univ._temporal_algebra[1]) 
         return
     end
 
     function calc_gaugeforce!(F::Array{N,1},U::Array{T,1},univ::Universe) where {N<: LieAlgebraFields, T<: GaugeFields} 
+        clear!(F)
+        calc_gaugeforce!(F,U,univ,univ.gparam)
+        #add_gaugeforce!(F,U,univ._temporal_gauge,univ._temporal_algebra[1],univ.gparam) 
+        return
+    end
+
+    function calc_gaugeforce!(F::Array{N,1},U::Array{T,1},univ::Universe,gparam::GP) where {N<: LieAlgebraFields, 
+                                                                                            T<: GaugeFields,
+                                                                                            GP <: GaugeActionParam_autogenerator} 
+        clear!(F)
+        add_gaugeforce!(F,U,univ._temporal_gauge,univ._temporal_algebra[1],gparam) 
+        return
+    end
+
+    function calc_gaugeforce!(F::Array{N,1},U::Array{T,1},univ::Universe,gparam::GP) where {N<: LieAlgebraFields, 
+                                                                                            T<: GaugeFields,
+                                                                                            GP} 
         clear!(F)
         add_gaugeforce!(F,U,univ._temporal_gauge,univ._temporal_algebra[1]) 
         return
