@@ -13,14 +13,15 @@ module Smearing
     end
 
     function gradientflow!(U::Array{N,1},univ::Universe,tempW1,tempW2,Nflow::Int = 1,eps::Float64 = 0.01) where N <: GaugeFields
-        #Here we use definition in 1006.4518 except for the hermiticity.
+        # Here we use definition in 1006.4518 except for the hermiticity.
+        #ref https://www2.physik.uni-bielefeld.de/fileadmin/user_upload/theory_e6/Master_Theses/Masterarbeit_LukasMazur.pdf
         NC = univ.NC
         NX = univ.NX
         NY = univ.NY
         NZ = univ.NZ
         NT = univ.NT
 
-        g2 = 2.0 #(2*NC)/univ.gparam.β # β = 2Nc/g^2
+        #g2 = 1.0 #(2*NC)/univ.gparam.β # β = 2Nc/g^2
 
         #W0 = deepcopy(U)
         W1 = tempW1
@@ -45,19 +46,19 @@ module Smearing
 
         for istep=1:Nflow #RK4 integrator
             calc_gaugeforce!(F0,U,univ) #F
-            expF_U!(W1,F0,-eps*(1/4)*g2,univ)  #exp(eps*F)*U 
+            expF_U!(W1,F0,-eps*(1/4),univ)  #exp(eps*F)*U 
             #
             calc_gaugeforce!(F1,W1,univ) #F
             clear!(Ftmp)
-            add!(Ftmp,-(8/9*eps)*g2,F1)
-            add!(Ftmp,(17/36*eps)*g2,F0)
+            add!(Ftmp,-(8/9*eps),F1)
+            add!(Ftmp,(17/36*eps),F0)
             expF_U!(W2,Ftmp,1,univ)
             #
             calc_gaugeforce!(F2,W2,univ) #F
             clear!(Ftmp)
-            add!(Ftmp,-(3/4*eps)*g2,F2)
-            add!(Ftmp,(8/9*eps)*g2,F1)
-            add!(Ftmp,-(17/36*eps)*g2,F0)
+            add!(Ftmp,-(3/4*eps),F2)
+            add!(Ftmp,(8/9*eps),F1)
+            add!(Ftmp,-(17/36*eps),F0)
             expF_U!(U,Ftmp,1,univ)
             #
         end
