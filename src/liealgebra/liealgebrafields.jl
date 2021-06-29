@@ -803,9 +803,9 @@ c----------------------------------------------------------------c
                       v9 * (v5^2 + v6^2) -
                       v17 * (v3^2 + v4^2) +
                       (v5 * (v3 * v11 - v4 * v12) +
-                       v6 * (v3 * v12 + v4 * v11)) * 2.0
-            p3 = cofac / 3.0 - trv3^2
-            q = trv3 * cofac - det - 2.0 * trv3^3
+                       v6 * (v3 * v12 + v4 * v11)) * 2.0 
+            p3 = cofac / 3.0 - trv3^2 + tinyvalue
+            q = trv3 * cofac - det - 2.0 * trv3^3 + tinyvalue
             x = sqrt(-4.0 * p3) + tinyvalue
             arg = q / (x * p3)
 
@@ -820,11 +820,11 @@ c----------------------------------------------------------------c
     
     # solve for eigenvectors
     
-            w1 =   v5 * (v9 - e1) - v3 * v11 + v4 * v12
-            w2 = - v6 * (v9 - e1) + v4 * v11 + v3 * v12
-            w3 =   (v1 - e1) * v11 - v3 * v5 - v4 * v6
-            w4 = - (v1 - e1) * v12 - v4 * v5 + v3 * v6
-            w5 = - (v1 - e1) * (v9 - e1) +  v3^2 + v4^2
+            w1 =   v5 * (v9 - e1) - v3 * v11 + v4 * v12+ tinyvalue
+            w2 = - v6 * (v9 - e1) + v4 * v11 + v3 * v12+ tinyvalue
+            w3 =   (v1 - e1) * v11 - v3 * v5 - v4 * v6+ tinyvalue
+            w4 = - (v1 - e1) * v12 - v4 * v5 + v3 * v6+ tinyvalue
+            w5 = - (v1 - e1) * (v9 - e1) +  v3^2 + v4^2+ tinyvalue
             w6 = 0.0
     
             coeff = 1.0 / (sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)+ tinyvalue)
@@ -835,11 +835,11 @@ c----------------------------------------------------------------c
             w4 = w4 * coeff
             w5 = w5 * coeff
      
-            w7 =   v5 * (v9 - e2) - v3 * v11 + v4 * v12
-            w8 = - v6 * (v9 - e2) + v4 * v11 + v3 * v12
-            w9 = (v1 - e2) * v11 - v3 * v5 - v4 * v6
-            w10 = - (v1 - e2) * v12 - v4 * v5 + v3 * v6
-            w11 = - (v1 - e2) * (v9 - e2) +  v3^2 + v4^2
+            w7 =   v5 * (v9 - e2) - v3 * v11 + v4 * v12+ tinyvalue
+            w8 = - v6 * (v9 - e2) + v4 * v11 + v3 * v12+ tinyvalue
+            w9 = (v1 - e2) * v11 - v3 * v5 - v4 * v6+ tinyvalue
+            w10 = - (v1 - e2) * v12 - v4 * v5 + v3 * v6+ tinyvalue
+            w11 = - (v1 - e2) * (v9 - e2) +  v3^2 + v4^2+ tinyvalue
             w12 = 0.0
      
             coeff = 1.0 / (sqrt(w7^2  + w8^2 + w9^2+ w10^2 + w11^2)+ tinyvalue)
@@ -849,11 +849,11 @@ c----------------------------------------------------------------c
             w10 = w10 * coeff
             w11 = w11 * coeff
      
-            w13 =   v5 * (v9 - e3) - v3 * v11 + v4 * v12
-            w14 = - v6 * (v9 - e3) + v4 * v11 + v3 * v12
-            w15 =   (v1 - e3) * v11 - v3 * v5 - v4 * v6
-            w16 = - (v1 - e3) * v12 - v4 * v5 + v3 * v6
-            w17 = - (v1 - e3) * (v9 - e3) +  v3^2 + v4^2
+            w13 =   v5 * (v9 - e3) - v3 * v11 + v4 * v12+ tinyvalue
+            w14 = - v6 * (v9 - e3) + v4 * v11 + v3 * v12+ tinyvalue
+            w15 =   (v1 - e3) * v11 - v3 * v5 - v4 * v6+ tinyvalue
+            w16 = - (v1 - e3) * v12 - v4 * v5 + v3 * v6+ tinyvalue
+            w17 = - (v1 - e3) * (v9 - e3) +  v3^2 + v4^2+ tinyvalue
             w18 = 0.0
     
             coeff = 1.0 / (sqrt(w13^2 + w14^2 + w15^2+ w16^2 + w17^2)+ tinyvalue)
