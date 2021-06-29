@@ -550,6 +550,7 @@ module LieAlgebrafields
         end
     end
 
+
     function add_gaugeforce!(F::Array{N,1},U::Array{T,1},temps::Array{T_1d,1},temp_a::N;fac = 1) where {T<: GaugeFields,N <: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         temp1 = temps[1]
         temp2 = temps[2]
@@ -657,7 +658,6 @@ module LieAlgebrafields
 
     const pi23 = 2pi/3
 
-
     function expA!(v::SU2GaugeFields_1d ,u::SU2AlgebraFields,temp1,temp2)   
         NX=u.NX
         NY=u.NY
@@ -672,7 +672,7 @@ module LieAlgebrafields
                         u1 = u[1,ix,iy,iz,it]/2
                         u2 = u[2,ix,iy,iz,it]/2
                         u3 = u[3,ix,iy,iz,it]/2
-                        R = sqrt(u1^2+u2^2+u3^2)
+                        R = sqrt(u1^2+u2^2+u3^2) + 1e-100
                         sR = sin(R)/R
                         #sR = ifelse(R == 0,1,sR)
                         a0 = cos(R)
@@ -690,6 +690,7 @@ module LieAlgebrafields
         end
 
     end
+
 
     function expA!(v::SUNGaugeFields_1d ,u::SUNAlgebraFields,temp1,temp2)   
         g = u.generators
@@ -760,6 +761,7 @@ c for i = 1 to n, v(i) is the SU(3) projection of Lie algebra element u(i)
 c     !!!!!   This is for SU(3)   !!!!!
 c----------------------------------------------------------------c
     """
+    const tinyvalue = 1e-100
     function expA!(v::SU3GaugeFields_1d ,u::SU3AlgebraFields,temp1,temp2)      
         ww = temp1
         w = temp2
@@ -771,7 +773,6 @@ c----------------------------------------------------------------c
 
 
         for i=1:v.NV
-
             v1  = real(v[1,1,i])
             v2  = imag(v[1,1,i])
             v3  = real(v[1,2,i])
@@ -804,7 +805,7 @@ c----------------------------------------------------------------c
                        v6 * (v3 * v12 + v4 * v11)) * 2.0
             p3 = cofac / 3.0 - trv3^2
             q = trv3 * cofac - det - 2.0 * trv3^3
-            x = sqrt(-4.0 * p3)
+            x = sqrt(-4.0 * p3) + tinyvalue
             arg = q / (x * p3)
 
             arg = min(1, max(-1, arg))
@@ -825,7 +826,7 @@ c----------------------------------------------------------------c
             w5 = - (v1 - e1) * (v9 - e1) +  v3^2 + v4^2
             w6 = 0.0
     
-            coeff = 1.0 / sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)
+            coeff = 1.0 / (sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)+ tinyvalue)
     
             w1 = w1 * coeff
             w2 = w2 * coeff
@@ -840,7 +841,7 @@ c----------------------------------------------------------------c
             w11 = - (v1 - e2) * (v9 - e2) +  v3^2 + v4^2
             w12 = 0.0
      
-            coeff = 1.0 / sqrt(w7^2  + w8^2 + w9^2+ w10^2 + w11^2)
+            coeff = 1.0 / (sqrt(w7^2  + w8^2 + w9^2+ w10^2 + w11^2)+ tinyvalue)
             w7  = w7  * coeff
             w8  = w8  * coeff
             w9  = w9  * coeff
@@ -854,7 +855,7 @@ c----------------------------------------------------------------c
             w17 = - (v1 - e3) * (v9 - e3) +  v3^2 + v4^2
             w18 = 0.0
     
-            coeff = 1.0 / sqrt(w13^2 + w14^2 + w15^2+ w16^2 + w17^2)
+            coeff = 1.0 / (sqrt(w13^2 + w14^2 + w15^2+ w16^2 + w17^2)+ tinyvalue)
             w13 = w13 * coeff
             w14 = w14 * coeff
             w15 = w15 * coeff
