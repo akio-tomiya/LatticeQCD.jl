@@ -804,7 +804,7 @@ c----------------------------------------------------------------c
                       v17 * (v3^2 + v4^2) +
                       (v5 * (v3 * v11 - v4 * v12) +
                        v6 * (v3 * v12 + v4 * v11)) * 2.0 
-            p3 = cofac / 3.0 - trv3^2 + tinyvalue
+            p3 = cofac / 3.0 - trv3^2 
             q = trv3 * cofac - det - 2.0 * trv3^3 + tinyvalue
             x = sqrt(-4.0 * p3) + tinyvalue
             arg = q / (x * p3)
