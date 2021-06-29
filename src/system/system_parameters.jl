@@ -354,13 +354,9 @@ module System_parameters
                     error("system[\"quench\"] = false. The Heatbath method needs the quench update. Put the other system[\"update_method\"] != \"Heatbath\" or system[\"quench\"] = true")
                 end
 
-                if haskey(system,"useOR")
-                    useOR = system["useOR"]
-                    numOR = system["numOR"]
-                else
-                    useOR = false
-                    numOR = 0
-                end
+                useOR = set_params(system,"useOR",false)
+                numOR = set_params(system,"numOR",0)
+
             elseif update_method == "IntegratedHMC"
                 println("IntegratedHMC will be used")
 
