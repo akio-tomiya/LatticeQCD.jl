@@ -657,6 +657,7 @@ module LieAlgebrafields
 
 
     const pi23 = 2pi/3
+    const tinyvalue = 1e-100
 
     function expA!(v::SU2GaugeFields_1d ,u::SU2AlgebraFields,temp1,temp2)   
         NX=u.NX
@@ -672,7 +673,7 @@ module LieAlgebrafields
                         u1 = u[1,ix,iy,iz,it]/2
                         u2 = u[2,ix,iy,iz,it]/2
                         u3 = u[3,ix,iy,iz,it]/2
-                        R = sqrt(u1^2+u2^2+u3^2) + 1e-100
+                        R = sqrt(u1^2+u2^2+u3^2) + tinyvalue 
                         sR = sin(R)/R
                         #sR = ifelse(R == 0,1,sR)
                         a0 = cos(R)
@@ -761,7 +762,7 @@ c for i = 1 to n, v(i) is the SU(3) projection of Lie algebra element u(i)
 c     !!!!!   This is for SU(3)   !!!!!
 c----------------------------------------------------------------c
     """
-    const tinyvalue = 1e-100
+    
     function expA!(v::SU3GaugeFields_1d ,u::SU3AlgebraFields,temp1,temp2)      
         ww = temp1
         w = temp2
