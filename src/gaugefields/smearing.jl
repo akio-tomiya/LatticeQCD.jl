@@ -14,16 +14,13 @@ module Smearing
 
     function gradientflow!(U::Array{N,1},univ::Universe,tempW1,tempW2,Nflow::Int = 1,eps::Float64 = 0.01) where N <: GaugeFields
         # Here we use definition in 1006.4518 except for the hermiticity.
-        #ref https://www2.physik.uni-bielefeld.de/fileadmin/user_upload/theory_e6/Master_Theses/Masterarbeit_LukasMazur.pdf
+        # ref https://www2.physik.uni-bielefeld.de/fileadmin/user_upload/theory_e6/Master_Theses/Masterarbeit_LukasMazur.pdf
         NC = univ.NC
         NX = univ.NX
         NY = univ.NY
         NZ = univ.NZ
         NT = univ.NT
 
-        #g2 = 1.0 #(2*NC)/univ.gparam.β # β = 2Nc/g^2
-
-        #W0 = deepcopy(U)
         W1 = tempW1
         W2 = tempW2
 
