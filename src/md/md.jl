@@ -216,18 +216,25 @@ module MD
             if univ.isSLHMC
                 Sf_new = univ.η*univ.η
                 println("original ",Sf_new)
-                diff = Sf_new_eff-Sf_new
+                diff = (Sf_new_eff-Sf_new)/univ.NV
                 #println(fp2,real(diff))
-                println("#diff  ",real(diff))
+                println("diff:Sf ",real(diff)*univ.NV)
                 dCdρs  = -diff .* dSdρs 
-                println("#dCdρs ",real.(dCdρs))
+                println("dCdρs ",real.(dCdρs))
                 #println(univ.fparam_SLHMC.smearing)
                 if univ.fparam_SLHMC.istrainable
                     Training.train!(univ.fparam_SLHMC.smearing,dCdρs)
                     #println(univ.fparam_SLHMC.smearing.ρs)
                     #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
                     update_smearing!(univ.fparam_SLHMC)
-                    println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    print("rho = ")
+                    for ρsi in univ.fparam_SLHMC.smearing.ρs
+                        for ρsij in ρsi
+                            print(ρsij,"\t")
+                        end
+                    end
+                    println("\t")
+                    #println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
                     #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
                 end
                 
