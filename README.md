@@ -109,7 +109,7 @@ We support 4 dimensional euclidean spacetime.
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
   - <s>APE, stout</s> (This will be public)
-  - Gradient flow for a genelic action (Not well tested)
+  - Gradient flow for a generic action (Not well tested)
 - I/O for configurations
   - ILDG format
   - JLD format (default binary file for Julia, one of HDF5)
