@@ -1,8 +1,8 @@
 name: CI
 # Run on master, tags, or any pull request
 on:
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2 AM UTC (8 PM CST)
+  #schedule:
+  #  - cron: '0 2 * * *'  # Daily at 2 AM UTC (8 PM CST)
   push:
     branches: [master]
     tags: ["*"]
@@ -23,18 +23,6 @@ jobs:
           - windows-latest
         arch:
           - x64
-          #- x86
-        exclude:
-          # Test 32-bit only on Linux
-          - os: macOS-latest
-            arch: x86
-          - os: windows-latest
-            arch: x86
-        include:
-          # Add a 1.5 job because that's what Invenia actually uses
-          - os: ubuntu-latest
-            version: 1.5
-            arch: x64
     steps:
       - uses: actions/checkout@v1
       - uses: julia-actions/setup-julia@v1
