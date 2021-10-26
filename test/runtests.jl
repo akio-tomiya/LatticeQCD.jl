@@ -4,7 +4,7 @@ using Test
 
 @testset "LatticeQCD.jl" begin
     eps = 1e-1
-    #=
+    
     
     @testset "quenched HMC" begin
 
@@ -28,7 +28,7 @@ using Test
         end
     end
     
-
+    #=
     
     @testset "Heatbath" begin
         @testset "SU(2)" begin
