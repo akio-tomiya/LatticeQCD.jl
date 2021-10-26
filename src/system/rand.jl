@@ -24,7 +24,7 @@ module Rand
     const MACRI = 1
     const FNORM=Float32(0.465661e-9)
 
-    const intmax32 = 2147483647
+    const intmax32 = Int32(2147483647)
 
 
     function cint3(ndelay)
@@ -51,7 +51,7 @@ module Rand
         for i=0:IP-1
             ix = ix*69069
             while ix < -intmax32-1 || intmax32 < ix
-                ix -= 2*(intmax32+1)
+                ix -= Int32(2*(intmax32+1))
             end
             #println(Int32(ix) >>> -(-31))
             ib[i+1] = Int32(ix) >>> -(-31)
@@ -66,9 +66,9 @@ module Rand
         for j=0:IP-1
             iwork = 0
             for i=0:31
-                iwork=iwork*2+ib[jr+1]
+                iwork=Int32(iwork*2+ib[jr+1])
                 while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= 2*(intmax32+1)
+                    iwork -= Int32(2*(intmax32+1))
                 end
                 ib[jr+1] = Int32(ib[jr+1]) ⊻ Int32(ib[kr+1])
                 jr += 1
@@ -114,16 +114,15 @@ module Rand
         m = lambda
         nb = mu-1
 
-        count = 0
+        #count = 0
         while m>IP-1
             nb += 1
             ib[nb+1] = m % 2
             m = div(m,2)
-            count += 1
-            if count > 100000000
-                error("something is wrong in rand.jl!")
-            end
-            
+            #count += 1
+            #if count > 100000000
+            #    error("something is wrong in rand.jl!")
+            #end
         end
 
         for i=0:IP-1
@@ -149,7 +148,7 @@ module Rand
             iwork = 0
             for i=0:IP-1
                 while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= 2*(intmax32+1)
+                    iwork -= Int32(2*(intmax32+1))
                 end
                 iwork = Int32(iwork) ⊻ Int32(c[i+1]*iwk[j+i+1])
             end
