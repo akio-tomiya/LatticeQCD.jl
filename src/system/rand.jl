@@ -114,10 +114,16 @@ module Rand
         m = lambda
         nb = mu-1
 
+        count = 0
         while m>IP-1
             nb += 1
             ib[nb+1] = m % 2
             m = div(m,2)
+            count += 1
+            if count > 100000000
+                error("something is wrong in rand.jl!")
+            end
+            
         end
 
         for i=0:IP-1
