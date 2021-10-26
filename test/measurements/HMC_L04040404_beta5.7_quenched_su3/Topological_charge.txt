@@ -1,0 +1,11 @@
+0 0.0 1.0 1.0 -0.0 -0.0 0.0 #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.04 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.08 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.12 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.16 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.2 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.24 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.28 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.32 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.36 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved
+0 0.4 NaN NaN NaN NaN NaN #flow itrj flowtime plaq E Qplaq Qclov Qimproved

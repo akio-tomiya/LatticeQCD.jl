@@ -1,0 +1,22 @@
+# 0 1 1.7452094905710938 # itrj irand chiralcond
+# 0 2 1.744817153119431 # itrj irand chiralcond
+# 0 3 1.7132852134634409 # itrj irand chiralcond
+# 0 4 1.7628154356130994 # itrj irand chiralcond
+# 0 5 1.74883561832629 # itrj irand chiralcond
+# 0 6 1.7548897726389254 # itrj irand chiralcond
+# 0 7 1.733162945797312 # itrj irand chiralcond
+# 0 8 1.7587966170550384 # itrj irand chiralcond
+# 0 9 1.8079376241328518 # itrj irand chiralcond
+# 0 10 1.8094920687428437 # itrj irand chiralcond
+0 1.7579241939460328 # pbp Nr=10
+# 5 1 1.8498738638599748 # itrj irand chiralcond
+# 5 2 1.8319947153407354 # itrj irand chiralcond
+# 5 3 1.7924796441385225 # itrj irand chiralcond
+# 5 4 1.8888935761028773 # itrj irand chiralcond
+# 5 5 1.784558795396484 # itrj irand chiralcond
+# 5 6 1.8161734804173306 # itrj irand chiralcond
+# 5 7 2.000073559434345 # itrj irand chiralcond
+# 5 8 1.7151776391092306 # itrj irand chiralcond
+# 5 9 1.7563591244296022 # itrj irand chiralcond
+# 5 10 1.8362984590249218 # itrj irand chiralcond
+5 1.827188285725402 # pbp Nr=10
