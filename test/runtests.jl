@@ -28,7 +28,7 @@ using Test
         end
     end
     
-    #=
+    
     
     @testset "Heatbath" begin
         @testset "SU(2)" begin
@@ -51,6 +51,9 @@ using Test
         end
     end
 
+
+
+    #=
         
     @testset "HMC" begin
 
