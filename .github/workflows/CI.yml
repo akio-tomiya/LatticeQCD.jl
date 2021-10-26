@@ -29,7 +29,7 @@ jobs:
             arch: x86
           - os: windows-latest
             arch: x86
-        include:
+        # include:
           # Add a 1.5 job because that's what Invenia actually uses
           # - os: ubuntu-latest
           #  version: 1.5
