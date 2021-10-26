@@ -9,14 +9,14 @@
 # 0 9 1.8079376241328518 # itrj irand chiralcond
 # 0 10 1.8094920687428437 # itrj irand chiralcond
 0 1.7579241939460328 # pbp Nr=10
-# 5 1 1.8498738638599748 # itrj irand chiralcond
-# 5 2 1.8319947153407354 # itrj irand chiralcond
-# 5 3 1.7924796441385225 # itrj irand chiralcond
-# 5 4 1.8888935761028773 # itrj irand chiralcond
-# 5 5 1.784558795396484 # itrj irand chiralcond
-# 5 6 1.8161734804173306 # itrj irand chiralcond
-# 5 7 2.000073559434345 # itrj irand chiralcond
-# 5 8 1.7151776391092306 # itrj irand chiralcond
-# 5 9 1.7563591244296022 # itrj irand chiralcond
-# 5 10 1.8362984590249218 # itrj irand chiralcond
-5 1.827188285725402 # pbp Nr=10
+# 5 1 1.8127839461066846 # itrj irand chiralcond
+# 5 2 1.8477245363474801 # itrj irand chiralcond
+# 5 3 1.8636336246089307 # itrj irand chiralcond
+# 5 4 1.844268949001634 # itrj irand chiralcond
+# 5 5 1.8480520382743 # itrj irand chiralcond
+# 5 6 1.8116093121553194 # itrj irand chiralcond
+# 5 7 1.8162187426380214 # itrj irand chiralcond
+# 5 8 1.8265317862670016 # itrj irand chiralcond
+# 5 9 1.8502615703730956 # itrj irand chiralcond
+# 5 10 1.9164061289604213 # itrj irand chiralcond
+5 1.843749063473289 # pbp Nr=10

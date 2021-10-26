@@ -37,6 +37,16 @@ module Rand
         return crand_public
     end
 
+    function make_value_Int32_again(ix)
+        while ix < -intmax32 - 1
+            ix += 2*intmax32 + 1
+        end
+        while ix > intmax32
+            ix -= 2*(intmax32 +1)
+        end
+        return ix
+    end
+
     function init3()
         
         
@@ -50,9 +60,11 @@ module Rand
         ix = Int32(MACRI)
         for i=0:IP-1
             ix = ix*69069
-            while ix < -intmax32-1 || intmax32 < ix
-                ix -= Int32(Int32(2)*(intmax32+Int32(1)))
-            end
+            ix = make_value_Int32_again(ix)
+
+            #while ix < -intmax32-1 || intmax32 < ix
+            #    ix -= Int32(Int32(2)*(intmax32+Int32(1)))
+            #end
             #println(Int32(ix) >>> -(-31))
             ib[i+1] = Int32(ix) >>> -(-31)
             #println("$i ",ix," ",typeof(ix))
@@ -66,10 +78,12 @@ module Rand
         for j=0:IP-1
             iwork = 0
             for i=0:31
-                iwork=Int32(iwork*2+ib[jr+1])
-                while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
-                end
+                iwork=iwork*2+ib[jr+1]
+                #while iwork < -intmax32-1 || intmax32 < iwork
+                #    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
+                #end
+                iwork = make_value_Int32_again(iwork)
+
                 ib[jr+1] = Int32(ib[jr+1]) ⊻ Int32(ib[kr+1])
                 jr += 1
                 if jr == IP
@@ -147,9 +161,10 @@ module Rand
         for j=0:IP-1
             iwork = 0
             for i=0:IP-1
-                while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
-                end
+                #while iwork < -intmax32-1 || intmax32 < iwork
+                #    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
+                #end
+                iwork = make_value_Int32_again(iwork)
                 iwork = Int32(iwork) ⊻ Int32(c[i+1]*iwk[j+i+1])
             end
             crand_public.iw[j+1] = iwork
