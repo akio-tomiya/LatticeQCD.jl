@@ -53,7 +53,7 @@ using Test
 
 
 
-    #=
+    
         
     @testset "HMC" begin
 
@@ -92,7 +92,7 @@ using Test
         end
     end
 
-    =#
+    
     
 
 end
