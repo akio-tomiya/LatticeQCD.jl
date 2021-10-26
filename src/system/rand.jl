@@ -51,7 +51,7 @@ module Rand
         for i=0:IP-1
             ix = ix*69069
             while ix < -intmax32-1 || intmax32 < ix
-                ix -= Int32(2*(intmax32+1))
+                ix -= Int32(Int32(2)*(intmax32+Int32(1)))
             end
             #println(Int32(ix) >>> -(-31))
             ib[i+1] = Int32(ix) >>> -(-31)
@@ -68,7 +68,7 @@ module Rand
             for i=0:31
                 iwork=Int32(iwork*2+ib[jr+1])
                 while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= Int32(2*(intmax32+1))
+                    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
                 end
                 ib[jr+1] = Int32(ib[jr+1]) ⊻ Int32(ib[kr+1])
                 jr += 1
@@ -148,7 +148,7 @@ module Rand
             iwork = 0
             for i=0:IP-1
                 while iwork < -intmax32-1 || intmax32 < iwork
-                    iwork -= Int32(2*(intmax32+1))
+                    iwork -= Int32(Int32(2)*(intmax32+Int32(1)))
                 end
                 iwork = Int32(iwork) ⊻ Int32(c[i+1]*iwk[j+i+1])
             end
