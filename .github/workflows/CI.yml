@@ -20,15 +20,15 @@ jobs:
         os:
           - ubuntu-latest
           - macOS-latest
-         - windows-latest
+          - windows-latest
         arch:
           - x64
-        exclude:
-          # Test 32-bit only on Linux
-          - os: macOS-latest
-            arch: x86
-          - os: windows-latest
-            arch: x86
+        # exclude:
+        #  # Test 32-bit only on Linux
+        #  - os: macOS-latest
+        #    arch: x86
+        #  - os: windows-latest
+        #    arch: x86
         # include:
           # Add a 1.5 job because that's what Invenia actually uses
           # - os: ubuntu-latest
