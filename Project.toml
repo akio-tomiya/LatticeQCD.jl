@@ -23,6 +23,17 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 julia = "1.6"
+GR = "0.62"
+FastGaussQuadrature = "0.4"
+JLD = "0.12"
+Distributions = "0.25"
+Requires = "1"
+EzXML = "1"
+SpecialFunctions = "1"
+Plots = "1"
+
+
+
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
