@@ -1,4 +1,4 @@
-# LatticeQCD.jl (ver. 0.5)
+# LatticeQCD.jl 
 
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
