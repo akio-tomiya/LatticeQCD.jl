@@ -22,6 +22,10 @@ module LatticeQCD
     include("./gaugefields/gaugefields.jl")
     
     #include("gaugefields.jl")
+    include("./fermions/AbstractFermion.jl")
+    include("./fermions/WilsonFermion.jl")
+    include("./fermions/DomainwallFermion.jl")
+    include("./fermions/StaggeredFermion.jl")
     include("./fermions/fermionfields.jl")
     include("./liealgebra/liealgebrafields.jl")
 
