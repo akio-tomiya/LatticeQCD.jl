@@ -33,7 +33,7 @@ module Mainrun
         #    params_set = Params_set(Demo.system,Demo.actions,Demo.md,Demo.cg,Demo.wilson,Demo.staggered,Demo.measurement)
         #else
         filename = filenamein
-        include(pwd()*"/"*filename)
+        include(abspath(filename))
         params_set = Params_set(system,actions,md,cg,wilson,staggered,measurement)
         #end
 
