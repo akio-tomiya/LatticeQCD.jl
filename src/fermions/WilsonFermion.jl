@@ -275,6 +275,36 @@ module WilsonFermion_module
         return
     end
 
+    function Dx!(xout::WilsonFermion,U::Array{G,1},
+        x::WilsonFermion,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        temp = temps[4]
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        clear!(temp)
+        set_wing_fermi!(x)
+        for ν=1:4
+            fermion_shift!(temp1,U,ν,x)
+
+            #... Dirac multiplication
+            mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+            
+            #
+            fermion_shift!(temp2,U,-ν,x)
+            mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+
+            add!(temp,0.5,temp1,0.5,temp2)
+            
+        end
+
+        clear!(xout)
+        add!(xout,1/(2*x.hop),x,-1,temp)
+
+        #display(xout)
+        #    exit()
+        return
+    end
+
     function LinearAlgebra.mul!(xout::WilsonFermion,A::AbstractMatrix,x::WilsonFermion)
         NX = x.NX
         NY = x.NY
@@ -1026,6 +1056,91 @@ module WilsonFermion_module
                                 y[ic,ix,iy,iz,it,2] = -1*x[ic,ix,iy,iz,it,2]
                                 y[ic,ix,iy,iz,it,3] = x[ic,ix,iy,iz,it,3]
                                 y[ic,ix,iy,iz,it,4] = x[ic,ix,iy,iz,it,4]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+
+        function mul_1plusγ5x!(y::WilsonFermion,x::WilsonFermion) #(1+gamma_5)/2
+            NX = x.NX
+            NY = x.NY
+            NZ = x.NZ
+            NT = x.NT
+            NC = x.NC
+            for ic=1:NC
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            @simd for ix=1:NX
+                                y[ic,ix,iy,iz,it,1] = 0#-1*x[ic,ix,iy,iz,it,1]
+                                y[ic,ix,iy,iz,it,2] = 0#-1*x[ic,ix,iy,iz,it,2]
+                                y[ic,ix,iy,iz,it,3] = x[ic,ix,iy,iz,it,3]
+                                y[ic,ix,iy,iz,it,4] = x[ic,ix,iy,iz,it,4]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        function mul_1plusγ5x_add!(y::WilsonFermion,x::WilsonFermion,factor) #x = x +(1+gamma_5)/2
+            NX = x.NX
+            NY = x.NY
+            NZ = x.NZ
+            NT = x.NT
+            NC = x.NC
+            for ic=1:NC
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            @simd for ix=1:NX
+                                y[ic,ix,iy,iz,it,3] += factor*x[ic,ix,iy,iz,it,3]
+                                y[ic,ix,iy,iz,it,4] += factor*x[ic,ix,iy,iz,it,4]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        function mul_1minusγ5x!(y::WilsonFermion,x::WilsonFermion) #(1-gamma_5)/2
+            NX = x.NX
+            NY = x.NY
+            NZ = x.NZ
+            NT = x.NT
+            NC = x.NC
+            for ic=1:NC
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            @simd for ix=1:NX
+                                y[ic,ix,iy,iz,it,1] = x[ic,ix,iy,iz,it,1]
+                                y[ic,ix,iy,iz,it,2] = x[ic,ix,iy,iz,it,2]
+                                y[ic,ix,iy,iz,it,3] = 0#x[ic,ix,iy,iz,it,3]
+                                y[ic,ix,iy,iz,it,4] = 0#x[ic,ix,iy,iz,it,4]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        function mul_1minusγ5x_add!(y::WilsonFermion,x::WilsonFermion,factor) #+(1-gamma_5)/2
+            NX = x.NX
+            NY = x.NY
+            NZ = x.NZ
+            NT = x.NT
+            NC = x.NC
+            for ic=1:NC
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            @simd for ix=1:NX
+                                y[ic,ix,iy,iz,it,1] += factor*x[ic,ix,iy,iz,it,1]
+                                y[ic,ix,iy,iz,it,2] += factor*x[ic,ix,iy,iz,it,2]
                             end
                         end
                     end
