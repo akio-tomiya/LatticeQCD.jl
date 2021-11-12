@@ -70,7 +70,7 @@ module DomainwallFermion_module
 
 
     function D5DWx!(xout::DomainwallFermion,U::Array{G,1},
-        x::DomainwallFermion,,m,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        x::DomainwallFermion,m,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
 
         #temp = temps[4]
         #temp1 = temps[1]
