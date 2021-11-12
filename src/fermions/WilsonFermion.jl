@@ -305,6 +305,39 @@ module WilsonFermion_module
         return
     end
 
+    function Ddagx!(xout::WilsonFermion,U::Array{G,1},
+        x::WilsonFermion,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        temp = temps[4]
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        clear!(temp)
+        set_wing_fermi!(x)
+        for ν=1:4
+            fermion_shift!(temp1,U,ν,x)
+
+            #... Dirac multiplication
+            #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)
+            mul!(temp1,view(x.rplusγ,:,:,ν),temp1)
+            
+            #
+            fermion_shift!(temp2,U,-ν,x)
+            #mul!(temp2,view(x.rplusγ,:,:,ν),temp2)
+            mul!(temp2,view(x.rminusγ,:,:,ν),temp2)
+
+            add!(temp,0.5,temp1,0.5,temp2)
+            
+            
+        end
+
+        clear!(xout)
+        add!(xout,1/(2*x.hop),x,-1,temp)
+
+        #display(xout)
+        #    exit()
+        return
+    end
+
     function LinearAlgebra.mul!(xout::WilsonFermion,A::AbstractMatrix,x::WilsonFermion)
         NX = x.NX
         NY = x.NY
