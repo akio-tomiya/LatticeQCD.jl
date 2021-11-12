@@ -265,6 +265,58 @@ module Actions
         return GaugeActionParam_autogenerator(βs,β,numactions,NC,loops,staples,couplinglist)
     end
 
+    Base.@kwdef struct FermiActionParam_Domainwall <: FermiActionParam
+        N5::Int64
+        r::Float64 = 1
+        M::Float64 = -1
+        m::Float64
+        ωs::Array{Float64,1}
+        b::Float64 
+        c::Float64
+        eps::Float64 = 1e-19
+        Dirac_operator::String = "Domainwall"
+        MaxCGstep::Int64 = 3000 
+        quench::Bool = false
+        smearing::SmearingParam 
+        
+
+        function FermiActionParam_Domainwall(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench
+            ;smearingparameters = "nothing",
+            loops_list = nothing,
+            coefficients  = nothing,
+            numlayers = 1,
+            L = nothing)
+
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            #smearing = Nosmearing()
+            #if smearingparameters == nothing
+            #    smearing = Nosmearing()
+            #end
+            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+        end
+
+        function FermiActionParam_Domainwall(N5,r,M,m,eps,Dirac_operator,MaxCGstep,quench
+            ;smearingparameters = "nothing",
+            loops_list = nothing,
+            coefficients  = nothing,
+            numlayers = 1,
+            L = nothing)
+
+            b = 1
+            c = 1
+            ωs = ones(Float64,Ns)
+
+            smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
+            #smearing = Nosmearing()
+            #if smearingparameters == nothing
+            #    smearing = Nosmearing()
+            #end
+            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+        end
+
+
+    end
+
     function show_parameters_action(fparam::FermiActionParam_Staggered)
         println("#--------------------------------------------------")
         println("#Fermion Action parameters")
