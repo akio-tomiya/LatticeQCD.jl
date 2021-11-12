@@ -198,6 +198,44 @@ module DomainwallFermion_module
 
         return
     end
+
+
+    function D5DWdagx!(xout::DomainwallFermion,U::Array{G,1},
+        x::DomainwallFermion,m,temps::Array{TW,1}) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+
+
+        for i5=1:xout.N5   
+            j5=i5
+            Ddagx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
+            add!(1,xout.f[i5],1,x.f[j5]) #D = x + Dw*x
+
+        
+            j5=i5+1
+            if 1 <= j5 <= xout.N5
+                #-P_-
+                mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+            end
+
+            j5=i5-1
+            if 1 <= j5 <= xout.N5
+                #-P_+
+                mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+            end
+
+            if i5==1
+                j5 = xout.N5
+                mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+            end
+
+            if i5==xout.N5
+                j5 = 1
+                mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
+            end
+
+        end     
+
+        return
+    end
     
 
 end

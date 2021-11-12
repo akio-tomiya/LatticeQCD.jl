@@ -153,6 +153,7 @@ module Diracoperators
         U::Array{T,1}
         wilsonoperator::Wilson_operator{T}
         m::Float64
+        _temporal_fermi::Array{DomainwallFermion,1}
         function D5DW_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
             r = fparam.r
             M = fparam.M
@@ -165,9 +166,21 @@ module Diracoperators
                                 numlayers =fparam.numlayers,
                                 L = fparam.L
                             )
+            num = 1
+            _temporal_fermi = Array{DomainwallFermion,1}(undef,num)
+            for i=1:num
+                _temporal_fermi[i] = similar(x)
+            end
             wilsonoperator = Wilson_operator(U,x,fparam_wilson)
 
             return new{eltype(U)}(U,wilsonoperator,fparam.m)
+        end
+    end
+
+    struct D5DWdagD5DW_Wilson_operator <: DdagD_operator 
+        dirac::D5DW_Domainwall_operator
+        function D5DWdagD5DW_Wilson_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+            return new(D5DW_Domainwall_operator(U,x,fparam))
         end
     end
 
@@ -188,6 +201,8 @@ module Diracoperators
             return new(Domainwall_operator(U,x,fparam))
         end
     end
+
+    
 
 
     function Base.size(A::Staggered_operator)
@@ -230,6 +245,10 @@ module Diracoperators
     struct Adjoint_Staggered_operator <: Adjoint_Dirac_operator 
         parent::Staggered_operator
     end
+
+    struct Adjoint_D5DW_Domainwall_operator <: Adjoint_Dirac_operator 
+        parent::D5DW_Domainwall_operator
+    end
     
     function Base.adjoint(A::Wilson_operator)
         Adjoint_Wilson_operator(A)
@@ -241,6 +260,10 @@ module Diracoperators
 
     function Base.adjoint(A::Staggered_operator)
         Adjoint_Staggered_operator(A)
+    end
+
+    function Base.adjoint(A::D5DW_Domainwall_operator)
+        Adjoint_D5DW_Domainwall_operator(A)
     end
 
     Base.adjoint(A::Adjoint_Dirac_operator) = A.parent
@@ -268,6 +291,14 @@ module Diracoperators
 
     function LinearAlgebra.mul!(y::FermionFields,A::T,x::FermionFields)  where T <: DdagD_operator #y = A*x
         temp = A.dirac._temporal_fermi[5]
+        mul!(temp,A.dirac,x)
+        mul!(y,A.dirac',temp)
+
+        return
+    end
+
+    function LinearAlgebra.mul!(y::FermionFields,A::T,x::FermionFields)  where T <: D5DWdagD5DW_Wilson_operator#y = A*x
+        temp = A.dirac._temporal_fermi[1]
         mul!(temp,A.dirac,x)
         mul!(y,A.dirac',temp)
 
@@ -373,6 +404,10 @@ module Diracoperators
         add!(y,A.parent.mass,x,-1,temp)
         set_wing_fermi!(y)
         return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion,A::Adjoint_D5DW_Domainwall_operator,x::DomainwallFermion) #y = A*x
+        D5DWdagx!(y,A.parent.U,x,A.parent.m,A.parent.wilsonoperator._temporal_fermi) 
     end
 
     
