@@ -1,10 +1,11 @@
 module Diracoperators
     import ..Gaugefields:GaugeFields,GaugeFields_1d
     import ..Fermionfields:FermionFields,WilsonFermion,Wx!,Wdagx!,WdagWx!,
-                            StaggeredFermion,set_wing_fermi!,Dx!,add!,clear!,Dxplus!
+                            StaggeredFermion,set_wing_fermi!,Dx!,add!,clear!,Dxplus!,
+                            DomainwallFermion
     import ..Clover:Make_CloverFμν
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_WilsonClover,
-                FermiActionParam_Staggered
+                FermiActionParam_Staggered,FermiActionParam_Domainwall
     using LinearAlgebra
     
     abstract type Dirac_operator 
@@ -27,6 +28,8 @@ module Diracoperators
             W = WilsonClover_operator(U,x,fparam)
         elseif typeof(fparam) == FermiActionParam_Staggered
             W = Staggered_operator(U,x,fparam)
+        elseif typeof(fparam) == FermiActionParam_Domainwall
+            W = Domainwall_operator(U,x,fparam)
         else
             error("unknown fparam: fparam is ",typeof(fparam))
         end
@@ -89,6 +92,7 @@ module Diracoperators
         end
     end
 
+
     struct DdagD_WilsonClover_operator <: DdagD_operator 
         dirac::WilsonClover_operator
         function DdagD_WilsonClover_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
@@ -144,6 +148,48 @@ module Diracoperators
         end
     end
 
+    
+    struct D5DW_Domainwall_operator{T} <: Dirac_operator  where  T <: GaugeFields
+        U::Array{T,1}
+        wilsonoperator::Wilson_operator{T}
+        m::Float64
+        function D5DW_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+            r = fparam.r
+            M = fparam.M
+            hop = 1/(8r+2M)
+
+            fparam_wilson = FermiActionParam_Wilson(hop,r,fparam.eps,fparam.Dirac_operator,fparam.MaxCGstep,fparam.quench,
+                                smearingparameters =fparam.smearingparameters,
+                                loops_list = fparam.loops_list,
+                                coefficients  =fparam.coefficients,
+                                numlayers =fparam.numlayers,
+                                L = fparam.L
+                            )
+            wilsonoperator = Wilson_operator(U,x,fparam_wilson)
+
+            return new{eltype(U)}(U,wilsonoperator,fparam.m)
+        end
+    end
+
+    
+    struct Domainwall_operator{T} <: Dirac_operator  where  T <: GaugeFields
+        U::Array{T,1}
+        D5DWoperator::D5DW_Domainwall_operator{T}
+
+        function Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+            D5DWoperator = Domainwall_operator(U,x,fparam)
+            return new{eltype(U)}(U,D5DWoperator)
+        end
+    end
+
+    struct DdagD_Domainwall_operator <: DdagD_operator 
+        dirac::Domainwall_operator
+        function DdagD_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+            return new(Domainwall_operator(U,x,fparam))
+        end
+    end
+
+
     function Base.size(A::Staggered_operator)
         NX = A.U[1].NX
         NY = A.U[1].NY
@@ -166,6 +212,8 @@ module Diracoperators
             W = DdagD_WilsonClover_operator(U,x,fparam)
         elseif typeof(fparam) == FermiActionParam_Staggered
             W = DdagD_Staggered_operator(U,x,fparam)
+        elseif typeof(fparam) == FermiActionParam_Domainwall
+            W = DdagD_Domainwall_operator(U,x,fparam)
         else
             error("unknown fparam: fparam is ",typeof(fparam))
         end
@@ -204,6 +252,17 @@ module Diracoperators
 
     function LinearAlgebra.mul!(y::WilsonFermion,A::WilsonClover_operator,x::WilsonFermion) #y = A*x
         Wx!(y,A.U,x,A._temporal_fermi,A.CloverFμν) 
+        return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion,A::D5DW_Domainwall_operator,x::DomainwallFermion) #y = A*x
+        D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi) 
+        return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion,A::Domainwall_operator,x::DomainwallFermion) #y = A*x
+        error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
+        #D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi) 
         return
     end
 

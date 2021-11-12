@@ -19,6 +19,8 @@ module Fermionfields
 
     import ..StaggeredFermion_module:StaggeredFermion
 
+    import ..DomainwallFermion_module:DomainwallFermion
+
 
 #    abstract type FermionFields end
 
