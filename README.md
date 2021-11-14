@@ -133,7 +133,7 @@ Usage 1 was already explained.
 For Usage 2, in Julia REPL, push "]" key to enter the package mode and type
 
 ```
-add https://github.com/akio-tomiya/LatticeQCD.jl
+add LatticeQCD
 ```
 Then, LatticeQCD.jl is installed on your machine. 
 
