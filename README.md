@@ -29,7 +29,7 @@ You can start lattice QCD in 5 steps!
 2.In Julia REPL, push "]" key to enter the package mode and type
 
 ```
-add https://github.com/akio-tomiya/LatticeQCD.jl
+add LatticeQCD
 ```
 and "return" key. Press "backspace" key ( "delete" key for mac) to exit the package mode.
 
