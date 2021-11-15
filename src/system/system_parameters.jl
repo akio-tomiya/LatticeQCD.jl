@@ -5,7 +5,9 @@ module System_parameters
     # Physical setting 
     printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","initialtrj","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
-    printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass","BoundaryCondition",
+    printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass",
+                            "Domainwall_M","Domainwall_m","Domainwall_N5","Domainwall_ωs","Domainwall_b","Domainwall_c",
+                            "BoundaryCondition",
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
     printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
@@ -198,6 +200,14 @@ module System_parameters
         stout_numlayers::Union{Nothing,Int64}
         stout_ρ::Union{Nothing,Array{Float64,1}}
         stout_loops::Union{Nothing,Array{String,1}}
+    
+        Domainwall_M::Union{Nothing,Float64}
+        Domainwall_m::Union{Nothing,Float64}
+        Domainwall_N5::Union{Nothing,Int64}
+        Domainwall_b::Union{Nothing,Float64}
+        Domainwall_c::Union{Nothing,Float64}
+        Domainwall_ωs::Union{Nothing,Array{Float64,1}}
+
 
 
 
@@ -295,6 +305,28 @@ module System_parameters
                 wilson["hop"]  = 0
                 hop = 0
                 r = 0
+            end
+
+            if Dirac_operator == "Domainwall" 
+                println("$Dirac_operator fermion is used")
+                Domainwall_M = wilson["Domainwall_M"]
+                Domainwall_m = wilson["Domainwall_m"]
+                Domainwall_N5 = wilson["Domainwall_N5"]
+                Domainwall_b = wilson["Domainwall_b"]
+                Domainwall_c = wilson["Domainwall_c"]
+                Domainwall_ωs =wilson["Domainwall_ωs"]
+                r = wilson["r"]
+
+
+
+            else
+                Domainwall_N5 = nothing
+                Domainwall_b = nothing
+                Domainwall_c = nothing
+                Domainwall_ωs = nothing
+                r = 0
+                Domainwall_M = nothing
+                Domainwall_m = nothing
             end
             
             #For WilsonClover
@@ -583,7 +615,13 @@ module System_parameters
                 smearing_for_fermion,
                 stout_numlayers,
                 stout_ρ,
-                stout_loops 
+                stout_loops,
+                Domainwall_M,#::Float64
+                Domainwall_m,#::Float64
+                Domainwall_N5,#::Int64
+                Domainwall_b,#::Float64
+                Domainwall_c,#::Float64
+                Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
             )
 
         end

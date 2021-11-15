@@ -26,7 +26,8 @@ module LTK_universe
                 show_parameters_action,
                 FermiActionParam_WilsonClover,
                 FermiActionParam_Staggered,
-                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single,Nosmearing
+                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single,Nosmearing,
+                FermiActionParam_Domainwall
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add_gaugeforce!
     import ..LieAlgebrafields
     import ..Rand:Random_LCGs
@@ -237,6 +238,25 @@ module LTK_universe
                                                             L = p.L
                                                         )
                 end
+            elseif p.Dirac_operator == "Domainwall"
+                if p.smearing_for_fermion == "nothing"
+                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
+                    p.Domainwall_b,p.Domainwall_c,
+                    p.eps,p.Dirac_operator,
+                    p.MaxCGstep,p.quench)
+                else
+                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
+                                                            p.Domainwall_b,p.Domainwall_c,
+                                                            p.eps,p.Dirac_operator,
+                                                            p.MaxCGstep,p.quench,
+                                                            smearingparameters = "stout",
+                                                            loops_list = p.stout_loops,
+                                                            coefficients  = p.stout_ρ,
+                                                            numlayers = p.stout_numlayers,
+                                                            L = p.L
+                                                        )
+                end
+                error("Not implemented! here is in LTK_universe.jl")
             else
                 error(p.Dirac_operator," is not supported!")
             end

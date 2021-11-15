@@ -207,7 +207,7 @@ module Wizard
         system["Dirac_operator"] = "Domainwall"
 
         N5 = parse(Int64,Base.prompt("Input the size of the extra dimension N5", default="4"))
-        wilson["N5"] = N5
+        wilson["Domainwall_N5"] = N5
 
         wtype = request("Choose domain wall fermion type",RadioMenu([
             "Standard Domainwall fermion action",
@@ -227,19 +227,21 @@ module Wizard
                 ωs[i] = parse(Float64,Base.prompt("Input the parameter ωs[i]", default="1"))
             end
         end
-        wilson["b"] = b
-        wilson["c"] = c
-        wilson["ωs"] =  ωs
+        wilson["Domainwall_b"] = b
+        wilson["Domainwall_c"] = c
+        wilson["Domainwall_ωs"] = ωs
 
 
         wilson["r"] = 1
-        M = parse(Int64,Base.prompt("Input M", default="-1"))
+        M = parse(Float64,Base.prompt("Input M", default="-1"))
         while M >= 0
             println("M should be M < 0. ")
-            M = parse(Int64,Base.prompt("Input M", default="-1"))
+            M = parse(Float64,Base.prompt("Input M", default="-1"))
         end
-        wilson["M"] = M
+        wilson["Domainwall_M"] = M
 
+        m = parse(Float64,Base.prompt("Input mass", default="1"))
+        wilson["Domainwall_m"] = m
 
         eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
         MaxCGstep = parse(Int64,Base.prompt("Maximum iteration steps in CG loops", default="3000"))
@@ -536,7 +538,7 @@ module Wizard
                         "Nothing (quenched approximation)",
                         "Wilson Fermion (2-flavor)",
                         "Staggered Fermion",
-                        #"Domain-wall Fermion (not yet. test mode.)",
+                        "Domain-wall Fermion (DO NOT USE IT! test mode.)",
                     ]))
             if ftype == 1
                 cg = Dict()
