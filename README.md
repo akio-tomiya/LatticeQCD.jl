@@ -192,3 +192,8 @@ We compared results to following papers/codes
 # Reference
 
 We refer "Lattice Tool Kit" https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ written in Fortran 90.
+
+# Acknowledgement
+If you write a paper using this package, please refer this code.
+
+E.g. This work is in part based on LatticeQCD.jl (https://github.com/akio-tomiya/LatticeQCD.jl).
