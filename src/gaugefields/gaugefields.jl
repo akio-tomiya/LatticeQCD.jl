@@ -1,7 +1,7 @@
 module Gaugefields
     using LinearAlgebra
     using Random
-    using JLD
+    using JLD2
     import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,
                         SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,

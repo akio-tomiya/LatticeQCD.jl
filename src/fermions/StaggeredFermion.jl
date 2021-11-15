@@ -9,7 +9,8 @@ module StaggeredFermion_module
 
     #using ..Fermion
     import ..AbstractFermion:FermionFields,
-            Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,set_wing_fermi!,fermion_shift!,fermion_shiftB!,add!,WdagWx!,apply_periodicity
+            Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,Dxplus!,
+            set_wing_fermi!,fermion_shift!,fermion_shiftB!,add!,WdagWx!,apply_periodicity
     
 
     struct StaggeredFermion <: FermionFields

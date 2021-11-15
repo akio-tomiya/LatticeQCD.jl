@@ -110,6 +110,15 @@ module AbstractFermion
         return
     end
 
+    function Dxplus!(xout::T,ν::Int64,U::Array{G,1},
+        x::T,temps::Array{T,1}) where  {T <: FermionFields,G <: GaugeFields}
+        #temp = temps[4]
+        error("This FermionFields type is not supported yet in function Dx!. The type is $(typeof(x))")
+
+        return
+    end
+
+
     function fermion_shiftB!(b::T,evensite,u::Array{GaugeFields{SU{NC}},1},μ,a::T)  where {NC,T <: FermionFields}
         error("This FermionFields type is not supported yet in function fermion_shiftB!. The type is $(typeof(x))")
     end

@@ -3,7 +3,7 @@ using Plots
 using .LatticeQCD
 using Random
 using Dates
-using JLD
+#using JLD
 #using GFlops
 
 if length(ARGS) == 0

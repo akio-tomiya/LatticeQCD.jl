@@ -2,7 +2,7 @@ include("./LatticeQCD.jl")
 using .LatticeQCD
 using Random
 using Dates
-using JLD
+#using JLD
 
 
 #using GFlops

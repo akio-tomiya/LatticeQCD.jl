@@ -1,5 +1,5 @@
 module IOmodule
-    using JLD
+    using JLD2
     using ..Gaugefields
     import ..Gaugefields:GaugeFields,SU2GaugeFields,SU3GaugeFields,SUNGaugeFields
     #import Main.LatticeQCD.Gaugefields:GaugeFields
