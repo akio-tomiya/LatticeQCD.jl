@@ -14,11 +14,8 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 ![demo](demo.gif)
 
-<center>
-<font color="red">
-You can start it in [Google Colab](https://colab.research.google.com/drive/1xmUdDxq0aLuZdM3l4D_MkmI7-lbeQV9s?usp=sharing#scrollTo=voHnFRafPt8D)
-</font>
-</center>
+          You can start it in [Google Colab](https://colab.research.google.com/drive/1xmUdDxq0aLuZdM3l4D_MkmI7-lbeQV9s?usp=sharing#scrollTo=voHnFRafPt8D)
+
 
 # Quick start
 
