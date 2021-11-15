@@ -107,7 +107,8 @@ module Mainrun
         println_verbose1(verbose,"load U from ",parameters.loadU_dir)
         if parameters.loadU_format == "JLD"
             datatype = "JLD"
-            filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
+            filename_load =  filter(f -> contains(f,".jld2"),readdir("./$(parameters.loadU_dir)"))
+            #filename_load =  filter(f -> contains(f,".jld"),readdir("./$(parameters.loadU_dir)"))
         elseif parameters.loadU_format == "ILDG"
             datatype = "ILDG"
             filename_load =  filter(f -> contains(f,"ildg"),readdir("./$(parameters.loadU_dir)"))
@@ -131,7 +132,8 @@ module Mainrun
                 datau = strip(datau)
 
                 if datatype == "JLD"
-                    doescontains = contains(datau,".jld")
+                    doescontains = contains(datau,".jld2")
+                    #doescontains = contains(datau,".jld")
                 elseif datatype == "ILDG"
                     doescontains = contains(datau,".ildg")
                 end
@@ -468,7 +470,8 @@ module Mainrun
                 itrjstring = lpad(itrj,8,"0")
                 #itrjstring = lpad(itrjsavecount,8,"0")
                 if parameters.saveU_format == "JLD"
-                    filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
+                    #filename = parameters.saveU_dir*"/conf_$(itrjstring).jld"
+                    filename = parameters.saveU_dir*"/conf_$(itrjstring).jld2"
                     saveU(filename,univ.U)
                 elseif parameters.saveU_format == "ILDG"
                     filename = parameters.saveU_dir*"/conf_$(itrjstring).ildg"

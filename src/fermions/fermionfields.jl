@@ -13,7 +13,8 @@ module Fermionfields
     #include("cg.jl")
 
     import ..AbstractFermion:FermionFields,
-        Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,fermion_shift!,fermion_shiftB!,add!,set_wing_fermi!,WdagWx!,apply_periodicity
+        Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,Dxplus!,
+        fermion_shift!,fermion_shiftB!,add!,set_wing_fermi!,WdagWx!,apply_periodicity
 
     import ..WilsonFermion_module:WilsonFermion
 
