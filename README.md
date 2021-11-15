@@ -35,6 +35,7 @@ You can start lattice QCD in 5 steps!
 add LatticeQCD
 ```
 and "return" key. Press "backspace" key ( "delete" key for mac) to exit the package mode.
+You can get the latest version via ``add LatticeQCD#master``.
 
 (All dependence will be solved automatically)
 
