@@ -2,21 +2,61 @@ module Diracoperators
     import ..Gaugefields:GaugeFields,GaugeFields_1d
     import ..Fermionfields:FermionFields,WilsonFermion,Wx!,Wdagx!,WdagWx!,
                             StaggeredFermion,set_wing_fermi!,Dx!,add!,clear!,Dxplus!,
-                            DomainwallFermion
+                            DomainwallFermion,mul_γ5x!,D5DWx!,D5DWdagx!,substitute_fermion!
     import ..Clover:Make_CloverFμν
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_WilsonClover,
-                FermiActionParam_Staggered,FermiActionParam_Domainwall
+                FermiActionParam_Staggered,FermiActionParam_Domainwall,SmearingParam_nosmearing
+    import ..CGmethods:cg,bicg
     using LinearAlgebra
     
-    abstract type Dirac_operator 
+    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
+
+    abstract type Operator end
+    
+    abstract type Dirac_operator  <: Operator
     end
 
-    abstract type Adjoint_Dirac_operator 
+    abstract type Adjoint_Dirac_operator <: Operator
     end
 
-    abstract type DdagD_operator 
+    abstract type DdagD_operator  <: Operator
     end
 
+    abstract type γ5D_operator <: Operator
+    end
+
+
+    function get_U(A::Dirac_operator)
+        return A.U
+    end
+
+    function get_U(A::Adjoint_Dirac_operator)
+        return A.parent.U
+    end
+
+    function get_U(A::DdagD_operator)
+        return A.dirac.U
+    end
+
+    function get_U(A::Operator)
+        error("get_U is not implemented for operator $(typeof(A))")
+    end
+
+    function get_temporal_fermi(A::Dirac_operator)
+        return A._temporal_fermi
+    end
+
+    function get_temporal_fermi(A::Adjoint_Dirac_operator)
+        return A.parent._temporal_fermi
+    end
+
+    function get_temporal_fermi(A::DdagD_operator)
+        return A.dirac._temporal_fermi
+    end
+
+    function get_temporal_fermi(A::Operator)
+        error("get_temporal_fermi is not implemented for operator $(typeof(A))")
+    end
 
 
 
@@ -34,6 +74,21 @@ module Diracoperators
             error("unknown fparam: fparam is ",typeof(fparam))
         end
     end
+
+    function γ5D_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+        if typeof(fparam) == FermiActionParam_Wilson
+            W = γ5D_Wilson_operator(Wilson_operator(U,x,fparam))
+        elseif typeof(fparam) == FermiActionParam_WilsonClover
+            W = γ5D_WilsonClover_operator(U,x,fparam)
+        elseif typeof(fparam) == FermiActionParam_Staggered
+            W = γ5D_Staggered_operator(U,x,fparam)
+        elseif typeof(fparam) == FermiActionParam_Domainwall
+            W = γ5D_Domainwall_operator(U,x,fparam)
+        else
+            error("unknown fparam: fparam is ",typeof(fparam))
+        end
+    end
+
 
 
 
@@ -154,27 +209,37 @@ module Diracoperators
         wilsonoperator::Wilson_operator{T}
         m::Float64
         _temporal_fermi::Array{DomainwallFermion,1}
-        function D5DW_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+
+        function D5DW_Domainwall_operator(U::Array{T,1},x,fparam,m) where  T <: GaugeFields
             r = fparam.r
             M = fparam.M
             hop = 1/(8r+2M)
 
-            fparam_wilson = FermiActionParam_Wilson(hop,r,fparam.eps,fparam.Dirac_operator,fparam.MaxCGstep,fparam.quench,
-                                smearingparameters =fparam.smearingparameters,
-                                loops_list = fparam.loops_list,
-                                coefficients  =fparam.coefficients,
-                                numlayers =fparam.numlayers,
-                                L = fparam.L
-                            )
+            if typeof(fparam.smearing) == SmearingParam_nosmearing
+                fparam_wilson = FermiActionParam_Wilson(hop,r,fparam.eps,fparam.Dirac_operator,fparam.MaxCGstep,fparam.quench)
+            else
+                fparam_wilson = FermiActionParam_Wilson(hop,r,fparam.eps,fparam.Dirac_operator,fparam.MaxCGstep,fparam.quench,
+                                    smearingparameters ="stout",
+                                    loops_list = fparam.loops_list,
+                                    coefficients  =fparam.coefficients,
+                                    numlayers =fparam.numlayers,
+                                    L = fparam.L
+                                )
+            end
             num = 1
             _temporal_fermi = Array{DomainwallFermion,1}(undef,num)
             for i=1:num
                 _temporal_fermi[i] = similar(x)
             end
-            wilsonoperator = Wilson_operator(U,x,fparam_wilson)
+            wilsonoperator = Wilson_operator(U,x.f[1],fparam_wilson)
 
-            return new{eltype(U)}(U,wilsonoperator,fparam.m)
+            return new{eltype(U)}(U,wilsonoperator,m,_temporal_fermi)
         end
+
+        function D5DW_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+            return D5DW_Domainwall_operator(U,x,fparam,fparam.m) 
+        end
+
     end
 
     struct D5DWdagD5DW_Wilson_operator <: DdagD_operator 
@@ -185,24 +250,41 @@ module Diracoperators
     end
 
     
-    struct Domainwall_operator{T} <: Dirac_operator  where  T <: GaugeFields
-        U::Array{T,1}
-        D5DWoperator::D5DW_Domainwall_operator{T}
 
+
+
+
+    struct Domainwall_operator{T} <: Dirac_operator  where  T <: GaugeFields
+        D5DW::D5DW_Domainwall_operator{T}
+        D5DW_PV::D5DW_Domainwall_operator{T}
+        
         function Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
-            D5DWoperator = Domainwall_operator(U,x,fparam)
-            return new{eltype(U)}(U,D5DWoperator)
+            D5DW = D5DW_Domainwall_operator(U,x,fparam)
+            D5DW_PV = D5DW_Domainwall_operator(U,x,fparam,1)
+            return new{eltype(U)}(D5DW,D5DW_PV)
         end
     end
 
+    function get_U(A::Domainwall_operator)
+        return get_U(A.D5DW)
+    end
+
+    function get_temporal_fermi(A::Domainwall_operator)
+        return get_temporal_fermi(A.D5DW)
+    end
+    
     struct DdagD_Domainwall_operator <: DdagD_operator 
         dirac::Domainwall_operator
+        DdagD::D5DWdagD5DW_Wilson_operator
+
         function DdagD_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
-            return new(Domainwall_operator(U,x,fparam))
+            return new(Domainwall_operator(U,x,fparam),D5DWdagD5DW_Wilson_operator(U,x,fparam))
         end
     end
 
-    
+    function get_U(A::DdagD_Domainwall_operator)
+        return get_U(A.dirac)
+    end
 
 
     function Base.size(A::Staggered_operator)
@@ -266,10 +348,33 @@ module Diracoperators
         Adjoint_D5DW_Domainwall_operator(A)
     end
 
+    struct γ5D_Wilson_operator <: γ5D_operator 
+        parent::Wilson_operator
+    end
+
+    struct γ5D_WilsonClover_operator <: γ5D_operator 
+        parent::WilsonClover_operator
+    end
+
+    struct γ5D_Staggered_operator <: γ5D_operator 
+        parent::Staggered_operator
+    end
+
+    struct γ5D_D5DW_Domainwall_operator <: γ5D_operator 
+        parent::D5DW_Domainwall_operator
+    end
+
     Base.adjoint(A::Adjoint_Dirac_operator) = A.parent
 
     function LinearAlgebra.mul!(y::WilsonFermion,A::Wilson_operator,x::WilsonFermion) #y = A*x
         Wx!(y,A.U,x,A._temporal_fermi) 
+        return
+    end
+
+    function LinearAlgebra.mul!(y::WilsonFermion,A::γ5D_Wilson_operator,x::WilsonFermion) #y = A*x
+        temp = A.parent._temporal_fermi[5]
+        mul!(temp,A.parent,x)
+        mul_γ5x!(y,temp)
         return
     end
 
@@ -284,7 +389,13 @@ module Diracoperators
     end
 
     function LinearAlgebra.mul!(y::DomainwallFermion,A::Domainwall_operator,x::DomainwallFermion) #y = A*x
-        error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
+        
+        #A = D5DW(m)*D5DW(m=1))^(-1)
+        #y = A*x = D5DW(m)*D5DW(m=1))^(-1)*x
+        bicg(A.D5DW_PV._temporal_fermi[1],A.D5DW_PV,x) 
+        mul!(y,A.D5DW,A.D5DW_PV._temporal_fermi[1])
+
+        #error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
         #D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi) 
         return
     end
@@ -417,5 +528,64 @@ module Diracoperators
         mul!(y,A,x)
         return y
     end
+
+    function bicg(x,A::Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #A*x = b -> x = A^-1*b
+        #A = D5DW(m)*D5DW(m=1))^(-1)
+        #A^-1 = D5DW(m=1)*DsDW(m)^-1
+        #x = A^-1*b = D5DW(m=1)*DsDW(m)^-1*b
+        bicg(A.D5DW._temporal_fermi[1],A.D5DW,b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
+        mul!(x,A.D5DW_PV,A.D5DW._temporal_fermi[1])
+    end
+
+    function cg(x,A::DdagD_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2())
+        #=
+        A^-1 = ( (D5DW(m)*D5DW(m=1))^(-1))^+ D5DW(m)*D5DW(m=1))^(-1) )^-1
+          = ( D5DW(m=1)^+)^(-1) D5DW(m)^+ D5DW(m)*D5DW(m=1))^(-1) )^-1
+          = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1) )^-1 D5DW(m=1)^+
+        x = A^-1*b = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
+        =#
+        mul!(A.dirac.D5DW_PV._temporal_fermi[1],A.dirac.DSDW_PV',b) #D5DW(m=1)^+*b
+
+        temp = A.dirac.D5DW_PV._temporal_fermi[1]
+        cg(A.dirac.D5DW._temporal_fermi[1],A.DdagD,temp;eps=eps,maxsteps = maxsteps,verbose = verbose) #(  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
+        mul!(x,A.dirac.D5DW_PV,A.dirac.D5DW._temporal_fermi[1])
+    end
     
+
+    function make_densematrix(A::T) where T <: Operator
+        x = get_temporal_fermi(A)[1]
+        xi = similar(x)
+        clear!(x)
+        j = 0
+        NV = length(x)
+        A_dense = zeros(ComplexF64,NV,NV)
+        println("Matrix size: ",NV)
+        for i = 1:NV
+            clear!(x)
+            j += 1
+            x[i] = 1
+            set_wing_fermi!(x)
+            
+            #println("x*x ",x*x)
+            
+            mul!(xi,A,x)
+            #for j=1:NV
+            #    println("$i $j ",xi[j])
+            #end
+
+            
+            #error("i = $i")
+            println("i = $i ",xi*xi)
+            substitute_fermion!(A_dense,j,xi)
+            #=
+            for j=1:NV
+                if abs(A_dense[i,j]) != 0
+                    println("$i $j $(A_dense[i,j])")
+                end
+            end
+            =#
+        end
+        return A_dense
+
+    end
 end

@@ -1,6 +1,7 @@
 module Measurements
     using LinearAlgebra
     using SparseArrays
+    using KrylovKit
     import ..LTK_universe:Universe,make_WdagWmatrix,calc_IntegratedFermionAction
     import ..Gaugefields:GaugeFields,set_wing!,substitute!,
             make_staple!,calc_Plaq!,SU3GaugeFields,
@@ -15,7 +16,7 @@ module Measurements
     #import ..CGfermion:cg0!
     import ..System_parameters:Params
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover
-    import ..Diracoperators:Dirac_operator
+    import ..Diracoperators:Dirac_operator,γ5D_operator
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
@@ -186,6 +187,8 @@ module Measurements
                     measurementfps[i] = open(measurement_dir*"/smeared_Wilson_loop.txt",measure_overwrite)
                 elseif method["methodname"] == "integrated_fermion_action"
                     measurementfps[i] = open(measurement_dir*"/Fermion_actions.txt","w")
+                elseif method["methodname"] == "eigenvalues"
+                    measurementfps[i] = open(measurement_dir*"/eigenvalues.txt","w")
                 else
                     error("$(method["methodname"]) is not supported in measurement functions")
                 end
@@ -499,6 +502,8 @@ module Measurements
                     #fermiontype = method["fermiontype"]
                     #calc_pion_correlator(univ,measset.fermions[i])
                     measure_correlator(univ,measset.fermions[i],itrj,measfp,verbose)
+                elseif method["methodname"] == "eigenvalues" 
+                    measure_eigenvalues(univ,measset.fermions[i],itrj,measfp,verbose)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
@@ -1174,6 +1179,42 @@ end
         println_verbose1(verbose,"#pioncorrelator")
         println(measfp,"#pioncorrelator")
     end
+
+    function measure_eigenvalues(univ::Universe,meas::Measurement,itrj,measfp,verbose)
+        ene = calc_eigenvalues(univ,meas,verbose)
+        print_verbose1(verbose,"$itrj ")
+        print(measfp,"$itrj ")
+        for it=1:length(ene)
+            e = ene[it]
+            print_verbose1(verbose,"$e ")
+            print(measfp,"$e ")
+        end
+        println_verbose1(verbose,"#eigenvalues")
+        println(measfp,"#eigenvalues")
+    end
+
+    function calc_eigenvalues(univ,meas,verbose)
+        println_verbose2(verbose,"Dirac spectrum started")
+        U,_... = calc_smearingU(univ.U,meas.fparam.smearing)
+        γ5D = γ5D_operator(U,meas._temporal_fermi2[1],meas.fparam)
+        function γ5Dx(x)
+            y = similar(x)
+            mul!(y,γ5D,x)
+            return y
+        end 
+        x = similar(meas._temporal_fermi2[1])
+        x.f[1] = 1
+        for i=1:length(x.f)
+            x.f[i] = rand()
+        end
+        #decomp, history = partialschur(γ5D, nev=10, tol=1e-6, which=SR());
+        result = eigsolve(γ5Dx,x,10,EigSorter(abs; rev = false),Lanczos())
+        println(result)
+
+    end
+
+
+
     #topological charge
     function epsilon_tensor(mu::Int,nu::Int,rho::Int,sigma::Int) 
         sign=1 # (3) 1710.09474 extended epsilon tensor
