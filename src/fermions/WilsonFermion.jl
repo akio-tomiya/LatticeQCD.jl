@@ -12,7 +12,7 @@ module WilsonFermion_module
     #            clear!
     #using ..Fermion
     import ..AbstractFermion:FermionFields,
-        Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,fermion_shift!,fermion_shiftB!,add!,set_wing_fermi!,WdagWx!,apply_periodicity
+        Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,fermion_shift!,fermion_shiftB!,add!,set_wing_fermi!,WdagWx!,apply_periodicity,Ddagx!
 
 
     """
@@ -37,6 +37,20 @@ module WilsonFermion_module
         Dirac_operator::String
         MaxCGstep::Int64
         BoundaryCondition::Array{Int8,1}
+    end
+
+    function Base.length(x::WilsonFermion)
+        return x.NC*x.NX*x.NY*x.NZ*x.NT*4
+    end
+
+    function Base.size(x::WilsonFermion)
+        return (x.NC,x.NX,x.NY,x.NZ,x.NT,4)
+    end
+
+    function Base.iterate(x::WilsonFermion, i::Int = 1)
+        i == length(x.f)+1 && return nothing
+        #println("i = $i ",x.f[i])
+        return (x.f[i], i+1)
     end
 
     function WilsonFermion(NC,NX,NY,NZ,NT,fparam::FermiActionParam,BoundaryCondition) 
@@ -67,8 +81,40 @@ module WilsonFermion_module
         x.f[i1,i2 + 1,i3 + 1,i4 + 1,i5 + 1,i6] = v
     end
 
+    function Base.setindex!(x::WilsonFermion,v,ii)
+        #ii = (((((ialpha -1)*NT+it-1)*NZ+iz-1)*NY+iy-1)*NX+ix-1)*NC+ic
+        ic = (ii - 1) % x.NC + 1
+        iii = (ii - ic) ÷ x.NC 
+        ix = iii % x.NX + 1
+        iii = (iii - ix + 1) ÷ x.NX
+        iy = iii % x.NY + 1
+        iii = (iii - iy + 1) ÷ x.NY
+        iz = iii % x.NZ + 1
+        iii = (iii - iz + 1) ÷ x.NZ
+        it = iii % x.NT + 1
+        iii = (iii - it + 1) ÷ x.NT
+        ialpha = iii + 1
+        x[ic,ix,iy,iz,it,ialpha] = v
+    end
+
     function Base.getindex(x::WilsonFermion,i1,i2,i3,i4,i5,i6)
         return x.f[i1,i2 .+ 1,i3 .+ 1,i4 .+ 1,i5 .+ 1,i6]
+    end
+
+    function Base.getindex(x::WilsonFermion,ii)
+        #ii = (((((ialpha -1)*NT+it-1)*NZ+iz-1)*NY+iy-1)*NX+ix-1)*NC+ic
+        ic = (ii - 1) % x.NC + 1
+        iii = (ii - ic) ÷ x.NC 
+        ix = iii % x.NX + 1
+        iii = (iii - ix + 1) ÷ x.NX
+        iy = iii % x.NY + 1
+        iii = (iii - iy + 1) ÷ x.NY
+        iz = iii % x.NZ + 1
+        iii = (iii - iz + 1) ÷ x.NZ
+        it = iii % x.NT + 1
+        iii = (iii - it + 1) ÷ x.NT
+        ialpha = iii + 1
+        return x[ic,ix,iy,iz,it,ialpha]
     end
 
 
@@ -88,6 +134,59 @@ module WilsonFermion_module
             end            
         end
         return c
+    end
+
+    function Base.:*(a::T,b::WilsonFermion) where T <: Number
+        c = similar(b)
+        for α=1:4
+            for it=1:b.NT
+                for iz=1:b.NZ
+                    for iy=1:b.NY
+                        for ix=1:b.NX
+                            @simd for ic=1:b.NC
+                                c[ic,ix,iy,iz,it,α] = a*b[ic,ix,iy,iz,it,α]
+                            end
+                        end
+                    end
+                end
+            end            
+        end
+        return c
+    end
+
+    function LinearAlgebra.axpy!(a::T,X::WilsonFermion,Y::WilsonFermion) where T <: Number #Y = a*X+Y
+        for α=1:4
+            for it=1:X.NT
+                for iz=1:X.NZ
+                    for iy=1:X.NY
+                        for ix=1:X.NX
+                            @simd for ic=1:X.NC
+                                Y[ic,ix,iy,iz,it,α] += a*X[ic,ix,iy,iz,it,α]
+                            end
+                        end
+                    end
+                end
+            end            
+        end
+        return X
+    end
+
+
+    function LinearAlgebra.rmul!(a::WilsonFermion,b::T) where T <: Number
+        for α=1:4
+            for it=1:a.NT
+                for iz=1:a.NZ
+                    for iy=1:a.NY
+                        for ix=1:a.NX
+                            @simd for ic=1:a.NC
+                                a[ic,ix,iy,iz,it,α] = b*a[ic,ix,iy,iz,it,α]
+                            end
+                        end
+                    end
+                end
+            end            
+        end
+        return a
     end
 
     function Base.similar(x::WilsonFermion)

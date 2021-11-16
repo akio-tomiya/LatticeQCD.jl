@@ -32,7 +32,8 @@ module LTK_universe
     import ..LieAlgebrafields
     import ..Rand:Random_LCGs
     import ..System_parameters:Params
-    import ..Diracoperators:DdagD_operator
+    import ..Diracoperators:DdagD_operator,Domainwall_operator,make_densematrix,
+                D5DW_Domainwall_operator
     import ..Diracoperators
     import ..Wilsonloops:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
@@ -256,7 +257,7 @@ module LTK_universe
                                                             L = p.L
                                                         )
                 end
-                error("Not implemented! here is in LTK_universe.jl")
+                #error("Not implemented! here is in LTK_universe.jl")
             else
                 error(p.Dirac_operator," is not supported!")
             end
@@ -492,6 +493,26 @@ module LTK_universe
                 _temporal_fermi[i] = similar(φ)
             end
             quench = fparam.quench
+
+            if Dirac_operator =="Domainwall"
+                gauss_distribution_fermi!(ξ)
+                #A = D5DW_Domainwall_operator(U,ξ,fparam)
+                A = Domainwall_operator(U,ξ,fparam)
+                A_dense_PV = make_densematrix(A.D5DW_PV)
+                A_dense = make_densematrix(A.D5DW)
+                M = A_dense*inv(A_dense_PV)
+                #e,v = eigen(A_dense)
+                e,v = eigen(M)
+                fp = open("eigenvalues_M.txt","w")
+                for ene in e
+                    println(fp,real(ene),"\t",imag(ene))
+                end
+                close(fp)
+                #println(e)
+                error("stop!")
+                bicg(η,A,ξ)
+                error("stop!")
+            end
 
         end
 
