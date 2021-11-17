@@ -538,7 +538,7 @@ module Wizard
                         "Nothing (quenched approximation)",
                         "Wilson Fermion (2-flavor)",
                         "Staggered Fermion",
-                        "Domain-wall Fermion (DO NOT USE IT! test mode.)",
+                        #"Domain-wall Fermion (DO NOT USE IT! test mode.)",
                     ]))
             if ftype == 1
                 cg = Dict()
