@@ -260,16 +260,18 @@ module DomainwallFermion_module
                 end
             end
 
-            if i5==1
-                j5 = xout.N5
-                mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
-                set_wing_fermi!(xout.f[i5])  
-            end
+            if xout.N5 != 1
+                if i5==1
+                    j5 = xout.N5
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
 
-            if i5==xout.N5
-                j5 = 1
-                mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
-                set_wing_fermi!(xout.f[i5])  
+                if i5==xout.N5
+                    j5 = 1
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
             end
 
         end  

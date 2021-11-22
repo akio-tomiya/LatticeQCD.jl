@@ -241,12 +241,12 @@ module LTK_universe
                 end
             elseif p.Dirac_operator == "Domainwall"
                 if p.smearing_for_fermion == "nothing"
-                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
+                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.Domainwall_r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
                     p.Domainwall_b,p.Domainwall_c,
                     p.eps,p.Dirac_operator,
                     p.MaxCGstep,p.quench)
                 else
-                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
+                    fparam = FermiActionParam_Domainwall(p.Domainwall_N5,p.Domainwall_r,p.Domainwall_M,p.Domainwall_m,p.Domainwall_ωs,
                                                             p.Domainwall_b,p.Domainwall_c,
                                                             p.eps,p.Dirac_operator,
                                                             p.MaxCGstep,p.quench,
@@ -494,16 +494,29 @@ module LTK_universe
             end
             quench = fparam.quench
 
-            if Dirac_operator =="Domainwall"
+
+            if Dirac_operator =="Domainwall" 
                 gauss_distribution_fermi!(ξ)
+
                 #A = D5DW_Domainwall_operator(U,ξ,fparam)
                 A = Domainwall_operator(U,ξ,fparam)
                 A_dense_PV = make_densematrix(A.D5DW_PV)
                 A_dense = make_densematrix(A.D5DW)
+                #A_dense = make_densematrix(A.D5DW.wilsonoperator)
+                #=
+                e,v = eigen(A_dense)
+                fp = open("eigenvalues_domew_domain_LS2_Mm1_mass0.txt","w")
+                for ene in e
+                    println(fp,real(ene),"\t",imag(ene))
+                end
+                close(fp)
+                error("dd")
+                =#
+
                 M = A_dense*inv(A_dense_PV)
                 #e,v = eigen(A_dense)
                 e,v = eigen(M)
-                fp = open("eigenvalues_M.txt","w")
+                fp = open("eigenvalues_M_LS4_Mm1_mass0.txt.txt","w")
                 for ene in e
                     println(fp,real(ene),"\t",imag(ene))
                 end
@@ -831,13 +844,27 @@ module LTK_universe
         return make_WdagWmatrix(univ.U,univ._temporal_fermi,univ.fparam)
     end
 
+    function make_Wmatrix(univ::Universe)
+        return make_Wmatrix(univ.U,univ._temporal_fermi,univ.fparam)
+    end
+
+
     function make_WdagWmatrix!(WdagW,univ::Universe)
         make_WdagWmatrix!(WdagW,univ.U,univ._temporal_fermi,univ.fparam)
         return
     end
 
+    function make_Wmatrix!(WdagW,univ::Universe)
+        make_Wmatrix!(WdagW,univ.U,univ._temporal_fermi,univ.fparam)
+        return
+    end
+
     function make_WdagWmatrix(univ::Universe,U::Array{T,1}) where T <: GaugeFields
         return make_WdagWmatrix(U,univ._temporal_fermi,univ.fparam)
+    end
+
+    function make_Wmatrix(univ::Universe,U::Array{T,1}) where T <: GaugeFields
+        return make_Wmatrix(U,univ._temporal_fermi,univ.fparam)
     end
 
     function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
@@ -846,10 +873,24 @@ module LTK_universe
         return make_WdagWmatrix(U,x0,xi,fparam) 
     end
 
+    function make_Wmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
+        x0 = temps[7]
+        xi = temps[8]
+        return make_Wmatrix(U,x0,xi,fparam) 
+    end
+
+
     function make_WdagWmatrix!(WdagW,U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
         x0 = temps[7]
         xi = temps[8]
         make_WdagWmatrix!(WdagW,U,x0,xi,fparam) 
+        return
+    end
+
+    function make_Wmatrix!(WdagW,U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
+        x0 = temps[7]
+        xi = temps[8]
+        make_Wmatrix!(WdagW,U,x0,xi,fparam) 
         return
     end
 
@@ -869,6 +910,24 @@ module LTK_universe
         WdagW = zeros(ComplexF64,Nsize,Nsize)
         make_WdagWmatrix!(WdagW,U,x0,xi,fparam)
         return WdagW
+    end
+
+    function make_Wmatrix(U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+        NX = x0.NX
+        NY = x0.NY
+        NZ = x0.NZ
+        NT = x0.NT
+        NC = x0.NC
+        if T == StaggeredFermion
+            NG = 1
+        else
+            NG = 4
+        end
+        Nsize = NX*NY*NZ*NT*NC*NG
+        
+        W = zeros(ComplexF64,Nsize,Nsize)
+        make_Wmatrix!(W,U,x0,xi,fparam)
+        return W
     end
     
     function make_WdagWmatrix!(WdagW,U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
@@ -929,6 +988,68 @@ module LTK_universe
         #return WdagW
 
     end
+
+        
+    function make_Wmatrix!(WdagW,U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+        
+        Fermionfields.clear!(x0)
+        NX = x0.NX
+        NY = x0.NY
+        NZ = x0.NZ
+        NT = x0.NT
+        NC = x0.NC
+        if T == StaggeredFermion
+            NG = 1
+        else
+            NG = 4
+        end
+        Nsize = NX*NY*NZ*NT*NC*NG
+        #WdagW = zeros(ComplexF64,Nsize,Nsize)
+        WdagWoperator = Diracoperators.Dirac_operator(U,x0,fparam)
+        
+        
+        j = 0
+        for α=1:NG
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                Fermionfields.clear!(x0)
+                                j += 1
+                                x0[ic,ix,iy,iz,it,α] = 1
+                                #set_wing_fermi!(x0)
+                                
+                                #WdagWx!(xi,U,x0,temps,fparam)
+                                #println(xi*xi)
+
+                                #Wx!(xi,U,x0,temps,fparam)
+                                #println(xi*xi)
+
+                                #Wx!(xi,U,x0,temps,fparam,(ix,iy,iz,it,α))
+                                #println(xi*xi)
+                                
+                                #mul!(xi,WdagWoperator,x0,(ix,iy,iz,it,α))
+                                mul!(xi,WdagWoperator,x0)
+                                #WdagWx!(xi,U,x0,temps,fparam,(ix,iy,iz,it,α))
+                                #println("fast ",xi*xi)
+                                #exit()
+                                #display(xi)
+                                #exit()
+                                substitute_fermion!(WdagW,j,xi)
+                        
+                            end
+                        end
+                    end
+                end
+            end            
+        end
+
+
+        #return WdagW
+
+    end
+
 
     
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}

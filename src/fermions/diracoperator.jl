@@ -551,10 +551,11 @@ module Diracoperators
         mul!(x,A.dirac.D5DW_PV,A.dirac.D5DW._temporal_fermi[1])
     end
     
-
+    
     function make_densematrix(A::T) where T <: Operator
         x = get_temporal_fermi(A)[1]
         xi = similar(x)
+        x = similar(xi)
         clear!(x)
         j = 0
         NV = length(x)
@@ -588,4 +589,57 @@ module Diracoperators
         return A_dense
 
     end
+    
+#=
+    function make_densematrix(A::T) where T <: Wilson_operator
+        x0 = get_temporal_fermi(A)[1]
+        xi = similar(x0)
+        x0 = similar(xi)
+
+        #Fermionfields.clear!(x0)
+        NX = x0.NX
+        NY = x0.NY
+        NZ = x0.NZ
+        NT = x0.NT
+        NC = x0.NC
+        if T == StaggeredFermion
+            NG = 1
+        else
+            NG = 4
+        end
+        Nsize = NX*NY*NZ*NT*NC*NG
+        #WdagW = zeros(ComplexF64,Nsize,Nsize)
+        WdagWoperator = A
+        NV = Nsize
+        WdagW = zeros(ComplexF64,NV,NV)
+        
+        
+        j = 0
+        for α=1:NG
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                clear!(x0)
+                                j += 1
+                                x0[ic,ix,iy,iz,it,α] = 1
+
+                                mul!(xi,WdagWoperator,x0)
+
+                                substitute_fermion!(WdagW,j,xi)
+                        
+                            end
+                        end
+                    end
+                end
+            end            
+        end
+
+        return WdagW
+
+    end
+    =#
+
+    
 end

@@ -55,6 +55,7 @@ module WilsonFermion_module
 
     function WilsonFermion(NC,NX,NY,NZ,NT,fparam::FermiActionParam,BoundaryCondition) 
         r = fparam.r
+        #error("r = $r")
         hop = fparam.hop
         eps = fparam.eps
         MaxCGstep = fparam.MaxCGstep
@@ -81,6 +82,8 @@ module WilsonFermion_module
         x.f[i1,i2 + 1,i3 + 1,i4 + 1,i5 + 1,i6] = v
     end
 
+    
+
     function Base.setindex!(x::WilsonFermion,v,ii)
         #ii = (((((ialpha -1)*NT+it-1)*NZ+iz-1)*NY+iy-1)*NX+ix-1)*NC+ic
         ic = (ii - 1) % x.NC + 1
@@ -96,6 +99,8 @@ module WilsonFermion_module
         ialpha = iii + 1
         x[ic,ix,iy,iz,it,ialpha] = v
     end
+
+    
 
     function Base.getindex(x::WilsonFermion,i1,i2,i3,i4,i5,i6)
         return x.f[i1,i2 .+ 1,i3 .+ 1,i4 .+ 1,i5 .+ 1,i6]
@@ -1364,6 +1369,9 @@ c----------------------------------------------------------------------c
                 end
             end
         end 
+        #println("r = $r")
+        #display(rpg)
+        #error("gamma!")
 
         return gamma,rpg,rmg
 
@@ -1437,6 +1445,7 @@ c----------------------------------------------------------------------c
     end
 
 
+    
 
 
 end

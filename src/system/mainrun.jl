@@ -1,8 +1,10 @@
 module Mainrun
     using Dates
     using InteractiveUtils
+    using LinearAlgebra
     import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
-                            Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site
+                            Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site,
+                            make_Wmatrix
     import ..Actions:Setup_Gauge_action,Setup_Fermi_action,GaugeActionParam_autogenerator
     import ..Measurements:calc_plaquette,measure_correlator,Measurement,calc_polyakovloop,measure_chiral_cond,calc_topological_charge,
                 measurements,Measurement_set
@@ -65,6 +67,11 @@ module Mainrun
     function run_LQCD(params_set::Params_set)
         parameters = parameterloading(params_set)
         univ = Universe(parameters)
+
+
+
+
+
         plaq = run_LQCD!(univ,parameters)
 
         return  plaq
@@ -293,6 +300,11 @@ module Mainrun
         
         for itrj=parameters.initialtrj:Nsteps
             println("# itrj = $itrj")
+
+                    
+
+
+
             # Update for different updaters
             # HMC: Hybrid Monte-Carlo
             if parameters.update_method == "HMC"
