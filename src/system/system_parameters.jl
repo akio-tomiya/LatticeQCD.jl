@@ -6,7 +6,7 @@ module System_parameters
     printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","initialtrj","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
     printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass",
-                            "Domainwall_M","Domainwall_m","Domainwall_N5","Domainwall_ωs","Domainwall_b","Domainwall_c",
+                            "Domainwall_M","Domainwall_m","Domainwall_N5","Domainwall_ωs","Domainwall_b","Domainwall_c","Domainwall_r",
                             "BoundaryCondition",
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
@@ -207,6 +207,7 @@ module System_parameters
         Domainwall_b::Union{Nothing,Float64}
         Domainwall_c::Union{Nothing,Float64}
         Domainwall_ωs::Union{Nothing,Array{Float64,1}}
+        Domainwall_r::Union{Nothing,Float64}
 
 
 
@@ -300,7 +301,8 @@ module System_parameters
                 else
                     error("wilson[\"hop\"] should be set.")
                 end           
-                r = wilson["r"] #::Float64 = 1 #Wilson term     
+                r = wilson["r"] #::Float64 = 1 #Wilson term    
+                
             else
                 wilson["hop"]  = 0
                 hop = 0
@@ -315,7 +317,8 @@ module System_parameters
                 Domainwall_b = wilson["Domainwall_b"]
                 Domainwall_c = wilson["Domainwall_c"]
                 Domainwall_ωs =wilson["Domainwall_ωs"]
-                r = wilson["r"]
+                Domainwall_r = wilson["Domainwall_r"]
+                #r = wilson["r"]
 
 
 
@@ -324,7 +327,7 @@ module System_parameters
                 Domainwall_b = nothing
                 Domainwall_c = nothing
                 Domainwall_ωs = nothing
-                r = 0
+                Domainwall_r = nothing
                 Domainwall_M = nothing
                 Domainwall_m = nothing
             end
@@ -561,7 +564,7 @@ module System_parameters
             stout_loops = set_params(system,"stout_loops",nothing)
 
 
-            
+            #error("r = $r desu")
             return new(
                 L,# = system["L"] #::Tuple  = (2,2,2,2) # Mandatory
                 β,# = system["β"] #::Float64 # = 6 # Mandatory
@@ -622,6 +625,7 @@ module System_parameters
                 Domainwall_b,#::Float64
                 Domainwall_c,#::Float64
                 Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
+                Domainwall_r
             )
 
         end
