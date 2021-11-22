@@ -233,14 +233,14 @@ module Wizard
 
 
         wilson["r"] = 1
-        M = parse(Float64,Base.prompt("Input M", default="-1"))
+        M = parse(Float64,Base.prompt("Input domain wall hight M (-M>0 convention)", default="-1"))
         while M >= 0
             println("M should be M < 0. ")
-            M = parse(Float64,Base.prompt("Input M", default="-1"))
+            M = parse(Float64,Base.prompt("Input domain wall hight M (-M>0 convention)", default="-1"))
         end
         wilson["Domainwall_M"] = M
 
-        m = parse(Float64,Base.prompt("Input mass", default="1"))
+        m = parse(Float64,Base.prompt("Input quark mass", default="1"))
         wilson["Domainwall_m"] = m
 
         eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
