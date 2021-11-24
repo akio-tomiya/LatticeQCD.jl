@@ -230,6 +230,7 @@ module Wizard
         wilson["Domainwall_b"] = b
         wilson["Domainwall_c"] = c
         wilson["Domainwall_ωs"] = ωs
+        wilson["Domainwall_r"] = 1
 
 
         wilson["r"] = 1

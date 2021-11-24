@@ -500,23 +500,44 @@ module LTK_universe
 
                 #A = D5DW_Domainwall_operator(U,ξ,fparam)
                 A = Domainwall_operator(U,ξ,fparam)
-                A_dense_PV = make_densematrix(A.D5DW_PV)
-                A_dense = make_densematrix(A.D5DW)
-                #A_dense = make_densematrix(A.D5DW.wilsonoperator)
-                #=
-                e,v = eigen(A_dense)
-                fp = open("eigenvalues_domew_domain_LS2_Mm1_mass0.txt","w")
+                fn = "_LS8_3333_hot.txt"
+                #
+                
+                A_wilson = make_densematrix(A.D5DW.wilsonoperator)
+                e,v = eigen(A_wilson)
+                fp = open("eigenvalues_wilson"*fn,"w")
                 for ene in e
                     println(fp,real(ene),"\t",imag(ene))
                 end
                 close(fp)
-                error("dd")
-                =#
 
+                A_dense = make_densematrix(A.D5DW)
+                AdA = A_dense'*A_dense
+
+                e,v = eigen(AdA)
+                fp = open("eigenvalues_AdA"*fn,"w")
+                for ene in e
+                    println(fp,real(ene),"\t",imag(ene))
+                end
+                close(fp)
+                #error("dd")
+
+                 
+                
+                e,v = eigen(A_dense)
+                fp = open("eigenvalues_domain"*fn,"w")
+                for ene in e
+                    println(fp,real(ene),"\t",imag(ene))
+                end
+                close(fp)
+                #error("dd")
+
+                 
+                A_dense_PV = make_densematrix(A.D5DW_PV)
                 M = A_dense*inv(A_dense_PV)
                 #e,v = eigen(A_dense)
                 e,v = eigen(M)
-                fp = open("eigenvalues_M_LS4_Mm1_mass0.txt.txt","w")
+                fp = open("eigenvalues_M"*fn,"w")
                 for ene in e
                     println(fp,real(ene),"\t",imag(ene))
                 end
