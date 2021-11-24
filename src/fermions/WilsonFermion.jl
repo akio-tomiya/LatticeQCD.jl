@@ -386,8 +386,8 @@ module WilsonFermion_module
         temp2 = temps[2]
 
         clear!(temp)
-        clear!(temp1)
-        clear!(temp2)
+        #clear!(temp1)
+        #clear!(temp2)
         set_wing_fermi!(x)
         for ν=1:4
             fermion_shift!(temp1,U,ν,x)

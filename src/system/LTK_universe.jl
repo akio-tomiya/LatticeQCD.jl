@@ -494,13 +494,13 @@ module LTK_universe
             end
             quench = fparam.quench
 
-
-            if Dirac_operator =="Domainwall" 
+            if false
+            #if Dirac_operator =="Domainwall" 
                 gauss_distribution_fermi!(ξ)
 
                 #A = D5DW_Domainwall_operator(U,ξ,fparam)
                 A = Domainwall_operator(U,ξ,fparam)
-                fn = "_LS8_3333_hot.txt"
+                fn = "_LS10_3333.txt"
                 #
                 
                 A_wilson = make_densematrix(A.D5DW.wilsonoperator)

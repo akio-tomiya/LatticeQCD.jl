@@ -331,6 +331,10 @@ module Diracoperators
     struct Adjoint_D5DW_Domainwall_operator <: Adjoint_Dirac_operator 
         parent::D5DW_Domainwall_operator
     end
+
+    struct Adjoint_Domainwall_operator <: Adjoint_Dirac_operator 
+        parent::Domainwall_operator
+    end
     
     function Base.adjoint(A::Wilson_operator)
         Adjoint_Wilson_operator(A)
@@ -346,6 +350,10 @@ module Diracoperators
 
     function Base.adjoint(A::D5DW_Domainwall_operator)
         Adjoint_D5DW_Domainwall_operator(A)
+    end
+
+    function Base.adjoint(A::Domainwall_operator)
+        Adjoint_Domainwall_operator(A)
     end
 
     struct γ5D_Wilson_operator <: γ5D_operator 
@@ -397,6 +405,21 @@ module Diracoperators
 
         #error("Do not use Domainwall_operator directory. Use D5DW_Domainwall_operator M = D5DW(m)*D5DW(-1)^{-1}")
         #D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi) 
+        return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion,A::Adjoint_Domainwall_operator,x::DomainwallFermion) #y = A*x
+        
+        #A = D5DW(m)*D5DW(m=1)^(-1)
+        #=
+        A^+ = [D5DW(m)*D5DW(m=1)^(-1)]^+
+            = D5DW(m=1)^(-1)^+ D5DW(m)^+
+            = [D5DW(m=1)^+]^(-1) D5DW(m)^+
+        y = A^+*x = [D5DW(m=1)^+]^(-1) D5DW(m)^+*x
+        =#
+        mul!(A.parent.D5DW_PV._temporal_fermi[1],A.parent.D5DW',x)
+        bicg(y,A.parent.D5DW_PV',A.parent.D5DW_PV._temporal_fermi[1]) 
+        
         return
     end
 
@@ -537,6 +560,8 @@ module Diracoperators
         mul!(x,A.D5DW_PV,A.D5DW._temporal_fermi[1])
     end
 
+    
+
     function cg(x,A::DdagD_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2())
         #=
         A^-1 = ( (D5DW(m)*D5DW(m=1))^(-1))^+ D5DW(m)*D5DW(m=1))^(-1) )^-1
@@ -550,6 +575,8 @@ module Diracoperators
         cg(A.dirac.D5DW._temporal_fermi[1],A.DdagD,temp;eps=eps,maxsteps = maxsteps,verbose = verbose) #(  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
         mul!(x,A.dirac.D5DW_PV,A.dirac.D5DW._temporal_fermi[1])
     end
+
+
     
     
     function make_densematrix(A::T) where T <: Operator
