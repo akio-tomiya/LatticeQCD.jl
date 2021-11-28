@@ -8,17 +8,18 @@ module MD
 
     import ..Actions:GaugeActionParam_standard,
                         FermiActionParam_WilsonClover,FermiActionParam_Wilson,
-                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing
+                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing,
+                        update_smearing!
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
-                construct_fermionfield_φ!,construct_fermionfield_η!
+                construct_fermionfield_φ!,construct_fermionfield_η!,get_fparam
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
                             calc_GaugeAction,apply_smearing,calc_smearingU
     import ..Gaugefields
     import ..LieAlgebrafields:gauss_distribution_lie!,LieAlgebraFields,SU3AlgebraFields,SU2AlgebraFields,
-                                Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutfource
+                                Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutforce
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
             StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!,DomainwallFermion
@@ -36,7 +37,8 @@ module MD
     import ..CGmethods:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
-
+    import ..Training:TrainableWeights,TrainableWeights_ADAM,train!
+    using ..Training
 
     abstract type MD_parameters end
 
@@ -147,6 +149,7 @@ module MD
 
     function md!(univ::Universe,mdparams::MD_parameters_standard)
         #Sold = md_initialize!(univ::Universe)
+        fparam = get_fparam(univ)
         QPQ = mdparams.QPQ #true
         if QPQ 
             for istep=1:mdparams.MDsteps
@@ -158,7 +161,8 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,1.0)
+                    #updateP_fermi!(univ,mdparams,1.0)
+                    updateP_fermi!(univ,mdparams,1.0,fparam)
                 end
                 updateU!(univ,mdparams,0.5)
 
@@ -175,7 +179,8 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,0.5)
+                    #updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
                 end
 
 
@@ -186,7 +191,8 @@ module MD
 
                 if univ.quench == false
                 #if univ.fparam != nothing
-                    updateP_fermi!(univ,mdparams,0.5)
+                    #updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
                 end
                 
 
@@ -195,23 +201,64 @@ module MD
         end
 
         if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sf_new_eff = univ.η*univ.η
+                println("effective ",Sf_new_eff)
+
+                dSdUnew,dSdρs = calc_smearedfermionforce!(univ,univ.U,univ.fparam_SLHMC)
+                println("dSdρs = ",dSdρs)
+            end
             construct_fermionfield_η!(univ)
         end
 
 
         Snew,plaq = calc_Action(univ)
+
+        if univ.quench == false
+            if univ.isSLHMC
+                Sf_new = univ.η*univ.η
+                println("original ",Sf_new)
+                diff = (Sf_new_eff-Sf_new)/univ.NV
+                #println(fp2,real(diff))
+                println("diff:Sf ",real(diff)*univ.NV)
+                dCdρs  = -diff .* dSdρs 
+                println("dCdρs ",real.(dCdρs))
+                #println(univ.fparam_SLHMC.smearing)
+                
+                if univ.fparam_SLHMC.istrainable
+                    Training.train!(univ.fparam_SLHMC.smearing,dCdρs)
+                    #println(univ.fparam_SLHMC.smearing.ρs)
+                    #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                    update_smearing!(univ.fparam_SLHMC)
+                    print("rho = ")
+                    for ρsi in univ.fparam_SLHMC.smearing.ρs
+                        for ρsij in ρsi
+                            print(ρsij,"\t")
+                        end
+                    end
+                    println("\t")
+                    #println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                end
+                
+                
+            end
+        end
         #println("Snew = $Snew")
         return Snew
     end
 
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
+        fparam = get_fparam(univ)
         QPQ = mdparams.QPQ
         if QPQ != true
             for istep=1:mdparams.MDsteps
                 
                 if univ.quench == false
-                    updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
+                    #updateP_fermi!(univ,mdparams,0.5)
                 end
                 for istep_SW=1:mdparams.N_SextonWeingargten
                     #println("istep_SW = $(istep_SW)")
@@ -220,7 +267,8 @@ module MD
                     updateP!(univ,mdparams,0.5/mdparams.N_SextonWeingargten)
                 end
                 if univ.quench == false
-                    updateP_fermi!(univ,mdparams,0.5)
+                    updateP_fermi!(univ,mdparams,0.5,fparam)
+                    #updateP_fermi!(univ,mdparams,0.5)
                 end
             end
         elseif QPQ
@@ -235,7 +283,8 @@ module MD
                 end
 
                 if univ.quench == false
-                    updateP_fermi!(univ,mdparams,1.0)
+                    updateP_fermi!(univ,mdparams,1.0,fparam)
+                    #updateP_fermi!(univ,mdparams,1.0)
                 end
 
                 for istep_SW=1:div(mdparams.N_SextonWeingargten,2)
@@ -248,10 +297,42 @@ module MD
         end
 
         if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sf_new_eff = univ.η*univ.η
+                println("effective ",Sf_new_eff)
+
+                dSdUnew,dSdρs = calc_smearedfermionforce!(univ,univ.U,univ.fparam_SLHMC)
+                println("dSdρs = ",dSdρs)
+            end
             construct_fermionfield_η!(univ)
         end
 
         Snew,plaq = calc_Action(univ)
+
+        if univ.quench == false
+            if univ.isSLHMC
+                Sf_new = univ.η*univ.η
+                println("original ",Sf_new)
+                diff = Sf_new_eff-Sf_new
+                #println(fp2,real(diff))
+                println("#diff  ",real(diff))
+                dCdρs  = -diff .* dSdρs 
+                println("#dCdρs ",real.(dCdρs))
+                #println(univ.fparam_SLHMC.smearing)
+                
+                if univ.fparam_SLHMC.istrainable
+                    Training.train!(univ.fparam_SLHMC.smearing,dCdρs)
+                    #println(univ.fparam_SLHMC.smearing.ρs)
+                    #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                    update_smearing!(univ.fparam_SLHMC)
+                    println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
+                end
+                
+                
+            end
+        end
 
         return Snew
     end
@@ -501,9 +582,29 @@ module MD
         return accept
     end
 
+    function calc_smearedfermionforce!(univ::Universe,Uin,fparam)
+        dSdUnew,dSdρs = calc_smearedfermionforce!(univ.η,univ.φ,univ.ξ,fparam,
+                                        Uin,
+                                        univ._temporal_gauge,univ._temporal_algebra,
+                                        univ._temporal_fermi,kind_of_verboselevel =univ.kind_of_verboselevel
+                                    )
+        return dSdUnew,dSdρs
+    end
+
     function updateP_fermi!(univ::Universe,mdparams::MD_parameters,τ)
 
         updateP_fermi!(univ.η,univ.φ,univ.ξ,univ.fparam,
+            univ.p,mdparams,τ,univ.U,
+            univ._temporal_gauge,univ._temporal_algebra,
+            univ._temporal_fermi,kind_of_verboselevel =univ.kind_of_verboselevel
+        )
+
+        return
+    end
+
+    function updateP_fermi!(univ::Universe,mdparams::MD_parameters,τ,fparam)
+
+        updateP_fermi!(univ.η,univ.φ,univ.ξ,fparam,
             univ.p,mdparams,τ,univ.U,
             univ._temporal_gauge,univ._temporal_algebra,
             univ._temporal_fermi,kind_of_verboselevel =univ.kind_of_verboselevel
@@ -679,6 +780,266 @@ module MD
 
     end
 
+    function calc_dSdUnew!(Y::F,φ::F,X::F,fparam,
+        U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: WilsonFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+        
+
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+        set_wing_fermi!(Y)
+        
+        
+
+        for μ=1:4
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            fermion_shift!(temp0_f,U,μ,X)
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp0_f,view(X.rminusγ,:,:,μ),temp0_f)
+            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp1_f,X.hopp[μ],temp0_f)
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            vvmat!(temp2_g,temp1_f,Y,1)
+            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
+
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            fermion_shiftB!(temp0_f,U,-μ,Y)
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_f,temp0_f,view(X.rplusγ,:,:,μ))
+
+            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp1_f,X.hopm[μ],temp0_f)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            vvmat!(temp2_g,X,temp1_f,2)
+
+            mul!(temp3_g,U[μ]',temp2_g)
+            #Gaugefields.add!(dSdU[μ],temp3_g)
+            Gaugefields.muladd!(dSdU[μ],-1,temp3_g)
+
+
+            if typeof(fparam) == FermiActionParam_WilsonClover
+                dSclover!(c,μ,X,Y,U,fparam,temps)
+                Gaugefields.muladd!(dSdU[μ],-1,c)
+                #add!(p[μ],-τ*mdparams.Δτ,c)
+            end
+
+
+
+        end
+
+        if typeof(fparam.smearing) <: SmearingParam_single
+            dSdUnew,dSdρs = stoutforce(dSdU,Uin,fparam.smearing) 
+            return dSdUnew,dSdρs
+        elseif typeof(fparam.smearing) <: SmearingParam_multi
+            dSdUnew,dSdρs = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+            return dSdUnew,dSdρs
+        elseif typeof(fparam.smearing) <: Nosmearing
+            dSdUnew = dSdU
+            return dSdUnew,nothing
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+
+        return dSdUnew,dSdρs
+        
+
+    end
+
+    function calc_dSdUnew!(Y::F,φ::F,X::F,fparam,
+        U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = D5DW_Domainwall_operator(U,φ,fparam)
+        #W = Dirac_operator(U,φ,fparam)
+        #W = Dirac_operator(U,φ.f[1],fparam.wilsonaction)
+        temps_dw = temps_fermi[1]
+        mul!(temps_dw,W,X)
+        clear!(Y)
+        Fermionfields.add!(Y,-1,φ,1,temps_dw)
+        set_wing_fermi!(Y) 
+        
+        
+        κ = 1/2
+        for μ=1:4
+            Gaugefields.clear!(dSdU[μ])
+                #!  Construct U(x,mu)*P1
+            for i5=1:X.N5
+                Xs = X.f[i5]
+                Ys = Y.f[i5]
+
+                temp0_f = temps_fermi[1].f[i5] #F_field
+                temp1_f = temps_fermi[2].f[i5] #F_field
+                #!  Construct U(x,mu)*P1
+
+                # U_{k,μ} X_{k+μ}
+                fermion_shift!(temp0_f,U,μ,Xs)
+                # (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp0_f,view(Xs.rminusγ,:,:,μ),temp0_f)
+                # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp1_f,κ,temp0_f)
+
+                # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+                vvmat!(temp2_g,temp1_f,Ys,1)
+
+                mul!(temp3_g,U[μ]',temp2_g) #additional term
+                Gaugefields.muladd!(dSdU[μ],1,temp3_g)
+                #mul!(dSdU[μ],U[μ]',temp2_g) #additional term
+
+
+                #!  Construct P2*U_adj(x,mu)
+                # Y_{k+μ}^dag U_{k,μ}^dag
+                fermion_shiftB!(temp0_f,U,-μ,Ys)
+                # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_f,temp0_f,view(Xs.rplusγ,:,:,μ))
+
+                # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp1_f,κ,temp0_f)
+
+                # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                vvmat!(temp2_g,Xs,temp1_f,2)
+
+                mul!(temp3_g,U[μ]',temp2_g)
+                #Gaugefields.add!(dSdU[μ],temp3_g)
+                Gaugefields.muladd!(dSdU[μ],-1,temp3_g)
+
+            end
+        end
+
+        if typeof(fparam.smearing) <: SmearingParam_single
+            dSdUnew,dSdρs = stoutforce(dSdU,Uin,fparam.smearing) 
+            return dSdUnew,dSdρs
+        elseif typeof(fparam.smearing) <: SmearingParam_multi
+            dSdUnew,dSdρs = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+            return dSdUnew,dSdρs
+        elseif typeof(fparam.smearing) <: Nosmearing
+            dSdUnew = dSdU
+            return dSdUnew,nothing
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+        
+        return dSdUnew,dSdρs
+
+    end
+
+
+    
+    function calc_dSdU!(dSdU,Y::F,φ::F,X::F,fparam,
+        U::Array{T,1},Uout_multi,Uin,
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff = 1
+        ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+
+        for μ=1:4
+            #!  Construct U(x,mu)*P1
+            # U_{k,μ} X_{k+μ}
+            fermion_shift!(temp0_f,U,μ,X)
+
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            vvmat!(temp2_g,temp0_f,Y,1)
+            mul!(temp3_g,U[μ]',temp2_g)
+
+            Gaugefields.muladd!(dSdU[μ],coeff,temp3_g)
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            fermion_shiftB!(temp0_f,U,-μ,Y)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            vvmat!(temp2_g,X,temp0_f,2)
+
+            mul!(temp3_g,U[μ]',temp2_g)
+            #Gaugefields.mulladd!(dSdU[μ],temp3_g)
+
+            Gaugefields.muladd!(dSdU[μ],coeff,temp3_g)
+        end
+
+        return
+    end
+
+    function calc_dSdUnew!(Y::F,φ::F,X::F,fparam,
+        U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+
+        for μ=1:4
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            fermion_shift!(temp0_f,U,μ,X)
+
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            vvmat!(temp2_g,temp0_f,Y,1)
+            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
+
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            fermion_shiftB!(temp0_f,U,-μ,Y)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            #vvmat!(UdSdU2[μ],X,temp0_f,2)
+            #if fparam.smearing != nothing
+            vvmat!(temp2_g,X,temp0_f,2)
+
+            mul!(temp3_g,U[μ]',temp2_g)
+            Gaugefields.add!(dSdU[μ],temp3_g)
+        end
+
+        
+        if typeof(fparam.smearing) <: SmearingParam_single
+            dSdUnew,dSdρs = stoutforce(dSdU,Uin,fparam.smearing) 
+        elseif typeof(fparam.smearing) <: SmearingParam_multi
+            dSdUnew,dSdρs = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+
+        return dSdUnew,dSdρs
+    end
+
     function updateP_fermi_fromX_smearing!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -741,9 +1102,9 @@ module MD
         end
 
         if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uin,fparam.smearing) 
         elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
         elseif typeof(fparam.smearing) <: Nosmearing
             dSdUnew = dSdU
         else
@@ -773,85 +1134,18 @@ module MD
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
         ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
+        dSdUnew,_  = calc_dSdUnew!(Y,φ,X,fparam,
+                        U,Uout_multi,dSdU,Uin,
+                        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+                        )
+
         #temp0_f = temps_fermi[1] #F_field
         #temp1_f = temps_fermi[2] #F_field
         temp2_g = temps[1] #G_field1
         temp3_g = temps[2] #G_field1
         c = temp_a[1]
         NV = temp2_g.NV
-        
-
-        W = D5DW_Domainwall_operator(U,φ,fparam)
-        #W = Dirac_operator(U,φ,fparam)
-        #W = Dirac_operator(U,φ.f[1],fparam.wilsonaction)
-        temps_dw = temps_fermi[1]
-        mul!(temps_dw,W,X)
-        clear!(Y)
-        Fermionfields.add!(Y,-1,φ,1,temps_dw)
-        set_wing_fermi!(Y)  
-
-        #W = Dirac_operator(U,φ,fparam)
-        #mul!(Y,W,X)
-        #set_wing_fermi!(Y)
-        
-        κ = 1/2
-        
-        
-        for μ=1:4
-            Gaugefields.clear!(dSdU[μ])
-                #!  Construct U(x,mu)*P1
-            for i5=1:X.N5
-                Xs = X.f[i5]
-                Ys = Y.f[i5]
-                #println("i5 = $i5")
-                temp0_f = temps_fermi[1].f[i5] #F_field
-                temp1_f = temps_fermi[2].f[i5] #F_field
-            
-        
-
-                # U_{k,μ} X_{k+μ}
-                fermion_shift!(temp0_f,U,μ,Xs)
-                # (r-γ_μ) U_{k,μ} X_{k+μ}
-                mul!(temp0_f,view(Xs.rminusγ,:,:,μ),temp0_f)
-                # κ (r-γ_μ) U_{k,μ} X_{k+μ}
-                mul!(temp1_f,κ,temp0_f)
-
-                # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
-                vvmat!(temp2_g,temp1_f,Ys,1)
-                #mul!(dSdU[μ],U[μ]',temp2_g) #additional term
-                mul!(temp3_g,U[μ]',temp2_g) #additional term
-                Gaugefields.muladd!(dSdU[μ],1,temp3_g)
-
-
-                #!  Construct P2*U_adj(x,mu)
-                # Y_{k+μ}^dag U_{k,μ}^dag
-                fermion_shiftB!(temp0_f,U,-μ,Ys)
-                # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-                mul!(temp0_f,temp0_f,view(Xs.rplusγ,:,:,μ))
-
-                # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-                mul!(temp1_f,κ,temp0_f)
-
-                # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
-                vvmat!(temp2_g,Xs,temp1_f,2)
-
-                mul!(temp3_g,U[μ]',temp2_g)
-                #Gaugefields.add!(dSdU[μ],temp3_g)
-                Gaugefields.muladd!(dSdU[μ],-1,temp3_g)
-
-
-            end
-        end
-
-        if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: Nosmearing
-            dSdUnew = dSdU
-        else
-            error("$(typeof(fparam.smearing)) is not supported")
-        end
 
 
         for μ=1:4
@@ -972,9 +1266,9 @@ module MD
 
         
         if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uin,fparam.smearing) 
         elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
+            dSdUnew,_ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
         else
             error("$(typeof(fparam.smearing)) is not supported")
         end
@@ -1153,6 +1447,180 @@ module MD
         return
 
     end
+
+    function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
+        Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: WilsonFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        Gaugefields.clear!(temps[end])
+        Gaugefields.clear!(temps[end-1])
+        Gaugefields.clear!(temps[end-2])
+        Gaugefields.clear!(temps[end-3])
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            dSdUnew,dSdρ =calc_dSdUnew!(Y,φ,X,fparam,
+                    U,Uout_multi,dSdU,Uin,
+                    temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+                    )
+                    
+            #updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            #        p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            #        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            error("We need smearing!")
+        end
+
+
+       
+        return dSdUnew,dSdρ
+
+    end
+
+    
+    function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
+        Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        Gaugefields.clear!(temps[end])
+        Gaugefields.clear!(temps[end-1])
+        Gaugefields.clear!(temps[end-2])
+        Gaugefields.clear!(temps[end-3])
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+        Q = D5DWdagD5DW_Wilson_operator(U,φ,fparam) #D5^+D5
+        D5_PV = D5DW_Domainwall_operator(U,φ,fparam,1) #D5(m=1)
+        temps_dw = temps_fermi[1]
+
+        mul!(temps_dw,D5_PV',φ)
+        cg(X,Q,temps_dw,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermi!(X)
+
+        #WdagW = DdagD_operator(U,φ,fparam)
+        #cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        #set_wing_fermi!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            dSdUnew,dSdρ =calc_dSdUnew!(Y,φ,X,fparam,
+                    U,Uout_multi,dSdU,Uin,
+                    temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+                    )
+                    
+            #updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            #        p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            #        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            error("We need smearing!")
+        end
+
+
+       
+        return dSdUnew,dSdρ
+
+    end
+
+
+    function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
+        Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: StaggeredFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        Gaugefields.clear!(temps[end])
+        Gaugefields.clear!(temps[end-1])
+        Gaugefields.clear!(temps[end-2])
+        Gaugefields.clear!(temps[end-3])
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+        #dSdρ = zero(fparam.smearing.ρs)
+
+        WdagW = DdagD_operator(U,φ,fparam)
+
+        if fparam.Nf == 4 || fparam.Nf == 8
+            #X = (D^dag D)^(-1) ϕ 
+            #
+            cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+            set_wing_fermi!(X)
+
+            if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+                calc_dSdU!(dSdU,Y,φ,X,fparam,
+                                U,Uout_multi,Uin,
+                                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel
+                                )
+                if typeof(fparam.smearing) <: SmearingParam_single
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uin,fparam.smearing) 
+                elseif typeof(fparam.smearing) <: SmearingParam_multi
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+                else
+                    error("$(typeof(fparam.smearing)) is not supported")
+                end
+            else
+                error("We need smearing!")
+            end
+        else
+            N_MD = get_order(fparam.rhmc_MD)
+            #numtemps_fermi = length(temps_fermi)
+            x = temps_fermi[end-N_MD]
+            vec_x = temps_fermi[end-N_MD+1:end]
+            for j=1:N_MD
+                Fermionfields.clear!(vec_x[j])
+            end
+            vec_β = get_β_inverse(fparam.rhmc_MD)
+            vec_α = get_α_inverse(fparam.rhmc_MD)
+            α0 = get_α0_inverse(fparam.rhmc_MD)
+            shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
+            for j=1:N_MD
+                set_wing_fermi!(vec_x[j])
+                if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+                    calc_dSdU!(dSdU,Y,φ,vec_x[j],fparam,
+                                U,Uout_multi,Uin,
+                                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff = vec_α[j]
+                                )
+                else
+                    error("We need smearing!")
+                end
+            end
+
+            if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+                if typeof(fparam.smearing) <: SmearingParam_single
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uin,fparam.smearing) 
+                elseif typeof(fparam.smearing) <: SmearingParam_multi
+                    dSdUnew,dSdρ = stoutforce(dSdU,Uout_multi,Uin,fparam.smearing) 
+                else
+                    error("$(typeof(fparam.smearing)) is not supported")
+                end
+            end
+        end
+
+        #exit()
+        return dSdU,dSdρ
+
+    end
+
 
 
     function updateP!(univ::Universe,mdparams::MD_parameters,τ)

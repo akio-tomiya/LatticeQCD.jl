@@ -76,6 +76,13 @@ module Wizard
 
             wilson,cg,staggered,system = set_dynamicalfermion!(system,isexpert)
             set_update_method!(system,isexpert)
+            if system["isSLHMC"] 
+                system_SLHMC = set_dynamicalfermion_SLGHMC!(system,isexpert)
+            else
+                system_SLHMC = Dict()
+            end
+            system["SLHMC_parameters"] = system_SLHMC
+
             set_nthermalization!(system,isexpert)
             set_totaltrajectoy!(system,isexpert)
 
@@ -241,7 +248,7 @@ module Wizard
         end
         wilson["Domainwall_M"] = M
 
-        m = parse(Float64,Base.prompt("Input quark mass", default="1"))
+        m = parse(Float64,Base.prompt("Input quark mass", default="0.1"))
         wilson["Domainwall_m"] = m
 
         eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))
@@ -499,6 +506,61 @@ module Wizard
         end
     end
 
+    
+    function set_SLHMC_smearing!(system)
+        println("SLHMC smearing setting: ")
+
+        system["smearing_for_fermion_SLHMC"] = "stout"
+        system["stout_numlayers_SLHMC"] = parse(Int64,Base.prompt("How many stout layers do you consider?", default="1"))
+        kindsof_loops = ["plaquette","polyakov_t","polyakov_x","polyakov_y","polyakov_z","rectangular","chair"]
+        stout_menu = MultiSelectMenu(kindsof_loops)
+        choices = request("Select the kinds of loops you want to add in stout smearing:", stout_menu)
+
+        if system["stout_numlayers_SLHMC"] == 1
+                
+            count = 0
+            ρs = Float64[]
+            loops = String[]
+            for  i in choices
+                count += 1
+                ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="$((2*rand()-1)*1e-2)"))
+                push!(ρs,ρ)
+                push!(loops,kindsof_loops[i])
+            end
+            #println(ρs)
+            system["stout_ρ_SLHMC"] = ρs
+            system["stout_loops_SLHMC"] = loops
+            #system["stout_ρ"] = [parse(Float64,Base.prompt("stout parameter ρ ?", default="0.1"))]
+        else
+            vec_ρs = Array{Float64,1}[]
+            loops = String[]
+            count = 0
+            for  i in choices
+                count += 1
+                push!(loops,kindsof_loops[i])
+            end
+            system["stout_loops_SLHMC"] = loops
+
+            for ilayer = 1:system["stout_numlayers_SLHMC"]
+                println("$ilayer-th layer: ")
+                count = 0
+                ρs = Float64[]
+                loops = String[]
+                for  i in choices
+                    count += 1
+                    ρ = parse(Float64,Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="$((2*rand()-1)*1e-2)"))
+                    push!(ρs,ρ)
+                    push!(loops,kindsof_loops[i])
+                end
+                push!(vec_ρs,ρs)
+            end
+            system["stout_ρ_SLHMC"] = vec_ρs
+            #error("system[\"stout_numlayers\"] = $(system["stout_numlayers"]) is not supported yet!")
+        end
+
+        println("SLHMC smearing setting is done.")
+    end
+
     function set_smearing!(system)
         smearing = request("Choose smearing scheme for fermions",RadioMenu([
                         "nothing",
@@ -574,6 +636,92 @@ module Wizard
 
     end
 
+    
+    function set_dynamicalfermion_SLGHMC!(system,isexpert)
+        system_SLHMC = Dict()
+
+        if isexpert 
+            println("-----------------------------------------------------------------")
+            println("Setup: Fermion parameters in effective actions for SLHMC")
+            if system["Dirac_operator"] == nothing
+                ftype = 1
+            elseif system["Dirac_operator"] == "Wilson"
+                ftype = 2
+            elseif system["Dirac_operator"] == "Staggered"
+                ftype = 3
+            elseif system["Dirac_operator"] == "WilsonClover"
+                error("We do not support $(system["Dirac_operator"]) fermion, yet")
+            elseif system["Dirac_operator"] == "Domainwall"
+                ftype = 5
+            else
+                error("unknown Dirac operator: $(system["Dirac_operator"])")
+            end
+            #ftype = request("Choose a dynamical fermion",RadioMenu([
+            #            "Nothing (quenched approximation)",
+            #            "Wilson Fermion (2-flavor)",
+            #            "Staggered Fermion",
+            #        ]))
+            if ftype == 1
+                error("You should consider Fermions if you want to do SLHMC!")
+                cg_SLHMC = Dict()
+                wilson_SLHMC = Dict()
+                staggered_SLHMC = Dict()
+                
+                system_SLHMC["Dirac_operator"] = nothing
+                system_SLHMC["quench"] = true
+
+                
+            elseif ftype == 2
+                println("Wilson fermion is used for SLHMC")
+                system_SLHMC["fermiontype"] = "wilson"
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC,standardonly=true)
+                system_SLHMC["quench"] = false
+                set_SLHMC_smearing!(system_SLHMC)
+                
+                #set_smearing!(system)
+            elseif ftype == 3
+                println("Staggered fermion is used for SLHMC")
+                system_SLHMC["fermiontype"] = "staggered"
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = staggered_wizard!(system_SLHMC)
+                system_SLHMC["quench"] = false
+                set_SLHMC_smearing!(system_SLHMC)
+                
+                #set_smearing!(system)
+            elseif ftype == 5
+                println("Domainwall fermion is used for SLHMC")
+                system_SLHMC["fermiontype"] = "domainwall"
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = Domainwall_wizard!(system_SLHMC)
+                system_SLHMC["quench"] = false
+                set_SLHMC_smearing!(system_SLHMC)
+            end
+
+            for (name,key_i) in wilson_SLHMC
+                system_SLHMC[name] = key_i
+            end
+            for (name,key_i) in cg_SLHMC
+                system_SLHMC[name] = key_i
+            end
+            for (name,key_i) in staggered_SLHMC
+                system_SLHMC[name] = key_i
+            end
+
+            println("Done: Fermion parameters in effective actions for SLHMC")
+            println("-----------------------------------------------------------------")
+            
+            
+        else
+            error("Please do the expert mode")
+            #system["Dirac_operator"] = "Wilson"
+
+            #wilson,cg,staggered,system = wilson_wizard_simple!(system)
+            #system["quench"] = false
+        end
+
+        return system_SLHMC
+
+    end
+
+    #=
     function set_update_method!(system,isexpert)
         if isexpert
             if system["quench"] == true
@@ -622,6 +770,100 @@ module Wizard
             system["update_method"] = "HMC"
 
         end
+    end
+    =#
+
+    
+    function set_update_method!(system,isexpert)
+        system["isSLHMC"] = false
+        if isexpert
+            if system["quench"] == true
+                methodtype = request("Choose an update method",RadioMenu([
+                    "Heatbath",
+                    "Hybrid Monte Carlo",
+                ]))
+                if methodtype == 2
+                    system["update_method"] = "HMC"
+                else
+                    system["update_method"] = "Heatbath"
+                    or = request("Use overrelazation method?",RadioMenu([
+                            "true",
+                            "false",
+                        ]))
+                    system["useOR"] = ifelse(or==1,true,false)
+                    if system["useOR"]
+                        system["numOR"] = parse(Int64,Base.prompt("How many times do you want to do the OR?", default="3"))
+                    end
+
+                end
+            else
+                methodtype = request("Choose an update method",RadioMenu([
+                    "Hybrid Monte Carlo",
+                    "Integrated HMC",
+                    "Self-learning Hybrid Monte Carlo (SLHMC)",
+                    "Self-learning Monte Carlo (SLMC)",
+                    "Self-learning Gauge-covariant Hybrid Monte Carlo (SLGHMC)",
+                ]))
+                if methodtype == 1
+                    system["update_method"] = "HMC"
+                elseif methodtype == 2
+                    system["update_method"] = "IntegratedHMC"
+                elseif methodtype == 3
+                    system["update_method"] = "SLHMC"
+                    system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                    system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                    system["quench"] = true
+                elseif methodtype == 4
+                    system["update_method"] = "SLMC"
+                    system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                    system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                    system["quench"] = true
+                elseif methodtype == 5
+                    system["update_method"] = "HMC"
+                    system["isSLHMC"] = true
+                    train = request("are SLHMC parameters trainable?",RadioMenu([
+                        "trainable",
+                        "fixed parameters",
+                    ]))
+                    if train == 1
+                        system["isSLHMCtrainable"]= true
+                        #return run_wizard_simple()
+                        optimazation = request("Optimazation method in SLHMC",RadioMenu([
+                            "ADAM",
+                            "SGD",
+                        ]))
+                        hyperparameters_SLHMC = Dict()
+
+                        if optimazation == 1
+                            println("Optimazation method: ADAM is used")
+                            system["optimazation_SLHMC"] = "ADAM"
+                            
+                            hyperparameters_SLHMC["η"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: η", default="0.0005"))
+                            hyperparameters_SLHMC["ε"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: ε", default="1e-8"))
+                            hyperparameters_SLHMC["β1"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: β1", default="0.9"))
+                            hyperparameters_SLHMC["β2"] = parse(Float64,Base.prompt("Hyperparameter in ADAM: β2", default="0.999"))
+                        elseif  optimazation == 2
+                            println("Optimazation method: SGD is used")
+                            system["optimazation_SLHMC"] = "SGD"
+                            hyperparameters_SLHMC["η"] = parse(Float64,Base.prompt("Hyperparameter in SGD: η", default="1e-5"))
+                        end
+
+                        hyperparameters_SLHMC["method"] = system["optimazation_SLHMC"]
+                        system["hyperparameters_SLHMC"] = hyperparameters_SLHMC 
+                    else
+                        system["isSLHMCtrainable"]= false
+                    end
+
+                    #system["βeff"] = parse(Float64,Base.prompt("Input initial effective β", default="$β"))
+                    #system["firstlearn"] = parse(Int64,Base.prompt("When do you want to start updating the effective action?", default="10"))
+                    #system["quench"] = true
+                end
+            end
+        else
+            system["update_method"] = "HMC"
+
+        end
+        
     end
 
     function set_nthermalization!(system,isexpert)

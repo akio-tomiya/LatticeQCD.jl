@@ -3,6 +3,7 @@ module LatticeQCD
     
 
     #include("./SLMC/logdet.jl")
+    include("./training/training.jl")
 
     include("./rhmc/AlgRemez.jl")
     include("./rhmc/rhmc.jl")
