@@ -10,7 +10,7 @@ module CGmethods
         axpby!(a,X,1,Y) #X*a + Y -> Y
     end
 
-    function bicg(x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+    function bicg(x,A,b;eps=1e-10,maxsteps = 3000,verbose = Verbose_2()) #Ax=b
         println_verbose3(verbose,"--------------------------------------")
         println_verbose3(verbose,"bicg method")
         res = deepcopy(b)

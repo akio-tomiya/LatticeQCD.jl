@@ -278,6 +278,7 @@ module Actions
         MaxCGstep::Int64 = 3000 
         quench::Bool = false
         smearing::SmearingParam 
+        wilsonaction::FermiActionParam_Wilson
         
 
         function FermiActionParam_Domainwall(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench
@@ -292,7 +293,13 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            hop_wilson = 1/(8r+2M)
+            #hop_wilson = 1/2
+
+            Dirac_operator_wilson = "Wilson"
+            wilsonaction = FermiActionParam_Wilson(hop_wilson,r,eps,Dirac_operator_wilson,MaxCGstep,quench)
+
+            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction)
         end
 
         function FermiActionParam_Domainwall(N5,r,M,m,eps,Dirac_operator,MaxCGstep,quench
@@ -311,7 +318,13 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            hop_wilson = 1/(8r+2M)
+            #hop_wilson = 1/2
+
+            Dirac_operator_wilson = "Wilson"
+            wilsonaction = FermiActionParam_Wilson(hop_wilson,r,eps,Dirac_operator_wilson,MaxCGstep,quench)
+
+            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction)
         end
 
 

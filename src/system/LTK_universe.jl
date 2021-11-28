@@ -18,7 +18,8 @@ module LTK_universe
                         apply_smearing,calc_smearingU
     import ..Gaugefields
                         
-    import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
+    import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!,
+                            DomainwallFermion 
     import ..Fermionfields
     import ..Actions:GaugeActionParam,FermiActionParam,
                 Setup_Gauge_action,Setup_Fermi_action,
@@ -1102,6 +1103,21 @@ module LTK_universe
         set_wing_fermi!(univ.φ)
     end
 
+    function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi<: DomainwallFermion,GaugeP,FermiP,Gauge_temp}
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+
+
+        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
+        mul!(univ.φ,W',univ.η)
+        set_wing_fermi!(univ.φ)
+
+        #= debug
+        W = Diracoperators.Dirac_operator(U,univ.η.f[1],univ.fparam.wilsonaction)
+        mul!(univ.φ.f[1],W',univ.η.f[1])
+        set_wing_fermi!(univ.φ.f[1])
+        =#
+    end
+
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
         
@@ -1145,6 +1161,15 @@ module LTK_universe
 
         W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
         bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+    end
+
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi<: DomainwallFermion,GaugeP,FermiP,Gauge_temp}
+        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+
+        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
+        bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+        #W = Diracoperators.Dirac_operator(U,univ.η.f[1],univ.fparam.wilsonaction)
+        #bicg(univ.η.f[1],W',univ.φ.f[1],eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
     end
 
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi

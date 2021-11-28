@@ -952,6 +952,7 @@ module Wizard
             "Standard Wilson fermion action",
             "Wilson+Clover fermion action",
             "Staggered fermion action",
+            "Domainwall fermion action",
         ]))
 
         
@@ -967,9 +968,14 @@ module Wizard
             println("Staggered fermion action will be used for the measurement")
             method["fermiontype"] = "Staggered"
             isWilson = false
+        elseif wtype == 4
+            println("Domainwall fermion action will be used for the measurement")
+            method["fermiontype"] = "Domainwall"
+            isWilson = false
         end
 
-        if isWilson
+        if method["fermiontype"] == "Wilson" || method["fermiontype"] == "WilsonClover"
+        #if isWilson
             if haskey(wilson,"hop")
                 hop_default = wilson["hop"]
             else
@@ -982,7 +988,7 @@ module Wizard
             end
             method["hop"] = hop
             method["r"] = 1
-        else
+        elseif method["fermiontype"] == "Staggered"
             if haskey(staggered,"mass")
                 mass_default = staggered["mass"]
             else
@@ -990,6 +996,44 @@ module Wizard
             end
             method["mass"] = parse(Float64,Base.prompt("Input mass for the measurement of Pion_correlator", default="$mass_default"))
             method["Nf"] = 4
+        elseif method["fermiontype"] == "Domainwall"
+            dwtype = request("Choose domain wall fermion type",RadioMenu([
+                "Standard Domainwall fermion action",
+                "Other Domain wall fermion action",
+            ]))
+
+            N5 = parse(Int64,Base.prompt("Input the size of the extra dimension N5", default="4"))
+            method["Domainwall_N5"] = N5
+
+            if dwtype == 1
+                println("Parameters b and c are b=c=1. and ωs = 1. ")
+                b = 1
+                c = 1
+                ωs = ones(Float64,N5)
+            else
+                error("Not implemented yet. Now only standard domainwall fermion can be used. Try again.")
+                b = parse(Float64,Base.prompt("Input the parameter b", default="1"))
+                c = parse(Float64,Base.prompt("Input the parameter c", default="1"))
+                ωs = ones(Float64,N5)
+                for i=1:N5
+                    ωs[i] = parse(Float64,Base.prompt("Input the parameter ωs[i]", default="1"))
+                end
+            end
+            method["Domainwall_b"] = b
+            method["Domainwall_c"] = c
+            method["Domainwall_ωs"] = ωs
+            method["Domainwall_r"] = 1
+
+            M = parse(Float64,Base.prompt("Input domain wall hight M (-M>0 convention)", default="-1"))
+            while M >= 0
+                println("M should be M < 0. ")
+                M = parse(Float64,Base.prompt("Input domain wall hight M (-M>0 convention)", default="-1"))
+            end
+            method["Domainwall_M"] = M
+
+            m = parse(Float64,Base.prompt("Input quark mass", default="1"))
+            method["Domainwall_m"] = m
+
         end
 
         eps = parse(Float64,Base.prompt("relative error in CG loops", default="1e-19"))

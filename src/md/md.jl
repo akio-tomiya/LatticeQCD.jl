@@ -21,7 +21,7 @@ module MD
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutfource
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
-            StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
+            StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!,DomainwallFermion
     using ..Fermionfields
     import ..Heatbath:heatbath!
 
@@ -32,7 +32,7 @@ module MD
     import ..System_parameters:Params
 
     import ..Diracoperators:Wilson_operator,Adjoint_Wilson_operator,WilsonClover_operator,
-                Dirac_operator,DdagD_operator
+                Dirac_operator,DdagD_operator,D5DWdagD5DW_Wilson_operator,D5DW_Domainwall_operator
     import ..CGmethods:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
@@ -200,6 +200,7 @@ module MD
 
 
         Snew,plaq = calc_Action(univ)
+        #println("Snew = $Snew")
         return Snew
     end
 
@@ -512,10 +513,6 @@ module MD
     end
 
 
-
-
-
-
     function updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -585,6 +582,97 @@ module MD
             end
 
 
+        end
+
+        
+
+    end
+
+    function updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+        
+
+        W = D5DW_Domainwall_operator(U,φ,fparam)
+        #W = Dirac_operator(U,φ,fparam)
+        #W = Dirac_operator(U,φ.f[1],fparam.wilsonaction)
+        temps_dw = temps_fermi[1]
+        mul!(temps_dw,W,X)
+        clear!(Y)
+        Fermionfields.add!(Y,-1,φ,1,temps_dw)
+        set_wing_fermi!(Y)    
+        #mul!(Y.f[1],W,X.f[1])
+        #set_wing_fermi!(Y.f[1])   
+
+
+        #Xs dot{D_W}^+ Ys + Ys^+ dot{D_W} Xs
+        
+        κ = 1/2
+        for i5=1:X.N5
+            #println("i5 = $i5")
+            temp0_f = temps_fermi[1].f[i5] #F_field
+            temp1_f = temps_fermi[2].f[i5] #F_field
+
+            for μ=1:4
+                
+
+                #!  Construct U(x,mu)*P1
+                Xs = X.f[i5]
+                Ys = Y.f[i5]
+
+                #κ = Xs.hopm[μ]
+
+                # U_{k,μ} X_{k+μ}
+                fermion_shift!(temp0_f,U,μ,Xs)
+                # (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp0_f,view(Xs.rminusγ,:,:,μ),temp0_f)
+                ## κ (r-γ_μ) U_{k,μ} X_{k+μ}
+                mul!(temp1_f,κ,temp0_f)
+
+                # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+                vvmat!(temp2_g,temp1_f,Ys,1)
+
+
+                #.....   Projection onto Lie Algebra   .....
+                projlink!(temp3_g,temp2_g)
+
+                Gauge2Lie!(c,temp3_g)
+
+
+                #...  p(new) = p(old) + fac * c  .....
+                add!(p[μ],τ*mdparams.Δτ,c)
+
+
+
+                #!  Construct P2*U_adj(x,mu)
+                # Y_{k+μ}^dag U_{k,μ}^dag
+                fermion_shiftB!(temp0_f,U,-μ,Ys)
+                # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp0_f,temp0_f,view(Xs.rplusγ,:,:,μ))
+
+                ## κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                # (1/2) Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                mul!(temp1_f,κ,temp0_f)
+
+                # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+                vvmat!(temp2_g,Xs,temp1_f,2)
+
+
+                #.....   Projection onto Lie Algebra   .....
+                projlink!(temp3_g,temp2_g)
+                Gauge2Lie!(c,temp3_g)
+
+                add!(p[μ],-τ*mdparams.Δτ,c)
+
+
+
+            end
         end
 
         
@@ -839,6 +927,66 @@ module MD
         return
 
     end
+
+    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        #temp0_f = temps_fermi[1] #F_field
+        #temp1_f = temps_fermi[2] #F_field
+        #temp2_g = temps[1] #G_field1
+        #temp3_g = temps[2] #G_field1
+        #c = temp_a[1]
+        #NV = temp2_g.NV
+
+        #=
+
+        temps_fermi_wilson = Array{typeof(Y.f[1]),1}(undef,length(temps_fermi))
+        for i=1:length(temps_fermi)
+            temps_fermi_wilson[i] = temps_fermi[i].f[1]
+        end
+
+        updateP_fermi!(Y.f[1],φ.f[1],X.f[1],fparam.wilsonaction,
+        p,mdparams,τ,Uin,
+        temps,temp_a,temps_fermi_wilson
+        )
+        return
+        =#
+
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+        Q = D5DWdagD5DW_Wilson_operator(U,φ,fparam) #D5^+D5
+        D5_PV = D5DW_Domainwall_operator(U,φ,fparam,1) #D5(m=1)
+        #WdagW = DdagD_operator(U,φ,fparam)
+        temps_dw = temps_fermi[1]
+        #WdagW = DdagD_operator(U,φ.f[1],fparam.wilsonaction)
+        #WdagW = D5DWdagD5DW_Wilson_operator(U,φ,fparam)
+
+        #cg(X.f[1],WdagW,φ.f[1],eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        #cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        mul!(temps_dw,D5_PV',φ)
+        cg(X,Q,temps_dw,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        #set_wing_fermi!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            
+
+            updateP_fermi_fromX!(Y,φ,X,fparam,
+            p,mdparams,τ,U,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+            )
+        end
+
+
+       
+        return
+
+    end
+
 
 
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,

@@ -237,6 +237,7 @@ module DomainwallFermion_module
         for i5=1:xout.N5   
             j5=i5
             Dx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
+            #Wx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
             set_wing_fermi!(xout.f[i5])
             add!(1,xout.f[i5],1,x.f[j5]) #D = x + Dw*x
             set_wing_fermi!(xout.f[i5])  
@@ -284,42 +285,58 @@ module DomainwallFermion_module
     function D5DWdagx!(xout::DomainwallFermion,U::Array{G,1},
         x::DomainwallFermion,m,temps::Array{TW,1}) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
 
+        #temp = temps[4]
+        #temp1 = temps[1]
+        #temp2 = temps[2]
         clear!(xout)
+
         for i5=1:xout.N5   
             j5=i5
-            Ddagx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
-            add!(1,xout.f[i5],1,x.f[j5]) #D = x + Dw*x
+            Ddagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
+            #Wdagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
+            set_wing_fermi!(xout.f[i5])
+            add!(1,xout.f[i5],1,x.f[j5]) #D = x + Ddagw*x
+            set_wing_fermi!(xout.f[i5])  
 
         
             j5=i5+1
             if 1 <= j5 <= xout.N5
                 #-P_-
-                mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                if xout.N5 != 2
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
             end
 
             j5=i5-1
             if 1 <= j5 <= xout.N5
                 #-P_+
-                mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                if xout.N5 != 2
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
             end
 
-            if i5==1
-                j5 = xout.N5
-                mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+            if xout.N5 != 1
+                if i5==1
+                    j5 = xout.N5
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
+
+                if i5==xout.N5
+                    j5 = 1
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
             end
 
-            if i5==xout.N5
-                j5 = 1
-                mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
-            end
-
-        end    
-        
-        set_wing_fermi!(xout)
+        end  
+        set_wing_fermi!(xout)   
 
         return
     end
-    
+
 
        
 

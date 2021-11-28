@@ -15,7 +15,8 @@ module Measurements
     import ..CGmethods:bicg
     #import ..CGfermion:cg0!
     import ..System_parameters:Params
-    import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover
+    import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
+                FermiActionParam_Domainwall
     import ..Diracoperators:Dirac_operator,γ5D_operator
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
@@ -345,6 +346,45 @@ module Measurements
                     
                     #println("Measurement_set::mass_measurement = $(p.mass_measurement)")
                     #fparam = FermiActionParam_Staggered(mass,eps,fermiontype,MaxCGstep,quench,Nf)
+                elseif fermiontype == "Domainwall"
+                    Domainwall_N5 = method["Domainwall_N5"]
+                    Domainwall_r = method["Domainwall_r"]
+                    Domainwall_M = method["Domainwall_M"]
+                    Domainwall_m = method["Domainwall_m"]
+                    Domainwall_ωs = method["Domainwall_ωs"]
+                    Domainwall_b = method["Domainwall_b"]
+                    Domainwall_c = method["Domainwall_c"]
+
+                    quench = false
+
+
+                    smearing_for_fermion = set_params(method,"smearing_for_fermion","nothing")
+                    stout_numlayers = set_params(method,"stout_numlayers",nothing)
+                    stout_ρ = set_params(method,"stout_ρ",nothing)
+                    stout_loops = set_params(method,"stout_loops",nothing)
+
+
+                    if smearing_for_fermion == "nothing"
+                        fparam = FermiActionParam_Domainwall(Domainwall_N5,Domainwall_r,Domainwall_M,
+                                                            Domainwall_m,Domainwall_ωs,
+                                                            Domainwall_b,Domainwall_c,
+                                                            eps,fermiontype,
+                                                            MaxCGstep,quench)
+                    else
+                        L = (univ.NX,univ.NY,univ.NZ,univ.NT)
+
+                        fparam = FermiActionParam_Domainwall(Domainwall_N5,Domainwall_r,Domainwall_M,
+                                                                Domainwall_m,Domainwall_ωs,
+                                                                Domainwall_b,Domainwall_c,
+                                                                eps,fermiontype,
+                                                                MaxCGstep,quench,
+                                                                smearingparameters = "stout",
+                                                                loops_list = stout_loops,
+                                                                coefficients  = stout_ρ,
+                                                                numlayers = stout_numlayers,
+                                                                L = L
+                                                            )
+                    end
                                 
                 elseif fermiontype == nothing
                     fparam = nothing

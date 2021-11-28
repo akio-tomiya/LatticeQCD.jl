@@ -211,10 +211,12 @@ module Diracoperators
         _temporal_fermi::Array{DomainwallFermion,1}
 
         function D5DW_Domainwall_operator(U::Array{T,1},x,fparam,m) where  T <: GaugeFields
+            
+
+            #=
             r = fparam.r
             M = fparam.M
             hop = 1/(8r+2M)
-
             if typeof(fparam.smearing) == SmearingParam_nosmearing
                 fparam_wilson = FermiActionParam_Wilson(hop,r,fparam.eps,fparam.Dirac_operator,fparam.MaxCGstep,fparam.quench)
             else
@@ -226,6 +228,8 @@ module Diracoperators
                                     L = fparam.L
                                 )
             end
+            =#
+            fparam_wilson = fparam.wilsonaction
             num = 1
             _temporal_fermi = Array{DomainwallFermion,1}(undef,num)
             for i=1:num
@@ -418,7 +422,9 @@ module Diracoperators
         y = A^+*x = [D5DW(m=1)^+]^(-1) D5DW(m)^+*x
         =#
         mul!(A.parent.D5DW_PV._temporal_fermi[1],A.parent.D5DW',x)
-        bicg(y,A.parent.D5DW_PV',A.parent.D5DW_PV._temporal_fermi[1]) 
+        bicg(y,A.parent.D5DW_PV',A.parent.D5DW_PV._temporal_fermi[1],
+            maxsteps = 10000)
+            #verbose = Verbose_3()) 
         
         return
     end
@@ -560,6 +566,16 @@ module Diracoperators
         mul!(x,A.D5DW_PV,A.D5DW._temporal_fermi[1])
     end
 
+    function bicg(x,A::Adjoint_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #A*x = b -> x = A^-1*b
+        #A = D5DW(m)*D5DW(m=1)^(-1)
+        #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
+        #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+
+        #x = A'^-1*b =D5DW(m)^+^-1 D5DW(m=1)^+*b
+        mul!(A.parent.D5DW._temporal_fermi[1],A.parent.D5DW_PV',b)
+        bicg(x,A.parent.D5DW',A.parent.D5DW._temporal_fermi[1];eps=eps,maxsteps = maxsteps,verbose = verbose) 
+
+    end
+
     
 
     function cg(x,A::DdagD_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2())
@@ -569,7 +585,7 @@ module Diracoperators
           = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1) )^-1 D5DW(m=1)^+
         x = A^-1*b = D5DW(m=1) (  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
         =#
-        mul!(A.dirac.D5DW_PV._temporal_fermi[1],A.dirac.DSDW_PV',b) #D5DW(m=1)^+*b
+        mul!(A.dirac.D5DW_PV._temporal_fermi[1],A.dirac.D5DW_PV',b) #D5DW(m=1)^+*b
 
         temp = A.dirac.D5DW_PV._temporal_fermi[1]
         cg(A.dirac.D5DW._temporal_fermi[1],A.DdagD,temp;eps=eps,maxsteps = maxsteps,verbose = verbose) #(  D5DW(m)^+ D5DW(m) )^(-1)  D5DW(m=1)^+*b
