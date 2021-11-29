@@ -151,6 +151,23 @@ module MD
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
         println("Ls = $(fparam.N5)")
+        
+        if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sf_new_eff = univ.η*univ.η
+                println("before effective Sf ",Sf_new_eff)
+
+            end
+
+            Snew,plaq = calc_Action(univ)
+            println("before Seff: ",Snew)
+
+            construct_fermionfield_η!(univ)
+            
+        end
+        
+
         QPQ = mdparams.QPQ #true
         if QPQ 
             for istep=1:mdparams.MDsteps
@@ -209,6 +226,11 @@ module MD
 
                 dSdUnew,dSdρs = calc_smearedfermionforce!(univ,univ.U,univ.fparam_SLHMC)
                 println("dSdρs = ",dSdρs)
+
+                Snew_eff2,plaq_ff = calc_Action(univ)
+                println("after Seff: ",Snew_eff2)
+
+
             end
             construct_fermionfield_η!(univ)
         end
@@ -257,6 +279,10 @@ module MD
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
+
+
+
+
         QPQ = mdparams.QPQ
         if QPQ != true
             for istep=1:mdparams.MDsteps
@@ -588,7 +614,10 @@ module MD
     end
 
     function calc_smearedfermionforce!(univ::Universe,Uin,fparam)
-        dSdUnew,dSdρs = calc_smearedfermionforce!(univ.η,univ.φ,univ.ξ,fparam,
+        Y = similar(univ.η)
+        #φ = similar(univ.φ)
+        X = similar(univ.φ)
+        dSdUnew,dSdρs = calc_smearedfermionforce!(Y,univ.φ,X,fparam,
                                         Uin,
                                         univ._temporal_gauge,univ._temporal_algebra,
                                         univ._temporal_fermi,kind_of_verboselevel =univ.kind_of_verboselevel
@@ -1458,8 +1487,8 @@ module MD
     end
 
     function calc_smearedfermionforce!(Y::F,φ::F,X::F,fparam,
-        Uin::Array{T,1},
-        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+                                        Uin::Array{T,1},
+                                        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
         ) where {F <: WilsonFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         temp0_f = temps_fermi[1] #F_field
         temp1_f = temps_fermi[2] #F_field
