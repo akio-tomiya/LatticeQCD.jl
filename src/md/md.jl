@@ -288,6 +288,22 @@ module MD
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
+        println("Ls = $(fparam.N5)")
+        
+        if univ.quench == false
+            if univ.isSLHMC
+                construct_fermionfield_η!(univ,univ.fparam_SLHMC)
+                Sf_new_eff = univ.η*univ.η
+                println("before effective Sf ",Sf_new_eff)
+
+            end
+
+            Snew,plaq = calc_Action(univ)
+            println("before Seff: ",Snew)
+
+            construct_fermionfield_η!(univ)
+            
+        end
 
 
 
@@ -335,7 +351,6 @@ module MD
             
             end
         end
-
         if univ.quench == false
             if univ.isSLHMC
                 construct_fermionfield_η!(univ,univ.fparam_SLHMC)
@@ -344,6 +359,11 @@ module MD
 
                 dSdUnew,dSdρs = calc_smearedfermionforce!(univ,univ.U,univ.fparam_SLHMC)
                 println("dSdρs = ",dSdρs)
+
+                Snew_eff2,plaq_ff = calc_Action(univ)
+                println("after Seff: ",Snew_eff2)
+
+
             end
             construct_fermionfield_η!(univ)
         end
@@ -354,11 +374,19 @@ module MD
             if univ.isSLHMC
                 Sf_new = univ.η*univ.η
                 println("original ",Sf_new)
-                diff = Sf_new_eff-Sf_new
+                diff = (Sf_new_eff-Sf_new)/univ.NV
+                fp4 = open("diff.txt","a")
+                fp5 = open("rho.txt","a")
                 #println(fp2,real(diff))
-                println("#diff  ",real(diff))
-                dCdρs  = -diff .* dSdρs 
-                println("#dCdρs ",real.(dCdρs))
+                println("diff:Sf ",real(diff)*univ.NV)
+                println(fp4,real(diff)*univ.NV)
+                close(fp4)
+                dCdρs  = real.(-diff .* dSdρs )
+                #println(typeof(dCdρs))
+                if typeof(dCdρs) == Array{Float64, 1}
+                    dCdρs = Array{Float64,1}[dCdρs]
+                end
+                println("dCdρs ",real.(dCdρs))
                 #println(univ.fparam_SLHMC.smearing)
                 
                 if univ.fparam_SLHMC.istrainable
@@ -366,9 +394,21 @@ module MD
                     #println(univ.fparam_SLHMC.smearing.ρs)
                     #println(univ.fparam_SLHMC.smearing.trainableweights.ρs)
                     update_smearing!(univ.fparam_SLHMC)
-                    println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
+                    print("rho = ")
+                    for ρsi in univ.fparam_SLHMC.smearing.ρs
+                        for ρsij in ρsi
+                            print(ρsij,"\t")
+                            print(fp5,ρsij,"\t")
+                        end
+                    end
+                    println("\t")
+                    println(fp5,"\t")
+                    close(fp5)
+                    #println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
                     #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
                 end
+
+                flush(stdout)
                 
                 
             end
