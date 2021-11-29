@@ -243,8 +243,12 @@ module MD
                 Sf_new = univ.η*univ.η
                 println("original ",Sf_new)
                 diff = (Sf_new_eff-Sf_new)/univ.NV
+                fp4 = open("diff.txt","a")
+                fp5 = open("rho.txt","a")
                 #println(fp2,real(diff))
                 println("diff:Sf ",real(diff)*univ.NV)
+                println(fp4,real(diff)*univ.NV)
+                close(fp4)
                 dCdρs  = real.(-diff .* dSdρs )
                 #println(typeof(dCdρs))
                 if typeof(dCdρs) == Array{Float64, 1}
@@ -262,12 +266,17 @@ module MD
                     for ρsi in univ.fparam_SLHMC.smearing.ρs
                         for ρsij in ρsi
                             print(ρsij,"\t")
+                            print(fp5,ρsij,"\t")
                         end
                     end
                     println("\t")
+                    println(fp5,"\t")
+                    close(fp5)
                     #println("ρ = ",univ.fparam_SLHMC.smearing.ρs)
                     #univ.fparam_SLHMC.smearing.ρs = deepcopy(univ.fparam_SLHMC.smearing.trainableweights.ρs)
                 end
+
+                flush(stdout)
                 
                 
             end
