@@ -209,6 +209,7 @@ module Diracoperators
         wilsonoperator::Wilson_operator{T}
         m::Float64
         _temporal_fermi::Array{DomainwallFermion,1}
+        N5::Int64
 
         function D5DW_Domainwall_operator(U::Array{T,1},x,fparam,m) where  T <: GaugeFields
             
@@ -236,8 +237,9 @@ module Diracoperators
                 _temporal_fermi[i] = similar(x)
             end
             wilsonoperator = Wilson_operator(U,x.f[1],fparam_wilson)
+            N5 = fparam.N5
 
-            return new{eltype(U)}(U,wilsonoperator,m,_temporal_fermi)
+            return new{eltype(U)}(U,wilsonoperator,m,_temporal_fermi,N5)
         end
 
         function D5DW_Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
@@ -396,7 +398,7 @@ module Diracoperators
     end
 
     function LinearAlgebra.mul!(y::DomainwallFermion,A::D5DW_Domainwall_operator,x::DomainwallFermion) #y = A*x
-        D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi) 
+        D5DWx!(y,A.U,x,A.m,A.wilsonoperator._temporal_fermi,A.N5) 
         return
     end
 
@@ -547,7 +549,7 @@ module Diracoperators
     end
 
     function LinearAlgebra.mul!(y::DomainwallFermion,A::Adjoint_D5DW_Domainwall_operator,x::DomainwallFermion) #y = A*x
-        D5DWdagx!(y,A.parent.U,x,A.parent.m,A.parent.wilsonoperator._temporal_fermi) 
+        D5DWdagx!(y,A.parent.U,x,A.parent.m,A.parent.wilsonoperator._temporal_fermi,A.parent.N5) 
     end
 
     

@@ -227,14 +227,14 @@ module DomainwallFermion_module
 
 
     function D5DWx!(xout::DomainwallFermion,U::Array{G,1},
-        x::DomainwallFermion,m,temps::Array{TW,1}) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+        x::DomainwallFermion,m,temps::Array{TW,1},N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
 
         #temp = temps[4]
         #temp1 = temps[1]
         #temp2 = temps[2]
         clear!(xout)
 
-        for i5=1:xout.N5   
+        for i5=1:N5   
             j5=i5
             Dx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
             #Wx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
@@ -244,31 +244,31 @@ module DomainwallFermion_module
 
         
             j5=i5+1
-            if 1 <= j5 <= xout.N5
+            if 1 <= j5 <= N5
                 #-P_-
-                if xout.N5 != 2
+                if N5 != 2
                     mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
 
             j5=i5-1
-            if 1 <= j5 <= xout.N5
+            if 1 <= j5 <= N5
                 #-P_+
-                if xout.N5 != 2
+                if N5 != 2
                     mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
 
-            if xout.N5 != 1
+            if N5 != 1
                 if i5==1
-                    j5 = xout.N5
+                    j5 = N5
                     mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
                     set_wing_fermi!(xout.f[i5])  
                 end
 
-                if i5==xout.N5
+                if i5== N5
                     j5 = 1
                     mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
                     set_wing_fermi!(xout.f[i5])  
@@ -283,14 +283,14 @@ module DomainwallFermion_module
 
 
     function D5DWdagx!(xout::DomainwallFermion,U::Array{G,1},
-        x::DomainwallFermion,m,temps::Array{TW,1}) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+        x::DomainwallFermion,m,temps::Array{TW,1},N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
 
         #temp = temps[4]
         #temp1 = temps[1]
         #temp2 = temps[2]
         clear!(xout)
 
-        for i5=1:xout.N5   
+        for i5=1:N5   
             j5=i5
             Ddagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
             #Wdagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
@@ -300,31 +300,31 @@ module DomainwallFermion_module
 
         
             j5=i5+1
-            if 1 <= j5 <= xout.N5
+            if 1 <= j5 <= N5
                 #-P_-
-                if xout.N5 != 2
+                if N5 != 2
                     mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
 
             j5=i5-1
-            if 1 <= j5 <= xout.N5
+            if 1 <= j5 <= N5
                 #-P_+
-                if xout.N5 != 2
+                if N5 != 2
                     mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
 
-            if xout.N5 != 1
+            if N5 != 1
                 if i5==1
-                    j5 = xout.N5
+                    j5 = N5
                     mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
                     set_wing_fermi!(xout.f[i5])  
                 end
 
-                if i5==xout.N5
+                if i5==N5
                     j5 = 1
                     mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
                     set_wing_fermi!(xout.f[i5])  

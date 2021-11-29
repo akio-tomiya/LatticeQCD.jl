@@ -150,6 +150,7 @@ module MD
     function md!(univ::Universe,mdparams::MD_parameters_standard)
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
+        println("Ls = $(fparam.N5)")
         QPQ = mdparams.QPQ #true
         if QPQ 
             for istep=1:mdparams.MDsteps
@@ -698,6 +699,8 @@ module MD
         temp3_g = temps[2] #G_field1
         c = temp_a[1]
         NV = temp2_g.NV
+
+        #println("N5 = $(fparam.N5)")
         
 
         W = D5DW_Domainwall_operator(U,φ,fparam)
@@ -884,7 +887,7 @@ module MD
         for μ=1:4
             Gaugefields.clear!(dSdU[μ])
                 #!  Construct U(x,mu)*P1
-            for i5=1:X.N5
+            for i5=1:fparam.N5
                 Xs = X.f[i5]
                 Ys = Y.f[i5]
 
@@ -1134,6 +1137,8 @@ module MD
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
         ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
+        #println("N5 = $(fparam.N5)")
 
         dSdUnew,_  = calc_dSdUnew!(Y,φ,X,fparam,
                         U,Uout_multi,dSdU,Uin,
