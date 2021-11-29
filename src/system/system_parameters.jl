@@ -207,7 +207,7 @@ module System_parameters
 
         smearing_for_fermion::String
         stout_numlayers::Union{Nothing,Int64}
-        stout_ρ::Union{Nothing,Array{Float64,1}}
+        stout_ρ::Union{Nothing,Array{Float64,1},Array{Array{Float64,1},1}}
         stout_loops::Union{Nothing,Array{String,1}}
     
         Domainwall_M::Union{Nothing,Float64}

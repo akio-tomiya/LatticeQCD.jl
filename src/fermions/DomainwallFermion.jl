@@ -278,6 +278,12 @@ module DomainwallFermion_module
         end  
         set_wing_fermi!(xout)   
 
+        if N5 != xout.N5
+            for i5=N5+1:xout.N5
+                axpy!(1,xout.f[i5],x.f[i5])
+            end
+        end
+
         return
     end
 
@@ -332,6 +338,14 @@ module DomainwallFermion_module
             end
 
         end  
+
+        if N5 != xout.N5
+            for i5=N5+1:xout.N5
+                axpy!(1,xout.f[i5],x.f[i5])
+            end
+        end
+
+        
         set_wing_fermi!(xout)   
 
         return
