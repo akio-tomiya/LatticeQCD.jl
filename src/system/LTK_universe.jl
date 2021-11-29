@@ -766,7 +766,9 @@ module LTK_universe
         if univ.quench == false
         #if univ.fparam != nothing
             Sf = univ.η*univ.η
+            println("original SF in action ",Sf)
             S += Sf
+            println("original S in action ",S)
         end
         return real(S),real(plaq)
     end

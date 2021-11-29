@@ -223,7 +223,11 @@ module MD
                 diff = (Sf_new_eff-Sf_new)/univ.NV
                 #println(fp2,real(diff))
                 println("diff:Sf ",real(diff)*univ.NV)
-                dCdρs  = -diff .* dSdρs 
+                dCdρs  = real.(-diff .* dSdρs )
+                #println(typeof(dCdρs))
+                if typeof(dCdρs) == Array{Float64, 1}
+                    dCdρs = Array{Float64,1}[dCdρs]
+                end
                 println("dCdρs ",real.(dCdρs))
                 #println(univ.fparam_SLHMC.smearing)
                 
