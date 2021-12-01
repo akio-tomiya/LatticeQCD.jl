@@ -1,4 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
+julia_version = "1.6-"
+manifest_format = "2.0"
 
 [[Adapt]]
 deps = ["LinearAlgebra"]
@@ -9,6 +11,8 @@ version = "3.3.1"
 [[AlgRemez_jll]]
 deps = ["Artifacts", "GMP_jll", "JLLWrappers", "Libdl", "MPFR_jll", "Pkg"]
 git-tree-sha1 = "491f3c8c89a7aa6f89c76642032e1eebf8f1cd8a"
+repo-rev = "main"
+repo-url = "https://github.com/JuliaBinaryWrappers/AlgRemez_jll.jl.git"
 uuid = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
 version = "0.1.1+0"
 
