@@ -987,7 +987,9 @@ end
             #gauss_distribution_fermi!(r,univ.ranf)
             Z4_distribution_fermi!(r)
             #set_wing_fermi!(r) 
-            bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
+            bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = Verbose_3()) # solve Mp=b, we get p=M^{-1}b
+            #bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
+            error("d")
             tmp = r*p # hemitian inner product
             println_verbose2(verbose,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
             println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
