@@ -12,7 +12,7 @@ module AbstractFermion
                 FermiActionParam_WilsonClover,FermiActionParam_Staggered
     import ..Gaugefields:GaugeFields,GaugeFields_1d,SU3GaugeFields,SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
                 staggered_phase,SUn,SU2,SU3,SUNGaugeFields,SUNGaugeFields_1d,SU
-
+    using Random
     abstract type FermionFields end
 
 
