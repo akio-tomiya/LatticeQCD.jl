@@ -9,7 +9,7 @@ module Rand
 
     mutable struct Random_LCGs{T} 
         crand_public::Crand
-        Random_LCGs(ndelay;newrand=false) = new{newrand}(cint3(ndelay))
+        Random_LCGs(ndelay;julian_random_number=false) = new{julian_random_number}(cint3(ndelay))
     end
 
     function (g::Random_LCGs{false})()
