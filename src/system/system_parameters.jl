@@ -11,7 +11,7 @@ module System_parameters
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
     printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format",
-                                "saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir","newrand"]
+                                "saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir","julian_random_number"]
     # HMC related
     printlist_HMCrelated = ["Δτ","SextonWeingargten","N_SextonWeingargten","MDsteps","eps","MaxCGstep"]
     # Action parameter for SLMC
@@ -92,7 +92,7 @@ module System_parameters
 
     measurement["measurement_methods"] = defaultmeasures
 
-    system["newrand"] = true
+    system["julian_random_number"] = true
 
     mutable struct Params_set
         system::Dict
@@ -212,7 +212,7 @@ module System_parameters
         Domainwall_ωs::Union{Nothing,Array{Float64,1}}
         Domainwall_r::Union{Nothing,Float64}
 
-        newrand::Bool
+        julian_random_number::Bool
 
 
 
@@ -568,7 +568,7 @@ module System_parameters
             stout_ρ = set_params(system,"stout_ρ",nothing)
             stout_loops = set_params(system,"stout_loops",nothing)
 
-            newrand = set_params(system,"newrand",true)
+            julian_random_number = set_params(system,"julian_random_number",true)
 
 
             #error("r = $r desu")
@@ -633,7 +633,7 @@ module System_parameters
                 Domainwall_c,#::Float64
                 Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
                 Domainwall_r,
-                newrand
+                julian_random_number
             )
 
         end
