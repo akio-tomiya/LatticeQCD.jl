@@ -233,13 +233,15 @@ module DomainwallFermion_module
         #temp1 = temps[1]
         #temp2 = temps[2]
         clear!(xout)
+        ratio = 1
+        #ratio = xout.N5/N5
 
         for i5=1:N5   
             j5=i5
             Dx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
             #Wx!(xout.f[i5],U,x.f[j5],temps) #Dw*x
             set_wing_fermi!(xout.f[i5])
-            add!(1,xout.f[i5],1,x.f[j5]) #D = x + Dw*x
+            add!(ratio,xout.f[i5],ratio,x.f[j5]) #D = x + Dw*x
             set_wing_fermi!(xout.f[i5])  
 
         
@@ -247,7 +249,7 @@ module DomainwallFermion_module
             if 1 <= j5 <= N5
                 #-P_-
                 if N5 != 2
-                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
@@ -256,7 +258,7 @@ module DomainwallFermion_module
             if 1 <= j5 <= N5
                 #-P_+
                 if N5 != 2
-                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
@@ -264,13 +266,13 @@ module DomainwallFermion_module
             if N5 != 1
                 if i5==1
                     j5 = N5
-                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
 
                 if i5== N5
                     j5 = 1
-                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
@@ -295,13 +297,15 @@ module DomainwallFermion_module
         #temp1 = temps[1]
         #temp2 = temps[2]
         clear!(xout)
+        ratio = 1
+        #ratio = xout.N5/N5
 
         for i5=1:N5   
             j5=i5
             Ddagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
             #Wdagx!(xout.f[i5],U,x.f[j5],temps) #Ddagw*x
             set_wing_fermi!(xout.f[i5])
-            add!(1,xout.f[i5],1,x.f[j5]) #D = x + Ddagw*x
+            add!(ratio,xout.f[i5],ratio,x.f[j5]) #D = x + Ddagw*x
             set_wing_fermi!(xout.f[i5])  
 
         
@@ -309,7 +313,7 @@ module DomainwallFermion_module
             if 1 <= j5 <= N5
                 #-P_-
                 if N5 != 2
-                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],-1*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
@@ -318,7 +322,7 @@ module DomainwallFermion_module
             if 1 <= j5 <= N5
                 #-P_+
                 if N5 != 2
-                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1) 
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],-1*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end
@@ -326,13 +330,13 @@ module DomainwallFermion_module
             if N5 != 1
                 if i5==1
                     j5 = N5
-                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    mul_1minusγ5x_add!(xout.f[i5],x.f[j5],m*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
 
                 if i5==N5
                     j5 = 1
-                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m) 
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],m*ratio) 
                     set_wing_fermi!(xout.f[i5])  
                 end
             end

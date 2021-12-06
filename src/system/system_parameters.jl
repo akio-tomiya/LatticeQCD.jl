@@ -10,7 +10,8 @@ module System_parameters
                             "BoundaryCondition",
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops","isSLHMC","isSLHMCtrainable"]
     # System Control
-    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
+    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format",
+                                "saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir","julian_random_number"]
     # HMC related
     printlist_HMCrelated = ["Δτ","SextonWeingargten","N_SextonWeingargten","MDsteps","eps","MaxCGstep"]
     # Action parameter for SLMC
@@ -99,6 +100,8 @@ module System_parameters
      
 
     measurement["measurement_methods"] = defaultmeasures
+
+    system["julian_random_number"] = true
 
     mutable struct Params_set
         system::Dict
@@ -223,6 +226,7 @@ module System_parameters
         isSLHMCtrainable::Bool
         optimazation_SLHMC::String
         hyperparameters_SLHMC::Union{Nothing,Dict}
+        julian_random_number::Bool
 
 
 
@@ -594,6 +598,9 @@ module System_parameters
 
 
 
+            julian_random_number = set_params(system,"julian_random_number",true)
+
+
             #error("r = $r desu")
             return new(
                 L,# = system["L"] #::Tuple  = (2,2,2,2) # Mandatory
@@ -661,6 +668,7 @@ module System_parameters
                 isSLHMCtrainable,
                 optimazation_SLHMC,
                 hyperparameters_SLHMC
+                julian_random_number
             )
 
         end

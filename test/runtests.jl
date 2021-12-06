@@ -57,15 +57,16 @@ using Test
         
     @testset "HMC" begin
 
-        @testset "WilsonClover SU(3)" begin
+        @testset "WilsonClover SU(3) with SextonWeingargten" begin
             @time plaq = run_LQCD("test_wilsonclover.jl")
-            plaq_comparison = 0.00624053999484795
+            plaq_comparison = 0.3449688128155864
+            #plaq_comparison = 0.00624053999484795
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
 
         @testset "Staggered SU(3) with 4 tastes" begin
             @time plaq = run_LQCD("test_staggered.jl")
-            plaq_comparison = 0.00624053999484795
+            plaq_comparison = 0.25455870400018477 #0.00624053999484795
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
 

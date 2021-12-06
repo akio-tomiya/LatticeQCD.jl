@@ -7,14 +7,19 @@ module Rand
         kr::Int64
     end
 
-    mutable struct Random_LCGs
+    mutable struct Random_LCGs{T} 
         crand_public::Crand
-        Random_LCGs(ndelay) = new(cint3(ndelay))
+        Random_LCGs(ndelay;julian_random_number=false) = new{julian_random_number}(cint3(ndelay))
     end
 
-    function (g::Random_LCGs)()
+    function (g::Random_LCGs{false})()
         #return rand()
         return ranf!(g.crand_public)
+    end
+
+    function (g::Random_LCGs{true})()
+        return rand()
+        #return ranf!(g.crand_public)
     end
 
 
