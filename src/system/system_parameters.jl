@@ -667,7 +667,7 @@ module System_parameters
                 isSLHMC,
                 isSLHMCtrainable,
                 optimazation_SLHMC,
-                hyperparameters_SLHMC
+                hyperparameters_SLHMC,
                 julian_random_number
             )
 
