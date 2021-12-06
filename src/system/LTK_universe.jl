@@ -267,7 +267,7 @@ module LTK_universe
             end
         end
 
-        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format)
+        univ = Universe(L,gparam,p.Nwing,fparam,p.BoundaryCondition,p.initial,p.NC,p.verboselevel,p.load_fp,p.loadU_format,p.newrand)
 
     end
 
@@ -350,7 +350,7 @@ module LTK_universe
     end
 
 
-    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel,load_fp,loadU_format)
+    function Universe(L,gparam,Nwing,fparam,BoundaryCondition,initial,NC,verboselevel,load_fp,loadU_format,newrand)
         #(L::Tuple,gparam::GaugeActionParam;
         #   Nwing = 1,fparam=nothing,
         #  BoundaryCondition=[1,1,1,-1],initial="cold",NC =3)
@@ -364,7 +364,7 @@ module LTK_universe
         end
 
 
-        ranf = Random_LCGs(1)
+        ranf = Random_LCGs(1,newrand=newrand)
 
         NX = L[1]
         NY = L[2]

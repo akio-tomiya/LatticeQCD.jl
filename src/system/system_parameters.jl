@@ -10,7 +10,8 @@ module System_parameters
                             "BoundaryCondition",
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
-    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format","saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir"]
+    printlist_systemcontrol = ["log_dir","logfile","loadU_format","loadU_dir","loadU_fromfile","loadU_filename","saveU_dir","saveU_format",
+                                "saveU_every","verboselevel","randomseed","measurement_basedir","measurement_dir","newrand"]
     # HMC related
     printlist_HMCrelated = ["Δτ","SextonWeingargten","N_SextonWeingargten","MDsteps","eps","MaxCGstep"]
     # Action parameter for SLMC
@@ -90,6 +91,8 @@ module System_parameters
      
 
     measurement["measurement_methods"] = defaultmeasures
+
+    system["newrand"] = true
 
     mutable struct Params_set
         system::Dict
@@ -208,6 +211,8 @@ module System_parameters
         Domainwall_c::Union{Nothing,Float64}
         Domainwall_ωs::Union{Nothing,Array{Float64,1}}
         Domainwall_r::Union{Nothing,Float64}
+
+        newrand::Bool
 
 
 
@@ -563,6 +568,8 @@ module System_parameters
             stout_ρ = set_params(system,"stout_ρ",nothing)
             stout_loops = set_params(system,"stout_loops",nothing)
 
+            newrand = set_params(system,"newrand",true)
+
 
             #error("r = $r desu")
             return new(
@@ -625,7 +632,8 @@ module System_parameters
                 Domainwall_b,#::Float64
                 Domainwall_c,#::Float64
                 Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
-                Domainwall_r
+                Domainwall_r,
+                newrand
             )
 
         end
