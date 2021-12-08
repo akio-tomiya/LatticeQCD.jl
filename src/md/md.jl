@@ -22,7 +22,7 @@ module MD
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutforce
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
-            StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!,DomainwallFermion
+            StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!,DomainwallFermion,Px!
     using ..Fermionfields
     import ..Heatbath:heatbath!
 
@@ -150,7 +150,7 @@ module MD
     function md!(univ::Universe,mdparams::MD_parameters_standard)
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
-        println("Ls = $(fparam.N5)")
+        #println("Ls = $(fparam.N5)")
         
         if univ.quench == false
             if univ.isSLHMC
@@ -1415,7 +1415,7 @@ module MD
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
-        ) where {F <: DomainwallFermion, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+        ) where {F <: DomainwallFermion{5}, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         #temp0_f = temps_fermi[1] #F_field
         #temp1_f = temps_fermi[2] #F_field
         #temp2_g = temps[1] #G_field1
@@ -1443,6 +1443,51 @@ module MD
         D5_PV = D5DW_Domainwall_operator(U,φ,fparam,1) #D5(m=1)
         #WdagW = DdagD_operator(U,φ,fparam)
         temps_dw = temps_fermi[1]
+        #WdagW = DdagD_operator(U,φ.f[1],fparam.wilsonaction)
+        #WdagW = D5DWdagD5DW_Wilson_operator(U,φ,fparam)
+
+        #cg(X.f[1],WdagW,φ.f[1],eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        #cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        mul!(temps_dw,D5_PV',φ)
+        cg(X,Q,temps_dw,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        #set_wing_fermi!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+
+        else
+            
+
+            updateP_fermi_fromX!(Y,φ,X,fparam,
+            p,mdparams,τ,U,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+            )
+        end
+
+
+       
+        return
+
+    end
+
+    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
+        temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: DomainwallFermion{4}, T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
+
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+        temps_dw = temps_fermi[1]
+
+        Px!(temps_dw,U,φ,m,temps,N5)  #P phi_1
+        
+
+        Q = D5DWdagD5DW_Wilson_operator(U,φ,fparam) #D5^+D5
+        D5_PV = D5DW_Domainwall_operator(U,φ,fparam,1) #D5(m=1)
+        #WdagW = DdagD_operator(U,φ,fparam)
+        
         #WdagW = DdagD_operator(U,φ.f[1],fparam.wilsonaction)
         #WdagW = D5DWdagD5DW_Wilson_operator(U,φ,fparam)
 
