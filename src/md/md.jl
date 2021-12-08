@@ -288,7 +288,7 @@ module MD
     function md!(univ::Universe,mdparams::MD_parameters_SextonWeingargten)
         #Sold = md_initialize!(univ::Universe)
         fparam = get_fparam(univ)
-        println("Ls = $(fparam.N5)")
+        #println("Ls = $(fparam.N5)")
         
         if univ.quench == false
             if univ.isSLHMC
