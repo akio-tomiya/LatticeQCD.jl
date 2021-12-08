@@ -1400,7 +1400,7 @@ module Gaugefields
 
     end
 
-
+    #=
     function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},a::Adjoint_GaugeFields_1d{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
 
         NV=c.NV
@@ -1424,6 +1424,7 @@ module Gaugefields
         end
 
     end
+    =#
 
     function LinearAlgebra.mul!(c::GaugeFields_1d{SU{NC}},Udag::Adjoint_GaugeFields{SU{NC}}) where NC #Udag*c
         NV=c.NV
