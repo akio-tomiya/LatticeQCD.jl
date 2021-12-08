@@ -101,7 +101,7 @@ module System_parameters
 
     measurement["measurement_methods"] = defaultmeasures
 
-    system["julian_random_number"] = true
+    system["julian_random_number"] = false
 
     mutable struct Params_set
         system::Dict
