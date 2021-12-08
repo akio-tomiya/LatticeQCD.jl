@@ -1281,7 +1281,7 @@ module LTK_universe
         construct_fermionfield_η!(univ,univ.fparam)
     end
 
-    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp},fparam)  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,fparam} # eta = Wdag^{-1} phi
+    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp},fparam)  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
         U,_... = calc_smearingU(univ.U,fparam.smearing)
 
 
