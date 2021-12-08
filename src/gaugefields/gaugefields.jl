@@ -184,7 +184,7 @@ module Gaugefields
 
 
 
-
+    #=
     function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1},temps::Array{T_1d,1}) where {S <: SUn,T_1d <: GaugeFields_1d}
 
         num = length(w)
@@ -231,6 +231,7 @@ module Gaugefields
             
         end
     end
+    =#
 
     function evaluate_wilson_loops!(xout::T_1d,w::Wilson_loop_set,U::Array{GaugeFields{S},1},temps::Array{T_1d,1}) where {S <: SUn,T_1d <: GaugeFields_1d}
 

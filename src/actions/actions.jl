@@ -412,7 +412,7 @@ module Actions
         return GaugeActionParam_autogenerator(βs,β,numactions,NC,loops,staples,couplinglist)
     end
 
-    Base.@kwdef struct FermiActionParam_Domainwall <: FermiActionParam
+    Base.@kwdef struct FermiActionParam_Domainwall{Dim} <: FermiActionParam
         N5::Int64
         r::Float64 = 1
         M::Float64 = -1
@@ -436,7 +436,8 @@ module Actions
             numlayers = 1,
             L = nothing,
             isSLHMCtrainable = false,
-            hyperparameters = nothing
+            hyperparameters = nothing,
+            projected = false
             )
 
             smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers,
@@ -454,7 +455,13 @@ module Actions
             Dirac_operator_wilson = "Wilson"
             wilsonaction = FermiActionParam_Wilson(hop_wilson,r,eps,Dirac_operator_wilson,MaxCGstep,quench)
 
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction,
+            if projected 
+                Dim = 4
+            else
+                Dim  =5
+            end
+
+            return new{Dim}(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction,
                     isSLHMCtrainable
                     )
         end
@@ -466,7 +473,8 @@ module Actions
             numlayers = 1,
             L = nothing,
             isSLHMCtrainable = false,
-            hyperparameters = nothing
+            hyperparameters = nothing,
+            projected = false
             )
 
             b = 1
@@ -488,7 +496,13 @@ module Actions
             Dirac_operator_wilson = "Wilson"
             wilsonaction = FermiActionParam_Wilson(hop_wilson,r,eps,Dirac_operator_wilson,MaxCGstep,quench)
 
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction,
+            if projected 
+                Dim = 4
+            else
+                Dim  =5
+            end
+
+            return new{Dim}(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing,wilsonaction,
                                 isSLHMCtrainable
             )
         end

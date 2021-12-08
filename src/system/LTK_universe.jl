@@ -1313,9 +1313,10 @@ module LTK_universe
         end
     end
 
-    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC} # eta = Wdag^{-1} phi
-        construct_fermionfield_η!(univ,univ.fparam)
-    end
+
+    #function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp,FermiP_SLHMC} # eta = Wdag^{-1} phi
+    #    construct_fermionfield_η!(univ,univ.fparam)
+    #end
 
 
 

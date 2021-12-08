@@ -68,8 +68,10 @@ module Diracoperators
             W = WilsonClover_operator(U,x,fparam)
         elseif typeof(fparam) == FermiActionParam_Staggered
             W = Staggered_operator(U,x,fparam)
-        elseif typeof(fparam) == FermiActionParam_Domainwall
+        elseif typeof(fparam) == FermiActionParam_Domainwall{5}
             W = Domainwall_operator(U,x,fparam)
+        elseif typeof(fparam) == FermiActionParam_Domainwall{4}
+            W = Domainwall_operator4(U,x,fparam)
         else
             error("unknown fparam: fparam is ",typeof(fparam))
         end

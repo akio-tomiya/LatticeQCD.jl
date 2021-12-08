@@ -21,7 +21,7 @@ module Fermionfields
 
     import ..StaggeredFermion_module:StaggeredFermion
 
-    import ..DomainwallFermion_module:DomainwallFermion,D5DWx!,D5DWdagx!
+    import ..DomainwallFermion_module:DomainwallFermion,D5DWx!,D5DWdagx!,Px!
 
 
 #    abstract type FermionFields end

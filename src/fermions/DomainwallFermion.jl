@@ -12,7 +12,7 @@ module DomainwallFermion_module
         gauss_distribution_fermi!,gauss_distribution_fermi_Z2!,Z4_distribution_fermi!,Ddagx!
     import ..WilsonFermion_module:WilsonFermion,mul_1minusγ5x_add!,mul_1plusγ5x_add!
 
-    struct DomainwallFermion <: FermionFields
+    struct DomainwallFermion{Dim} <: FermionFields
             NC::Int64
             NX::Int64
             NY::Int64
@@ -37,7 +37,7 @@ module DomainwallFermion_module
     end
 
 
-    function DomainwallFermion(NC,NX,NY,NZ,NT,fparam::FermiActionParam,BoundaryCondition) 
+    function DomainwallFermion(NC,NX,NY,NZ,NT,fparam::FermiActionParam,BoundaryCondition;projected=false) 
         N5 = fparam.N5
         r = fparam.r
         M = fparam.M
@@ -48,10 +48,18 @@ module DomainwallFermion_module
         c = fparam.c
         ωs = fparam.ωs
 
-        return DomainwallFermion(NC,NX,NY,NZ,NT,N5,r,M,m,eps,MaxCGstep,b,c,ωs,BoundaryCondition) 
+        if projected 
+            Dim = 4
+        else
+            Dim  =5
+        end
+
+
+        return DomainwallFermion{Dim}(NC,NX,NY,NZ,NT,N5,r,M,m,eps,MaxCGstep,b,c,ωs,BoundaryCondition) 
+        
     end
 
-    function DomainwallFermion(NC,NX,NY,NZ,NT,N5,r,M,m,eps,MaxCGstep,b,c,ωs,BoundaryCondition) 
+    function DomainwallFermion{Dim}(NC,NX,NY,NZ,NT,N5,r,M,m,eps,MaxCGstep,b,c,ωs,BoundaryCondition)  where Dim
         hop = 1/(8r+2M)
         f = Array{WilsonFermion,1}(undef,N5)
         for i=1:N5
@@ -68,7 +76,8 @@ module DomainwallFermion_module
         cs = b*ωs .- c
         Dirac_operator = "Domainwall"
         sizeW = NC*NX*NY*NZ*NT*4
-        return DomainwallFermion(
+
+        return DomainwallFermion{Dim}(
             NC,#::Int64
             NX,#::Int64
             NY,#::Int64
@@ -133,8 +142,8 @@ module DomainwallFermion_module
     end
 
 
-    function Base.similar(x::DomainwallFermion)
-        return DomainwallFermion(x.NC,x.NX,x.NY,x.NZ,x.NT,x.N5,x.r,x.M,x.m,x.eps,x.MaxCGstep,x.b,x.c,x.ωs,x.BoundaryCondition) 
+    function Base.similar(x::DomainwallFermion{Dim}) where Dim
+        return DomainwallFermion{Dim}(x.NC,x.NX,x.NY,x.NZ,x.NT,x.N5,x.r,x.M,x.m,x.eps,x.MaxCGstep,x.b,x.c,x.ωs,x.BoundaryCondition) 
     end
 
     function Base.:*(a::DomainwallFermion,b::DomainwallFermion) #a^+ * b
@@ -290,6 +299,46 @@ module DomainwallFermion_module
     end
 
 
+    function Px!(xout::DomainwallFermion,U::Array{G,1},
+        x::DomainwallFermion,m,temps::Array{TW,1},N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+
+        #temp = temps[4]
+        #temp1 = temps[1]
+        #temp2 = temps[2]
+        clear!(xout)
+        ratio = 1
+        #ratio = xout.N5/N5
+
+        for i5=1:N5   
+            j5=i5
+            mul_1minusγ5x_add!(xout.f[i5],x.f[j5],1)
+            set_wing_fermi!(xout.f[i5])  
+            
+            j5=i5+1
+            if 1 <= j5 <= N5
+                #-P_-
+                if N5 != 2
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],1) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
+            end
+
+
+            if N5 != 1
+                if i5== N5
+                    j5 = 1
+                    mul_1plusγ5x_add!(xout.f[i5],x.f[j5],1) 
+                    set_wing_fermi!(xout.f[i5])  
+                end
+            end
+
+    
+        end  
+        set_wing_fermi!(xout)   
+
+        return
+    end
+
     function D5DWdagx!(xout::DomainwallFermion,U::Array{G,1},
         x::DomainwallFermion,m,temps::Array{TW,1},N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
 
@@ -365,7 +414,7 @@ c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-    function gauss_distribution_fermi!(x::DomainwallFermion)
+    function gauss_distribution_fermi!(x::DomainwallFermion{5})
         NC = x.NC
         NX = x.NX
         NY = x.NY
@@ -381,7 +430,6 @@ c-------------------------------------------------c
                         for iy=1:NY
                             for ix=1:NX
                                 for ic=1:NC
-                                    
                                     x.f[ei5][ic,ix,iy,iz,it,ialpha] = σ*randn()+im*σ*randn()
                                 end
                             end
@@ -396,13 +444,60 @@ c-------------------------------------------------c
         return
     end
 
+    function gauss_distribution_fermi!(x::DomainwallFermion{4})
+        NC = x.NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f[1])[6]
+        σ = sqrt(1/2)
+
+        ei5 = 1
+        for ialpha = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                x.f[ei5][ic,ix,iy,iz,it,ialpha] = σ*randn()+im*σ*randn()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+
+        for ei5=2:x.N5
+            for ialpha = 1:n6
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                for ic=1:NC
+                                    x.f[ei5][ic,ix,iy,iz,it,ialpha] = 0
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermi!(x)
+
+        return
+    end
+
+
     """
 c-------------------------------------------------c
 c     Random number function for Gaussian  Noise
     with σ^2 = 1/2
 c-------------------------------------------------c
     """
-    function gauss_distribution_fermi!(x::DomainwallFermion,randomfunc,σ)
+    function gauss_distribution_fermi!(x::DomainwallFermion{5},randomfunc,σ)
         NC = x.NC
         NX = x.NX
         NY = x.NY
@@ -438,12 +533,63 @@ c-------------------------------------------------c
         return
     end
 
+    function gauss_distribution_fermi!(x::DomainwallFermion{4},randomfunc,σ)
+        NC = x.NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f[1])[6]
+        #σ = sqrt(1/2)
+
+        ei5 =1
+        for mu = 1:n6
+            for ic=1:NC
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                v1 = sqrt(-log(randomfunc()+1e-10))
+                                v2 = 2pi*randomfunc()
+
+                                xr = v1*cos(v2)
+                                xi = v1 * sin(v2)
+
+                                x.f[ei5][ic,ix,iy,iz,it,mu] = σ*xr + σ*im*xi
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        for ei5=2:x.N5
+            for mu = 1:n6
+                for ic=1:NC
+                    for it=1:NT
+                        for iz=1:NZ
+                            for iy=1:NY
+                                for ix=1:NX
+                                    x.f[ei5][ic,ix,iy,iz,it,mu] =0 
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermi!(x)
+
+        return
+    end
+
     function gauss_distribution_fermi!(x::DomainwallFermion,randomfunc)
         σ = 1
         gauss_distribution_fermi!(x,randomfunc,σ)
     end
 
-    function gauss_distribution_fermi_Z2!(x::DomainwallFermion) 
+    function gauss_distribution_fermi_Z2!(x::DomainwallFermion{5}) 
         NC = x.NC
         NX = x.NX
         NY = x.NY
@@ -473,13 +619,58 @@ c-------------------------------------------------c
         return
     end
 
+    function gauss_distribution_fermi_Z2!(x::DomainwallFermion{4}) 
+        NC = x.NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f[1])[6]
+        #σ = sqrt(1/2)
+
+        ei5 = 1
+        for mu = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                x.f[ei5][ic,ix,iy,iz,it,mu] = rand([-1,1])
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        for ei5=2:x.N5
+            for mu = 1:n6
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                for ic=1:NC
+                                    x.f[ei5][ic,ix,iy,iz,it,mu] = rand([-1,1])
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermi!(x)
+
+        return
+    end
+
     """
 c-------------------------------------------------c
 c     Random number function Z4  Noise
 c     https://arxiv.org/pdf/1611.01193.pdf
 c-------------------------------------------------c
     """
-    function Z4_distribution_fermi!(x::DomainwallFermion)
+    function Z4_distribution_fermi!(x::DomainwallFermion{5})
         NC = x.NC
         NX = x.NX
         NY = x.NY
@@ -498,6 +689,54 @@ c-------------------------------------------------c
                                 for ic=1:NC
                                     θ = Float64(rand(0:N-1))*π*Ninv # r \in [0,π/4,2π/4,3π/4]
                                     x.f[ei5][ic,ix,iy,iz,it,ialpha] = cos(θ)+im*sin(θ) 
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        set_wing_fermi!(x)
+
+        return
+    end
+
+    function Z4_distribution_fermi!(x::DomainwallFermion{4})
+        NC = x.NC
+        NX = x.NX
+        NY = x.NY
+        NZ = x.NZ
+        NT = x.NT
+        n6 = size(x.f[1])[6]
+        θ = 0.0
+        N::Int32 = 4
+        Ninv = Float64(1/N)
+
+        ei5 = 1
+        for ialpha = 1:n6
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            for ic=1:NC
+                                θ = Float64(rand(0:N-1))*π*Ninv # r \in [0,π/4,2π/4,3π/4]
+                                x.f[ei5][ic,ix,iy,iz,it,ialpha] = cos(θ)+im*sin(θ) 
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        for ei5=2:x.N5
+            for ialpha = 1:n6
+                for it=1:NT
+                    for iz=1:NZ
+                        for iy=1:NY
+                            for ix=1:NX
+                                for ic=1:NC
+                                    x.f[ei5][ic,ix,iy,iz,it,ialpha] = 0
                                 end
                             end
                         end
