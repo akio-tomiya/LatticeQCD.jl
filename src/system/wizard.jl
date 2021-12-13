@@ -216,6 +216,9 @@ module Wizard
         N5 = parse(Int64,Base.prompt("Input the size of the extra dimension N5", default="4"))
         wilson["Domainwall_N5"] = N5
 
+        Domainwall_4D = parse(Bool,Base.prompt("Projected 4DHMC?", default="false"))
+        wilson["Domainwall_4D"] = Domainwall_4D
+
         wtype = request("Choose domain wall fermion type",RadioMenu([
             "Standard Domainwall fermion action",
             "Other Domain wall fermion action",
@@ -238,6 +241,7 @@ module Wizard
         wilson["Domainwall_c"] = c
         wilson["Domainwall_ωs"] = ωs
         wilson["Domainwall_r"] = 1
+        
 
 
         wilson["r"] = 1
@@ -704,7 +708,7 @@ module Wizard
             elseif ftype == 2
                 println("Wilson fermion is used for SLHMC")
                 system_SLHMC["fermiontype"] = "wilson"
-                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC,standardonly=true)
+                wilson_SLHMC,cg_SLHMC,staggered_SLHMC,system_SLHMC = wilson_wizard!(system_SLHMC)
                 system_SLHMC["quench"] = false
                 set_SLHMC_smearing!(system_SLHMC)
                 
@@ -1276,6 +1280,8 @@ module Wizard
 
             N5 = parse(Int64,Base.prompt("Input the size of the extra dimension N5", default="4"))
             method["Domainwall_N5"] = N5
+            Domainwall_4D = parse(Bool,Base.prompt("Projected 4DHMC?", default="false"))
+            method["Domainwall_4D"] = Domainwall_4D
 
             if dwtype == 1
                 println("Parameters b and c are b=c=1. and ωs = 1. ")
