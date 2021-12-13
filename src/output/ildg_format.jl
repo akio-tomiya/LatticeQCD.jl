@@ -5,7 +5,7 @@ module ILDG_format
 
 
     import ..IOmodule:IOFormat
-    import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields,set_wing!
+    import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields,set_wing!,AbstractGaugefields,set_wing_U!
 
     struct LIME_header
         doc::EzXML.Document
@@ -92,6 +92,10 @@ module ILDG_format
 
     end
 
+    update!(U) = set_wing!(U)
+    update!(U::Array{T,1}) where T <: AbstractGaugefields = set_wing_U!(U)
+
+
     function load_binarydata!(U,NX,NY,NZ,NT,NC,filename,precision)
         if precision == 32
             floattype = Float32
@@ -129,7 +133,7 @@ module ILDG_format
             end
         end
 
-        set_wing!(U)
+        update!(U)
 
         close(fp)
     end

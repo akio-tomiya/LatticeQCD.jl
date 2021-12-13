@@ -2,6 +2,13 @@ using LatticeQCD
 using Test
 
 
+@testset "new_method" begin
+    @testset "new_gaugefield" begin
+        @time plaq = run_LQCD("./debug/test02_test.jl")
+    end
+end
+exit()
+
 @testset "LatticeQCD.jl" begin
     eps = 1e-1
     

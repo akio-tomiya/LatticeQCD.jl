@@ -19,6 +19,12 @@ module LatticeQCD
     #include("site.jl")
     include("./system/rand.jl")
     include("./actions/actions.jl")
+    
+
+    
+    include("./gauge_fields/AbstractGaugefields.jl")
+    include("./gauge_fields/gaugefields_4D.jl")
+
     include("./gaugefields/gaugefields.jl")
     
     #include("gaugefields.jl")

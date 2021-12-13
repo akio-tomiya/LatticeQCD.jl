@@ -8,7 +8,16 @@ module Gaugefields
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                             get_leftstartposition,get_rightstartposition,Wilson_loop
     import ..SUN_generator:Generator
+
+    import ..AbstractGaugefields_module:AbstractGaugefields,identitymatrix,
+                                        shift_U,construct_staple!,set_wing_U!,
+                                        calculate_Plaquet
+    import ..Gaugefields_4D_module:Gaugefields_4D_wing,
+                                    identityGaugefields_4D_wing
     
+    function IdentityGaugefields(NC,NX,NY,NZ,NT,NDW)
+        U = identityGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
+    end
 
     abstract type SUn end
 
@@ -1044,6 +1053,7 @@ module Gaugefields
                 end
             end
         end
+        
         return s
 
     end
@@ -1052,14 +1062,19 @@ module Gaugefields
         NV=a.NV
 
         s = 0
-
+        
         for i=1:NV
 
             @simd for k=1:NC
                 s += a[k,k,i]
+                #println(a[k,k,i])
             end
+            #println(s)
 
         end
+        #println("Nv = ",NV)
+
+        
         return s
 
     end
@@ -1910,6 +1925,7 @@ module Gaugefields
             gauge_shift!(temp1,μ,U[ν])
             mul!(temp2,temp3,temp1')
             add!(staple,temp2)
+            
 
 
 
@@ -2590,10 +2606,10 @@ c-----------------------------------------------------c
             substitute!(temp1,U[μ])
 
             mul!(temp2,temp1,staple')
+            #println(temp2[1,1,1])
             #mul!(temp2,U[μ],staple')
             plaq += tr(temp2)
-            #println(plaq)
-            #exit()
+            #error("err")
         end
         #plaq /= 
         return plaq*0.5
