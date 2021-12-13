@@ -17,6 +17,7 @@ module LTK_universe
                         evaluate_wilson_loops!,
                         U1GaugeFields,U1GaugeFields_1d,
                         apply_smearing,calc_smearingU
+    
     import ..Gaugefields
                         
     import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
@@ -398,7 +399,6 @@ module LTK_universe
         if typeof(gparam) == GaugeActionParam_autogenerator
             num_tempfield_g += 1
         end
-        
 
         if NC == 3
             U = Array{SU3GaugeFields,1}(undef,4)
@@ -453,8 +453,148 @@ module LTK_universe
 
             #error("not supported yet.")
         end
-
         set_wing!(U)
+
+        if true #debug
+            factor = 2/(U[1].NV*4*3*U[1].NC)
+            Ut = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,4)
+
+            if initial == "cold"
+                println(".....  Cold start")
+                for μ=1:4
+                    Ut[μ] = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+                end
+            elseif initial == "hot"
+                println(".....  Hot start")
+                for μ=1:4
+                    Ut[μ] = RandomGauges(NC,NX,NY,NZ,NT,Nwing)
+                end
+            elseif initial == "one instanton"
+                @assert NC == 2 "From one instanton start, NC should be 2!"
+                Ut = Oneinstanton(NC,NX,NY,NZ,NT,Nwing)
+    
+            else #if initial == "file"
+                println(".....  File start")
+                println("File name is $initial")
+                if loadU_format == "JLD"
+                    Ut = loadU(initial,NX,NY,NZ,NT,NC)
+                elseif loadU_format == "ILDG"
+                    ildg = ILDG(initial)
+                    i = 1
+                    for μ=1:4
+                        Ut[μ] = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+                    end
+                    load_gaugefield!(Ut,i,ildg,L,NC)
+                else
+                    error("loadU_format should be JLD or ILDG")
+                end
+    
+                #error("not supported yet.")
+            end
+
+            temp1 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            temp2 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            @time plaq = Gaugefields.calculate_Plaquet(Ut,temp1,temp2)*factor
+            @time plaq_ori = Gaugefields.calc_Plaq(U)*factor
+            for nn=1:10
+                @time plaq = Gaugefields.calculate_Plaquet(Ut,temp1,temp2)*factor
+                #println("plaq = $plaq")
+                @time plaq_ori = Gaugefields.calc_Plaq(U)*factor
+                #println("plaq_ori = $plaq_ori")
+            end
+            println("plaq = $plaq")
+            println("plaq_ori = $plaq_ori")
+
+
+            @time Up = Gaugefields.shift_U(Ut[1],1)
+            @time Up = Gaugefields.shift_U(Ut[1],2)
+            @time Up = Gaugefields.shift_U(Ut[1],3)
+            @time Up = Gaugefields.shift_U(Ut[1],4)
+            μ = 1
+            println("Ut = ", Ut[μ][1,1,1,1,1,1])
+            println("Up = ", Up[1,1,1,1,1,1])
+            println("Ut' = ", Ut[μ]'[1,1,1,1,1,1])
+            println("Up' = ", Up'[1,1,1,1,1,1])
+            println("shifted")
+
+            Up = Ut[μ]
+            Up2 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            @time mul!(Up2,Up',Up)
+            ν = 2
+            Ups = Gaugefields.shift_U(Up,ν)
+            @time mul!(Up2,Up,Ups)
+            @time mul!(Up2,Up',Ups)
+            @time mul!(Up2,Up',Ups')
+            println("mul!")
+
+            Up = Ut[μ]
+            Up2 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            staple = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            temp = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+
+            println("staple")
+            Gaugefields.construct_staple!(staple,Ut,μ,temp)
+            for nn=1:10                
+                @time Gaugefields.construct_staple!(staple,Ut,μ,temp)
+            end
+            println("staple")
+
+
+            @time mul!(Up2,Up',Up)
+            ν = 2
+            Ups = Gaugefields.shift_U(Up,ν)
+            println("v")
+            for nn=1:10                
+                @time mul!(Up2,Up,Ups)
+            end
+            println("v")
+            @time mul!(Up2,Up',Ups)
+            for nn=1:10                
+                @time mul!(Up2,Up',Ups)
+            end
+
+            
+            
+            @time mul!(Up2,Up',Ups')
+            for nn=1:10                
+                @time  mul!(Up2,Up',Ups')
+            end
+            println("mul!")
+
+
+
+            println("shift start")
+            temp1 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            temp2 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            temp3 = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            staple = GaugeFields_1d(NC,NX,NY,NZ,NT)
+            @time begin
+                #ν = 2
+                Gaugefields.make_staple!(staple,U,μ,temp1,temp2,temp3)
+                
+                #Gaugefields.substitute!(temp1,U[1])
+                #Gaugefields.gauge_shift!(temp2,ν,U[μ])
+                #mul!(temp3,temp1,temp2)
+            end
+
+            for nn=1:10
+                @time begin
+                    #ν = 2
+                    Gaugefields.make_staple!(staple,U,μ,temp1,temp2,temp3)
+                    #Gaugefields.substitute!(temp1,U[1])
+                    #Gaugefields.gauge_shift!(temp2,ν,U[μ])
+                    #mul!(temp3,temp1,temp2)
+                end
+            end
+            println("shift end")
+
+            error("test end")
+        end
+        
+
+
+
+        
         Uold = similar(U)
         substitute!(Uold,U)
 
