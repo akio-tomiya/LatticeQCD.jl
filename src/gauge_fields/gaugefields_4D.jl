@@ -9,8 +9,6 @@ module Gaugefields_4D_module
     end
 
 
-
-
     struct Gaugefields_4D_wing{NC} <: Gaugefields_4D{NC}
         U::Array{ComplexF64,6}
         NX::Int64
@@ -289,7 +287,7 @@ module Gaugefields_4D_module
     
     
     function LinearAlgebra.mul!(c::Gaugefields_4D_wing{NC},a::T1,b::T2) where {NC,T1 <: Abstractfields,T2 <: Abstractfields}
-        #@assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
         NT = c.NT
         NZ = c.NZ
         NY = c.NY
@@ -314,7 +312,7 @@ module Gaugefields_4D_module
     end
 
     function LinearAlgebra.mul!(c::Gaugefields_4D_wing{NC},a::T1,b::T2,α::Ta,β::Tb) where {NC,T1 <: Abstractfields,T2 <: Abstractfields,Ta <: Number, Tb <: Number}
-        # @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
         NT = c.NT
         NZ = c.NZ
         NY = c.NY
@@ -413,7 +411,8 @@ module Gaugefields_4D_module
         NZ = c.NZ
         NY = c.NY
         NX = c.NX
-        @inbounds for it=1:NT
+        #println("threads = ", Threads.nthreads())
+        @inbounds  for it=1:NT#,iz=1:NZ,iy=1:NY
             for iz=1:NZ
                 for iy=1:NY
                     @simd for ix=1:NX
@@ -485,6 +484,5 @@ module Gaugefields_4D_module
         end
     end
     
-
 
 end

@@ -14,6 +14,8 @@ module Gaugefields
                                         calculate_Plaquet
     import ..Gaugefields_4D_module:Gaugefields_4D_wing,
                                     identityGaugefields_4D_wing
+    import ..Gaugefields_4D_mpi_module:Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
+                            calc_rank_and_indices,barrier,comm,setvalue!
     
     function IdentityGaugefields(NC,NX,NY,NZ,NT,NDW)
         U = identityGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)

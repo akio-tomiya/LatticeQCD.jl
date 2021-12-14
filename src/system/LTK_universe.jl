@@ -456,6 +456,20 @@ module LTK_universe
         set_wing!(U)
 
         if true #debug
+            
+            PEs = (1,1,1,2)
+            tempmpi = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs,mpiinit = false)
+            Umpi = Array{Gaugefields.Gaugefields_4D_wing_mpi{NC},1}(undef,4)
+            for μ=1:4
+                Umpi[μ] = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs,mpiinit = true)
+            end
+
+            i = 1
+            ildg = ILDG(initial)
+            load_gaugefield!(Umpi,i,ildg,L,NC)
+            error("mpi is done")
+            
+
             factor = 2/(U[1].NV*4*3*U[1].NC)
             Ut = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,4)
 
