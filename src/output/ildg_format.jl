@@ -2,10 +2,13 @@
 module ILDG_format
     using CLIME_jll
     using EzXML
+    using MPI
 
 
     import ..IOmodule:IOFormat
     import ..Gaugefields:GaugeFields,SU3GaugeFields,SU2GaugeFields,set_wing!,AbstractGaugefields,set_wing_U!
+    import ..Gaugefields
+    
 
     struct LIME_header
         doc::EzXML.Document
@@ -95,16 +98,40 @@ module ILDG_format
     update!(U) = set_wing!(U)
     update!(U::Array{T,1}) where T <: AbstractGaugefields = set_wing_U!(U)
 
+    mutable struct Binarydata_ILDG
+        fp::IOStream
+        count::Int64
+        floattype::DataType
+        function Binarydata_ILDG(filename,precision)
+            if precision == 32
+                floattype = Float32
+            else
+                floattype = Float64
+            end
+            fp = open(filename,"r")
+            count = 0
+
+            bi = new(fp,count,floattype)
+
+            finalizer(bi) do bi
+                close(bi.fp)
+            end
+
+            return bi
+        end
+    end
+
+    function read!(x::Binarydata_ILDG)
+        x.count += 1
+        rvalue = ntoh(read(x.fp, x.floattype))
+        ivalue = ntoh(read(x.fp, x.floattype))
+        return rvalue + im*ivalue
+    end
 
     function load_binarydata!(U,NX,NY,NZ,NT,NC,filename,precision)
-        if precision == 32
-            floattype = Float32
-        else
-            floattype = Float64
-        end
-        fp = open(filename,"r")
+        bi = Binarydata_ILDG(filename,precision)
+
         totalnum = NX*NY*NZ*NT*NC*NC*2*4
-        #println(countlines(filename))
         
         i = 0
         for it=1:NT
@@ -114,17 +141,7 @@ module ILDG_format
                         for μ=1:4
                             for ic2 = 1:NC
                                 for ic1 = 1:NC
-                                    i+= 1
-                                    #rvalue = read(fp, floattype)
-                                    rvalue = ntoh(read(fp, floattype))
-                                    #rvalue = ntoh(read(fp, ComplexF64))
-                                    i+= 1
-                                    ivalue = ntoh(read(fp, floattype))
-                                    #ivalue = read(fp, floattype)
-                                    U[μ][ic2,ic1,ix,iy,iz,it] = rvalue + im*ivalue
-                                    #U[μ][ic1,ic2,ix,iy,iz,it] = rvalue# + im*ivalue
-                                    #println(i,"/",totalnum,"= ",i/totalnum)
-                                    #println(rvalue,"\t",ivalue)
+                                    U[μ][ic2,ic1,ix,iy,iz,it] = read!(bi)
                                 end
                             end
                         end
@@ -135,7 +152,94 @@ module ILDG_format
 
         update!(U)
 
-        close(fp)
+        #close(fp)
+    end
+
+    function load_binarydata!(U::Array{T,1},NX,NY,NZ,NT,NC,filename,precision) where T <: Gaugefields.Gaugefields_4D_wing_mpi
+        if U[1].myrank == 0
+            bi = Binarydata_ILDG(filename,precision)
+        end
+        
+        data = zeros(ComplexF64,NC,NC,4,prod(U[1].PN),U[1].nprocs)
+        counts = zeros(Int64,U[1].nprocs)
+        totalnum = NX*NY*NZ*NT*NC*NC*2*4
+        PN = U[1].PN
+        if U[1].myrank == 0
+            i = 0
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            rank,ix_local,iy_local,iz_local,it_local = Gaugefields.calc_rank_and_indices(U[1],ix,iy,iz,it)
+                            counts[rank+1] += 1
+                            #println("rank = $rank")
+                            #println("$ix $(ix_local)")
+                            #println("$iy $(iy_local)")
+                            ##println("$iz $(iz_local)")
+                            #println("$it $(it_local)")
+                            for μ=1:4
+                                for ic2 = 1:NC
+                                    for ic1 = 1:NC
+                                        
+                                            v = read!(bi)
+                                            data[ic2,ic1,μ,counts[rank+1],rank+1] = v
+                                        #end
+                                        #U[μ][ic2,ic1,ix,iy,iz,it] = read!(bi)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        Gaugefields.barrier(U[1])
+
+        N = length(data[:,:,:,:,1])
+        send_mesg1 =  Array{ComplexF64}(undef, N)#data[:,:,:,:,1] #Array{ComplexF64}(undef, N)
+        recv_mesg1 = Array{ComplexF64}(undef, N)
+        #comm = MPI.MPI_COMM_WORLD
+        #println(typeof(Gaugefields.comm))
+
+
+        for ip=0:U[1].nprocs-1
+            if U[1].myrank == 0
+                send_mesg1[:] = reshape(data[:,:,:,:,ip+1],:) #Array{ComplexF64}(undef, N)
+                sreq1 = MPI.Isend(send_mesg1, ip, ip+32, Gaugefields.comm) 
+            end
+            if U[1].myrank == ip
+                rreq1 = MPI.Irecv!(recv_mesg1, 0, ip+32, Gaugefields.comm)
+                MPI.Wait!(rreq1)
+
+                count = 0
+                for it=1:PN[4]
+                    for iz=1:PN[3]
+                        for iy=1:PN[2]
+                            for ix=1:PN[1]
+                                for μ=1:4
+                                    for ic1 = 1:NC
+                                        for ic2 = 1:NC
+                                            count += 1
+                                            v = recv_mesg1[count] 
+                                            Gaugefields.setvalue!(U[μ],v,ic2,ic1,ix,iy,iz,it) 
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+        end
+
+        Gaugefields.barrier(U[1])
+
+        update!(U)
+        error("mpi")
+
+        #close(fp)
     end
 
     function load_gaugefield!(U,i,ildg::ILDG,L,NC;NDW = 1)

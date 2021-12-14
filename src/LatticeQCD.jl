@@ -24,6 +24,7 @@ module LatticeQCD
     
     include("./gauge_fields/AbstractGaugefields.jl")
     include("./gauge_fields/gaugefields_4D.jl")
+    include("./gauge_fields/gaugefields_4D_mpi.jl")
 
     include("./gaugefields/gaugefields.jl")
     
