@@ -1382,8 +1382,8 @@ c----------------------------------------------------------------------c
         i  =0
         for it=1:NT
             for iz=1:NZ
-                for iy=1:NZ
-                    for ix=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
                         i += 1
                         for k1=1:NC
                             for k2=1:NC
