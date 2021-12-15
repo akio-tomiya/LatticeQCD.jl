@@ -11,6 +11,7 @@ module Mainrun
     import ..Print_config:write_config
     import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    import ..Bridge_format:load_BridgeText!
     import ..Heatbath:heatbath!,overrelaxation!
     import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
     import ..IOmodule:saveU,loadU,loadU!
@@ -112,6 +113,11 @@ module Mainrun
         elseif parameters.loadU_format == "ILDG"
             datatype = "ILDG"
             filename_load =  filter(f -> contains(f,"ildg"),readdir("./$(parameters.loadU_dir)"))
+        elseif parameters.loadU_format == "BridgeText"
+            datatype = "BridgeText"
+            filename_load =  filter(f -> contains(f,"txt"),readdir("./$(parameters.loadU_dir)"))
+        else
+            error("loadU_format should be JLD or ILDG")
         end
 
         if parameters.loadU_fromfile
@@ -136,6 +142,8 @@ module Mainrun
                     #doescontains = contains(datau,".jld")
                 elseif datatype == "ILDG"
                     doescontains = contains(datau,".ildg")
+                elseif datatype == "BridgeText"
+                    doescontains = contains(datau,".txt")
                 end
 
                 
@@ -175,7 +183,8 @@ module Mainrun
             ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
             i = 1
             load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
-
+        elseif parameters.loadU_format == "BridgeText"
+            load_BridgeText!(parameters.loadU_dir*"/"*filename_i,univ.U,parameters.L,parameters.NC)
         end
         return Nsteps,numfiles,filename_load,ildg
 
@@ -366,6 +375,8 @@ module Mainrun
                     ildg = ILDG(parameters.loadU_dir*"/"*filename_i)
                     i = 1
                     load_gaugefield!(univ.U,i,ildg,parameters.L,parameters.NC)
+                elseif parameters.loadU_format == "BridgeText"
+                    load_BridgeText!(parameters.loadU_dir*"/"*filename_i,univ.U,parameters.L,parameters.NC)
                 end
 
                 if parameters.integratedFermionAction
@@ -476,6 +487,8 @@ module Mainrun
                 elseif parameters.saveU_format == "ILDG"
                     filename = parameters.saveU_dir*"/conf_$(itrjstring).ildg"
                     save_binarydata(univ.U,filename)
+                else
+                    error("$(parameters.saveU_format) is not supported")
                 end
             end
 

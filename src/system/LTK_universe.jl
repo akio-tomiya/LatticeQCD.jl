@@ -44,6 +44,7 @@ module LTK_universe
 
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    import ..Bridge_format:load_BridgeText!
     import ..Othermethods:tdlogdet
     import ..CGmethods:bicg,cg,shiftedcg
     import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
@@ -447,6 +448,11 @@ module LTK_universe
                     U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
                 end
                 load_gaugefield!(U,i,ildg,L,NC)
+            elseif loadU_format == "BridgeText"
+                for μ=1:4
+                    U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+                end
+                load_BridgeText!(initial,U,L,NC)
             else
                 error("loadU_format should be JLD or ILDG")
             end

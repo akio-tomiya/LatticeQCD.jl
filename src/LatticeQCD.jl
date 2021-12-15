@@ -40,6 +40,7 @@ module LatticeQCD
 
     include("./output/io.jl")
     include("./output/ildg_format.jl")
+    include("./output/bridge_format.jl")
 
     
 
