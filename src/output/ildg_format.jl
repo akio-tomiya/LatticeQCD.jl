@@ -164,37 +164,71 @@ module ILDG_format
         counts = zeros(Int64,U[1].nprocs)
         totalnum = NX*NY*NZ*NT*NC*NC*2*4
         PN = U[1].PN
-        if U[1].myrank == 0
+        Gaugefields.barrier(U[1])
+
+        N = NC*NC*4
+        send_mesg1 =  Array{ComplexF64}(undef, 1)
+        recv_mesg1 = Array{ComplexF64}(undef, 1)
+
+        send_mesg =  Array{ComplexF64}(undef, N)
+        recv_mesg = Array{ComplexF64}(undef, N)
+
+        #if U[1].myrank == 0
             i = 0
+            counttotal = 0
             for it=1:NT
                 for iz=1:NZ
                     for iy=1:NY
                         for ix=1:NX
                             rank,ix_local,iy_local,iz_local,it_local = Gaugefields.calc_rank_and_indices(U[1],ix,iy,iz,it)
-                            counts[rank+1] += 1
-                            #println("rank = $rank")
-                            #println("$ix $(ix_local)")
-                            #println("$iy $(iy_local)")
-                            ##println("$iz $(iz_local)")
-                            #println("$it $(it_local)")
-                            for μ=1:4
-                                for ic2 = 1:NC
-                                    for ic1 = 1:NC
-                                        
-                                            v = read!(bi)
-                                            data[ic2,ic1,μ,counts[rank+1],rank+1] = v
-                                        #end
-                                        #U[μ][ic2,ic1,ix,iy,iz,it] = read!(bi)
+                            #counts[rank+1] += 1
+                            counttotal += 1
+                            
+                            #=
+                            if U[1].myrank == 0
+                                println("rank = $rank")
+                                println("$ix $(ix_local)")
+                                println("$iy $(iy_local)")
+                                println("$iz $(iz_local)")
+                                println("$it $(it_local)")
+                            end
+                            =#
+                            Gaugefields.barrier(U[1])
+                            if U[1].myrank == 0
+                                count = 0
+                                for μ=1:4
+                                    for ic2 = 1:NC
+                                        for ic1 = 1:NC
+                                            count += 1
+                                            send_mesg[count] = read!(bi)
+                                        end
+                                    end
+                                end
+                                sreq = MPI.Isend(send_mesg, rank, counttotal, Gaugefields.comm) 
+                            end
+                            if U[1].myrank == rank
+                                rreq = MPI.Irecv!(recv_mesg, 0, counttotal, Gaugefields.comm)
+                                MPI.Wait!(rreq)
+                                count = 0
+                                for μ=1:4
+                                    for ic2 = 1:NC
+                                        for ic1 = 1:NC
+                                            count += 1
+                                            v = recv_mesg[count] 
+                                            Gaugefields.setvalue!(U[μ],v,ic2,ic1,ix_local,iy_local,iz_local,it_local) 
+                                        end
                                     end
                                 end
                             end
+                            Gaugefields.barrier(U[1])
                         end
                     end
                 end
             end
-        end
+        #end
 
         Gaugefields.barrier(U[1])
+        #=
 
         N = length(data[:,:,:,:,1])
         send_mesg1 =  Array{ComplexF64}(undef, N)#data[:,:,:,:,1] #Array{ComplexF64}(undef, N)
@@ -235,9 +269,10 @@ module ILDG_format
         end
 
         Gaugefields.barrier(U[1])
+        =#
 
         update!(U)
-        error("mpi")
+        
 
         #close(fp)
     end

@@ -797,6 +797,78 @@ module Wilsonloops
 
 
 
+    function calc_loopset_μν_name(name)
+        loops_μν= Array{Wilson_loop_set,2}(undef,4,4)
+        if name == "plaq"
+            numofloops = 1
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+                    loop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+                    push!(loops,loop)
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        elseif name == "clover"
+            numofloops = 4
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+
+                    loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
+                    loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
+                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
+                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        elseif name == "rect"
+            numofloops = 8
+            for μ=1:4
+                for ν=1:4
+                    if ν == μ
+                        continue
+                    end
+                    loops = Wilson_loop_set()
+
+                    loop_righttop = Wilson_loop([(μ,2),(ν,1),(μ,-2),(ν,-1)])
+                    loop_lefttop = Wilson_loop([(ν,1),(μ,-2),(ν,-1),(μ,2)])
+                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,2),(ν,1),(μ,-2)])
+                    loop_leftbottom= Wilson_loop([(μ,-2),(ν,-1),(μ,2),(ν,1)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loop_righttop = Wilson_loop([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+                    loop_lefttop = Wilson_loop([(ν,2),(μ,-1),(ν,-2),(μ,1)])
+                    loop_rightbottom = Wilson_loop([(ν,-2),(μ,1),(ν,2),(μ,-1)])
+                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-2),(μ,1),(ν,2)])
+                    push!(loops,loop_righttop)
+                    push!(loops,loop_lefttop)
+                    push!(loops,loop_rightbottom)
+                    push!(loops,loop_leftbottom)
+
+                    loops_μν[μ,ν] = loops
+                end
+            end
+        else
+            error("$name is not supported")
+        end
+        return loops_μν,numofloops
+    end
+
 
 
 end

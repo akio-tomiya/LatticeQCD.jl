@@ -6,20 +6,24 @@ module Gaugefields
                         SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
-                            get_leftstartposition,get_rightstartposition,Wilson_loop
+                            get_leftstartposition,get_rightstartposition,Wilson_loop,calc_loopset_μν_name
     import ..SUN_generator:Generator
 
     import ..AbstractGaugefields_module:AbstractGaugefields,identitymatrix,
                                         shift_U,construct_staple!,set_wing_U!,
-                                        calculate_Plaquet
-    import ..Gaugefields_4D_module:Gaugefields_4D_wing,
-                                    identityGaugefields_4D_wing
-    import ..Gaugefields_4D_mpi_module:Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
-                            calc_rank_and_indices,barrier,comm,setvalue!
+                                        calculate_Plaquette,substitute_U!,calc_smearedU,calculate_Polyakov_loop,construct_gauges,
+                                        Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
+                                        calc_rank_and_indices,barrier,comm,setvalue!,
+                                        Gaugefields_4D_wing,
+                                        identityGaugefields_4D_wing
+    import ..Loops_module:calc_large_wiloson_loop!
+
+    #import ..Gaugefields_4D_wing_module:Gaugefields_4D_wing,
+    #                                identityGaugefields_4D_wing
+    #import ..Gaugefields_4D_mpi_module:Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
+    #                        calc_rank_and_indices,barrier,comm,setvalue!
     
-    function IdentityGaugefields(NC,NX,NY,NZ,NT,NDW)
-        U = identityGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
-    end
+
 
     abstract type SUn end
 
@@ -128,6 +132,44 @@ module Gaugefields
     function Base.getindex(x::GaugeFields_1d,i1,i2,i3)
         return x.g[i1,i2,i3]
     end
+
+
+   # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+   function calculate_energy_density(U::Array{T,1}) where T <: AbstractGaugefields
+        # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+        WL = 0.0+0.0im
+        NV = U[1].NV
+        NC = U[1].NC
+        Wmat = Array{T,2}(undef,4,4)
+        #
+        make_energy_density!(Wmat,U) # make wilon loop operator and evaluate as a field, not traced.
+        WL =  make_energy_density_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+        NDir = 4.0*3.0/2 # choice of 2 axis from 4.
+        return real(WL)/NV/NDir/NC/8
+    end
+
+    function make_energy_density!(Wmat,U::Array{T,1}) where T <: AbstractGaugefields
+        W_operator,numofloops = calc_loopset_μν_name("clover")#make_Wilson_loop(Lt,Ls)
+        calc_large_wiloson_loop!(Wmat,W_operator,U)
+        return 
+    end
+
+    function  make_energy_density_core(Wmat::Array{<: AbstractGaugefields{NC,Dim},2}, U::Array{T,1} ,NV) where {T <: AbstractGaugefields,NC,Dim}
+        @assert Dim == 4
+
+        W = 0.0 + 0.0im
+        for μ=1:Dim # all directions
+            for ν=1:Dim
+                if μ == ν
+                    continue
+                end
+                W += tr(Wmat[μ,ν],Wmat[μ,ν])/4
+            end
+        end
+        return W
+    end
+        
+
 
     struct Loops{T_1d}
         loopset::Wilson_loop_set
@@ -516,6 +558,7 @@ module Gaugefields
     end
 
 
+    
     function set_wing!(u::Array{T,1}) where T <: GaugeFields
         for μ=1:4
             set_wing!(u[μ])
@@ -665,6 +708,7 @@ module Gaugefields
 
 
     end
+    
 
     #function set_wing!(u::GaugeFields{T}) where T <: SUn
     function set_wing!(u::GaugeFields{SU{NC}}) where NC
@@ -774,6 +818,9 @@ module Gaugefields
     
         return
     end
+
+    
+    set_wing!(U) = set_wing_U!(U)
     
     function Base.display(x::GaugeFields{SU{NC}}) where NC
         NX=x.NX
@@ -806,6 +853,9 @@ module Gaugefields
         end
     end
 
+    substitute!(a,b) = substitute_U!(a,b)
+
+    
     function substitute!(a::Array{T,1},b::Array{T,1}) where T <: GaugeFields
         for μ=1:4
             substitute!(a[μ],b[μ])
@@ -816,6 +866,7 @@ module Gaugefields
         a.g[:,:,:,:,:,:] = copy(b.g)
         return 
     end
+    
 
 
     function substitute!(a::GaugeFields{SU{NC}},b::GaugeFields_1d{SU{NC}}) where NC
@@ -886,6 +937,8 @@ module Gaugefields
 
     end
 
+    
+
     function clear!(a::GaugeFields)
         @. a.g = 0
         return 
@@ -897,7 +950,25 @@ module Gaugefields
     end
 
 
-    function IdentityGauges(NC,NX,NY,NZ,NT,NDW)
+
+    function IdentityGauges(NC,NX,NY,NZ,NT,NDW;mpi = false,dim=4,PEs=nothing,mpiinit = nothing)
+        U = construct_gauges(NC,NDW,NX,NY,NZ,NT,mpi = mpi,PEs=PEs,mpiinit = mpiinit)
+        return U
+        if mpi
+            if PEs == nothing || mpiinit == nothing
+                error("not implemented yet!")
+            else
+                U = identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,NDW,PEs,mpiinit = mpiinit)
+            end
+        else
+            if dim == 4
+                U = identityGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
+            else
+                error("not implemented yet!")
+            end
+        end
+        return U
+
         U = GaugeFields(NC,NDW,NX,NY,NZ,NT)
         for it=1:NT
             for iz=1:NZ
@@ -912,6 +983,8 @@ module Gaugefields
         end
         return U
     end
+
+    
 
     
     function RandomGauges(NC,NX,NY,NZ,NT,NDW)
@@ -2524,7 +2597,7 @@ c-----------------------------------------------------c
         end
 
         avePol = 0.0
-        for iz=1:NX
+        for iz=1:NZ
             for iy=1:NY
                 for ix=1:NX
                     @simd for k1=1:NC
@@ -4026,6 +4099,8 @@ c-----------------------------------------------------c
 
         return V,dSdρs
     end
+
+    calc_smearingU(Uin,smearing;calcdSdU = false,temps = nothing) = calc_smearedU(Uin,smearing;calcdSdU = calcdSdU,temps = temps)  
 
     function calc_smearingU(Uin::Array{GaugeFields{SU{NC}},1},smearing;calcdSdU = false,temps = nothing) where NC
         if smearing != nothing && typeof(smearing) != Nosmearing

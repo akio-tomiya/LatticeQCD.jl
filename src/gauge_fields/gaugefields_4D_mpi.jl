@@ -1,11 +1,14 @@
+#=
 module Gaugefields_4D_mpi_module
     using LinearAlgebra
     import ..AbstractGaugefields_module:AbstractGaugefields,Shifted_Gaugefields,shift_U,
                         Adjoint_Gaugefields,set_wing_U!,Abstractfields,construct_staple!,clear_U!,
-                        calculate_Plaquet
+                        calculate_Plaquette
     import Base
     import ..Gaugefields_4D_module:Gaugefields_4D
+    
     using MPI
+    =#
 
     const comm = MPI.COMM_WORLD
 
@@ -108,13 +111,65 @@ module Gaugefields_4D_mpi_module
         #return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
     end
 
-    function getvalue(x::Gaugefields_4D_wing_mpi,i1,i2,i3,i4,i5,i6)
+    function Base.setindex!(x::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi #U'
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+        #x.U[i1,i2,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6 + x.NDW] = v
+    end
+
+    function Base.getindex(x::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi #U'
+        error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+        #return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
+    end
+
+    function Base.setindex!(U::Shifted_Gaugefields{T,4},v,i1,i2,i3,i4,i5,i6)  where T <: Gaugefields_4D_wing_mpi 
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
+    function Base.getindex(U::Shifted_Gaugefields{T,4},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+    end
+
+    function Base.getindex(U::Adjoint_Gaugefields{Shifted_Gaugefields{T,4}},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        error("Each element can not be accessed by global index in $(typeof(x)) Use getvalue function")
+    end
+
+    function Base.setindex!(U::Adjoint_Gaugefields{Shifted_Gaugefields{T,4}},v,i1,i2,i3,i4,i5,i6)  where T <: Gaugefields_4D_wing_mpi 
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
+
+    @inline function getvalue(x::Gaugefields_4D_wing_mpi,i1,i2,i3,i4,i5,i6)
         return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
     end
 
-    function setvalue!(x::Gaugefields_4D_wing_mpi,v,i1,i2,i3,i4,i5,i6)
+    @inline  function setvalue!(x::Gaugefields_4D_wing_mpi,v,i1,i2,i3,i4,i5,i6)
         x.U[i1,i2,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6 + x.NDW] = v
     end
+
+    @inline  function getvalue(x::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        return conj(getvalue(x.parent,i2,i1,i3,i4,i5,i6))
+    end
+
+    @inline  function setvalue!(x::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        error("type $(typeof(x)) has no setindex method. This type is read only.")
+    end
+
+    @inline  function getvalue(U::Shifted_Gaugefields{T,4},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        return U.parent.U[i1,i2,i3 .+ U.parent.NDW .+ U.shift[1],i4 .+ U.parent.NDW .+ U.shift[2],i5 .+ U.parent.NDW .+ U.shift[3],i6 .+ U.parent.NDW .+ U.shift[4]]
+    end
+
+    @inline  function setvalue!(U::Shifted_Gaugefields{T,4},v,i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
+    @inline  function getvalue(U::Adjoint_Gaugefields{Shifted_Gaugefields{T,4}},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        return conj(getvalue(U.parent,i2,i1,i3,i4,i5,i6))
+    end
+
+    @inline function setvalue!(U::Adjoint_Gaugefields{Shifted_Gaugefields{T,4}},v,i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing_mpi 
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
 
     function identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,NDW,PEs;mpiinit = true)
         U = Gaugefields_4D_wing_mpi(NC,NDW,NX,NY,NZ,NT,PEs,mpiinit = mpiinit)
@@ -131,9 +186,305 @@ module Gaugefields_4D_mpi_module
                 end
             end
         end
+        #println("setwing")
         set_wing_U!(U)
 
         return U
+    end
+
+    function LinearAlgebra.tr(a::Gaugefields_4D_wing_mpi{NC}) where NC
+        NX=a.NX
+        NY=a.NY
+        NZ=a.NZ
+        NT=a.NT
+        PN =a.PN
+
+        s = 0
+        for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    for ix=1:PN[1]
+                        @simd for k=1:NC
+                            s += getvalue(a,k,k,ix,iy,iz,it)
+                            #println(a[k,k,ix,iy,iz,it])
+                        end
+                    end
+                end
+            end
+        end
+
+        s = MPI.Allreduce(s,MPI.SUM,comm)
+
+        #println(3*NT*NZ*NY*NX*NC)
+        return s
+    end
+    
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{NC},a::T1,b::T2) where {NC,T1 <: Abstractfields,T2 <: Abstractfields}
+        @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    for ix=1:PN[1]
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                v = 0
+                                setvalue!(c,v,k1,k2,ix,iy,iz,it)
+                                #c[k1,k2,ix,iy,iz,it] = 0
+
+                                @simd for k3=1:NC
+                                    vc = getvalue(c,k1,k2,ix,iy,iz,it) + getvalue(a,k1,k3,ix,iy,iz,it)*getvalue(b,k3,k2,ix,iy,iz,it)
+                                    setvalue!(c,vc,k1,k2,ix,iy,iz,it)
+                                    #c[k1,k2,ix,iy,iz,it] += a[k1,k3,ix,iy,iz,it]*b[k3,k2,ix,iy,iz,it]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{3},a::T1,b::T2) where {NC,T1 <: Abstractfields,T2 <: Abstractfields}
+        #@assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    for ix=1:PN[1]
+                        a11 = getvalue(a,1,1,ix,iy,iz,it)
+                        a21 = getvalue(a,2,1,ix,iy,iz,it)
+                        a31 = getvalue(a,3,1,ix,iy,iz,it)
+                        a12 = getvalue(a,1,2,ix,iy,iz,it)
+                        a22 = getvalue(a,2,2,ix,iy,iz,it)
+                        a32 = getvalue(a,3,2,ix,iy,iz,it)
+                        a13 = getvalue(a,1,3,ix,iy,iz,it)
+                        a23 = getvalue(a,2,3,ix,iy,iz,it)
+                        a33 = getvalue(a,3,3,ix,iy,iz,it)
+                        b11 = getvalue(b,1,1,ix,iy,iz,it)
+                        b21 = getvalue(b,2,1,ix,iy,iz,it)
+                        b31 = getvalue(b,3,1,ix,iy,iz,it)
+                        b12 = getvalue(b,1,2,ix,iy,iz,it)
+                        b22 = getvalue(b,2,2,ix,iy,iz,it)
+                        b32 = getvalue(b,3,2,ix,iy,iz,it)
+                        b13 = getvalue(b,1,3,ix,iy,iz,it)
+                        b23 = getvalue(b,2,3,ix,iy,iz,it)
+                        b33 = getvalue(b,3,3,ix,iy,iz,it)
+
+
+                        v = (a11*b11+a12*b21+a13*b31)
+                        setvalue!(c,v,1,1,ix,iy,iz,it) 
+                        v =  (a21*b11+a22*b21+a23*b31)
+                        setvalue!(c,v,2,1,ix,iy,iz,it) 
+                        v = (a31*b11+a32*b21+a33*b31)
+                        setvalue!(c,v,3,1,ix,iy,iz,it) 
+                        v = (a11*b12+a12*b22+a13*b32)
+                        setvalue!(c,v,1,2,ix,iy,iz,it) 
+                        v = (a21*b12+a22*b22+a23*b32)
+                        setvalue!(c,v,2,2,ix,iy,iz,it) 
+                        v = (a31*b12+a32*b22+a33*b32)
+                        setvalue!(c,v,3,2,ix,iy,iz,it) 
+                        v = (a11*b13+a12*b23+a13*b33)
+                        setvalue!(c,v,1,3,ix,iy,iz,it) 
+                        v =  (a21*b13+a22*b23+a23*b33)
+                        setvalue!(c,v,2,3,ix,iy,iz,it) 
+                        v = (a31*b13+a32*b23+a33*b33)
+                        setvalue!(c,v,3,3,ix,iy,iz,it) 
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{2},a::T1,b::T2) where {NC,T1 <: Abstractfields,T2 <: Abstractfields}
+        #@assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    for ix=1:PN[1]
+                        a11 = getvalue(a,1,1,ix,iy,iz,it)
+                        a21 = getvalue(a,2,1,ix,iy,iz,it)
+                        
+                        a12 = getvalue(a,1,2,ix,iy,iz,it)
+                        a22 = getvalue(a,2,2,ix,iy,iz,it)
+
+
+                        b11 = getvalue(b,1,1,ix,iy,iz,it)
+                        b21 = getvalue(b,2,1,ix,iy,iz,it)
+
+                        b12 = getvalue(b,1,2,ix,iy,iz,it)
+                        b22 = getvalue(b,2,2,ix,iy,iz,it)
+
+
+
+                        v = a11*b11+a12*b21
+                        setvalue!(c,v,1,1,ix,iy,iz,it) 
+                        v = a21*b11+a22*b21
+                        setvalue!(c,v,2,1,ix,iy,iz,it) 
+
+                        v = a11*b12+a12*b22
+                        setvalue!(c,v,1,2,ix,iy,iz,it) 
+                        v = a21*b12+a22*b22
+                        setvalue!(c,v,2,2,ix,iy,iz,it) 
+                        v = a31*b12+a32*b22
+
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{NC},a::T1,b::T2,α::Ta,β::Tb) where {NC,T1 <: Abstractfields,T2 <: Abstractfields,Ta <: Number, Tb <: Number}
+        @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    for ix=1:PN[1]
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                v = β*getvalue(c,k1,k2,ix,iy,iz,it)
+                                setvalue!(c,v,k1,k2,ix,iy,iz,it)
+                                #c[k1,k2,ix,iy,iz,it] = β*c[k1,k2,ix,iy,iz,it] 
+                                @simd for k3=1:NC
+                                    vc = getvalue(c,k1,k2,ix,iy,iz,it) + α*getvalue(a,k1,k3,ix,iy,iz,it)*getvalue(b,k3,k2,ix,iy,iz,it)
+                                    setvalue!(c,vc,k1,k2,ix,iy,iz,it)
+                                    #c[k1,k2,ix,iy,iz,it] += α*a[k1,k3,ix,iy,iz,it]*b[k3,k2,ix,iy,iz,it] 
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{2},a::T1,b::T2,α::Ta,β::Tb) where {NC,T1 <: Abstractfields,T2 <: Abstractfields,Ta <: Number, Tb <: Number}
+        #@assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        if β == zero(β)
+            if α == one(α)
+                mul!(c,a,b)
+                return
+            end
+        end
+
+
+        @inbounds for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    @simd for ix=1:PN[1]
+                        a11 = getvalue(a,1,1,ix,iy,iz,it)
+                        a21 = getvalue(a,2,1,ix,iy,iz,it)
+                        a12 = getvalue(a,1,2,ix,iy,iz,it)
+                        a22 = getvalue(a,2,2,ix,iy,iz,it)
+
+                        b11 = getvalue(b,1,1,ix,iy,iz,it)
+                        b21 = getvalue(b,2,1,ix,iy,iz,it)
+                        b12 = getvalue(b,1,2,ix,iy,iz,it)
+                        b22 = getvalue(b,2,2,ix,iy,iz,it)
+
+
+                        v = (a11*b11+a12*b21)*α + β*getvalue(c,1,1,ix,iy,iz,it)
+                        setvalue!(c,v,1,1,ix,iy,iz,it) 
+                        v =  (a21*b11+a22*b21)*α + β*getvalue(c,2,1,ix,iy,iz,it)
+                        setvalue!(c,v,2,1,ix,iy,iz,it) 
+                        v = (a11*b12+a12*b22)*α + β*getvalue(c,1,2,ix,iy,iz,it)
+                        setvalue!(c,v,1,2,ix,iy,iz,it) 
+                        v = (a21*b12+a22*b22)*α + β*getvalue(c,2,2,ix,iy,iz,it)
+                        setvalue!(c,v,2,2,ix,iy,iz,it) 
+
+
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing_mpi{3},a::T1,b::T2,α::Ta,β::Tb) where {NC,T1 <: Abstractfields,T2 <: Abstractfields,Ta <: Number, Tb <: Number}
+        #@assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        PN = c.PN
+        if β == zero(β)
+            if α == one(α)
+                mul!(c,a,b)
+                return
+            end
+        end
+
+
+        @inbounds for it=1:PN[4]
+            for iz=1:PN[3]
+                for iy=1:PN[2]
+                    @simd for ix=1:PN[1]
+                        a11 = getvalue(a,1,1,ix,iy,iz,it)
+                        a21 = getvalue(a,2,1,ix,iy,iz,it)
+                        a31 = getvalue(a,3,1,ix,iy,iz,it)
+                        a12 = getvalue(a,1,2,ix,iy,iz,it)
+                        a22 = getvalue(a,2,2,ix,iy,iz,it)
+                        a32 = getvalue(a,3,2,ix,iy,iz,it)
+                        a13 = getvalue(a,1,3,ix,iy,iz,it)
+                        a23 = getvalue(a,2,3,ix,iy,iz,it)
+                        a33 = getvalue(a,3,3,ix,iy,iz,it)
+                        b11 = getvalue(b,1,1,ix,iy,iz,it)
+                        b21 = getvalue(b,2,1,ix,iy,iz,it)
+                        b31 = getvalue(b,3,1,ix,iy,iz,it)
+                        b12 = getvalue(b,1,2,ix,iy,iz,it)
+                        b22 = getvalue(b,2,2,ix,iy,iz,it)
+                        b32 = getvalue(b,3,2,ix,iy,iz,it)
+                        b13 = getvalue(b,1,3,ix,iy,iz,it)
+                        b23 = getvalue(b,2,3,ix,iy,iz,it)
+                        b33 = getvalue(b,3,3,ix,iy,iz,it)
+
+                        v = (a11*b11+a12*b21+a13*b31)*α + β*getvalue(c,1,1,ix,iy,iz,it)
+                        setvalue!(c,v,1,1,ix,iy,iz,it) 
+                        v =  (a21*b11+a22*b21+a23*b31)*α + β*getvalue(c,2,1,ix,iy,iz,it)
+                        setvalue!(c,v,2,1,ix,iy,iz,it) 
+                        v = (a31*b11+a32*b21+a33*b31)*α + β*getvalue(c,3,1,ix,iy,iz,it)
+                        setvalue!(c,v,3,1,ix,iy,iz,it) 
+                        v = (a11*b12+a12*b22+a13*b32)*α + β*getvalue(c,1,2,ix,iy,iz,it)
+                        setvalue!(c,v,1,2,ix,iy,iz,it) 
+                        v = (a21*b12+a22*b22+a23*b32)*α + β*getvalue(c,2,2,ix,iy,iz,it)
+                        setvalue!(c,v,2,2,ix,iy,iz,it) 
+                        v = (a31*b12+a32*b22+a33*b32)*α + β*getvalue(c,3,2,ix,iy,iz,it)
+                        setvalue!(c,v,3,2,ix,iy,iz,it) 
+                        v = (a11*b13+a12*b23+a13*b33)*α + β*getvalue(c,1,3,ix,iy,iz,it)
+                        setvalue!(c,v,1,3,ix,iy,iz,it) 
+                        v =  (a21*b13+a22*b23+a23*b33)*α + β*getvalue(c,2,3,ix,iy,iz,it)
+                        setvalue!(c,v,2,3,ix,iy,iz,it) 
+                        v = (a31*b13+a32*b23+a33*b33)*α + β*getvalue(c,3,3,ix,iy,iz,it)
+                        setvalue!(c,v,3,3,ix,iy,iz,it) 
+
+
+                    end
+                end
+            end
+        end
     end
 
     function set_wing_U!(u::Array{Gaugefields_4D_wing_mpi{NC},1}) where NC
@@ -183,7 +534,16 @@ module Gaugefields_4D_mpi_module
         px += ifelse(px >= PEs[1],-PEs[1],0)        
         myrank_xyzt_send = (px,myrank_xyzt[2],myrank_xyzt[3],myrank_xyzt[4])
         myrank_send1 = get_myrank(myrank_xyzt_send,PEs)
-        #println("rank = $rank, myrank_send1 = $(myrank_send1)")
+        #=
+        for ip=0:u.nprocs-1
+            if ip == u.myrank
+                println("rank = $myrank, myrank_send1 = $(myrank_send1)")
+            end
+            MPI.Barrier(comm)
+
+        end
+        =#
+        
         sreq1 = MPI.Isend(send_mesg1, myrank_send1, myrank_send1+32, comm) #from left to right 0 -> 1
 
         N = PN[2]*PN[3]*PN[4]*NDW*NC*NC
@@ -210,7 +570,18 @@ module Gaugefields_4D_mpi_module
         #println("px = $px")        
         myrank_xyzt_send = (px,myrank_xyzt[2],myrank_xyzt[3],myrank_xyzt[4])
         myrank_send2 = get_myrank(myrank_xyzt_send,PEs)
-        #println("rank = $rank, myrank_send2 = $(myrank_send2)")
+        #=
+        for ip=0:u.nprocs-1
+            if ip == u.myrank
+                println("rank = $myrank, myrank_send2 = $(myrank_send2)")
+            end
+            MPI.Barrier(comm)
+
+        end
+        =#
+
+
+        
         sreq2 = MPI.Isend(send_mesg2, myrank_send2, myrank_send2+64, comm) #from right to left 0 -> -1
 
         #=
@@ -530,4 +901,4 @@ module Gaugefields_4D_mpi_module
 
     
 
-end
+#end
