@@ -23,6 +23,11 @@ module Measurements
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set
     import ..System_parameters:set_params
 
+    import ..AbstractMeasurement_module:AbstractMeasurement,measure
+    import ..Measure_plaquet_module:Measure_plaquet
+    import ..Measure_polyakov_loop_module:Measure_polyakov
+    import ..Measure_topological_charge_module:Measure_topological_charge
+
     #=
     abstract type MeasureMethod end
     
@@ -31,6 +36,59 @@ module Measurements
         Dirac_operator::String = "Wilson"
     end
     =#
+
+    
+    defaultmeasures = Array{Dict,1}(undef,2)
+    for i=1:length(defaultmeasures)
+        defaultmeasures[i] = Dict()
+    end
+    defaultmeasures[1]["methodname"] = "Plaquette"
+    defaultmeasures[1]["measure_every"] = 1
+    defaultmeasures[1]["fermiontype"] = nothing
+    defaultmeasures[2]["methodname"] = "Polyakov_loop"
+    defaultmeasures[2]["measure_every"] = 1
+    defaultmeasures[2]["fermiontype"] = nothing
+
+    struct Measurement_set
+        nummeasurements::Int64
+        measurements::Array{AbstractMeasurement,1}
+        methodnames::Array{String,1}
+
+        function Measurement_set(univ::Universe,measurement_dir;measurement_methods=defaultmeasures)
+            nummeasurements = length(measurement_methods)
+            measurements = Array{AbstractMeasurement,1}(undef,nummeasurements)
+            methodnames = Array{String,1}(undef,nummeasurements)
+            for i=1:nummeasurements
+                method = measurement_methods[i]
+                methodnames[i] = method["methodname"]
+                if method["methodname"] == "Plaquette"
+                    measurements[i] = Measure_plaquet(measurement_dir*"/Plaquette.txt",univ.U)
+                elseif method["methodname"] == "Polyakov_loop"
+                    measurements[i] = Measure_polyakov(measurement_dir*"/Polyakov_loop.txt",univ.U)
+                elseif method["methodname"] == "Topological_charge"
+                    measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method)
+                else
+                    error("$(method["methodname"]) is not supported")
+                end
+            end
+            return new(nummeasurements,measurements,methodnames)
+        end
+    end
+
+    function measurements(itrj,U,univ,measure_set;verbose = Verbose_2())
+        plaq = 0
+        poly = 0
+        for i=1:measure_set.nummeasurements
+            value = measure(measure_set.measurements[i],itrj,U,verbose = verbose)
+            if measure_set.methodnames[i] == "Plaquette"
+                plaq = value
+            elseif measure_set.methodnames[i] == "Polyakov_loop"
+                poly = value
+            end
+        end
+        return plaq,poly
+    end 
+
 
 
 
@@ -122,16 +180,6 @@ module Measurements
         end
     end
 
-    defaultmeasures = Array{Dict,1}(undef,2)
-    for i=1:length(defaultmeasures)
-        defaultmeasures[i] = Dict()
-    end
-    defaultmeasures[1]["methodname"] = "Plaquette"
-    defaultmeasures[1]["measure_every"] = 1
-    defaultmeasures[1]["fermiontype"] = nothing
-    defaultmeasures[2]["methodname"] = "Polyakov_loop"
-    defaultmeasures[2]["measure_every"] = 1
-    defaultmeasures[2]["fermiontype"] = nothing
     #=
     defaultmeasures[3]["methodname"] = "Chiral_cond" 
     defaultmeasures[3]["measure_every"] = 10
@@ -146,6 +194,10 @@ module Measurements
     defaultmeasures[5]["fermiontype"] = nothing
     defaultmeasures[5]["numflow"]  = 10
     =#
+
+
+
+    #=
 
     struct Measurement_set
         nummeasurement::Int64
@@ -358,9 +410,10 @@ module Measurements
         end
     end
 
+    =#
 
 
-    function measurements(itrj,U,univ,measset::Measurement_set;verbose = Verbose_2())
+    function measurements(itrj,U::Array{UT,1},univ,measset::Measurement_set;verbose = Verbose_2()) where UT <: GaugeFields
         plaq = 0.0
         poly = 0.0 + 0.0im
         for i = 1:measset.nummeasurement

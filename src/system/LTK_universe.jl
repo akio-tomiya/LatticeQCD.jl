@@ -2,6 +2,7 @@ module LTK_universe
     using LinearAlgebra
     using SparseArrays
     using Random
+    using MPI
     #export Universe
     
 
@@ -87,6 +88,7 @@ module LTK_universe
         ranf::Random_LCGs
         verboselevel::Int8
         kind_of_verboselevel::Verbose_level
+        dim::Int8
         #rng::MersenneTwister
 
     end
@@ -355,6 +357,7 @@ module LTK_universe
         #(L::Tuple,gparam::GaugeActionParam;
         #   Nwing = 1,fparam=nothing,
         #  BoundaryCondition=[1,1,1,-1],initial="cold",NC =3)
+        dim = 4
 
         if verboselevel == 1
             kind_of_verboselevel = Verbose_1(load_fp)
@@ -400,6 +403,13 @@ module LTK_universe
             num_tempfield_g += 1
         end
 
+        U = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,dim)
+        _temporal_gauge = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,num_tempfield_g)
+
+        #U = Array{SUNGaugeFields{NC},1}(undef,4)
+        #    _temporal_gauge = Array{SUNGaugeFields_1d{NC},1}(undef,num_tempfield_g)
+        #=
+
         if NC == 3
             U = Array{SU3GaugeFields,1}(undef,4)
             _temporal_gauge = Array{SU3GaugeFields_1d,1}(undef,num_tempfield_g)
@@ -413,6 +423,7 @@ module LTK_universe
             U = Array{U1GaugeFields,1}(undef,4)
             _temporal_gauge = Array{U1GaugeFields_1d,1}(undef,num_tempfield_g)
         end
+        =#
         
 #        Uold = Array{GaugeFields,1}(undef,4)
 
@@ -455,19 +466,75 @@ module LTK_universe
         end
         set_wing!(U)
 
-        if true #debug
+        temp1 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+        temp2 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+        factor = 2/(U[1].NV*4*3*U[1].NC)
+        @time plaq_t = Gaugefields.calculate_Plaquette(U,temp1,temp2)*factor
+        println("plaq_t = $plaq_t")
+
+        if false #debug
             
-            PEs = (1,1,1,2)
+            PEs = (1,1,1,4)
             tempmpi = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs,mpiinit = false)
             Umpi = Array{Gaugefields.Gaugefields_4D_wing_mpi{NC},1}(undef,4)
+            Ut = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,4)
+            
             for μ=1:4
                 Umpi[μ] = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs,mpiinit = true)
+                Ut[μ] = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            end
+            
+
+            if initial == "cold"
+            else
+                i = 1
+                ildg = ILDG(initial)
+                load_gaugefield!(Umpi,i,ildg,L,NC)
+                load_gaugefield!(Ut,i,ildg,L,NC)
             end
 
-            i = 1
-            ildg = ILDG(initial)
-            load_gaugefield!(Umpi,i,ildg,L,NC)
+            
+
+            temp1_mpi = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs)
+            temp2_mpi = Gaugefields.identityGaugefields_4D_wing_mpi(NC,NX,NY,NZ,NT,Nwing,PEs)
+
+            temp1 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+            temp2 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
+
+
+            factor = 2/(U[1].NV*4*3*U[1].NC)
+            @time plaq_mpi = Gaugefields.calculate_Plaquette(Umpi,temp1_mpi,temp2_mpi)*factor
+            @time plaq_t = Gaugefields.calculate_Plaquette(Ut,temp1,temp2)*factor
+            @time plaq_ori = Gaugefields.calc_Plaq(U)*factor
+            for nn=1:10
+                if Umpi[1].myrank == 0
+                    println("--------MPI---------------------------------")
+                end
+                t1 = MPI.Wtime()
+                plaq_mpi = Gaugefields.calculate_Plaquette(Umpi,temp1_mpi,temp2_mpi)*factor
+                t2 = MPI.Wtime()
+                if Umpi[1].myrank == 0
+                    println("MPI time is $(t2-t1)")
+                    println("--------fast-------------------------------------------")
+                    t1 = MPI.Wtime()
+                    plaq_t = Gaugefields.calculate_Plaquette(Ut,temp1,temp2)*factor
+                    t2 = MPI.Wtime()
+                    println("time in fast is $(t2-t1)")
+                    println("--------Original------------------------------------------")
+                    t1 = MPI.Wtime()
+                    plaq_ori = Gaugefields.calc_Plaq(U)*factor
+                    t2 = MPI.Wtime()
+                    println("Original time in fast is $(t2-t1)")
+                    println("plaq_mpi = $plaq_mpi")
+                    println("plaq_t = $plaq_t")
+                    println("plaq_ori = $plaq_ori")
+                end
+                #println("plaq_ori = $plaq_ori")
+            end
+            
+            
             error("mpi is done")
+            
             
 
             factor = 2/(U[1].NV*4*3*U[1].NC)
@@ -508,10 +575,10 @@ module LTK_universe
 
             temp1 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
             temp2 = Gaugefields.IdentityGaugefields(NC,NX,NY,NZ,NT,Nwing)
-            @time plaq = Gaugefields.calculate_Plaquet(Ut,temp1,temp2)*factor
+            @time plaq = Gaugefields.calculate_Plaquette(Ut,temp1,temp2)*factor
             @time plaq_ori = Gaugefields.calc_Plaq(U)*factor
             for nn=1:10
-                @time plaq = Gaugefields.calculate_Plaquet(Ut,temp1,temp2)*factor
+                @time plaq = Gaugefields.calculate_Plaquette(Ut,temp1,temp2)*factor
                 #println("plaq = $plaq")
                 @time plaq_ori = Gaugefields.calc_Plaq(U)*factor
                 #println("plaq_ori = $plaq_ori")
@@ -624,7 +691,8 @@ module LTK_universe
         
         #_temporal_gauge = Array{GaugeFields,1}(undef,4)
         for i=1:length(_temporal_gauge)
-            _temporal_gauge[i] = GaugeFields_1d(NC,NX,NY,NZ,NT) #similar(U[1])
+            #_temporal_gauge[i] = GaugeFields_1d(NC,NX,NY,NZ,NT) #similar(U[1])
+            _temporal_gauge[i] = similar(U[1])
             #_temporal_gauge[i] = similar(U[1])
         end
 
@@ -684,7 +752,7 @@ module LTK_universe
         Gauge_temp = eltype(_temporal_gauge)
 
 
-
+        
         return Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}(
             NX,
             NY,
@@ -711,7 +779,8 @@ module LTK_universe
             _temporal_algebra,
             ranf,
             verboselevel,
-            kind_of_verboselevel
+            kind_of_verboselevel,
+            dim
         )
 
 

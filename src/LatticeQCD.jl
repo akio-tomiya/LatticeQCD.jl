@@ -23,10 +23,15 @@ module LatticeQCD
 
     
     include("./gauge_fields/AbstractGaugefields.jl")
-    include("./gauge_fields/gaugefields_4D.jl")
-    include("./gauge_fields/gaugefields_4D_mpi.jl")
-
+    #include("./gauge_fields/gaugefields_4D.jl")
+    #include("./gauge_fields/gaugefields_4D_wing.jl")
+    #include("./gauge_fields/gaugefields_4D_mpi.jl")
+    
+   
+    include("./gauge_fields/Loops.jl")
     include("./gaugefields/gaugefields.jl")
+    
+    
     
     #include("gaugefields.jl")
     include("./fermions/AbstractFermion.jl")
@@ -61,6 +66,10 @@ module LatticeQCD
     
     #include("cg.jl")
 
+    include("./measurements/AbstractMeasurements.jl")
+    include("./measurements/measure_plaquette.jl")
+    include("./measurements/measure_polyakov_loop.jl")
+    include("./measurements/measure_topological_charge.jl")
 
     include("./measurements/measurements.jl")
     include("./heatbath/heatbath.jl")
