@@ -69,9 +69,11 @@ module Diracoperators
         elseif typeof(fparam) == FermiActionParam_Staggered
             W = Staggered_operator(U,x,fparam)
         elseif typeof(fparam) == FermiActionParam_Domainwall{5}
-            W = Domainwall_operator(U,x,fparam)
+            #A = D5DW(m)*D5DW(m=1)^(-1)
+            W = Domainwall_operator{5}(U,x,fparam)
         elseif typeof(fparam) == FermiActionParam_Domainwall{4}
-            W = Domainwall_operator4(U,x,fparam)
+            #A = D5DW(m=1)^(-1)*D5DW(m)
+            W = Domainwall_operator{4}(U,x,fparam)
         else
             error("unknown fparam: fparam is ",typeof(fparam))
         end
@@ -262,16 +264,23 @@ module Diracoperators
 
 
 
-    struct Domainwall_operator{T} <: Dirac_operator  where  T <: GaugeFields
+    struct Domainwall_operator{T,Dim} <: Dirac_operator  where  {T <: GaugeFields,Dim}
         D5DW::D5DW_Domainwall_operator{T}
         D5DW_PV::D5DW_Domainwall_operator{T}
         
-        function Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+        function Domainwall_operator{Dim}(U::Array{T,1},x,fparam) where  {T <: GaugeFields,Dim}
             D5DW = D5DW_Domainwall_operator(U,x,fparam)
             D5DW_PV = D5DW_Domainwall_operator(U,x,fparam,1)
-            return new{eltype(U)}(D5DW,D5DW_PV)
+            return new{eltype(U),Dim}(D5DW,D5DW_PV)
         end
+
+
     end
+
+    function Domainwall_operator(U::Array{T,1},x,fparam) where  T <: GaugeFields
+        return Domainwall_operator{5}(U,x,fparam)
+    end
+
 
     function get_U(A::Domainwall_operator)
         return get_U(A.D5DW)
@@ -340,8 +349,14 @@ module Diracoperators
         parent::D5DW_Domainwall_operator
     end
 
+    #=
     struct Adjoint_Domainwall_operator <: Adjoint_Dirac_operator 
         parent::Domainwall_operator
+    end
+    =#
+
+    struct Adjoint_Domainwall_operator{T,Dim} <: Adjoint_Dirac_operator 
+        parent::Domainwall_operator{T,Dim}
     end
     
     function Base.adjoint(A::Wilson_operator)
@@ -360,8 +375,8 @@ module Diracoperators
         Adjoint_D5DW_Domainwall_operator(A)
     end
 
-    function Base.adjoint(A::Domainwall_operator)
-        Adjoint_Domainwall_operator(A)
+    function Base.adjoint(A::Domainwall_operator{T,Dim}) where {T,Dim} 
+        Adjoint_Domainwall_operator{T,Dim}(A)
     end
 
     struct γ5D_Wilson_operator <: γ5D_operator 
@@ -404,7 +419,7 @@ module Diracoperators
         return
     end
 
-    function LinearAlgebra.mul!(y::DomainwallFermion,A::Domainwall_operator,x::DomainwallFermion) #y = A*x
+    function LinearAlgebra.mul!(y::DomainwallFermion{5},A::Domainwall_operator{5},x::DomainwallFermion{5}) #y = A*x
         
         #A = D5DW(m)*D5DW(m=1))^(-1)
         #y = A*x = D5DW(m)*D5DW(m=1))^(-1)*x
@@ -416,7 +431,16 @@ module Diracoperators
         return
     end
 
-    function LinearAlgebra.mul!(y::DomainwallFermion,A::Adjoint_Domainwall_operator,x::DomainwallFermion) #y = A*x
+    function LinearAlgebra.mul!(y::DomainwallFermion{4},A::Domainwall_operator{4},x::DomainwallFermion{4}) #y = A*x
+        #A = D5DW(m=1))^(-1)*D5DW(m)
+        #y = A*x =  D5DW(m=1))^(-1)*D5DW(m)
+        mul!(A.D5DW_PV._temporal_fermi[1],A.D5DW,x)
+        bicg(y,A.D5DW_PV,A.D5DW_PV._temporal_fermi[1]) 
+        
+        return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion{5},A::Adjoint_Domainwall_operator{T,5},x::DomainwallFermion{5})  where T #y = A*x
         
         #A = D5DW(m)*D5DW(m=1)^(-1)
         #=
@@ -430,6 +454,20 @@ module Diracoperators
             maxsteps = 10000)
             #verbose = Verbose_3()) 
         
+        return
+    end
+
+    function LinearAlgebra.mul!(y::DomainwallFermion{4},A::Adjoint_Domainwall_operator{T,4},x::DomainwallFermion{4}) where T#y = A*x
+        #A = D5DW(m=1))^(-1)*D5DW(m)
+        #=
+        A^+ = [D5DW(m=1)^(-1)*D5DW(m)]^+
+            = D5DW(m)^+  D5DW(m=1)^(-1)^+ 
+            = D5DW(m)^+ [D5DW(m=1)^+]^(-1) 
+        y = A^+*x = D5DW(m)^+ [D5DW(m=1)^+]^(-1) *x
+        =#
+        bicg(A.parent.D5DW_PV._temporal_fermi[1],A.parent.D5DW_PV',x)
+        mul!(y,A.parent.D5DW',A.parent.D5DW_PV._temporal_fermi[1])
+
         return
     end
 
@@ -570,7 +608,18 @@ module Diracoperators
         mul!(x,A.D5DW_PV,A.D5DW._temporal_fermi[1])
     end
 
-    function bicg(x,A::Adjoint_Domainwall_operator,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #A*x = b -> x = A^-1*b
+    function bicg(x,A::Adjoint_Domainwall_operator{T,4},b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) where T#A*x = b -> x = A^-1*b
+        #A = D5DW(m=1))^(-1)*D5DW(m)
+        #A' = D5DW(m)^+ (D5DW(m=1)^+)^(-1) 
+
+        #A'^-1 = D5DW(m=1)^+ D5DW(m)^+^-1 
+        #x = A'^-1*b =D5DW(m=1)^+ D5DW(m)^+^-1 *b
+        bicg(A.parent.D5DW._temporal_fermi[1],A.parent.D5DW',b;eps=eps,maxsteps = maxsteps,verbose = verbose) 
+        mul!(x,A.parent.D5DW_PV',A.parent.D5DW._temporal_fermi[1])
+
+    end
+
+    function bicg(x,A::Adjoint_Domainwall_operator{T,5},b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) where T #A*x = b -> x = A^-1*b
         #A = D5DW(m)*D5DW(m=1)^(-1)
         #A' = (D5DW(m=1)^+)^(-1) D5DW(m)^+
         #A'^-1 = D5DW(m)^+^-1 D5DW(m=1)^+

@@ -5,7 +5,7 @@ module Fermionfields
 
 
     import ..Actions:FermiActionParam,FermiActionParam_Wilson,
-                FermiActionParam_WilsonClover,FermiActionParam_Staggered
+                FermiActionParam_WilsonClover,FermiActionParam_Staggered,FermiActionParam_Domainwall
     import ..Gaugefields:GaugeFields,GaugeFields_1d,SU3GaugeFields,SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
                             staggered_phase,SUn,SU2,SU3,SUNGaugeFields,SUNGaugeFields_1d,SU
     #import ..Parallel:get_looprange
@@ -21,7 +21,7 @@ module Fermionfields
 
     import ..StaggeredFermion_module:StaggeredFermion
 
-    import ..DomainwallFermion_module:DomainwallFermion,D5DWx!,D5DWdagx!,Px!
+    import ..DomainwallFermion_module:DomainwallFermion,D5DWx!,D5DWdagx!,Px!,Pmapx!
 
 
 #    abstract type FermionFields end
@@ -40,8 +40,13 @@ module Fermionfields
         elseif fparam.Dirac_operator == "Staggered"
             return StaggeredFermion(NC,NX,NY,NZ,NT,fparam,BoundaryCondition)
         elseif fparam.Dirac_operator == "Domainwall"
-            return DomainwallFermion(NC,NX,NY,NZ,NT,fparam,BoundaryCondition)
-
+            if typeof(fparam) == FermiActionParam_Domainwall{5}
+                return DomainwallFermion(NC,NX,NY,NZ,NT,fparam,BoundaryCondition)
+            elseif typeof(fparam) == FermiActionParam_Domainwall{4}
+                return DomainwallFermion(NC,NX,NY,NZ,NT,fparam,BoundaryCondition,projected = true)
+            else
+                error("not supported. Dimension of the Domainwall action should be 4 or 5. ")
+            end
         else
             error(fparam.Dirac_operator,"is not supported!")
         end

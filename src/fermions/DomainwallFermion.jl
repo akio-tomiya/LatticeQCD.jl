@@ -10,7 +10,7 @@ module DomainwallFermion_module
     import ..AbstractFermion:FermionFields,
         Wx!,Wdagx!,clear!,substitute_fermion!,Dx!,fermion_shift!,fermion_shiftB!,add!,set_wing_fermi!,WdagWx!,apply_periodicity,
         gauss_distribution_fermi!,gauss_distribution_fermi_Z2!,Z4_distribution_fermi!,Ddagx!
-    import ..WilsonFermion_module:WilsonFermion,mul_1minusγ5x_add!,mul_1plusγ5x_add!
+    import ..WilsonFermion_module:WilsonFermion,mul_1minusγ5x_add!,mul_1plusγ5x_add!,mul_1minusγ5x!,mul_1plusγ5x!
 
     struct DomainwallFermion{Dim} <: FermionFields
             NC::Int64
@@ -53,6 +53,8 @@ module DomainwallFermion_module
         else
             Dim  =5
         end
+
+        #println("projected ",projected," Dim: ",Dim)
 
 
         return DomainwallFermion{Dim}(NC,NX,NY,NZ,NT,N5,r,M,m,eps,MaxCGstep,b,c,ωs,BoundaryCondition) 
@@ -300,7 +302,7 @@ module DomainwallFermion_module
 
 
     function Px!(xout::DomainwallFermion,U::Array{G,1},
-        x::DomainwallFermion,m,temps::Array{TW,1},N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+        x::DomainwallFermion,N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
 
         #temp = temps[4]
         #temp1 = temps[1]
@@ -334,6 +336,30 @@ module DomainwallFermion_module
 
     
         end  
+        set_wing_fermi!(xout)   
+
+        return
+    end
+
+
+    function Pmapx!(xout::DomainwallFermion,U::Array{G,1},
+        x::DomainwallFermion,N5) where  {T <: DomainwallFermion,G <: GaugeFields,TW <:WilsonFermion}
+
+        #temp = temps[4]
+        #temp1 = temps[1]
+        #temp2 = temps[2]
+        clear!(xout)
+        ratio = 1
+        #ratio = xout.N5/N5
+
+        i5 = 1
+        j5 = 1
+        mul_1minusγ5x!(xout.f[i5],x.f[j5])
+
+        i5 = N5
+        j5 = 1
+        mul_1plusγ5x!(xout.f[i5],x.f[j5])
+
         set_wing_fermi!(xout)   
 
         return
