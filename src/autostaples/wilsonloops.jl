@@ -461,6 +461,24 @@ module Wilsonloops
         return loops
     end
 
+    function make_plaq_staple_prime(μ,Dim)
+        loops = Wilson_loop_set()
+        origin = zeros(Int8,4)
+        #origin[μ] = 1
+        for ν=1:Dim
+            if ν == μ
+                continue
+            end
+            loop = make_links([(ν,1),(μ,1),(ν,-1)])
+            loop1 = Wilson_loop(loop,Tuple(origin))
+            push!(loops,loop1)
+
+            loop2 = Wilson_loop([(ν,-1),(μ,1),(ν,1)],Tuple(origin))
+            push!(loops,loop2)
+        end
+        return loops
+    end
+
 
     function calc_coordinate(w::Wilson_loop)
         numloops = length(w)

@@ -55,7 +55,8 @@ module Gaugefields_4D_wing_module
     end
 
     function Base.similar(U::T) where T <: Gaugefields_4D_wing
-        Uout = identityGaugefields_4D_wing(U.NC,U.NX,U.NY,U.NZ,U.NT,U.NDW)
+        Uout = Gaugefields_4D_wing(U.NC,U.NDW,U.NX,U.NY,U.NZ,U.NT)
+        #identityGaugefields_4D_wing(U.NC,U.NX,U.NY,U.NZ,U.NT,U.NDW)
         return Uout
     end
 
@@ -561,6 +562,28 @@ module Gaugefields_4D_wing_module
             end
         end
     end
+
+
+    function add_U!(c::Gaugefields_4D_wing{NC},α::N,a::T1) where {NC,T1 <: Abstractfields, N<:Number}
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for k2=1:NC                            
+                            @simd for k1=1:NC
+                                c[k1,k2,ix,iy,iz,it] += α*a[k1,k2,ix,iy,iz,it]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
 
     
     

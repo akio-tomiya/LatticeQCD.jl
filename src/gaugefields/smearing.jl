@@ -5,11 +5,51 @@ module Smearing
     import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!,set_wing!
     import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
     import ..Actions:SmearingParam_single,SmearingParam_multi
+    import ..AbstractGaugefields_module:AbstractGaugefields,add_force!,exp_aF_U!
 
     function add!(a::Array{N,1},α,b::Array{N,1}) where N <: LieAlgebraFields
         for μ=1:4
             add!(a[μ],α,b[μ]) # a_\mu+= \beta b_\mu
         end
+    end
+
+    function gradientflow!(U::Array{<: AbstractGaugefields{NC,Dim},1},gparam,
+                Nflow::Int = 1,eps::Float64 = 0.01) where {T <: AbstractGaugefields,NC,Dim}
+        # Here we use definition in 1006.4518 except for the hermiticity.
+        # ref https://www2.physik.uni-bielefeld.de/fileadmin/user_upload/theory_e6/Master_Theses/Masterarbeit_LukasMazur.pdf
+        @assert Dim == 4 "Dimension should be 4. But Dim = $Dim "
+
+        F0 = similar(U)
+        F1 = similar(U)
+        W1 = similar(U)
+        temp1 = similar(U[1])
+        temp2 = similar(U[2])
+        temp3 = similar(U[3])
+
+
+        for istep=1:Nflow #RK4 integrator
+            add_force!(F0,U,[temp1,temp2,temp3],gparam)
+            exp_aF_U!(W1,-eps*(1/4),F0,U) #exp(a*F)*U
+
+            #
+            add_force!(F1,W1,[temp1,temp2,temp3],gparam) #F
+            clear_U!(Ftmp)
+            add_U!(Ftmp,-(8/9*eps),F1)
+            add_U!(Ftmp,(17/36*eps),F0)
+            exp_aF_U!(W2,-eps*(1/4),Ftmp,U) #exp(a*F)*U
+            
+            #
+            add_force!(F2,Ww,[temp1,temp2,temp3],gparam) #F
+            #calc_gaugeforce!(F2,W2,univ) #F
+            clear_U!(Ftmp)
+            add_U!(Ftmp,-(3/4*eps),F2)
+            add_U!(Ftmp,(8/9*eps),F1)
+            add_U!(Ftmp,-(17/36*eps),F0)
+            exp_aF_U!(U,1,Ftmp,U) #exp(a*F)*U            
+        end
+
+        error("no")
+
     end
 
     function gradientflow!(U::Array{N,1},univ::Universe,tempW1,tempW2,Nflow::Int = 1,eps::Float64 = 0.01) where N <: GaugeFields

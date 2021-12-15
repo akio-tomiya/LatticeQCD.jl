@@ -8,6 +8,8 @@ module Measure_topological_charge_module
             print_verbose1,print_verbose2,print_verbose3
     import ..Wilsonloops:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
     import ..Loops_module:Loops,evaluate_loops
+    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
+    import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
 
 
     mutable struct Measure_topological_charge{T} <: AbstractMeasurement
@@ -19,9 +21,11 @@ module Measure_topological_charge_module
         eps_flow::Float64
         Usmr::Array{T,1}
         temp_UμνTA::Array{T,2}
+        smearing_type::String
+        gparam::GaugeActionParam
+        numflow::Int64
 
-
-        function Measure_topological_charge(filename,U::Array{T,1},params;printvalues = true) where T
+        function Measure_topological_charge(filename,U::Array{T,1},params,gparam;printvalues = true) where T
             fp = open(filename,"w")
             
             tempU = Array{T,1}(undef,2)
@@ -35,6 +39,13 @@ module Measure_topological_charge_module
             eps_flow =  params["eps_flow"] #0.01
 
             temp_UμνTA = Array{T,2}(undef,4,4)
+            if haskey(params,"smearing_type")
+                smearing_type = params["smearing_type"]
+            else
+                smearing_type = "gradient_flow"
+            end
+
+            numflow = params["numflow"]
 
             
 
@@ -42,7 +53,10 @@ module Measure_topological_charge_module
                     Nflowsteps,
                     eps_flow,
                     Usmr,
-                    temp_UμνTA
+                    temp_UμνTA,
+                    smearing_type,
+                    gparam,
+                    numflow
             )
             finalizer(m) do m
                 close(m.fp)
@@ -78,6 +92,27 @@ module Measure_topological_charge_module
             flush(stdout)
         end
 
+        if m.smearing_type == "gradient_flow"
+            for iflow = 1:m.numflow#5000 # eps=0.01: t_flow = 50
+                gradientflow!(m.Usmr,m.gparam,m.Nflowsteps,m.eps_flow)
+
+                plaq = calculate_Plaquette(m.Usmr,temp1,temp2)
+                Qplaq = calculate_topological_charge_plaq(m.Usmr,m.temp_UμνTA)
+                Qclover= calculate_topological_charge_clover(m.Usmr,m.temp_UμνTA)
+                Qimproved= calculate_topological_charge_improved(m.Usmr,m.temp_UμνTA,Qclover)
+                clov = calculate_energy_density(m.Usmr)
+                #@time Q = calc_topological_charge(Usmr)
+                τ = iflow*eps_flow*Nflowsteps
+                if m.printvalues
+                    println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println(measfp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    #if iflow%10 == 0
+                    flush(stdout)
+                end
+            end
+        else
+            error("$(m.smearig_type) is not suppoorted")
+        end
 
         
 
