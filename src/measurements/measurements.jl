@@ -66,7 +66,7 @@ module Measurements
                 elseif method["methodname"] == "Polyakov_loop"
                     measurements[i] = Measure_polyakov(measurement_dir*"/Polyakov_loop.txt",univ.U)
                 elseif method["methodname"] == "Topological_charge"
-                    measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method)
+                    measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method,univ.gparam)
                 else
                     error("$(method["methodname"]) is not supported")
                 end

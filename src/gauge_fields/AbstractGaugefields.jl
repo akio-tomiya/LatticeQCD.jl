@@ -2,7 +2,10 @@ module AbstractGaugefields_module
     using LinearAlgebra
     import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,
                         SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
-    import ..Wilsonloops:calc_loopset_μν_name
+    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
+                        Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
+                        get_leftstartposition,get_rightstartposition,Wilson_loop   
+    import ..Actions:GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,SmearingParam
     using MPI
 
     
@@ -102,6 +105,82 @@ module AbstractGaugefields_module
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
     end
 
+    function evaluate_wilson_loops!(xout::T,w::Wilson_loop_set,U::Array{T,1},temps::Array{T,1}) where T<: AbstractGaugefields
+
+        num = length(w)
+        clear_U!(xout)
+        Uold = temps[1]
+        Unew = temps[2]
+
+
+        for i=1:num
+            wi = w[i]
+            numloops = length(wi)    
+    
+            shifts = calc_shift(wi)
+            #println("shift ",shifts)
+            
+            loopk = wi[1]
+            k = 1
+            #println("k = $k shift: ",shifts[k])
+            substitute_U!(Uold,U[loopk[1]])
+            Ushift1 = shift_U(Uold,shifts[1])
+
+            #gauge_shift_all!(temp1,shifts[1],U[loopk[1]])
+
+            
+            loopk1_2 = loopk[2]
+            for k=2:numloops
+                loopk = wi[k]
+                #println("k = $k shift: ",shifts[k])
+                #println("gauge_shift!(temp2,$(shifts[k]),$(loopk[1]) )")
+                #clear!(temp2)
+                Ushift2 = shift_U(U[loopk[1]],shifts[k])
+                #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+
+                #multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+                multiply_12!(Unew,Ushift1,Ushift2,k,loopk,loopk1_2)
+                Unew,Uold = Uold,Unew
+                Ushift1 = Uold
+                #temp1,temp3 = temp3,temp1
+
+                
+            end
+            add_U!(xout,Ushift1)
+            #add!(xout,temp1)
+            
+        end
+    end
+
+
+    function multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+        if loopk[2] == 1
+            if k==2
+                if loopk1_2 == 1
+                    mul!(temp3,temp1,temp2)
+                else
+                    mul!(temp3,temp1',temp2)
+                end
+            else
+                mul!(temp3,temp1,temp2)
+            end
+        elseif loopk[2] == -1
+            if k==2
+                if loopk1_2 == 1
+                    mul!(temp3,temp1,temp2')
+                else
+                    mul!(temp3,temp1',temp2')
+                end
+            else
+                mul!(temp3,temp1,temp2')
+            end
+        else
+            error("Second element should be 1 or -1 but now $(loopk)")
+        end
+        return
+    end
+
+
     function calculate_Plaquette(U::Array{T,1}) where T <: AbstractGaugefields
         error("calculate_Plaquette is not implemented in type $(typeof(U)) ")
     end
@@ -127,12 +206,63 @@ module AbstractGaugefields_module
         end
         factor = 1/(comb*U[1].NV*U[1].NC)
 
-        return plaq*0.5*factor
+        return real(plaq*0.5*factor)
     end
 
     function construct_staple!(staple::AbstractGaugefields,U,μ) where T <: AbstractGaugefields
         error("construct_staple! is not implemented in type $(typeof(U)) ")
     end
+
+    
+    function add_force!(F::Array{T,1},U::Array{T,1},temps::Array{<: AbstractGaugefields{NC,Dim},1},gparam::GP;factor = 1) where {NC,Dim,T <: AbstractGaugefields,GP <: GaugeActionParam_autogenerator}
+        @assert length(temps) >= 3 "length(temps) should be >= 3. But $(length(temps))"
+        clear_U!(F)
+        V = temps[3]  
+        temp1 = temps[1]
+        temp2 = temps[2]    
+
+        for μ=1:Dim
+            clear_U!(V)
+            for i=1:gparam.numactions
+                loops = gparam.staples[i][μ]
+                evaluate_wilson_loops!(temp3,loops,U,[temp1,temp2])
+                add_U!(V,gparam.βs[i]/gparam.β,temp3)
+            end
+
+            mul!(temp1,U[μ],V) #U U*V
+            Traceless_antihermitian!(temp2,temp1)
+            add_U!(F[μ],factor,temp2)
+        end
+
+    end
+
+    function add_force!(F::Array{T,1},U::Array{T,1},temps::Array{<: AbstractGaugefields{NC,Dim},1},gparam::GP;factor = 1) where {NC,Dim,T <: AbstractGaugefields,GP}
+        @assert length(temps) >= 3 "length(temps) should be >= 3. But $(length(temps))"
+        clear_U!(F)
+        V = temps[3]  
+        temp1 = temps[1]
+        temp2 = temps[2]    
+
+        for μ=1:Dim
+            construct_double_staple!(V,U,μ,[temp1,temp2])
+
+            mul!(temp1,U[μ],V') #U U*V
+            Traceless_antihermitian!(temp2,temp1)
+            add_U!(F[μ],factor,temp2)
+        end
+    end
+
+    function exp_aF_U!(W,a::N,F,U::Array{T,1}) where {N <: Number, T <: AbstractGaugefields} #exp(a*F)*U
+        error("exp_aF_U! is not implemented in type $(typeof(U)) ")
+    end
+
+
+
+    function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
+        loops = make_plaq_staple_prime(μ,Dim)
+        evaluate_wilson_loops!(staple,loops,U,temps)
+    end
+
 
     function construct_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temp::AbstractGaugefields{NC,Dim}) where {NC,Dim,T <: AbstractGaugefields}
         U1U2 = temp
@@ -225,6 +355,10 @@ module AbstractGaugefields_module
     end
 
     function add_U!(c::T,a::T1) where {T<: AbstractGaugefields,T1 <: Abstractfields}
+        error("add_U! is not implemented in type $(typeof(c)) ")
+    end
+
+    function add_U!(c::T,α::N,a::T1) where {T<: AbstractGaugefields,T1 <: Abstractfields, N<:Number}
         error("add_U! is not implemented in type $(typeof(c)) ")
     end
 
