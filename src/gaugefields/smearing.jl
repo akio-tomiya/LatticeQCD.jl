@@ -41,22 +41,48 @@ module Smearing
             Ftmp[μ] = LieAlgebraFields(NC,NX,NY,NZ,NT)
         end
 
+        #=
+         W0 = Vt
+         Z0 = Z(W0)
+         W1 = exp(1/4 Z0)*W0
+         Z1 = Z(W1)
+         W2 = exp(8/9 * Z1 - 17/36 * Z0)*W1
+         Z2 = Z(W2)
+         W3 = exp(3/4* Z2 - 8/9 * Z1 +17/36 *Z0)*W2
+         Vt = W3
+
+
+        =#
+
         for istep=1:Nflow #RK4 integrator
             calc_gaugeforce!(F0,U,univ) #F
-            expF_U!(W1,F0,-eps*(1/4),univ)  #exp(eps*F)*U 
-            #
-            calc_gaugeforce!(F1,W1,univ) #F
+            #println(F0[1][1,1,1,1,1])
+            #expF_U!(W1,F0,-eps*(1/4),univ)  #exp(eps*F)*U 
+            expF_U!(U,F0,-eps*(1/4),univ)  #exp(eps*F)*U 
+            #println("W1 ", U[1][1,1,1,1,1,1])
+            calc_gaugeforce!(F1,U,univ) #F
+            #calc_gaugeforce!(F1,W1,univ) #F
+            #println("F1 ",F1[1][1,1,1,1,1,1])
             clear!(Ftmp)
             add!(Ftmp,-(8/9*eps),F1)
+            #println("Ftmp ",Ftmp[1][1,1,1,1,1,1])
             add!(Ftmp,(17/36*eps),F0)
-            expF_U!(W2,Ftmp,1,univ)
+            #println("Ftmp1 ",Ftmp[1][1,1,1,1,1,1])
+            expF_U!(U,Ftmp,1,univ)
+
+            #expF_U!(W2,Ftmp,1,univ)
+            #println("W2 ",W2[1][1,1,1,1,1,1])
             #
-            calc_gaugeforce!(F2,W2,univ) #F
+            calc_gaugeforce!(F2,U,univ) #F
+            #calc_gaugeforce!(F2,W2,univ) #F
             clear!(Ftmp)
             add!(Ftmp,-(3/4*eps),F2)
             add!(Ftmp,(8/9*eps),F1)
             add!(Ftmp,-(17/36*eps),F0)
             expF_U!(U,Ftmp,1,univ)
+
+            #println(U[1][1,1,1,1,1,1])
+            #error("U")
             #
         end
         #return W1 #test

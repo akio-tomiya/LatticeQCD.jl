@@ -431,7 +431,9 @@ module Measurements
                     #Q = calc_topological_charge(Usmr)
                     # sign of topological charge defined to be positive for one-instanton.
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                    #println("Qplaq = ",Qplaq)
                     Qclover= calc_topological_charge_clover(Usmr)
+                    #println("Qclover = ",Qclover)
                     Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
                     clov = calc_energy_density(Usmr)
                     #println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
@@ -444,7 +446,10 @@ module Measurements
                     #smearing_type = "stout"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                            gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
+                            @time gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
+                            #println(typeof(Usmr[1]))
+                            #println(Usmr[1][1,1,1,1,1,1])
+                            #error("Usmr")
                             plaq = calc_plaquette(Usmr)
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
@@ -464,6 +469,7 @@ module Measurements
                         for iflow = 1:method["numflow"]
                             Usmr = calc_fatlink_APE(Usmr,α,α,normalize_method="special unitary")
                             #calc_fatlink_APE!(Usmr,α,α,normalize_method="special unitary")
+                            
                             plaq = calc_plaquette(Usmr)
                             Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                             Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
