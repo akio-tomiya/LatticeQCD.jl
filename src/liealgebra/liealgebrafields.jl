@@ -7,7 +7,7 @@ module LieAlgebrafields
     import ..SUN_generator:Generator,lie2matrix!,matrix2lie!
     import ..Gaugefields
     import ..Actions:GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,SmearingParam
-    import ..Wilsonloops:make_plaq_staple_prime,make_plaq_staple
+    import ..Gaugefield:make_plaq_staple_prime,make_plaq_staple
 
     abstract type LieAlgebraFields end
 

@@ -1,5 +1,6 @@
 module LatticeQCD
     using Requires
+    include("./Gaugefield.jl/src/Gaugefield.jl")
     
 
     #include("./SLMC/logdet.jl")
@@ -12,7 +13,7 @@ module LatticeQCD
     include("./fermions/cgmethod.jl")
 
 
-    include("./autostaples/wilsonloops.jl")
+    #include("./autostaples/wilsonloops.jl")
     
     include("./system/system_parameters.jl")
     #include("parallel.jl")
@@ -22,13 +23,13 @@ module LatticeQCD
     
 
     
-    include("./gauge_fields/AbstractGaugefields.jl")
+    #include("./gauge_fields/AbstractGaugefields.jl")
     #include("./gauge_fields/gaugefields_4D.jl")
     #include("./gauge_fields/gaugefields_4D_wing.jl")
     #include("./gauge_fields/gaugefields_4D_mpi.jl")
     
    
-    include("./gauge_fields/Loops.jl")
+    #include("./gauge_fields/Loops.jl")
     include("./gaugefields/gaugefields.jl")
     
     
@@ -70,6 +71,7 @@ module LatticeQCD
     include("./measurements/measure_plaquette.jl")
     include("./measurements/measure_polyakov_loop.jl")
     include("./measurements/measure_topological_charge.jl")
+    include("./measurements/measure_chiral_condensate.jl")
 
     include("./measurements/measurements.jl")
     include("./heatbath/heatbath.jl")
@@ -112,7 +114,7 @@ module LatticeQCD
     import .Smearing:gradientflow!
     import .ILDG_format:ILDG,load_gaugefield
     import .Heatbath:heatbath!
-    import .Wilsonloops:make_plaq
+    import .Gaugefield:make_plaq
     import .IOmodule:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD

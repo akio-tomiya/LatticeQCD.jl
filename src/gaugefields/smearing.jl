@@ -3,9 +3,10 @@ module Smearing
     import ..LTK_universe:Universe,calc_gaugeforce!,expF_U!
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add!
     import ..Gaugefields:GaugeFields,normalize!,SU,evaluate_wilson_loops!,TA!,set_wing!
-    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
+    import ..Gaugefield:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple
     import ..Actions:SmearingParam_single,SmearingParam_multi
-    import ..AbstractGaugefields_module:AbstractGaugefields,add_force!,exp_aF_U!
+    import ..Gaugefield:AbstractGaugefields,add_force!,exp_aF_U!,clear_U!,add_U!,
+                TA_Gaugefields,initialize_TA_Gaugefields,set_wing_U!,substitute_U!
 
     function add!(a::Array{N,1},α,b::Array{N,1}) where N <: LieAlgebraFields
         for μ=1:4
@@ -14,41 +15,67 @@ module Smearing
     end
 
     function gradientflow!(U::Array{<: AbstractGaugefields{NC,Dim},1},gparam,
-                Nflow::Int = 1,eps::Float64 = 0.01) where {T <: AbstractGaugefields,NC,Dim}
+                Ftemps::Array{Array{T1,1},1},Utemps::Array{Array{T,1},1},temps,
+                Nflow::Int = 1,eps::Float64 = 0.01) where {T <: AbstractGaugefields,NC,Dim,T1 <: TA_Gaugefields}
         # Here we use definition in 1006.4518 except for the hermiticity.
         # ref https://www2.physik.uni-bielefeld.de/fileadmin/user_upload/theory_e6/Master_Theses/Masterarbeit_LukasMazur.pdf
         @assert Dim == 4 "Dimension should be 4. But Dim = $Dim "
 
-        F0 = similar(U)
-        F1 = similar(U)
-        W1 = similar(U)
-        temp1 = similar(U[1])
-        temp2 = similar(U[2])
-        temp3 = similar(U[3])
+
+        F0 = Ftemps[1]
+        F1 = Ftemps[2]
+        F2 = Ftemps[3]
+        Ftmp = Ftemps[4]
+
+        #Ftmp = similar(U)
+        W1 = Utemps[1]
+        W2 = Utemps[2]
+        temp1 = temps[1]
+        temp2 = temps[2]
+        temp3 = temps[3]
+
 
 
         for istep=1:Nflow #RK4 integrator
             add_force!(F0,U,[temp1,temp2,temp3],gparam)
-            exp_aF_U!(W1,-eps*(1/4),F0,U) #exp(a*F)*U
+            #println(F0[1][1,1,1,1,1])
+            
 
+            
+            exp_aF_U!(W1,-eps*(1/4),F0,U,[temp1,temp2,temp3]) #exp(a*F)*U
+
+            #println("W1 ",W1[1][1,1,1,1,1,1])
             #
             add_force!(F1,W1,[temp1,temp2,temp3],gparam) #F
+            #println("F1 ",F1[1][1,1,1,1,1,1])
             clear_U!(Ftmp)
             add_U!(Ftmp,-(8/9*eps),F1)
+            #println("Ftmp ",Ftmp[1][1,1,1,1,1,1])
             add_U!(Ftmp,(17/36*eps),F0)
-            exp_aF_U!(W2,-eps*(1/4),Ftmp,U) #exp(a*F)*U
+            #println("Ftmp1 ",Ftmp[1][1,1,1,1,1,1])
+            exp_aF_U!(W2,1,Ftmp,W1,[temp1,temp2,temp3]) #exp(a*F)*U
+            #exp_aF_U!(W2,1,Ftmp,U,[temp1,temp2,temp3]) #exp(a*F)*U
+            #println("W2 ",W2[1][1,1,1,1,1,1])
             
             #
-            add_force!(F2,Ww,[temp1,temp2,temp3],gparam) #F
+            add_force!(F2,W2,[temp1,temp2,temp3],gparam) #F
             #calc_gaugeforce!(F2,W2,univ) #F
             clear_U!(Ftmp)
             add_U!(Ftmp,-(3/4*eps),F2)
             add_U!(Ftmp,(8/9*eps),F1)
             add_U!(Ftmp,-(17/36*eps),F0)
-            exp_aF_U!(U,1,Ftmp,U) #exp(a*F)*U            
+            #exp_aF_U!(W1,1,Ftmp,U,[temp1,temp2,temp3]) #exp(a*F)*U  
+            exp_aF_U!(U,1,Ftmp,W2,[temp1,temp2,temp3]) #exp(a*F)*U  
+            
+            #println(typeof(U[1]))
+            #println(U[1][1,1,1,1,1,1])
+           
+            #error("U")
         end
 
-        error("no")
+        
+
+        #error("no")
 
     end
 

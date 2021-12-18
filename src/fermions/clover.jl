@@ -7,7 +7,7 @@ module Clover
                 SU3GaugeFields_1d,SU2GaugeFields_1d,
                 SUNGaugeFields_1d,
                 Loops,evaluate_loops!,evaluate_loops,SU
-    import ..Wilsonloops:Wilson_loop,Wilson_loop_set
+    import ..Gaugefield:Wilson_loop,Wilson_loop_set
 
     function Make_CloverFμν(fparam::FermiActionParam_WilsonClover,U,temps::Array{T,1})  where T <: GaugeFields_1d
         NV = temps[1].NV

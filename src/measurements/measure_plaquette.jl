@@ -1,6 +1,6 @@
 module Measure_plaquet_module
     import ..AbstractMeasurement_module:AbstractMeasurement,measure
-    import ..AbstractGaugefields_module:AbstractGaugefields
+    import ..Gaugefield:AbstractGaugefields
     import ..Gaugefields:calculate_Plaquette
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3

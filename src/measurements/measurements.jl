@@ -20,13 +20,15 @@ module Measurements
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
-    import ..Wilsonloops:Wilson_loop,Wilson_loop_set
+    import ..Gaugefield:Wilson_loop,Wilson_loop_set
     import ..System_parameters:set_params
 
     import ..AbstractMeasurement_module:AbstractMeasurement,measure
     import ..Measure_plaquet_module:Measure_plaquet
     import ..Measure_polyakov_loop_module:Measure_polyakov
     import ..Measure_topological_charge_module:Measure_topological_charge
+    import ..Measure_chiral_condensate_module:Measure_chiral_condensate
+    
 
     #=
     abstract type MeasureMethod end
@@ -67,6 +69,8 @@ module Measurements
                     measurements[i] = Measure_polyakov(measurement_dir*"/Polyakov_loop.txt",univ.U)
                 elseif method["methodname"] == "Topological_charge"
                     measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method,univ.gparam)
+                elseif method["methodname"] == "Chiral_condensate" 
+                    measurements[i] = Measure_chiral_condensate(measurement_dir*"/Chiral_condensate.txt",univ.U,method)
                 else
                     error("$(method["methodname"]) is not supported")
                 end
