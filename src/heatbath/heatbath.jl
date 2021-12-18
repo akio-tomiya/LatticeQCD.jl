@@ -8,7 +8,7 @@ module Heatbath
             SUNGaugeFields,SUNGaugeFields_1d,normalizeN!
             #,
             #set_wing_x!,set_wing_y!,set_wing_z!,set_wing_t!
-    import ..Wilsonloops:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
+    import ..Gaugefield:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator,GaugeActionParam
 
     function heatbath!(univ::Universe)

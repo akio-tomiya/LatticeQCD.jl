@@ -4,25 +4,40 @@ module Gaugefields
     using JLD2
     import ..Actions:GaugeActionParam,GaugeActionParam_standard,GaugeActionParam_autogenerator,
                         SmearingParam_single,SmearingParam_multi,SmearingParam,Nosmearing
-    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
+    import ..Gaugefield:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                             get_leftstartposition,get_rightstartposition,Wilson_loop,calc_loopset_μν_name
     import ..SUN_generator:Generator
 
-    import ..AbstractGaugefields_module:AbstractGaugefields,identitymatrix,
+    import ..Gaugefield:AbstractGaugefields,identitymatrix,
                                         shift_U,construct_staple!,set_wing_U!,
                                         calculate_Plaquette,substitute_U!,calc_smearedU,calculate_Polyakov_loop,construct_gauges,
                                         Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
                                         calc_rank_and_indices,barrier,comm,setvalue!,
                                         Gaugefields_4D_wing,
-                                        identityGaugefields_4D_wing
-    import ..Loops_module:calc_large_wiloson_loop!
+                                        identityGaugefields_4D_wing,calc_large_wiloson_loop!,add_force!
+    #import ..Gaugefield:calc_large_wiloson_loop!
 
     #import ..Gaugefields_4D_wing_module:Gaugefields_4D_wing,
     #                                identityGaugefields_4D_wing
     #import ..Gaugefields_4D_mpi_module:Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
     #                        calc_rank_and_indices,barrier,comm,setvalue!
     
+
+    #=
+    add_force!(F::Array{T1,1},U::Array{T2,1},temps::Array{<: AbstractGaugefields{NC,Dim},1};
+                plaqonly = false,staplefactors::Union{Array{<: Number,1},Nothing} = nothing,factor = 1) 
+                where {NC,Dim,T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+    =#
+    function add_force!(F::Array{T1,1},U::Array{T2,1},temps::Array{<: AbstractGaugefields{NC,Dim},1},
+            factor = 1) where {NC,Dim,T1 <: AbstractGaugefields,T2 <: AbstractGaugefields,GP<: GaugeActionParam_autogenerator}
+        add_force!(F,U,temps,plaqonly = false,staplefactors = gparam.βs ./ gparam.β)
+    end
+
+    function add_force!(F::Array{T1,1},U::Array{T2,1},temps::Array{<: AbstractGaugefields{NC,Dim},1},
+        factor = 1) where {NC,Dim,T1 <: AbstractGaugefields,T2 <: AbstractGaugefields,GP}
+        add_force!(F,U,temps,plaqonly = true,staplefactors = nothing)
+    end
 
 
     abstract type SUn end

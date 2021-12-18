@@ -234,6 +234,8 @@ module AbstractGaugefields_module
             add_U!(F[μ],factor,temp2)
         end
 
+        set_wing_U!(F)
+
     end
 
     function add_force!(F::Array{T,1},U::Array{T,1},temps::Array{<: AbstractGaugefields{NC,Dim},1},gparam::GP;factor = 1) where {NC,Dim,T <: AbstractGaugefields,GP}
@@ -244,22 +246,63 @@ module AbstractGaugefields_module
         temp2 = temps[2]    
 
         for μ=1:Dim
-            construct_double_staple!(V,U,μ,[temp1,temp2])
+            construct_double_staple!(V,U,μ,temps[1:2])
 
             mul!(temp1,U[μ],V') #U U*V
+
+            a = temp1[:,:,1,1,1,1]
+            println(a'*a)
+
             Traceless_antihermitian!(temp2,temp1)
+            #println(temp2[1,1,1,1,1,1])
+            a = temp2[:,:,1,1,1,1]
+            println(a'*a)
+            error("a")
             add_U!(F[μ],factor,temp2)
         end
     end
 
-    function exp_aF_U!(W,a::N,F,U::Array{T,1}) where {N <: Number, T <: AbstractGaugefields} #exp(a*F)*U
-        error("exp_aF_U! is not implemented in type $(typeof(U)) ")
+    function exptU!(uout::T,t::N,u::T,temps::Array{T,1}) where {N <: Number, T <: AbstractGaugefields} #uout = exp(t*u)
+        error("expUt! is not implemented in type $(typeof(u)) ")
     end
 
 
+    function exptU!(uout::T,u::T,temps::Array{T,1}) where T <: AbstractGaugefields
+        expU!(uout,1,u,temps)
+    end
+
+    function exp_aF_U!(W::Array{<: AbstractGaugefields{NC,Dim},1},a::N,F::Array{T,1},U::Array{T,1},temps::Array{T,1}) where {NC,Dim,N <: Number, T <: AbstractGaugefields} #exp(a*F)*U
+        @assert a != 0 "Δτ should not be zero in expF_U! function!"
+        expU = temps[1]
+        temp1 = temps[2]
+        temp2 = temps[3]
+
+        for μ=1:Dim
+            exptU!(expU,a,F[μ],[temp1,temp2])
+            mul!(W[μ],expU,U[μ])
+        end
+
+        set_wing_U!(W)
+
+        #error("exp_aF_U! is not implemented in type $(typeof(U)) ")
+    end
+
+    
+    
+    function staple_prime()
+        loops_staple_prime = Array{Wilson_loop_set,2}(undef,4,4)
+        for Dim=1:4
+            for μ=1:Dim
+                loops_staple_prime[Dim,μ] = make_plaq_staple_prime(μ,Dim)
+            end
+        end
+        return loops_staple_prime
+    end
+    const loops_staple_prime = staple_prime()
+
 
     function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
-        loops = make_plaq_staple_prime(μ,Dim)
+        loops = loops_staple_prime[Dim,μ] #make_plaq_staple_prime(μ,Dim)
         evaluate_wilson_loops!(staple,loops,U,temps)
     end
 
@@ -358,11 +401,21 @@ module AbstractGaugefields_module
         error("add_U! is not implemented in type $(typeof(c)) ")
     end
 
+    function add_U!(c::Array{<: AbstractGaugefields{NC,Dim},1},α::N,a::Array{T1,1}) where {NC,Dim,T1 <: Abstractfields, N<:Number}
+        for μ=1:Dim
+            add_U!(c[μ],α,a[μ])
+        end
+    end
+
     function add_U!(c::T,α::N,a::T1) where {T<: AbstractGaugefields,T1 <: Abstractfields, N<:Number}
         error("add_U! is not implemented in type $(typeof(c)) ")
     end
 
     function LinearAlgebra.mul!(c::T,a::T1,b::T2,α::Ta,β::Tb) where {T<: AbstractGaugefields,T1 <: Abstractfields,T2 <: Abstractfields,Ta <: Number, Tb <: Number}
+        error("LinearAlgebra.mul! is not implemented in type $(typeof(c)) ")
+    end
+
+    function LinearAlgebra.mul!(c::T,a::N,b::T2) where {T<: AbstractGaugefields,N <: Number ,T2 <: Abstractfields}
         error("LinearAlgebra.mul! is not implemented in type $(typeof(c)) ")
     end
 

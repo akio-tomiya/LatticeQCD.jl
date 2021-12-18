@@ -1,13 +1,14 @@
 module Measure_topological_charge_module
     using LinearAlgebra
     import ..AbstractMeasurement_module:AbstractMeasurement,measure
-    import ..AbstractGaugefields_module:AbstractGaugefields,
-                                        Traceless_antihermitian!,Traceless_antihermitian
+    import ..Gaugefield:AbstractGaugefields,
+                                        Traceless_antihermitian!,Traceless_antihermitian,
+                                        initialize_TA_Gaugefields
     import ..Gaugefields:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!,calculate_energy_density
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
-    import ..Wilsonloops:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
-    import ..Loops_module:Loops,evaluate_loops
+    import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
+    import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
 
@@ -28,8 +29,8 @@ module Measure_topological_charge_module
         function Measure_topological_charge(filename,U::Array{T,1},params,gparam;printvalues = true) where T
             fp = open(filename,"w")
             
-            tempU = Array{T,1}(undef,2)
-            for i=1:2
+            tempU = Array{T,1}(undef,3)
+            for i=1:3
                 tempU[i] = similar(U[1])
             end
 
@@ -67,10 +68,11 @@ module Measure_topological_charge_module
     end
 
 
-    function measure(m::M,itrj,U::Array{T,1};verbose = Verbose_2()) where {M <: Measure_topological_charge,T <: AbstractGaugefields}
+    function measure(m::M,itrj,U::Array{<: AbstractGaugefields{NC,Dim},1};verbose = Verbose_2()) where {M <: Measure_topological_charge,NC,Dim}
         #
         temp1 = m.tempU[1]
         temp2 = m.tempU[2]
+        temp3 = m.tempU[3]
 
         println_verbose2(verbose,"# epsilon for the Wilson flow is $(m.eps_flow)")
         substitute_U!(m.Usmr,U)       
@@ -79,11 +81,12 @@ module Measure_topological_charge_module
         
         plaq = calculate_Plaquette(m.Usmr,temp1,temp2)
         Qplaq = calculate_topological_charge_plaq(m.Usmr,m.temp_UμνTA)
-        println("Qplaq = ",Qplaq)
+        #println("Qplaq = ",Qplaq)
         Qclover= calculate_topological_charge_clover(m.Usmr,m.temp_UμνTA)
-        println("Qclover = ",Qclover)
+        
+        #println("Qclover = ",Qclover)
         Qimproved= calculate_topological_charge_improved(m.Usmr,m.temp_UμνTA,Qclover)
-        println("Qimproved = ",Qimproved)
+        #println("Qimproved = ",Qimproved)
         clov = calculate_energy_density(m.Usmr)
 
         if m.printvalues
@@ -92,9 +95,30 @@ module Measure_topological_charge_module
             flush(stdout)
         end
 
+        F0 = initialize_TA_Gaugefields(U)
+
+        Ftemps = Array{typeof(F0),1}(undef,4)
+        Ftemps[1] = F0
+        for i=2:4
+            Ftemps[i] = initialize_TA_Gaugefields(U)
+        end
+
+        temps = Array{typeof(U),1}(undef,2)
+        for i=1:2
+            temps[i] = similar(U)
+        end
+
+
         if m.smearing_type == "gradient_flow"
             for iflow = 1:m.numflow#5000 # eps=0.01: t_flow = 50
-                gradientflow!(m.Usmr,m.gparam,m.Nflowsteps,m.eps_flow)
+                @time gradientflow!(m.Usmr,m.gparam,
+                    Ftemps,temps,[temp1,temp2,temp3],
+                    m.Nflowsteps,m.eps_flow)
+
+                
+                #println(typeof(m.Usmr[1]))
+                #println(m.Usmr[1][1,1,1,1,1,1])
+                #error("m.Usmr")
 
                 plaq = calculate_Plaquette(m.Usmr,temp1,temp2)
                 Qplaq = calculate_topological_charge_plaq(m.Usmr,m.temp_UμνTA)
@@ -102,10 +126,10 @@ module Measure_topological_charge_module
                 Qimproved= calculate_topological_charge_improved(m.Usmr,m.temp_UμνTA,Qclover)
                 clov = calculate_energy_density(m.Usmr)
                 #@time Q = calc_topological_charge(Usmr)
-                τ = iflow*eps_flow*Nflowsteps
+                τ = iflow*m.eps_flow*m.Nflowsteps
                 if m.printvalues
                     println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                    println(measfp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println(m.fp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                     #if iflow%10 == 0
                     flush(stdout)
                 end
@@ -114,13 +138,6 @@ module Measure_topological_charge_module
             error("$(m.smearig_type) is not suppoorted")
         end
 
-        
-
-
-
-
-
-        error("measure is not implemented in $(typeof(measurement))")
         return 
     end
 

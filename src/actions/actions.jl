@@ -1,5 +1,5 @@
 module Actions
-    import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
+    import ..Gaugefield:Wilson_loop_set,make_staples,Wilson_loop_set,
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC

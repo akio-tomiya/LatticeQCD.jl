@@ -38,7 +38,7 @@ module LTK_universe
     import ..Diracoperators:DdagD_operator,Domainwall_operator,make_densematrix,
                 D5DW_Domainwall_operator
     import ..Diracoperators
-    import ..Wilsonloops:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
+    import ..Gaugefield:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
