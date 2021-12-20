@@ -1,6 +1,6 @@
 module Actions
     import ..Gaugefield:Wilson_loop_set,make_staples,Wilson_loop_set,
-            make_cloverloops,Tensor_derivative_set, make_loops
+            make_cloverloops,Tensor_derivative_set, make_loops,construct_smearing
     import ..SUN_generator:Generator
     import ..Rhmc:RHMC
 
@@ -8,6 +8,8 @@ module Actions
     abstract type GaugeActionParam end
 
     abstract type FermiActionParam end
+
+    
 
     abstract type SmearingParam end
 
@@ -19,6 +21,8 @@ module Actions
 
     abstract type SmearingParam_multi <: SmearingParam
     end
+
+    
 
     mutable struct SmearingParam_stout <: SmearingParam_single
         staples_for_stout::Array{Array{Wilson_loop_set,1},1}
@@ -40,6 +44,8 @@ module Actions
 
     const Nosmearing = SmearingParam_nosmearing
     const Stout = SmearingParam_stout
+
+    
 
     mutable struct GaugeActionParam_standard <: GaugeActionParam
         β::Float64
@@ -79,7 +85,7 @@ module Actions
         end
     end
 
-    Base.@kwdef struct FermiActionParam_Wilson <: FermiActionParam
+    Base.@kwdef struct FermiActionParam_Wilson{SmearingParam} <: FermiActionParam
         hop::Float64  = 0.141139#Hopping parameter
         r::Float64  = 1#Wilson term
         #eps::Float64 = 1e-8
@@ -101,14 +107,14 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            return new{typeof(smearing)}(hop,r,eps,Dirac_operator,MaxCGstep,quench,smearing)
         end
 
     end
 
     const Clover_coefficient  = 1.5612
 
-    Base.@kwdef struct FermiActionParam_WilsonClover <: FermiActionParam
+    Base.@kwdef struct FermiActionParam_WilsonClover{SmearingParam} <: FermiActionParam
         hop::Float64  = 0.141139#Hopping parameter
         r::Float64  = 1#Wilson term
         #eps::Float64 = 1e-8
@@ -143,7 +149,7 @@ module Actions
             #end
             #smearing = Nosmearing()
 
-            return new(hop,r,eps,Dirac_operator,MaxCGstep,
+            return new{typeof(smearing)}(hop,r,eps,Dirac_operator,MaxCGstep,
             Clover_coefficient,internal_flags,inn_table,_ftmp_vectors,
             _is1,_is2,
             quench, SUNgenerator,_cloverloops,smearing)
@@ -151,35 +157,9 @@ module Actions
     end
 
 
-    function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
-        if smearingparameters == "nothing"
-            smearing = Nosmearing()
-        else
-            @assert loops_list != nothing "loops should be put if you want to use smearing schemes"
-            loops = make_loops(loops_list,L)
+    
 
-            @assert coefficients != nothing "coefficients should be put if you want to use smearing schemes"
-            println("stout smearing will be used")
-            if numlayers == 1
-                smearing = SmearingParam_stout(loops,coefficients)
-            else
-                numloops = length(loops)
-                smearing_single = SmearingParam_stout(loops,rand(numloops))
-                smearing = SmearingParam_stout_multi(smearing_single.staples_for_stout,
-                    smearing_single.tensor_derivative,
-                    smearing_single.staples_for_stout_dag,
-                    smearing_single.tensor_derivative_dag,
-                    coefficients
-                    )
-
-            end
-            #println(smearing )
-            #exit()
-        end
-        return smearing
-    end
-
-    Base.@kwdef struct FermiActionParam_Staggered <: FermiActionParam
+    Base.@kwdef struct FermiActionParam_Staggered{SmearingParam} <: FermiActionParam
         mass::Float64 = 0.5
         eps::Float64 = 1e-19
         Dirac_operator::String = "Staggered"
@@ -229,7 +209,7 @@ module Actions
             smearing = construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
 
 
-            return new(
+            return new{typeof(smearing)}(
             mass,
             eps,
             Dirac_operator,
@@ -265,7 +245,7 @@ module Actions
         return GaugeActionParam_autogenerator(βs,β,numactions,NC,loops,staples,couplinglist)
     end
 
-    Base.@kwdef struct FermiActionParam_Domainwall <: FermiActionParam
+    Base.@kwdef struct FermiActionParam_Domainwall{SmearingParam} <: FermiActionParam
         N5::Int64
         r::Float64 = 1
         M::Float64 = -1
@@ -292,7 +272,7 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            return new{typeof(smearing)}(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
         end
 
         function FermiActionParam_Domainwall(N5,r,M,m,eps,Dirac_operator,MaxCGstep,quench
@@ -311,7 +291,7 @@ module Actions
             #if smearingparameters == nothing
             #    smearing = Nosmearing()
             #end
-            return new(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
+            return new{typeof(smearing)}(N5,r,M,m,ωs,b,c,eps,Dirac_operator,MaxCGstep,quench,smearing)
         end
 
 
@@ -467,54 +447,6 @@ module Actions
 
 
 
-    function SmearingParam_stout(loops_smearing,ρs)
-        num = length(loops_smearing)
-        @assert num == length(ρs) "number of ρ elements in stout smearing scheme should be $num. Now $(length(ρs))"
-        staplesforsmear_set = Array{Wilson_loop_set,1}[]
-        staplesforsmear_dag_set = Array{Wilson_loop_set,1}[]
-        println("staple for stout smearing")
-
-        tensor_derivative = Array{Tensor_derivative_set,1}(undef,num)
-        tensor_derivative_dag = Array{Tensor_derivative_set,1}(undef,num)
-        
-
-
-        for i=1:num
-            loop_smearing = loops_smearing[i]
-
-            staplesforsmear = Array{Wilson_loop_set,1}(undef,4)
-            staplesforsmear_dag = Array{Wilson_loop_set,1}(undef,4)
-            
-
-
-            staple = make_staples(loop_smearing)
-
-            for μ=1:4
-                staplesforsmear_dag[μ] = staple[μ]##make_plaq_staple(μ)
-                staplesforsmear[μ] = staplesforsmear_dag[μ]'
-                #println("$μ -direction")
-                #display(staplesforsmear[μ])
-                #staplesforsmear[μ] = make_plaq_staple(μ)
-                #staplesforsmear_dag[μ] = staplesforsmear[μ]'
-                #println("dagger: $μ -direction")
-                #display(staplesforsmear_dag[μ])
-            end
-            tensor_derivative[i] = Tensor_derivative_set(staplesforsmear)
-            tensor_derivative_dag[i] = Tensor_derivative_set(staplesforsmear_dag)
-
-            push!(staplesforsmear_set,staplesforsmear )
-            push!(staplesforsmear_dag_set,staplesforsmear_dag)
-
-        end
-
-        return SmearingParam_stout(
-            staplesforsmear_set, 
-            tensor_derivative, 
-            staplesforsmear_dag_set, 
-            tensor_derivative_dag,
-            ρs 
-            ) 
-    end
 
 
 

@@ -68,7 +68,7 @@ module Measurements
                 elseif method["methodname"] == "Polyakov_loop"
                     measurements[i] = Measure_polyakov(measurement_dir*"/Polyakov_loop.txt",univ.U)
                 elseif method["methodname"] == "Topological_charge"
-                    measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method,univ.gparam)
+                    measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method)
                 elseif method["methodname"] == "Chiral_condensate" 
                     measurements[i] = Measure_chiral_condensate(measurement_dir*"/Chiral_condensate.txt",univ.U,method)
                 else
