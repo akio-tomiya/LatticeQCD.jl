@@ -872,7 +872,7 @@ module Wizard
         method["fermiontype"] = nothing
         method["numflow"]  = parse(Int64,Base.prompt("How many times do you want to flow gauge fields to measure the topological charge?", default="10"))
 
-        Nflowsteps = L[1]
+        Nflowsteps = 1#L[1]
         eps_flow = 0.01
 
         method["Nflowsteps"]  = parse(Int64,Base.prompt("Nflowsteps?", default="$Nflowsteps"))
