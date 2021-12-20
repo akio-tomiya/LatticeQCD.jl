@@ -451,34 +451,7 @@ module AbstractGaugefields_module
         error("LinearAlgebra.tr! is not implemented in type $(typeof(a)) ")
     end
 
-    function calc_smearedU(Uin::Array{T,1},smearing;calcdSdU = false,temps = nothing) where T<: AbstractGaugefields
-        if smearing != nothing && typeof(smearing) != Nosmearing
-            if typeof(smearing) <: SmearingParam_single
-                Uout_multi = nothing
-                U = apply_smearing_U(Uin,smearing)
-            elseif typeof(smearing) <: SmearingParam_multi
-                Uout_multi = apply_smearing_U(Uin,smearing)
-                U = Uout_multi[end]
-            else
-                error("something is wrong in calc_smearingU")
-            end
-            set_wing!(U)  #we want to remove this.
-            if calcdSdU 
-                dSdU = [temps[end-3],temps[end-2],temps[end-1],temps[end]]    
-            else
-                dSdU = nothing
-            end
-        else
-            dSdU = nothing
-            Uout_multi = nothing
-            U = Uin
-        end
-        return U,Uout_multi,dSdU
-    end
 
-    function apply_smearing_U(Uin::Array{T,1},smearing) where T<: Abstractfields
-        error("apply_smearing_U is not implemented in type $(typeof(Uin)) ")
-    end
 
 
 end

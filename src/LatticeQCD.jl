@@ -1,6 +1,7 @@
 module LatticeQCD
     using Requires
     include("./Gaugefield.jl/src/Gaugefield.jl")
+    include("./Fermionfield_LQCD.jl/src/Fermionfield_LQCD.jl")
     
 
     #include("./SLMC/logdet.jl")

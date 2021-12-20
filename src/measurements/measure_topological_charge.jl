@@ -3,31 +3,35 @@ module Measure_topological_charge_module
     import ..AbstractMeasurement_module:AbstractMeasurement,measure
     import ..Gaugefield:AbstractGaugefields,
                                         Traceless_antihermitian!,Traceless_antihermitian,
-                                        initialize_TA_Gaugefields
+                                        initialize_TA_Gaugefields,Gradientflow
     import ..Gaugefields:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!,calculate_energy_density
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
-    import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields
+    import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,get_tempG,get_eps,flow!
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
 
 
-    mutable struct Measure_topological_charge{T} <: AbstractMeasurement
+    mutable struct Measure_topological_charge{T,S} <: AbstractMeasurement
         filename::String
         fp::IOStream
-        tempU::Array{T,1}
         printvalues::Bool
-        Nflowsteps::Int64
-        eps_flow::Float64
+        #Nflowsteps::Int64
+        #eps_flow::Float64
         Usmr::Array{T,1}
         temp_UμνTA::Array{T,2}
         smearing_type::String
-        gparam::GaugeActionParam
+        #gparam::GaugeActionParam
         numflow::Int64
+        smearing::S
 
-        function Measure_topological_charge(filename,U::Array{T,1},params,gparam;printvalues = true) where T
+        #Ftemps::Array{TA,1}
+        #Utemps::Array{Array{T,1},1}
+
+        function Measure_topological_charge(filename,U::Array{T,1},params;printvalues = true) where T
             fp = open(filename,"w")
+            
             
             tempU = Array{T,1}(undef,3)
             for i=1:3
@@ -46,18 +50,25 @@ module Measure_topological_charge_module
                 smearing_type = "gradient_flow"
             end
 
-            numflow = params["numflow"]
-
             
 
-            m = new{T}(filename,fp,tempU,printvalues,
-                    Nflowsteps,
-                    eps_flow,
+            if smearing_type == "gradient_flow"
+                smearing = Gradientflow(U,Nflowsteps,eps_flow)
+                S = typeof(smearing)
+            else
+                error("smearing_type = $smearing_type is not supported")
+            end
+
+            numflow = params["numflow"]
+
+            m = new{T,S}(filename,
+                    fp,
+                    printvalues,
                     Usmr,
                     temp_UμνTA,
                     smearing_type,
-                    gparam,
-                    numflow
+                    numflow,
+                    smearing
             )
             finalizer(m) do m
                 close(m.fp)
@@ -70,11 +81,14 @@ module Measure_topological_charge_module
 
     function measure(m::M,itrj,U::Array{<: AbstractGaugefields{NC,Dim},1};verbose = Verbose_2()) where {M <: Measure_topological_charge,NC,Dim}
         #
-        temp1 = m.tempU[1]
-        temp2 = m.tempU[2]
-        temp3 = m.tempU[3]
+        temps = get_tempG(m.smearing)
 
-        println_verbose2(verbose,"# epsilon for the Wilson flow is $(m.eps_flow)")
+        temp1 = temps[1]
+        temp2 = temps[2]
+        eps_flow = get_eps(m.smearing)
+        Nflowsteps = m.smearing.Nflow
+
+        println_verbose2(verbose,"# epsilon for the Wilson flow is $(eps_flow)")
         substitute_U!(m.Usmr,U)       
 
         τ = 0.0
@@ -95,25 +109,13 @@ module Measure_topological_charge_module
             flush(stdout)
         end
 
-        F0 = initialize_TA_Gaugefields(U)
-
-        Ftemps = Array{typeof(F0),1}(undef,4)
-        Ftemps[1] = F0
-        for i=2:4
-            Ftemps[i] = initialize_TA_Gaugefields(U)
-        end
-
-        temps = Array{typeof(U),1}(undef,2)
-        for i=1:2
-            temps[i] = similar(U)
-        end
-
-
         if m.smearing_type == "gradient_flow"
             for iflow = 1:m.numflow#5000 # eps=0.01: t_flow = 50
-                @time gradientflow!(m.Usmr,m.gparam,
-                    Ftemps,temps,[temp1,temp2,temp3],
-                    m.Nflowsteps,m.eps_flow)
+                @time flow!(m.Usmr,m.smearing)
+
+                #@time gradientflow!(m.Usmr,m.gparam,
+                #    m.Ftemps,temps,[temp1,temp2,temp3],
+                #    m.Nflowsteps,m.eps_flow)
 
                 
                 #println(typeof(m.Usmr[1]))

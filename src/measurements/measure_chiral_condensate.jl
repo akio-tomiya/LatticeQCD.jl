@@ -1,7 +1,7 @@
 module Measure_chiral_condensate_module
     using LinearAlgebra
     import ..AbstractMeasurement_module:AbstractMeasurement,measure,set_params,
-            set_Wilson,set_WilsonClover,set_Staggered
+            set_Fermiontype
     import ..Gaugefield:AbstractGaugefields,
                                         Traceless_antihermitian!,Traceless_antihermitian,
                                         initialize_TA_Gaugefields
@@ -9,21 +9,25 @@ module Measure_chiral_condensate_module
     import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
-    import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields
+    import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,calc_smearedU
+    import ..Fermionfield_LQCD:Dirac_operator
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
-    import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
+    import ..Fermionfield_LQCD:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
                 FermiActionParam
+    #import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
+    #            FermiActionParam
 
 
 
 
-    mutable struct Measure_chiral_condensate{T} <: AbstractMeasurement
+    mutable struct Measure_chiral_condensate{T,FP,Ftype} <: AbstractMeasurement
         filename::String
         fp::IOStream
         tempU::Array{T,1}
         printvalues::Bool
-        fparam::FermiActionParam
+        fparam::FP
+        _temporal_fermions::Array{Ftype,1}        
 
         function Measure_chiral_condensate(filename,
                     U::Array{T,1},params;printvalues = true) where T
@@ -34,39 +38,18 @@ module Measure_chiral_condensate_module
                 tempU[i] = similar(U[1])
             end
 
-            if haskey(params,"fermiontype")
-                fermiontype = params["fermiontype"] 
+            if haskey(params,"BoundaryCondition")
             else
-                fermiontype = nothing
-            end
-
-            if haskey(params,"eps")
-                eps = params["eps"]
-            else
-                eps = 1e-16
-            end
-
-            if haskey(params,"MaxCGstep")
-                MaxCGstep = params["MaxCGstep"]
-            else
-                MaxCGstep = 5000
-            end
-
-            if fermiontype  == "Wilson"
-                fparam = set_Wilson(params)
-            elseif fermiontype == "WilsonClover"
-                fparam = set_WilsonClover(params)
-            elseif fermiontype == "Staggered"
-                fparam = set_Staggered(params)
-            elseif fermiontype == nothing
-                fparam = nothing
-            else
-                error("$fermiontype is not supported. use Wilson or Staggered")
+                params["BoundaryCondition"] = [1,1,1,-1]
             end
 
 
-            m = new{T}(filename,fp,tempU,printvalues,fparam
-            )
+            fparam,_temporal_fermions = set_Fermiontype(U,params)
+            FP = typeof(fparam)
+            Ftype = eltype(_temporal_fermions)
+
+            m = new{T,FP,Ftype}(filename,fp,tempU,printvalues,fparam,_temporal_fermions)
+
             finalizer(m) do m
                 close(m.fp)
             end
@@ -77,9 +60,46 @@ module Measure_chiral_condensate_module
 
 
     function measure(m::M,itrj,U::Array{<: AbstractGaugefields{NC,Dim},1};verbose = Verbose_2()) where {M <: Measure_chiral_condensate,NC,Dim}
+        Nr = 10
+        pbp = calc_chiral_cond(m,itrj,U,Nr,verbose)
 
         error("not implemented")
         return 
+    end
+
+    function calc_chiral_cond(m::Me,itrj,Uin::Array{<: AbstractGaugefields{NC,Dim},1}, Nr = 10, verbose = Verbose_2()) where {Me <: Measure_chiral_condensate,NC,Dim}
+        #(univ::Universe,meas,measfp,itrj, Nr = 10, verbose = Verbose_2())
+        # pbp = (1/Nr) Σ_i p_i
+        # p_i = r_i^\dag xi_i
+        # xi_i = D^{-1} r_i   # D xi = r : r is a random veccor
+        #
+        Nfbase = ifelse( m.fparam.Dirac_operator == "Staggered",4,1)
+        Nf = m.fparam.Nf
+        factor = Nf/Nfbase
+        #
+        println_verbose2(verbose,"Chiral condensate for Nf = $(Nf), Dirac_operator = $(m.fparam.Dirac_operator), factor=$factor is multiplied.")
+        #
+        pbp = 0.0
+        # setup a massive Dirac operator
+        println(m.fparam.smearing)
+        U,_... = calc_smearedU(Uin,m.fparam.smearing)
+        #U,_... = calc_smearingU(U,m.fparam.smearing)
+        M = Dirac_operator(U,m._temporal_fermions[1],m.fparam)
+        #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
+        for ir=1:Nr
+            r = similar(meas._temporal_fermi2[1]) 
+            p = similar(r) 
+            clear!(p)
+            #gauss_distribution_fermi!(r,univ.ranf)
+            Z4_distribution_fermi!(r)
+            #set_wing_fermi!(r) 
+            bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
+            tmp = r*p # hemitian inner product
+            println_verbose2(verbose,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
+            println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
+            pbp+=tmp
+        end
+        return real(pbp/Nr)/univ.NV * factor
     end
 
 end
