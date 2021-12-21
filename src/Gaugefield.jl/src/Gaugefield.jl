@@ -1,4 +1,5 @@
 module Gaugefield
+    include("./output/verboseprint.jl")
     include("./SUN_generator.jl")
     include("./autostaples/wilsonloops.jl")
     include("./AbstractGaugefields.jl") 
@@ -7,7 +8,7 @@ module Gaugefield
     
 
     
-    import .AbstractGaugefields_module:AbstractGaugefields,identitymatrix,
+    import .AbstractGaugefields_module:AbstractGaugefields,identitymatrix,Abstractfields,
                                         shift_U,construct_staple!,set_wing_U!,
                                         calculate_Plaquette,substitute_U!,calculate_Polyakov_loop,construct_gauges,
                                         Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
@@ -16,8 +17,9 @@ module Gaugefield
                                         identityGaugefields_4D_wing,
                                         add_force!,exp_aF_U!,clear_U!,add_U!,
                                         Traceless_antihermitian!,Traceless_antihermitian,Generator
+
                                         
-    import .Loops_module:Loops,evaluate_loops,calc_large_wiloson_loop!
+    import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!
     import .Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
                 make_cloverloops,Tensor_derivative_set, make_loops,
                 make_plaq_staple,make_links,make_plaq,
@@ -29,5 +31,8 @@ module Gaugefield
                 make_originalactions_fromloops
     import .AbstractGaugefields_module:TA_Gaugefields,initialize_TA_Gaugefields
     import .Abstractsmearing_module:Abstractsmearing,Nosmearing,Stoutsmearing,calc_smearedU,construct_smearing,Gradientflow,get_tempG,flow!,get_eps
+    #import .Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
+    import .Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+    print_verbose1,print_verbose2,print_verbose3
     
 end

@@ -1,8 +1,7 @@
-abstract type StaggeredFermion{NC,Dim} <: AbstractFermionfields{NC,Dim} 
-end 
+#abstract type StaggeredFermion{NC,Dim} <: AbstractFermionfields{NC,Dim} 
+#end 
 
 include("./StaggeredFermion_4D_wing.jl")
-
 
 function StaggeredFermion(params,NC,NDW,NN...)
     Dim = length(NN)

@@ -5,16 +5,17 @@ module Measure_chiral_condensate_module
     import ..Gaugefield:AbstractGaugefields,
                                         Traceless_antihermitian!,Traceless_antihermitian,
                                         initialize_TA_Gaugefields
-    import ..Gaugefields:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!,calculate_energy_density
-    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+    import ..Gaugefield:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!
+
+    import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
     import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,calc_smearedU
     import ..Fermionfield_LQCD:Dirac_operator
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
-    import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
+    #import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
     import ..Fermionfield_LQCD:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
-                FermiActionParam
+                FermiActionParam,clear_fermion!,Z4_distribution_fermion!,bicg
     #import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
     #            FermiActionParam
 
@@ -86,14 +87,14 @@ module Measure_chiral_condensate_module
         #U,_... = calc_smearingU(U,m.fparam.smearing)
         M = Dirac_operator(U,m._temporal_fermions[1],m.fparam)
         #M = Dirac_operator(univ.U,meas._temporal_fermi2[1],meas.fparam)
+        r = similar(m._temporal_fermions[1]) 
+        p = similar(r) 
         for ir=1:Nr
-            r = similar(meas._temporal_fermi2[1]) 
-            p = similar(r) 
-            clear!(p)
+            clear_fermion!(p)
             #gauss_distribution_fermi!(r,univ.ranf)
-            Z4_distribution_fermi!(r)
+            Z4_distribution_fermion!(r)
             #set_wing_fermi!(r) 
-            bicg(p,M,r,eps=meas.fparam.eps,maxsteps = meas.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
+            bicg(p,M,r,eps=m.fparam.eps,maxsteps = m.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
             tmp = r*p # hemitian inner product
             println_verbose2(verbose,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
             println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")

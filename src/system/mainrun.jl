@@ -20,7 +20,8 @@ module Mainrun
     import ..Actions:GaugeActionParam_standard,
                     GaugeActionParam,
                     GaugeActionParam_autogenerator
-    import ..Verbose_print:println_verbose1,println_verbose2,Verbose_1
+    import ..Gaugefield:println_verbose1,println_verbose2,Verbose_1                    
+    #import ..Verbose_print:println_verbose1,println_verbose2,Verbose_1
 
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement

@@ -4,8 +4,8 @@ module Measure_topological_charge_module
     import ..Gaugefield:AbstractGaugefields,
                                         Traceless_antihermitian!,Traceless_antihermitian,
                                         initialize_TA_Gaugefields,Gradientflow
-    import ..Gaugefields:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!,calculate_energy_density
-    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+    import ..Gaugefield:calculate_Plaquette,calculate_Polyakov_loop,substitute_U!,calc_large_wilson_loop!
+    import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
     import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,get_tempG,get_eps,flow!
@@ -128,7 +128,7 @@ module Measure_topological_charge_module
                 Qimproved= calculate_topological_charge_improved(m.Usmr,m.temp_UμνTA,Qclover)
                 clov = calculate_energy_density(m.Usmr)
                 #@time Q = calc_topological_charge(Usmr)
-                τ = iflow*m.eps_flow*m.Nflowsteps
+                τ = iflow*eps_flow*m.smearing.Nflow
                 if m.printvalues
                     println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
                     println(m.fp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
@@ -276,5 +276,41 @@ module Measure_topological_charge_module
         epsilon[ 4, 3, 1, 2 ] = -1
         epsilon[ 4, 3, 2, 1 ] = 1
         return epsilon[mu,nu,rho,sigma]*sign
+    end
+
+
+       # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+   function calculate_energy_density(U::Array{T,1}) where T <: AbstractGaugefields
+    # Making a ( Ls × Lt) Wilson loop operator for potential calculations
+        WL = 0.0+0.0im
+        NV = U[1].NV
+        NC = U[1].NC
+        Wmat = Array{T,2}(undef,4,4)
+        #
+        make_energy_density!(Wmat,U) # make wilon loop operator and evaluate as a field, not traced.
+        WL =  make_energy_density_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
+        NDir = 4.0*3.0/2 # choice of 2 axis from 4.
+        return real(WL)/NV/NDir/NC/8
+    end
+
+    function make_energy_density!(Wmat,U::Array{T,1}) where T <: AbstractGaugefields
+        W_operator,numofloops = calc_loopset_μν_name("clover")#make_Wilson_loop(Lt,Ls)
+        calc_large_wilson_loop!(Wmat,W_operator,U)
+        return 
+    end
+
+    function  make_energy_density_core(Wmat::Array{<: AbstractGaugefields{NC,Dim},2}, U::Array{T,1} ,NV) where {T <: AbstractGaugefields,NC,Dim}
+        @assert Dim == 4
+
+        W = 0.0 + 0.0im
+        for μ=1:Dim # all directions
+            for ν=1:Dim
+                if μ == ν
+                    continue
+                end
+                W += tr(Wmat[μ,ν],Wmat[μ,ν])/4
+            end
+        end
+        return W
     end
 end

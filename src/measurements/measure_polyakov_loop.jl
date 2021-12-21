@@ -1,8 +1,8 @@
 module Measure_polyakov_loop_module
     import ..AbstractMeasurement_module:AbstractMeasurement,measure
     import ..Gaugefield:AbstractGaugefields
-    import ..Gaugefields:calculate_Plaquette,calculate_Polyakov_loop
-    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+    import ..Gaugefield:calculate_Plaquette,calculate_Polyakov_loop
+    import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3
 
     mutable struct Measure_polyakov{T} <: AbstractMeasurement

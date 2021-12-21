@@ -15,7 +15,7 @@ module Gaugefields
                                         Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
                                         calc_rank_and_indices,barrier,comm,setvalue!,
                                         Gaugefields_4D_wing,
-                                        identityGaugefields_4D_wing,calc_large_wiloson_loop!,add_force!
+                                        identityGaugefields_4D_wing,calc_large_wilson_loop!,add_force!
     #import ..Gaugefield:calc_large_wiloson_loop!
 
     #import ..Gaugefields_4D_wing_module:Gaugefields_4D_wing,

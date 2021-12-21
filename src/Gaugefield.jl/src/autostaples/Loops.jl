@@ -50,7 +50,7 @@ module Loops_module
 
 
 
-    function calc_large_wiloson_loop!(temp_Wmat::Array{<: AbstractGaugefields{NC,Dim},2},W_operator,U::Array{T,1}) where {T <: AbstractGaugefields,NC,Dim}
+    function calc_large_wilson_loop!(temp_Wmat::Array{<: AbstractGaugefields{NC,Dim},2},W_operator,U::Array{T,1}) where {T <: AbstractGaugefields,NC,Dim}
         W = temp_Wmat
         for μ=1:Dim
             for ν=1:Dim

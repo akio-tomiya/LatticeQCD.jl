@@ -17,8 +17,9 @@ module Measurements
     import ..System_parameters:Params
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover
     import ..Diracoperators:Dirac_operator,γ5D_operator
-    import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
-            print_verbose1,print_verbose2,print_verbose3
+    #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+    #        print_verbose1,print_verbose2,print_verbose3
+             
     import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Gaugefield:Wilson_loop,Wilson_loop_set
     import ..System_parameters:set_params
@@ -28,6 +29,8 @@ module Measurements
     import ..Measure_polyakov_loop_module:Measure_polyakov
     import ..Measure_topological_charge_module:Measure_topological_charge
     import ..Measure_chiral_condensate_module:Measure_chiral_condensate
+    import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
+            print_verbose1,print_verbose2,print_verbose3   
     
 
     #=
