@@ -446,7 +446,7 @@ module Measurements
                     #smearing_type = "stout"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
-                            @time gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
+                            gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
                             #println(typeof(Usmr[1]))
                             #println(Usmr[1][1,1,1,1,1,1])
                             #error("Usmr")

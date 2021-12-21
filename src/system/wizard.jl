@@ -416,6 +416,7 @@ module Wizard
         loadtype = request("Choose a configuration format for loading",RadioMenu([
                     "JLD",
                     "ILDG",
+                    "Text format(BridgeText)",
             ]))
         system["update_method"] = "Fileloading"
 
@@ -424,6 +425,8 @@ module Wizard
             
         elseif loadtype == 2
             system["loadU_format"] = "ILDG"
+        elseif loadtype == 3
+            system["loadU_format"] = "BridgeText"
         end
 
         if system["loadU_format"] ≠ nothing
@@ -481,6 +484,7 @@ module Wizard
             loadtype = request("Choose a configuration format for loading",RadioMenu([
                 "JLD",
                 "ILDG",
+                "Text format (BridgeText)"
             ]))
 
             if loadtype == 1
@@ -490,6 +494,9 @@ module Wizard
             elseif loadtype == 2
                 system["loadU_format"] = "ILDG"
                 system["initial"] = String(Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.ildg"))
+            elseif loadtype == 3
+                system["loadU_format"] = "BrideText"
+                system["initial"] = String(Base.prompt("Input the file name that you want to use",default="./confs/conf_00000001.txt"))
             end
             system["initialtrj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
 
@@ -808,6 +815,7 @@ module Wizard
                         "no save",
                         "JLD",
                         "ILDG",
+                        "Text format (BridgeText)"
                 ]))
             if savetype == 2
                 system["saveU_format"] = "JLD"
@@ -817,6 +825,8 @@ module Wizard
                 system["saveU_dir"] = ""
             elseif savetype == 3
                 system["saveU_format"] = "ILDG"
+            elseif savetype == 4
+                system["saveU_format"] = "BridgeText"
             end
 
             if system["saveU_format"] ≠ nothing

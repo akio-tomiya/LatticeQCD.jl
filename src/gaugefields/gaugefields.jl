@@ -8,6 +8,7 @@ module Gaugefields
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                             get_leftstartposition,get_rightstartposition,Wilson_loop
     import ..SUN_generator:Generator
+    using InteractiveUtils
     
 
     abstract type SUn end
@@ -1925,12 +1926,14 @@ module Gaugefields
         #println("mu = ",μ)
 
         #loops = make_plaq_staple(μ)
+        # #=
         loops = make_plaq_staple_prime(μ)
         evaluate_wilson_loops!(staple,loops,U,[temp1,temp2,temp3])
         return
 
 
         clear!(staple)
+        # =#
         
         for ν=1:4
             if ν == μ

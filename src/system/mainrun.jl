@@ -11,7 +11,7 @@ module Mainrun
     import ..Print_config:write_config
     import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
-    import ..Bridge_format:load_BridgeText!
+    import ..Bridge_format:load_BridgeText!,save_textdata
     import ..Heatbath:heatbath!,overrelaxation!
     import ..Wilsonloops:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
     import ..IOmodule:saveU,loadU,loadU!
@@ -487,6 +487,9 @@ module Mainrun
                 elseif parameters.saveU_format == "ILDG"
                     filename = parameters.saveU_dir*"/conf_$(itrjstring).ildg"
                     save_binarydata(univ.U,filename)
+                elseif parameters.saveU_format == "BridgeText"
+                    filename = parameters.saveU_dir*"/conf_$(itrjstring).txt"
+                    save_textdata(univ.U,filename)
                 else
                     error("$(parameters.saveU_format) is not supported")
                 end
