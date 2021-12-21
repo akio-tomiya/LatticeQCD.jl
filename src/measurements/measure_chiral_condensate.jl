@@ -1,5 +1,6 @@
 module Measure_chiral_condensate_module
     using LinearAlgebra
+    #using InteractiveUtils
     import ..AbstractMeasurement_module:AbstractMeasurement,measure,set_params,
             set_Fermiontype
     import ..Gaugefield:AbstractGaugefields,
@@ -63,8 +64,12 @@ module Measure_chiral_condensate_module
     function measure(m::M,itrj,U::Array{<: AbstractGaugefields{NC,Dim},1};verbose = Verbose_2()) where {M <: Measure_chiral_condensate,NC,Dim}
         Nr = 10
         pbp = calc_chiral_cond(m,itrj,U,Nr,verbose)
-
-        error("not implemented")
+        if m.printvalues
+            println_verbose1(verbose,"$itrj $pbp # pbp Nr=$Nr")
+            println(m.fp,"$itrj $pbp # pbp Nr=$Nr")
+            flush(stdout)
+        end
+        #error("not implemented")
         return 
     end
 
@@ -94,13 +99,16 @@ module Measure_chiral_condensate_module
             #gauss_distribution_fermi!(r,univ.ranf)
             Z4_distribution_fermion!(r)
             #set_wing_fermi!(r) 
-            bicg(p,M,r,eps=m.fparam.eps,maxsteps = m.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
-            tmp = r*p # hemitian inner product
-            println_verbose2(verbose,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
-            println(measfp,"# $itrj $ir $(real(tmp)/univ.NV) # itrj irand chiralcond")
+            @time bicg(p,M,r,eps=m.fparam.eps,maxsteps = m.fparam.MaxCGstep,verbose = verbose) # solve Mp=b, we get p=M^{-1}b
+            tmp = dot(r,p) # hermitian inner product
+            if m.printvalues
+                println_verbose2(verbose,"# $itrj $ir $(real(tmp)/U[1].NV) # itrj irand chiralcond")
+                println(m.fp,"# $itrj $ir $(real(tmp)/U[1].NV) # itrj irand chiralcond")
+            end
             pbp+=tmp
         end
-        return real(pbp/Nr)/univ.NV * factor
+        return real(pbp/Nr)/U[1].NV * factor
+
     end
 
 end

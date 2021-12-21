@@ -484,6 +484,7 @@ module Diracoperators
         clear!(y)
         add!(y,A.mass,x,1,temp)
         set_wing_fermi!(y)
+        
         return
     end
 

@@ -73,6 +73,7 @@ module LatticeQCD
     include("./measurements/measure_polyakov_loop.jl")
     include("./measurements/measure_topological_charge.jl")
     include("./measurements/measure_chiral_condensate.jl")
+    include("./measurements/measure_Pion_correlator.jl")
 
     include("./measurements/measurements.jl")
     include("./heatbath/heatbath.jl")

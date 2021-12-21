@@ -1,7 +1,7 @@
 module Dirac_operators_module
     using LinearAlgebra
     import ..AbstractFermionfields_module:Fermionfields,AbstractFermionfields,clear_fermion!,set_wing_fermion!,
-                                            Dx!
+                                            Dx!,add_fermion!
     import ..Gaugefield:AbstractGaugefields
     import ..FermionAction_module:FermiActionParam,FermiActionParam_Wilson,FermiActionParam_WilsonClover,FermiActionParam_Staggered
 
@@ -46,6 +46,16 @@ module Dirac_operators_module
         end
     end
 
+    struct Adjoint_Staggered_operator{T} <: Adjoint_Dirac_operator 
+        parent::T
+    end
+
+    function Base.adjoint(A::T) where T <: Staggered_operator
+        Adjoint_Staggered_operator{typeof(A)}(A)
+    end
+
+
+
     function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <:  Dirac_operator, T3 <:  AbstractFermionfields}
         error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
     end
@@ -58,6 +68,21 @@ module Dirac_operators_module
         clear_fermion!(y)
         add_fermion!(y,A.mass,x,1,temp)
         set_wing_fermion!(y)
+
+        
+        #error("xout")
         return
     end
+
+    function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <: Adjoint_Staggered_operator, T3 <:  AbstractFermionfields}
+        temps = A.parent._temporal_fermi
+        temp = temps[4]
+        Dx!(temp,A.parent.U,x,temps)
+        clear_fermion!(y)
+        add_fermion!(y,A.parent.mass,x,-1,temp)
+        set_wing_fermion!(y)
+        #println(y[1,1,1,1,1,1])
+        return
+    end
+
 end

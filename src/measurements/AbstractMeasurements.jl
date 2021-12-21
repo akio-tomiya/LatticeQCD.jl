@@ -96,9 +96,18 @@ module AbstractMeasurement_module
                                                 L = L)
         end
 
+        NC,_,NN... = size(U[1]) 
+        ϕ = Fermionfields(params,NC,fermiontype,NN...)
+
+        _temporal_fermions = Array{typeof(ϕ),1}(undef,4)
+        for i=1:length(_temporal_fermions)
+            _temporal_fermions[i] = similar(ϕ)
+        end
 
 
-        return fparam,fermion
+
+
+        return fparam,_temporal_fermions
     end
 
     function set_WilsonClover(U,params)
@@ -225,7 +234,7 @@ module AbstractMeasurement_module
 
 
         NC,_,NN... = size(U[1]) 
-        ϕ = Fermionfields(params,NC,U[1].NDW,fermiontype,NN...)
+        ϕ = Fermionfields(params,NC,fermiontype,NN...)
 
         _temporal_fermions = Array{typeof(ϕ),1}(undef,4)
         for i=1:length(_temporal_fermions)

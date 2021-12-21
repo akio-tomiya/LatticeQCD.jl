@@ -16,7 +16,8 @@ module Gaugefield
                                         Gaugefields_4D_wing,
                                         identityGaugefields_4D_wing,
                                         add_force!,exp_aF_U!,clear_U!,add_U!,
-                                        Traceless_antihermitian!,Traceless_antihermitian,Generator
+                                        Traceless_antihermitian!,Traceless_antihermitian,Generator,
+                                        Staggered_Gaugefields,staggered_U
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!

@@ -1,3 +1,4 @@
+
 struct StaggeredFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
     NC::Int64
     NX::Int64
@@ -14,14 +15,18 @@ struct StaggeredFermion_4D_wing{NC} <: AbstractFermionfields_4D{NC}
     MaxCGstep::Int64
     BoundaryCondition::Array{Int8,1}
 
-    function StaggeredFermion_4D_wing(NC::T,NDW::T,NX::T,NY::T,NZ::T,NT::T,mass,eps,MaxCGstep,BoundaryCondition) where T<: Integer
+    function StaggeredFermion_4D_wing(NC::T,NX::T,NY::T,NZ::T,NT::T,mass,eps,MaxCGstep,BoundaryCondition) where T<: Integer
         NG = 1
+        NDW = 1
+        #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
         f = zeros(ComplexF64,NC,NX+2NDW,NY+2NDW,NZ+2NDW,NT+2NDW,NG)
         Dirac_operator = "Staggered"
         return new{NC}(NC,NX,NY,NZ,NT,NDW,NG,f,mass,eps,Dirac_operator,MaxCGstep,BoundaryCondition)
     end
 
-    function StaggeredFermion_4D_wing(params,NC::T,NDW::T,NX::T,NY::T,NZ::T,NT::T) where T<: Integer
+    function StaggeredFermion_4D_wing(params,NC::T,NX::T,NY::T,NZ::T,NT::T) where T<: Integer
+        NDW = 1
+        #@assert NDW == 1 "only NDW = 1 is supported. Now NDW = $NDW"
         mass = params["mass"]
         eps = params["eps"]
         MaxCGstep = params["MaxCGstep"]
@@ -37,7 +42,7 @@ end
 
 
 function Base.similar(x::T) where T <: StaggeredFermion_4D_wing
-    return StaggeredFermion_4D_wing(x.NC,x.NDW,x.NX,x.NY,x.NZ,x.NT,
+    return StaggeredFermion_4D_wing(x.NC,x.NX,x.NY,x.NZ,x.NT,
                 x.mass,x.eps,x.MaxCGstep,x.BoundaryCondition)
 end
 
@@ -52,19 +57,25 @@ function Dx!(xout::T,U::Array{G,1},
     clear_fermion!(xout)
     for ν=1:4
         xplus = shift_fermion(x,ν)
-        mul!(temp1,U[ν],xplus)
-        
+        Us = staggered_U(U[ν],ν)
+        mul!(temp1,Us,xplus)
+
+
         xminus = shift_fermion(x,-ν)
         Uminus = shift_U(U[ν],-ν)
-        mul!(temp2,Uminus',xminus)
-        add!(xout,0.5,temp1,-0.5,temp2)
+        Uminus_s = staggered_U(Uminus,ν)
+        mul!(temp2,Uminus_s',xminus)
+        
+        add_fermion!(xout,0.5,temp1,-0.5,temp2)
 
         #fermion_shift!(temp1,U,ν,x)
         #fermion_shift!(temp2,U,-ν,x)
         #add!(xout,0.5,temp1,-0.5,temp2)
         
     end
-    set_wing_fermi!(xout)
+
+    
+    set_wing_fermion!(xout)
 
     return
 end

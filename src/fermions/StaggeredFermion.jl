@@ -59,10 +59,12 @@ module StaggeredFermion_module
                     for ix=1:a.NX
                         @simd for ic=1:a.NC
                             c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
+                            
                         end
                     end
                 end
             end
+            println(it,"c ",c)
         end            
 
         return c
@@ -179,10 +181,13 @@ module StaggeredFermion_module
         for ν=1:4
             
             fermion_shift!(temp1,U,ν,x)
+            
 
             fermion_shift!(temp2,U,-ν,x)
+            #println("temp1 ",temp2[1,2,1,1,1,1])
 
             add!(xout,0.5,temp1,-0.5,temp2)
+            
             
         end
         set_wing_fermi!(xout)
@@ -200,8 +205,10 @@ module StaggeredFermion_module
         set_wing_fermi!(x)
 
         fermion_shift!(temp1,U,ν,x)
+        
 
         fermion_shift!(temp2,U,-ν,x)
+        
 
         add!(xout,0.5,temp1,-0.5,temp2)
             
@@ -307,6 +314,7 @@ module StaggeredFermion_module
         for ν=1:4
             clear!(temp1)
             fermion_shift!(temp1,evensite,U,ν,x)
+            
 
             #... Dirac multiplication
             #mul!(temp1,view(x.rminusγ,:,:,ν),temp1)

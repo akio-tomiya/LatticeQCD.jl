@@ -29,6 +29,8 @@ module Measurements
     import ..Measure_polyakov_loop_module:Measure_polyakov
     import ..Measure_topological_charge_module:Measure_topological_charge
     import ..Measure_chiral_condensate_module:Measure_chiral_condensate
+    import ..Measure_Pion_correlator_module:Measure_Pion_correlator
+    
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
             print_verbose1,print_verbose2,print_verbose3   
     
@@ -74,6 +76,8 @@ module Measurements
                     measurements[i] = Measure_topological_charge(measurement_dir*"/Topological_charge.txt",univ.U,method)
                 elseif method["methodname"] == "Chiral_condensate" 
                     measurements[i] = Measure_chiral_condensate(measurement_dir*"/Chiral_condensate.txt",univ.U,method)
+                elseif method["methodname"] == "Pion_correlator" 
+                    measurements[i] = Measure_Pion_correlator(measurement_dir*"/Pion_correlator.txt",univ.U,method)
                 else
                     error("$(method["methodname"]) is not supported")
                 end

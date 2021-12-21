@@ -40,11 +40,11 @@ module Gaugefields_4D_wing_module
     end
 
 
-    function Base.getindex(U::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing #U'
+    function Base.getindex(U::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfields #U'
         return conj(U.parent[i2,i1,i3,i4,i5,i6])
     end
 
-    function Base.setindex!(U::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Gaugefields_4D_wing
+    function Base.setindex!(U::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfields
         error("type $(typeof(U)) has no setindex method. This type is read only.")
     end
 
@@ -99,14 +99,22 @@ module Gaugefields_4D_wing_module
         return U
     end
 
+
+
+
     struct Shifted_Gaugefields_4D{NC} <: Shifted_Gaugefields{NC,4} 
         parent::Gaugefields_4D_wing{NC}
         #parent::T
         shift::NTuple{4,Int8}
+        NX::Int64
+        NY::Int64
+        NZ::Int64
+        NT::Int64
+
 
         #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
         function Shifted_Gaugefields_4D(U::Gaugefields_4D_wing{NC},shift) where NC
-            return new{NC}(U,shift)
+            return new{NC}(U,shift,U.NX,U.NY,U.NZ,U.NT)
         end
     end
 
@@ -148,6 +156,8 @@ module Gaugefields_4D_wing_module
     #function Base.getindex(U::Shifted_Gaugefields{T,4},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing
         return U.parent.U[i1,i2,i3 .+ U.parent.NDW .+ U.shift[1],i4 .+ U.parent.NDW .+ U.shift[2],i5 .+ U.parent.NDW .+ U.shift[3],i6 .+ U.parent.NDW .+ U.shift[4]]
     end
+    
+    #=
 
     function Base.getindex(U::Adjoint_Gaugefields{Shifted_Gaugefields_4D{NC}},i1,i2,i3,i4,i5,i6) where NC
     #function Base.getindex(U::Adjoint_Gaugefields{Shifted_Gaugefields{T,4}},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing
@@ -157,6 +167,94 @@ module Gaugefields_4D_wing_module
     function Base.setindex!(U::Adjoint_Gaugefields{Shifted_Gaugefields_4D{T}},v,i1,i2,i3,i4,i5,i6)  where T <: Gaugefields_4D_wing
         error("type $(typeof(U)) has no setindex method. This type is read only.")
     end
+
+    =#
+
+
+    function Base.getindex(u::Staggered_Gaugefields{T,μ},i1,i2,i3,i4,i5,i6) where {T <: Gaugefields_4D_wing,μ}
+        NT = u.parent.NT
+        NZ = u.parent.NZ
+        NY = u.parent.NY
+        NX = u.parent.NX
+
+        t = i6-1
+        t += ifelse(t<0,NT,0)
+        t += ifelse(t ≥ NT,-NT,0)
+        #boundary_factor_t = ifelse(t == NT -1,BoundaryCondition[4],1)
+        z = i5-1
+        z += ifelse(z<0,NZ,0)
+        z += ifelse(z ≥ NZ,-NZ,0)
+        #boundary_factor_z = ifelse(z == NZ -1,BoundaryCondition[3],1)
+        y = i4-1
+        y += ifelse(y<0,NY,0)
+        y += ifelse(y ≥ NY,-NY,0)
+        #boundary_factor_y = ifelse(y == NY -1,BoundaryCondition[2],1)
+        x = i3-1
+        x += ifelse(x<0,NX,0)
+        x += ifelse(x ≥ NX,-NX,0)
+        #boundary_factor_x = ifelse(x == NX -1,BoundaryCondition[1],1)
+        if μ ==1
+            η = 1
+        elseif μ ==2
+            #η = (-1.0)^(x)
+            η = ifelse(x%2 == 0,1,-1)
+        elseif μ ==3
+            #η = (-1.0)^(x+y)
+            η = ifelse((x+y)%2 == 0,1,-1)
+        elseif μ ==4
+            #η = (-1.0)^(x+y+z)
+            η = ifelse((x+y+z)%2 == 0,1,-1)
+        else
+            error("η should be positive but η = $η")
+        end
+
+        return η*u.parent[i1,i2,i3,i4,i5,i6]
+    end
+
+    function Base.getindex(u::Staggered_Gaugefields{T,μ},i1,i2,i3,i4,i5,i6) where {T <: Shifted_Gaugefields_4D,μ}
+        NT = u.parent.NT
+        NZ = u.parent.NZ
+        NY = u.parent.NY
+        NX = u.parent.NX
+
+        t = i6-1 + u.parent.shift[4]
+        t += ifelse(t<0,NT,0)
+        t += ifelse(t ≥ NT,-NT,0)
+        #boundary_factor_t = ifelse(t == NT -1,BoundaryCondition[4],1)
+        z = i5-1+ u.parent.shift[3]
+        z += ifelse(z<0,NZ,0)
+        z += ifelse(z ≥ NZ,-NZ,0)
+        #boundary_factor_z = ifelse(z == NZ -1,BoundaryCondition[3],1)
+        y = i4-1+ u.parent.shift[2]
+        y += ifelse(y<0,NY,0)
+        y += ifelse(y ≥ NY,-NY,0)
+        #boundary_factor_y = ifelse(y == NY -1,BoundaryCondition[2],1)
+        x = i3-1+ u.parent.shift[1]
+        x += ifelse(x<0,NX,0)
+        x += ifelse(x ≥ NX,-NX,0)
+        #boundary_factor_x = ifelse(x == NX -1,BoundaryCondition[1],1)
+        if μ ==1
+            η = 1
+        elseif μ ==2
+            #η = (-1.0)^(x)
+            η = ifelse(x%2 == 0,1,-1)
+        elseif μ ==3
+            #η = (-1.0)^(x+y)
+            η = ifelse((x+y)%2 == 0,1,-1)
+        elseif μ ==4
+            #η = (-1.0)^(x+y+z)
+            η = ifelse((x+y+z)%2 == 0,1,-1)
+        else
+            error("η should be positive but η = $η")
+        end
+
+        return η*u.parent[i1,i2,i3,i4,i5,i6]
+    end
+
+
+    
+
+
     
     function clear_U!(Uμ::Gaugefields_4D_wing{NC}) where NC
         NT = Uμ.NT
@@ -1142,6 +1240,40 @@ module Gaugefields_4D_wing_module
                 end
             end
         #end
+    end
+
+    function staggered_phase(μ,ix,iy,iz,it,NX,NY,NZ,NT)
+        t = it-1
+        t += ifelse(t<0,NT,0)
+        t += ifelse(t ≥ NT,-NT,0)
+        #boundary_factor_t = ifelse(t == NT -1,BoundaryCondition[4],1)
+        z = iz-1
+        z += ifelse(z<0,NZ,0)
+        z += ifelse(z ≥ NZ,-NZ,0)
+        #boundary_factor_z = ifelse(z == NZ -1,BoundaryCondition[3],1)
+        y = iy-1
+        y += ifelse(y<0,NY,0)
+        y += ifelse(y ≥ NY,-NY,0)
+        #boundary_factor_y = ifelse(y == NY -1,BoundaryCondition[2],1)
+        x = ix-1
+        x += ifelse(x<0,NX,0)
+        x += ifelse(x ≥ NX,-NX,0)
+        #boundary_factor_x = ifelse(x == NX -1,BoundaryCondition[1],1)
+        if μ ==1
+            η = 1
+        elseif μ ==2
+            #η = (-1.0)^(x)
+            η = ifelse(x%2 == 0,1,-1)
+        elseif μ ==3
+            #η = (-1.0)^(x+y)
+            η = ifelse((x+y)%2 == 0,1,-1)
+        elseif μ ==4
+            #η = (-1.0)^(x+y+z)
+            η = ifelse((x+y+z)%2 == 0,1,-1)
+        else
+            error("η should be positive but η = $η")
+        end
+        return η#*boundary_factor_x*boundary_factor_y*boundary_factor_z*boundary_factor_t
     end
 
     

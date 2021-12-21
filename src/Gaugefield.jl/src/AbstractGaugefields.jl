@@ -27,8 +27,34 @@ module AbstractGaugefields_module
     abstract type Shifted_Gaugefields{NC,Dim} <: Abstractfields
     end
 
+    struct Staggered_Gaugefields{T,μ} <: Abstractfields
+        parent::T
+
+        function Staggered_Gaugefields(u::T,μ) where T <: Abstractfields
+            return new{T,μ}(u)
+        end
+    end
+
+    function staggered_U(u::T,μ) where T <: Abstractfields
+        return Staggered_Gaugefields(u,μ)
+    end
+
+    function Base.setindex!(U::T,v...)  where T <: Staggered_Gaugefields
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
+
+
     include("./4D/gaugefields_4D.jl")
     include("TA_Gaugefields.jl")
+
+    function Staggered_Gaugefields(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
+        if Dim == 4
+            return Staggered_Gaugefields_4D(u)
+        else
+            error("Dim = $Dim is not supported")
+        end
+    end
     
     
     #include("./gaugefields_4D_wing_mpi.jl")
@@ -453,7 +479,9 @@ module AbstractGaugefields_module
     end
 
 
-
+    function staggered_phase(μ,iii...)
+        error("staggered_phase is not implemented")
+    end
 
 
 

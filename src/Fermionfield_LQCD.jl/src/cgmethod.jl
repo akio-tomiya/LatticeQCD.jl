@@ -1,5 +1,6 @@
 module CGmethods
     using LinearAlgebra
+    using InteractiveUtils
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
 
@@ -54,7 +55,8 @@ module CGmethods
 
             mul!(s,A',res)
 
-            c3 = s * s
+            #c3 = s * s
+            c3 = s ⋅ s
 
             beta = c3 / c1
             c1 = c3
