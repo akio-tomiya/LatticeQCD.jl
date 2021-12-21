@@ -63,6 +63,14 @@ module AbstractFermionfields_module
         error("Dx! is not implemented in type $(typeof(temp)) ")
     end
 
+    function Wx!(temp::T,U,x,temps)  where T <: AbstractFermionfields
+        error("Wx! is not implemented in type $(typeof(temp)) ")
+    end
+
+    function Wdagx!(temp::T,U,x,temps)  where T <: AbstractFermionfields
+        error("Wdagx! is not implemented in type $(typeof(temp)) ")
+    end
+
     function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:Abstractfermion,T2 <: Abstractfields, T3 <: Abstractfermion} 
         error("LinearAlgebra.mul!(y,A,x) is not implemented in type y:$(typeof(y)),A:$(typeof(A)) and x:$(typeof(x))")
     end
@@ -77,6 +85,10 @@ module AbstractFermionfields_module
 
     function LinearAlgebra.dot(a::T1,b::T2) where {T1 <: Abstractfermion, T2 <: Abstractfermion}
         error("LinearAlgebra.dot is not implemented in type X:$T1,Y:$T2")
+    end
+
+    function get_origin(a::T1) where T1 <: AbstractFermionfields
+        error(" get_origin is not implemented in type $(typeof(a)) ")
     end
 
     

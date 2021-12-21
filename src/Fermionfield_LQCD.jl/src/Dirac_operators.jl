@@ -1,7 +1,7 @@
 module Dirac_operators_module
     using LinearAlgebra
     import ..AbstractFermionfields_module:Fermionfields,AbstractFermionfields,clear_fermion!,set_wing_fermion!,
-                                            Dx!,add_fermion!
+                                            Dx!,add_fermion!,Wx!,Wdagx!
     import ..Gaugefield:AbstractGaugefields
     import ..FermionAction_module:FermiActionParam,FermiActionParam_Wilson,FermiActionParam_WilsonClover,FermiActionParam_Staggered
 
@@ -46,12 +46,35 @@ module Dirac_operators_module
         end
     end
 
+    struct Wilson_operator{T,WilsonFermion} <: Dirac_operator  where T <: AbstractGaugefields
+        U::Array{T,1}
+        _temporal_fermi::Array{WilsonFermion,1}
+
+        function Wilson_operator(U::Array{T,1},x,fparam) where  T <: AbstractGaugefields
+            num = 5
+            WilsonFermion = typeof(x)
+            _temporal_fermi = Array{WilsonFermion,1}(undef,num)
+            for i=1:num
+                _temporal_fermi[i] = similar(x)
+            end
+            return new{eltype(U),WilsonFermion}(U,_temporal_fermi)
+        end
+    end
+
     struct Adjoint_Staggered_operator{T} <: Adjoint_Dirac_operator 
+        parent::T
+    end
+
+    struct Adjoint_Wilson_operator{T} <: Adjoint_Dirac_operator 
         parent::T
     end
 
     function Base.adjoint(A::T) where T <: Staggered_operator
         Adjoint_Staggered_operator{typeof(A)}(A)
+    end
+
+    function Base.adjoint(A::T) where T <: Wilson_operator
+        Adjoint_Wilson_operator{typeof(A)}(A)
     end
 
 
@@ -83,6 +106,15 @@ module Dirac_operators_module
         set_wing_fermion!(y)
         #println(y[1,1,1,1,1,1])
         return
+    end
+
+    function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <:  Wilson_operator, T3 <:  AbstractFermionfields}
+        Wx!(y,A.U,x,A._temporal_fermi) 
+        return
+    end
+
+    function LinearAlgebra.mul!(y::T1,A::T2,x::T3) where {T1 <:AbstractFermionfields,T2 <:  Adjoint_Wilson_operator, T3 <:  AbstractFermionfields}
+        Wdagx!(y,A.parent.U,x,A.parent._temporal_fermi) 
     end
 
 end

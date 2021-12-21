@@ -1,6 +1,10 @@
 abstract type AbstractFermionfields_4D{NC} <: AbstractFermionfields{NC,4}
 end
 
+function get_origin(a::T1) where T1 <: AbstractFermionfields_4D
+    return (1,1,1,1)
+end
+
 function clear_fermion!(a::AbstractFermionfields_4D{NC}) where NC 
     n1,n2,n3,n4,n5,n6 = size(a.f)
     @inbounds for i6=1:n6
@@ -274,15 +278,18 @@ function LinearAlgebra.dot(a::AbstractFermionfields_4D{NC},b::T2) where {NC, T2 
     NZ = a.NZ
     NY = a.NY
     NX = a.NX
+    NG = a.NG
 
     α = 1
     c = 0.0im
-    @inbounds for it=1:NT
-        for iz=1:NZ
-            for iy=1:NY
-                for ix=1:NX
-                    @simd for ic=1:NC
-                        c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
+    @inbounds for α=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        @simd for ic=1:NC
+                            c+= conj(a[ic,ix,iy,iz,it,α])*b[ic,ix,iy,iz,it,α]
+                        end
                     end
                 end
             end
