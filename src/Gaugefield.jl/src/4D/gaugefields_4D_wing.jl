@@ -35,13 +35,13 @@ module Gaugefields_4D_wing_module
         x.U[i1,i2,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6 + x.NDW] = v
     end
 
-    function Base.getindex(x::Gaugefields_4D_wing,i1,i2,i3,i4,i5,i6) 
-        return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
+    @inline function Base.getindex(x::Gaugefields_4D_wing,i1,i2,i3,i4,i5,i6) 
+        @inbounds return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
     end
 
 
-    function Base.getindex(U::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfields #U'
-        return conj(U.parent[i2,i1,i3,i4,i5,i6])
+    @inline function Base.getindex(U::Adjoint_Gaugefields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfields #U'
+        @inbounds return conj(U.parent[i2,i1,i3,i4,i5,i6])
     end
 
     function Base.setindex!(U::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfields
@@ -152,9 +152,16 @@ module Gaugefields_4D_wing_module
         error("type $(typeof(U)) has no setindex method. This type is read only.")
     end
 
+    #=
     function Base.getindex(U::Shifted_Gaugefields_4D{NC},i1,i2,i3,i4,i5,i6) where NC
     #function Base.getindex(U::Shifted_Gaugefields{T,4},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing
         return U.parent.U[i1,i2,i3 .+ U.parent.NDW .+ U.shift[1],i4 .+ U.parent.NDW .+ U.shift[2],i5 .+ U.parent.NDW .+ U.shift[3],i6 .+ U.parent.NDW .+ U.shift[4]]
+    end
+    =#
+
+    @inline function Base.getindex(U::Shifted_Gaugefields_4D{NC},i1,i2,i3,i4,i5,i6) where NC
+        #function Base.getindex(U::Shifted_Gaugefields{T,4},i1,i2,i3,i4,i5,i6) where T <: Gaugefields_4D_wing
+        @inbounds return U.parent[i1,i2,i3 .+ U.shift[1],i4 .+ U.shift[2],i5 .+ U.shift[3],i6 .+ U.shift[4]]
     end
     
     #=
@@ -208,7 +215,7 @@ module Gaugefields_4D_wing_module
             error("η should be positive but η = $η")
         end
 
-        return η*u.parent[i1,i2,i3,i4,i5,i6]
+        @inbounds return η*u.parent[i1,i2,i3,i4,i5,i6]
     end
 
     function Base.getindex(u::Staggered_Gaugefields{T,μ},i1,i2,i3,i4,i5,i6) where {T <: Shifted_Gaugefields_4D,μ}
@@ -248,7 +255,7 @@ module Gaugefields_4D_wing_module
             error("η should be positive but η = $η")
         end
 
-        return η*u.parent[i1,i2,i3,i4,i5,i6]
+        @inbounds  return η*u.parent[i1,i2,i3,i4,i5,i6]
     end
 
 
@@ -267,7 +274,7 @@ module Gaugefields_4D_wing_module
                     for ix=1:NX
                         for k2=1:NC                            
                             for k1=1:NC
-                                Uμ[k1,k2,ix,iy,iz,it] = 0
+                                @inbounds Uμ[k1,k2,ix,iy,iz,it] = 0
                             end
                         end
                     end
@@ -302,7 +309,7 @@ module Gaugefields_4D_wing_module
                     for id=1:NDW
                         for k2=1:NC
                             @simd for k1=1:NC
-                                u[k1,k2,-NDW+id,iy,iz,it] = u[k1,k2,NX+(id-NDW),iy,iz,it]
+                                @inbounds u[k1,k2,-NDW+id,iy,iz,it] = u[k1,k2,NX+(id-NDW),iy,iz,it]
                             end
                         end
                     end
@@ -316,7 +323,7 @@ module Gaugefields_4D_wing_module
                     for id=1:NDW
                         for k2=1:NC
                             @simd for k1=1:NC
-                                u[k1,k2,NX+id,iy,iz,it] = u[k1,k2,id,iy,iz,it]
+                                @inbounds u[k1,k2,NX+id,iy,iz,it] = u[k1,k2,id,iy,iz,it]
                             end
                         end
                     end
@@ -333,7 +340,7 @@ module Gaugefields_4D_wing_module
                     for id=1:NDW
                         for k1=1:NC
                             @simd for k2=1:NC
-                                u[k1,k2,ix,-NDW+id,iz,it] = u[k1,k2,ix,NY+(id-NDW),iz,it]
+                                @inbounds u[k1,k2,ix,-NDW+id,iz,it] = u[k1,k2,ix,NY+(id-NDW),iz,it]
                             end
                         end
                     end
@@ -347,7 +354,7 @@ module Gaugefields_4D_wing_module
                     for id=1:NDW
                         for k1=1:NC
                             @simd for k2=1:NC
-                                u[k1,k2,ix,NY+id,iz,it] = u[k1,k2,ix,id,iz,it]
+                                @inbounds u[k1,k2,ix,NY+id,iz,it] = u[k1,k2,ix,id,iz,it]
                             end
                         end
                     end
@@ -363,8 +370,8 @@ module Gaugefields_4D_wing_module
                     for ix=-NDW+1:NX+NDW
                         for k1=1:NC
                             @simd for k2=1:NC
-                                u[k1,k2,ix,iy,id-NDW,it] = u[k1,k2,ix,iy,NZ+(id-NDW),it]
-                                u[k1,k2,ix,iy,NZ+id,it] = u[k1,k2,ix,iy,id,it]
+                                @inbounds u[k1,k2,ix,iy,id-NDW,it] = u[k1,k2,ix,iy,NZ+(id-NDW),it]
+                                @inbounds u[k1,k2,ix,iy,NZ+id,it] = u[k1,k2,ix,iy,id,it]
                             end
                         end
                     end
@@ -379,8 +386,8 @@ module Gaugefields_4D_wing_module
                     for ix=-NDW+1:NX+NDW
                         for k1=1:NC
                             @simd for k2=1:NC
-                                u[k1,k2,ix,iy,iz,id-NDW] = u[k1,k2,ix,iy,iz,NT+(id-NDW)]
-                                u[k1,k2,ix,iy,iz,NT+id] = u[k1,k2,ix,iy,iz,id]
+                                @inbounds u[k1,k2,ix,iy,iz,id-NDW] = u[k1,k2,ix,iy,iz,NT+(id-NDW)]
+                                @inbounds u[k1,k2,ix,iy,iz,NT+id] = u[k1,k2,ix,iy,iz,id]
                             end
                         end
                     end
@@ -408,13 +415,13 @@ module Gaugefields_4D_wing_module
                     for ix=1:NX
                         for k2=1:NC
                             for k1=1:NC  
-                                V0[k1,k2] = im*t*u[k1,k2,ix,iy,iz,it]
+                                @inbounds V0[k1,k2] = im*t*u[k1,k2,ix,iy,iz,it]
                             end
                         end
                         V1[:,:] = exp(V0)
                         for k2=1:NC
                             for k1=1:NC  
-                                uout[k1,k2,ix,iy,iz,it] = V1[k1,k2]
+                                @inbounds uout[k1,k2,ix,iy,iz,it] = V1[k1,k2]
                             end
                         end
 

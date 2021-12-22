@@ -24,6 +24,8 @@ module MD
             StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
     using ..Fermionfields
     import ..Heatbath:heatbath!
+    import ..Gaugefield:AbstractGaugefields,exptU!,substitute_U!,set_wing_U!,
+                        add_force!
 
 
 
@@ -916,6 +918,7 @@ module MD
 
     function updateP!(p::Array{N,1},factor,τ,U::Array{T,1},temps::Array{T_1d,1},temp_a::N,gparam::GaugeActionParam_standard) where {T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         add_gaugeforce!(p,U,temps,temp_a,fac = τ*factor)
+        
         return
     end
 
@@ -933,6 +936,7 @@ module MD
         c = temp_a
 
         for μ=1:4
+            
 
             substitute!(temp1,U[μ])
 
@@ -952,7 +956,8 @@ module MD
         
     end
 
-    function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N<: LieAlgebraFields,T_1d <: GaugeFields_1d}  
+    #function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N<: LieAlgebraFields,T_1d <: GaugeFields_1d}  
+    function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N,T_1d}  
         temp1 = temps[1]
         temp2 = temps[2]
         temp3 = temps[3]
@@ -978,6 +983,36 @@ module MD
 
 
         end
+        
+    end
+
+    function updateP!(p::Array{N,1},factor,τ,U::Array{T,1},temps::Array{T_1d,1},temp_a::N,gparam::GaugeActionParam_autogenerator) where {T<: AbstractGaugefields,N,T_1d} 
+        add_force!(p,U,temps,plaqonly = false,factor =τ*factor,staplefactors = gparam.βs./gparam.β)
+        #add_gaugeforce!(p,U,temps,temp_a,gparam,fac = τ*factor)
+        return
+    end
+
+    function updateP!(p::Array{N,1},factor,τ,U::Array{T,1},temps::Array{T_1d,1},temp_a::N,gparam::GaugeActionParam_standard) where {T<: AbstractGaugefields,N,T_1d} 
+        add_force!(p,U,temps,plaqonly = true,factor =τ*factor)
+        #add_gaugeforce!(p,U,temps,temp_a,fac = τ*factor)
+        #println(p[1][1,2,1,1,1])
+        return
+    end
+
+    function updateU!(U::Array{<: AbstractGaugefields{NC,Dim}},mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N,T_1d,NC,Dim}  
+        temp1 = temps[1]
+        temp2 = temps[2]
+        expU = temps[3]
+        W = temps[4]
+
+        for μ=1:Dim
+            exptU!(expU,τ*mdparams.Δτ,p[μ],[temp1,temp2])
+            mul!(W,expU,U[μ])
+            substitute_U!(U[μ],W)
+            set_wing_U!(U[μ])
+        end
+
+        #println("U ",U[1][1,1,2,1,1,1])
         
     end
 

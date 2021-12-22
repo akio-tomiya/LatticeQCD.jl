@@ -59,6 +59,7 @@ module Measurements
     struct Measurement_set
         nummeasurements::Int64
         measurements::Array{AbstractMeasurement,1}
+        measurement_methods::Array{Dict,1}
         methodnames::Array{String,1}
 
         function Measurement_set(univ::Universe,measurement_dir;measurement_methods=defaultmeasures)
@@ -82,7 +83,7 @@ module Measurements
                     error("$(method["methodname"]) is not supported")
                 end
             end
-            return new(nummeasurements,measurements,methodnames)
+            return new(nummeasurements,measurements,measurement_methods,methodnames)
         end
     end
 
@@ -90,11 +91,14 @@ module Measurements
         plaq = 0
         poly = 0
         for i=1:measure_set.nummeasurements
-            value = measure(measure_set.measurements[i],itrj,U,verbose = verbose)
-            if measure_set.methodnames[i] == "Plaquette"
-                plaq = value
-            elseif measure_set.methodnames[i] == "Polyakov_loop"
-                poly = value
+            method = measure_set.measurement_methods[i]
+            if itrj % method["measure_every"] == 0
+                value = measure(measure_set.measurements[i],itrj,U,verbose = verbose)
+                if measure_set.methodnames[i] == "Plaquette"
+                    plaq = value
+                elseif measure_set.methodnames[i] == "Polyakov_loop"
+                    poly = value
+                end
             end
         end
         return plaq,poly

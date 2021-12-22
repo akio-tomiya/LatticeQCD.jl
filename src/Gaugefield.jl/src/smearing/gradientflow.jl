@@ -56,6 +56,7 @@ function flow!(U,g::T) where T<: Gradientflow
     eps = g.eps
 
     for istep=1:g.Nflow #RK4 integrator -> RK3?
+        clear_U!(F0)
         add_force!(F0,U,temps,plaqonly = true)
 
         #add_force!(F0,U,[temp1,temp2,temp3],gparam)
@@ -65,6 +66,7 @@ function flow!(U,g::T) where T<: Gradientflow
 
         #println("W1 ",W1[1][1,1,1,1,1,1])
         #
+        clear_U!(F1)
         add_force!(F1,W1,[temp1,temp2,temp3],plaqonly = true)
         #add_force!(F1,W1,[temp1,temp2,temp3],gparam) #F
         #println("F1 ",F1[1][1,1,1,1,1,1])
@@ -78,6 +80,7 @@ function flow!(U,g::T) where T<: Gradientflow
         #println("W2 ",W2[1][1,1,1,1,1,1])
         
         #
+        clear_U!(F2)
         add_force!(F2,W2,[temp1,temp2,temp3],plaqonly = true)
         #add_force!(F2,W2,[temp1,temp2,temp3],gparam) #F
         #calc_gaugeforce!(F2,W2,univ) #F
@@ -93,4 +96,5 @@ function flow!(U,g::T) where T<: Gradientflow
        
         #error("U")
     end
+    
 end

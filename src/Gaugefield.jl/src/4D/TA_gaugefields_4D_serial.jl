@@ -1,4 +1,4 @@
-struct TA_Gaugefields_4D_serial{NC} <: TA_Gaugefields_4D{NC}
+struct TA_Gaugefields_4D_serial{NC,NumofBasis} <: TA_Gaugefields_4D{NC}
     a::Array{Float64,5}
     NX::Int64
     NY::Int64
@@ -16,7 +16,7 @@ struct TA_Gaugefields_4D_serial{NC} <: TA_Gaugefields_4D{NC}
             generators = Generator(NC)
         end
         
-        return new{NC}(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis,generators)
+        return new{NC,NumofBasis}(zeros(Float64,NumofBasis,NX,NY,NZ,NT),NX,NY,NZ,NT,NC,NumofBasis,generators)
     end
 end
 
@@ -29,17 +29,67 @@ function Base.getindex(x::T,i...) where T<: TA_Gaugefields_4D_serial
 end
 
 
-function Base.similar(u::TA_Gaugefields_4D_serial) where NC
+function Base.similar(u::TA_Gaugefields_4D_serial{NC,NumofBasis}) where {NC,NumofBasis}
     return TA_Gaugefields_4D_serial(NC,u.NX,u.NY,u.NZ,u.NT)
     #error("similar! is not implemented in type $(typeof(U)) ")
 end
 
-function clear_U!(Uμ::TA_Gaugefields_4D_serial{NC}) where NC
+function substitute_U!(Uμ::TA_Gaugefields_4D_serial{NC,NumofBasis},pwork) where {NC,NumofBasis}
     NT = Uμ.NT
     NZ = Uμ.NZ
     NY = Uμ.NY
     NX = Uμ.NX
-    NumofBasis = Uμ.NumofBasis
+    #NumofBasis = Uμ.NumofBasis
+    icount = 0
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    for k=1:NumofBasis 
+                        icount += 1
+                        Uμ[k,ix,iy,iz,it] = pwork[icount]
+                    end
+                end
+            end
+        end
+    end
+
+
+    #n1,n2,n3,n4,n5 = size(x.a)
+    #println(size(pwork))
+    #x.a[:,:,:,:,:] = reshape(pwork,(n1,n2,n3,n4,n5))
+end
+
+
+    
+function Base.:*(x::TA_Gaugefields_4D_serial{NC,NumofBasis},y::TA_Gaugefields_4D_serial{NC,NumofBasis}) where {NC,NumofBasis}
+    NT = x.NT
+    NZ = x.NZ
+    NY = x.NY
+    NX = x.NX
+    #NumofBasis = Uμ.NumofBasis
+    s = 0.0
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    for k=1:NumofBasis 
+                        s += x[k,ix,iy,iz,it]*y[k,ix,iy,iz,it]
+                    end
+                end
+            end
+        end
+    end
+
+    return s
+end
+
+function clear_U!(Uμ::TA_Gaugefields_4D_serial{NC,NumofBasis}) where {NC,NumofBasis}
+    NT = Uμ.NT
+    NZ = Uμ.NZ
+    NY = Uμ.NY
+    NX = Uμ.NX
+    #NumofBasis = Uμ.NumofBasis
     for it=1:NT
         for iz=1:NZ
             for iy=1:NY
@@ -53,12 +103,12 @@ function clear_U!(Uμ::TA_Gaugefields_4D_serial{NC}) where NC
     end
 end
 
-function add_U!(c::TA_Gaugefields_4D_serial{NC},α::N,a::TA_Gaugefields_4D_serial{NC}) where {NC, N<:Number}
+function add_U!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},α::N,a::TA_Gaugefields_4D_serial{NC,NumofBasis}) where {NC, N<:Number,NumofBasis}
     NT = c.NT
     NZ = c.NZ
     NY = c.NY
     NX = c.NX
-    NumofBasis = c.NumofBasis
+    #NumofBasis = c.NumofBasis
     for it=1:NT
         for iz=1:NZ
             for iy=1:NY
@@ -79,7 +129,7 @@ const sr3 = sqrt(3)
 const sr3i = 1/sr3
 const sr3i2 = 2*sr3i
 
-function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3},factor,vin::Gaugefields_4D_wing{3})
+function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3,NumofBasis},factor,vin::Gaugefields_4D_wing{3}) where NumofBasis
     #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
     fac13 = 1/3
     NX = vin.NX
@@ -92,7 +142,7 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3},factor,vin:
             for iy=1:NY
                 @simd for ix=1:NX
                     v11 = vin[1,1,ix,iy,iz,it]
-                    v22 = vin[2,2,ix,iy,iz,it]
+                    v22 = vin[2,2,ix,iy,iz,it] 
                     v33 = vin[3,3,ix,iy,iz,it]
 
                     tri = fac13*(imag(v11)+imag(v22)+imag(v33))
@@ -140,14 +190,14 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3},factor,vin:
                     c[1,ix,iy,iz,it] = ( imag(y12) + imag(y21) )*factor + c[1,ix,iy,iz,it] 
                     c[2,ix,iy,iz,it] = ( real(y12) - real(y21) )*factor + c[2,ix,iy,iz,it] 
                     c[3,ix,iy,iz,it] = ( imag(y11) - imag(y22) )*factor + c[3,ix,iy,iz,it] 
-                    c[4,ix,iy,iz,it] = ( imag(y13) + imag(y31) )*factor + c[4,ix,iy,iz,it] 
-                    c[5,ix,iy,iz,it] = ( real(y13) - real(y31) )*factor + c[5,ix,iy,iz,it] 
+                    c[4,ix,iy,iz,it] = ( imag(y13) + imag(y31) )*factor  + c[4,ix,iy,iz,it] 
+                    c[5,ix,iy,iz,it] = ( real(y13) - real(y31) )*factor  + c[5,ix,iy,iz,it] 
                     
-                    c[6,ix,iy,iz,it] = ( imag(y23) + imag(y32) )*factor + c[6,ix,iy,iz,it] 
+                    c[6,ix,iy,iz,it] = ( imag(y23) + imag(y32) )*factor  + c[6,ix,iy,iz,it] 
                     c[7,ix,iy,iz,it] = ( real(y23) - real(y32) )*factor + c[7,ix,iy,iz,it] 
                     c[8,ix,iy,iz,it] = sr3i *
                             ( imag(y11) + imag(y22) -
-                                    2*imag(y33) )*factor + c[8,ix,iy,iz,it] 
+                                    2*imag(y33) )*factor  + c[8,ix,iy,iz,it] 
                 end
             end
         end
@@ -166,7 +216,7 @@ end
      wher   x = vin - Conjg(vin)      
 -----------------------------------------------------c
     """
-function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{3},vin::Gaugefields_4D_wing{3})
+function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{3,NumofBasis},vin::Gaugefields_4D_wing{3}) where NumofBasis
     #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
     fac13 = 1/3
     NX = vin.NX
@@ -243,7 +293,7 @@ function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{3},vin::Gaugefield
 
 end
 
-function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{NC},vin::Gaugefields_4D_wing{NC}) where NC
+function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},vin::Gaugefields_4D_wing{NC}) where {NC,NumofBasis}
     @assert NC != 3
     #NC = vout.NC
     fac1N = 1/NC
@@ -293,7 +343,7 @@ function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{NC},vin::Gaugefiel
     
 end
 
-function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC},factor,vin::Gaugefields_4D_wing{NC}) where NC
+function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},factor,vin::Gaugefields_4D_wing{NC}) where {NC,NumofBasis}
     @assert NC != 3
     #NC = vout.NC
     fac1N = 1/NC
@@ -343,7 +393,7 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC},factor,vin
     
 end
 
-function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{NC},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing, NC} #uout = exp(t*u)
+function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{NC,NumofBasis},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing, NC,NumofBasis} #uout = exp(t*u)
     @assert NC != 3 "This function is for NC != 3"
     g = u.generators
     NT = u.NT
@@ -371,7 +421,7 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{NC},temps::Array{T,1}) 
     #error("exptU! is not implemented in type $(typeof(u)) ")
 end
 
-function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing} #uout = exp(t*u)     
+function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing,NumofBasis} #uout = exp(t*u)     
     ww = temps[1]
     w = temps[2]
     NT = u.NT

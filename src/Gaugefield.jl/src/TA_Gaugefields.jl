@@ -5,6 +5,16 @@ end
 
 include("./4D/TA_gaugefields_4D.jl")
 
+function Base.:*(x::Array{<: TA_Gaugefields{NC,Dim},1},y::Array{<: TA_Gaugefields{NC,Dim},1})  where {NC,Dim}
+    s = 0
+    for μ=1:Dim
+        s += x[μ]*y[μ]
+    end
+
+    return s
+end
+
+
 function initialize_TA_Gaugefields(U::Array{<:AbstractGaugefields{NC,Dim},1}) where {NC,Dim}
     F = Array{TA_Gaugefields{NC,Dim},1}(undef,Dim)
     for μ=1:Dim

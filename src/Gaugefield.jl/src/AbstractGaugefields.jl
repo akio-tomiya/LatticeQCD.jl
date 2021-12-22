@@ -152,6 +152,9 @@ module AbstractGaugefields_module
 
             
             loopk1_2 = loopk[2]
+            evaluate_wilson_loops_inside!(U,shifts,wi,Ushift1,Uold,Unew,numloops,loopk,loopk1_2)
+            
+            #=
             for k=2:numloops
                 
                 loopk = wi[k]
@@ -168,10 +171,31 @@ module AbstractGaugefields_module
                 Ushift1 = Uold
                 #temp1,temp3 = temp3,temp1
             end
+            =#
             add_U!(xout,Uold)
             #add_U!(xout,Ushift1)
             #add!(xout,temp1)
             
+        end
+    end
+
+    function evaluate_wilson_loops_inside!(U,shifts,wi,Ushift1,Uold,Unew,numloops,loopk,loopk1_2)
+        for k=2:numloops
+                
+            loopk = wi[k]
+            #println("k = $k shift: ",shifts[k])
+            #println("gauge_shift!(temp2,$(shifts[k]),$(loopk[1]) )")
+            #clear!(temp2)
+            Ushift2 = shift_U(U[loopk[1]],shifts[k])
+            #gauge_shift_all!(temp2,shifts[k],U[loopk[1]])
+
+            #multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+            multiply_12!(Unew,Ushift1,Ushift2,k,loopk,loopk1_2)
+            
+            Unew,Uold = Uold,Unew
+            Ushift1 = shift_U(Uold,(0,0,0,0))
+            #Ushift1 = Uold
+            #temp1,temp3 = temp3,temp1
         end
     end
 
@@ -208,6 +232,10 @@ module AbstractGaugefields_module
         error("calculate_Plaquette is not implemented in type $(typeof(U)) ")
     end
 
+    function calculate_Plaquette(U::Array{T,1},temps::Array{T1,1}) where {T <: AbstractGaugefields,T1 <: AbstractGaugefields}
+        return calculate_Plaquette(U,temps[1],temps[2])
+    end
+
     function calculate_Plaquette(U::Array{T,1},temp::AbstractGaugefields{NC,Dim},staple::AbstractGaugefields{NC,Dim}) where {NC,Dim,T <: AbstractGaugefields}
         plaq = 0
         V = staple
@@ -218,18 +246,9 @@ module AbstractGaugefields_module
             
         end
 
-        if Dim == 4
-            comb = 6 #4*3/2
-        elseif Dim == 3
-            comb = 3
-        elseif Dim == 2
-            comb = 1
-        else
-            error("dimension $Dim is not supported")
-        end
-        factor = 1/(comb*U[1].NV*U[1].NC)
 
-        return real(plaq*0.5*factor)
+
+        return real(plaq*0.5)
     end
 
     function construct_staple!(staple::AbstractGaugefields,U,μ) where T <: AbstractGaugefields
@@ -245,7 +264,7 @@ module AbstractGaugefields_module
                 plaqonly = false,staplefactors::Union{Array{<: Number,1},Nothing} = nothing,factor = 1) where {NC,Dim,T1 <: TA_Gaugefields,T2 <: AbstractGaugefields}
         @assert length(temps) >= 3 "length(temps) should be >= 3. But $(length(temps))"
         #println("add force, plaqonly = $plaqonly")
-        clear_U!(F)
+        
         V = temps[3]  
         temp1 = temps[1]
         temp2 = temps[2]    
@@ -266,8 +285,9 @@ module AbstractGaugefields_module
                 mul!(temp1,U[μ],V) #U U*V
             end
 
-
+            #println("factor = ",factor)
             Traceless_antihermitian_add!(F[μ],factor,temp1)
+            #println("F = ",F[μ][1,1,1,1,1])
             #add_U!(F[μ],factor,temp2)
         end
 
@@ -340,6 +360,7 @@ module AbstractGaugefields_module
 
 
     function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
+        #println("mu = ",μ)
         loops = loops_staple_prime[Dim,μ] #make_plaq_staple_prime(μ,Dim)
         evaluate_wilson_loops!(staple,loops,U,temps)
         

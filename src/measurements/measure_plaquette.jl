@@ -9,7 +9,7 @@ module Measure_plaquet_module
         filename::String
         fp::IOStream
         tempU::Array{T,1}
-        #factor::Float64
+        factor::Float64
         printvalues::Bool
 
         function Measure_plaquet(filename,U::Array{T,1},printvalues = true) where T
@@ -19,8 +19,21 @@ module Measure_plaquet_module
             for i=1:2
                 tempU[i] = similar(U[1])
             end
+            Dim = length(U)
 
-            m = new{T}(filename,fp,tempU,printvalues)
+            if Dim == 4
+                comb = 6 #4*3/2
+            elseif Dim == 3
+                comb = 3
+            elseif Dim == 2
+                comb = 1
+            else
+                error("dimension $Dim is not supported")
+            end
+            factor = 1/(comb*U[1].NV*U[1].NC)
+
+
+            m = new{T}(filename,fp,tempU,factor,printvalues)
             finalizer(m) do m
                 close(m.fp)
             end
@@ -36,7 +49,7 @@ module Measure_plaquet_module
         printvalues = measurement.printvalues
         fp = measurement.fp
 
-        plaq = real(calculate_Plaquette(U,temp1,temp2))
+        plaq = real(calculate_Plaquette(U,temp1,temp2))*measurement.factor
         
 
         if printvalues

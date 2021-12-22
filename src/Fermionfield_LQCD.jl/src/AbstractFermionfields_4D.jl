@@ -27,7 +27,7 @@ function Base.setindex!(x::T,v,i1,i2,i3,i4,i5,i6)  where T <: AbstractFermionfie
 end
 
 function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_4D
-    return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
+    @inbounds return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
 end
 
 #=
@@ -73,7 +73,7 @@ end
 =#
 
 function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <:AbstractFermionfields_4D #F'
-    return conj(F.parent[i1,i2,i3,i4,i5,i6])
+    @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
 end
 
 function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: AbstractFermionfields_4D
@@ -124,7 +124,7 @@ function Base.setindex!(F::T,v,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfie
 end
 
 function Base.getindex(F::T,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields_4D
-    return F.parent[i1,i2.+ F.shift[1],i3.+ F.shift[2],i4.+ F.shift[3],i5.+ F.shift[4],i6]
+    @inbounds return F.parent[i1,i2.+ F.shift[1],i3.+ F.shift[2],i4.+ F.shift[3],i5.+ F.shift[4],i6]
 end
 
 function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {NC,T<:Abstractfields,T3 <:Abstractfermion}

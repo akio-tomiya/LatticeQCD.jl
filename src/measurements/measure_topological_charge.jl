@@ -92,8 +92,19 @@ module Measure_topological_charge_module
         substitute_U!(m.Usmr,U)       
 
         τ = 0.0
+       
+        if Dim == 4
+            comb = 6 #4*3/2
+        elseif Dim == 3
+            comb = 3
+        elseif Dim == 2
+            comb = 1
+        else
+            error("dimension $Dim is not supported")
+        end
+        factor = 1/(comb*U[1].NV*NC)
         
-        plaq = calculate_Plaquette(m.Usmr,temp1,temp2)
+        plaq = calculate_Plaquette(m.Usmr,temp1,temp2)*factor
         Qplaq = calculate_topological_charge_plaq(m.Usmr,m.temp_UμνTA)
         #println("Qplaq = ",Qplaq)
         Qclover= calculate_topological_charge_clover(m.Usmr,m.temp_UμνTA)
@@ -122,7 +133,7 @@ module Measure_topological_charge_module
                 #println(m.Usmr[1][1,1,1,1,1,1])
                 #error("m.Usmr")
 
-                plaq = calculate_Plaquette(m.Usmr,temp1,temp2)
+                plaq = calculate_Plaquette(m.Usmr,temp1,temp2)*factor
                 Qplaq = calculate_topological_charge_plaq(m.Usmr,m.temp_UμνTA)
                 Qclover= calculate_topological_charge_clover(m.Usmr,m.temp_UμνTA)
                 Qimproved= calculate_topological_charge_improved(m.Usmr,m.temp_UμνTA,Qclover)

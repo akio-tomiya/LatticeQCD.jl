@@ -40,6 +40,7 @@ module LTK_universe
     import ..Diracoperators
     import ..Gaugefield:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
+    import ..Gaugefield:initialize_TA_Gaugefields,AbstractGaugefields,calculate_Plaquette
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
@@ -428,10 +429,13 @@ module LTK_universe
         
 #        Uold = Array{GaugeFields,1}(undef,4)
 
+        
+        #=
         p = Array{LieAlgebraFields,1}(undef,4)
         for μ=1:4
             p[μ] = LieAlgebraFields(NC,NX,NY,NZ,NT)
         end
+        =#
 
         if initial == "cold"
             println(".....  Cold start")
@@ -466,6 +470,8 @@ module LTK_universe
             #error("not supported yet.")
         end
         set_wing!(U)
+
+        p = initialize_TA_Gaugefields(U)
 
         temp1 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
         temp2 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
@@ -697,7 +703,14 @@ module LTK_universe
             #_temporal_gauge[i] = similar(U[1])
         end
 
+        #=
         _temporal_algebra = Array{LieAlgebraFields,1}(undef,1)
+        for i=1:length(_temporal_algebra)
+            _temporal_algebra[i] = similar(p[1])
+        end
+        =#
+
+        _temporal_algebra = Array{typeof(p[1]),1}(undef,1)
         for i=1:length(_temporal_algebra)
             _temporal_algebra[i] = similar(p[1])
         end
@@ -848,6 +861,19 @@ module LTK_universe
         Sg,plaq = calc_GaugeAction(univ.U,univ.gparam,univ._temporal_gauge)
         return real(Sg),real(plaq)
     end
+
+
+    function Gaugefields.calc_GaugeAction(U::Array{T1,1},gparam::GaugeActionParam_standard,temps::Array{T2,1}) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+        temp1 = temps[1]
+        temp2 = temps[2]
+        plaq = calculate_Plaquette(U,temp1,temp2)
+        #plaq = calc_Plaq!(U,temps)
+
+
+        Sg = -plaq*gparam.β/gparam.NTRACE
+        return Sg,plaq
+    end
+
 
     function calc_Action(univ::Universe)
         Sg,plaq = calc_GaugeAction(univ.U,univ.gparam,univ._temporal_gauge)

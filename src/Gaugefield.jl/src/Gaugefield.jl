@@ -15,7 +15,7 @@ module Gaugefield
                                         calc_rank_and_indices,barrier,comm,setvalue!,
                                         Gaugefields_4D_wing,
                                         identityGaugefields_4D_wing,
-                                        add_force!,exp_aF_U!,clear_U!,add_U!,
+                                        add_force!,exp_aF_U!,clear_U!,add_U!,exptU!,
                                         Traceless_antihermitian!,Traceless_antihermitian,Generator,
                                         Staggered_Gaugefields,staggered_U
 
