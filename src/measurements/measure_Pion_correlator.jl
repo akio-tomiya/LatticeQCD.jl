@@ -63,21 +63,21 @@ module Measure_Pion_correlator_module
 
     function measure(m::M,itrj,U::Array{<: AbstractGaugefields{NC,Dim},1};verbose = Verbose_2()) where {M <: Measure_Pion_correlator,NC,Dim}
         measure_correlator(U,m,itrj,verbose)
-        error("not implemented")
+        #error("not implemented")
         return 
     end
 
     function measure_correlator(Uin::Array{<: AbstractGaugefields{NC,Dim},1},m::M,itrj,verbose) where {M <: Measure_Pion_correlator,NC,Dim}
         C = calc_pion_correlator(Uin,m,verbose)
         print_verbose1(verbose,"$itrj ")
-        print(measfp,"$itrj ")
+        print(m.fp,"$itrj ")
         for it=1:length(C)
             cc = C[it]
             print_verbose1(verbose,"$cc ")
-            print(measfp,"$cc ")
+            print(m.fp,"$cc ")
         end
         println_verbose1(verbose,"#pioncorrelator")
-        println(measfp,"#pioncorrelator")
+        println(m.fp,"#pioncorrelator")
     end
 
     function calc_pion_correlator(Uin::Array{<: AbstractGaugefields{NC,Dim},1},m::Me,verbose) where {Me <: Measure_Pion_correlator,NC,Dim}
@@ -103,36 +103,40 @@ module Measure_Pion_correlator_module
         # calculate quark propagators from a point source at he origin
         propagators = calc_quark_propagators_point_source(M,m,NC,verbose)
 
+
+
         #ctr = 0 # a counter
-        for ic=1:univ.NC
+        for ic=1:NC
             for is=1:Nspinor
                 icum = (ic-1)*Nspinor+is
-                
                 #=
                 clear!(b)
                 b[ic,1,1,1,1,is]=1 # source at the origin
                 @time cg0!(k,b,1, univ.U, meas._temporal_gauge, meas._temporal_fermi1, meas.fparam) # k[x] = M^{-1}b[0]
                 =#
                 propagator = propagators[icum]
-                α0=spincolor(ic,is,univ) # source(color-spinor) index
-                #
-                
+                α0=spincolor(ic,is,NC) # source(color-spinor) index
                 # reconstruction
-                for t=1:univ.NT
-                    for z=1:univ.NZ
-                        for y=1:univ.NY
-                            for x=1:univ.NX
-                                for ic2=1:univ.NC 
-                                    for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
-                                        β=spincolor(ic2,is2,univ)
-                                        S[x,y,z,t,α0,β]+= propagator[ic,x,y,z,t,is]
+                if Dim==4
+                    for t=1:NN[4]
+                        for z=1:NN[3]
+                            for y=1:NN[2]
+                                for x=1:NN[1]
+                                    for ic2=1:NC 
+                                        for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
+                                            β=spincolor(ic2,is2,NC)
+                                            S[x,y,z,t,α0,β]+= propagator[ic,x,y,z,t,is]
+                                        end
                                     end
                                 end
                             end
                         end
                     end
+                else
+                    error("Dim = $Dim is not supported")
                 end
                 # end for the substitution
+                
                 
                 #ctr+=1
             end 
@@ -141,38 +145,46 @@ module Measure_Pion_correlator_module
 
         println_verbose2(verbose,"Hadron spectrum: Reconstruction")
         #println("Hadron spectrum: Reconstruction")
-        Cpi = zeros( univ.NT )
+        Cpi = zeros( NN[end] )
+        #Cpi = zeros( univ.NT )
         # Construct Pion propagator 
-        for t=1:univ.NT
-            tmp = 0.0+0.0im
-            for z=1:univ.NZ
-                for y=1:univ.NY
-                    for x=1:univ.NX
-                        for ic=1:univ.NC 
-                            for is=1:Nspinor # Nspinor is the number of spinor index in 4d.
-                                α=spincolor(ic,is,univ)
-                                for ic2=1:univ.NC 
-                                    for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
-                                        β=spincolor(ic2,is2,univ)
-                                        tmp += S[x,y,z,t,α,β] * S[x,y,z,t,α,β]'#inner product.
-                                        # complex conjugate = g5 S g5.
+        if Dim==4
+            for t=1:NN[4]
+                tmp = 0.0+0.0im
+                for z=1:NN[3]
+                    for y=1:NN[2]
+                        for x=1:NN[1]
+                            for ic=1:NC 
+                                for is=1:Nspinor # Nspinor is the number of spinor index in 4d.
+                                    α=spincolor(ic,is,NC)
+                                    for ic2=1:NC 
+                                        for is2=1:Nspinor # Nspinor is the number of spinor index in 4d.
+                                            β=spincolor(ic2,is2,NC)
+                                            tmp += S[x,y,z,t,α,β] * S[x,y,z,t,α,β]'#inner product.
+                                            # complex conjugate = g5 S g5.
+                                        end
                                     end
+                                    # complex conjugate = g5 S g5.
                                 end
-                                # complex conjugate = g5 S g5.
                             end
                         end
                     end
                 end
+                # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
+                # we adopt ignoreing the staggering factor. See detail above reference.
+                ksfact = 1.0 #ifelse( meas.fparam.Dirac_operator == "Staggered" , (-1)^(t-1) * 64, 1)
+                Cpi[t] = real(tmp)*ksfact
             end
-            # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
-            # we adopt ignoreing the staggering factor. See detail above reference.
-            ksfact = 1.0 #ifelse( meas.fparam.Dirac_operator == "Staggered" , (-1)^(t-1) * 64, 1)
-            Cpi[t] = real(tmp)*ksfact
         end
+        
         #println(typeof(verbose),"\t",verbose)
         println_verbose2(verbose,"Hadron spectrum end")
         #println("Hadron spectrum end")
         return Cpi
+    end
+
+    function spincolor(ic,is,NC)
+        return ic-1 + (is-1)*NC + 1
     end
 
     function calc_quark_propagators_point_source(D,meas,NC,verbose)

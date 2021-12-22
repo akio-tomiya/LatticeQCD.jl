@@ -30,6 +30,48 @@ function Base.getindex(x::T,i1,i2,i3,i4,i5,i6) where T <: AbstractFermionfields_
     return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
 end
 
+#=
+function Base.getindex(x::T,i) where T <: AbstractFermionfields_4D
+    #i = (((((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)*NT+i5-1)*4 + i6
+    i6 = (i -1) % 4 + 1
+    ii = div(i -i6,4)
+    #ii = ((((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)*NT+i5-1)
+    i5 = ii % x.NT + 1
+    ii = div(ii - (i5-1),x.NT)
+    #ii = (((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)
+    i4 = ii % x.NZ + 1
+    ii = div(ii - (i4-1),x.NZ)
+    #ii = ((i1-1)*NX+i2 -1)*NY+i3-1)
+    i3 = ii % x.NY + 1
+    ii = div(ii - (i3-1),x.NY)
+    #ii = (i1-1)*NX+i2 -1)
+    i2 = ii % x.NX + 1
+    i1 = div(ii - (i2-1),x.NX) + 1
+
+    return x.f[i1,i2 .+ x.NDW,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6]
+end
+
+function Base.getindex(x::Adjoint_fermionfields{T},i) where T <: AbstractFermionfields_4D
+    #i = (((((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)*NT+i5-1)*4 + i6
+    i6 = (i -1) % 4 + 1
+    ii = div(i -i6,4)
+    #ii = ((((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)*NT+i5-1)
+    i5 = ii % x.NT + 1
+    ii = div(ii - (i5-1),x.NT)
+    #ii = (((i1-1)*NX+i2 -1)*NY+i3-1)*NZ+i4-1)
+    i4 = ii % x.NZ + 1
+    ii = div(ii - (i4-1),x.NZ)
+    #ii = ((i1-1)*NX+i2 -1)*NY+i3-1)
+    i3 = ii % x.NY + 1
+    ii = div(ii - (i3-1),x.NY)
+    #ii = (i1-1)*NX+i2 -1)
+    i2 = ii % x.NX + 1
+    i1 = div(ii - (i2-1),x.NX) + 1
+    return conj(F.parent[i1,i2,i3,i4,i5,i6])
+end
+
+=#
+
 function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <:AbstractFermionfields_4D #F'
     return conj(F.parent[i1,i2,i3,i4,i5,i6])
 end
