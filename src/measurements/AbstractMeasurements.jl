@@ -1,7 +1,7 @@
 module AbstractMeasurement_module
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
                 print_verbose1,print_verbose2,print_verbose3
-    import ..Gaugefield:AbstractGaugefields
+    import ..Gaugefield:AbstractGaugefields,Wilson_loop_set,make_cloverloops
     import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
     #import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
     #            FermiActionParam
@@ -156,10 +156,23 @@ module AbstractMeasurement_module
         _is1 = zeros(Int64,NV)
         _is2 = zeros(Int64,NV)
 
+        if U[1].NC ≥ 4
+            SUNgenerator = Generator(U[1].NC)
+        else
+            SUNgenerator = nothing
+        end
+
+        _cloverloops = Array{Wilson_loop_set,2}(undef,3,4)
+        for μ=1:3
+            for ν=μ+1:4
+                _cloverloops[μ,ν] = make_cloverloops(μ,ν)
+            end
+        end
+
         quench = false
-        fparam = FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
-                        internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                        quench)
+        #fparam = FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
+        #                internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
+        #                quench)
 
         smearing_for_fermion = set_params(params,"smearing_for_fermion","nothing")
         stout_numlayers = set_params(params,"stout_numlayers",nothing)
@@ -167,22 +180,32 @@ module AbstractMeasurement_module
         stout_loops = set_params(params,"stout_loops",nothing)
 
         if smearing_for_fermion == "nothing"
-            FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
+            fparam = FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
                         internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                        quench)
+                        quench,SUNgenerator,_cloverloops)
         else
             error("stout for WilsonClover is not supported yet!")
             L = (U[1].NX,U[1].NY,U[1].NZ,U[1].NT)
-            FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
+            fparam = FermiActionParam_WilsonClover(hop,r,eps,fermiontype,MaxCGstep,Clover_coefficient,
                         internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
-                        quench,
+                        quench,SUNgenerator,_cloverloops,
                         smearingparameters = "stout",
                         loops_list = stout_loops,
                         coefficients  = stout_ρ,
                         numlayers = stout_numlayers,
                         L = L)
         end
-        return fparam,fermion
+
+        NC,_,NN... = size(U[1]) 
+        ϕ = Fermionfields(params,NC,fermiontype,NN...)
+
+        _temporal_fermions = Array{typeof(ϕ),1}(undef,4)
+        for i=1:length(_temporal_fermions)
+            _temporal_fermions[i] = similar(ϕ)
+        end
+
+
+        return fparam,_temporal_fermions
     end
 
     function set_Staggered(U,params)

@@ -32,6 +32,14 @@ module FermionAction_module
 
     end
 
+    function FermiActionParam_Wilson(hop,r,eps,MaxCGstep;quench=false)
+        return FermiActionParam_Wilson(hop,r,eps,"Wilson",MaxCGstep,quench)
+    end
+
+    function FermiActionParam_Wilson(hop,r,eps,Dirac,MaxCGstep;quench=false)
+        return FermiActionParam_Wilson(hop,r,eps,Dirac,MaxCGstep,quench)
+    end
+
     const Clover_coefficient  = 1.5612
 
     Base.@kwdef struct FermiActionParam_WilsonClover{SmearingParam} <: FermiActionParam

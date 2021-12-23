@@ -31,12 +31,38 @@ module Gaugefields_4D_wing_module
     end
 
 
+
+
     function Base.setindex!(x::Gaugefields_4D_wing,v,i1,i2,i3,i4,i5,i6) 
-        x.U[i1,i2,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6 + x.NDW] = v
+        @inbounds x.U[i1,i2,i3 + x.NDW,i4 + x.NDW,i5 + x.NDW,i6 + x.NDW] = v
     end
 
     @inline function Base.getindex(x::Gaugefields_4D_wing,i1,i2,i3,i4,i5,i6) 
         @inbounds return x.U[i1,i2,i3 .+ x.NDW,i4 .+ x.NDW,i5 .+ x.NDW,i6 .+ x.NDW]
+    end
+
+    @inline function get_latticeindex(i,NX,NY,NZ,NT)
+        #i = (((it -1)*NZ+iz-1)*NY+iy-1)*NX + ix
+        # i = (it-1)*NZ*NY*NX + (iz-1)*NY*NX + (iy-1)*NX + ix
+        ix = (i-1) % NX + 1
+        ii = div(i-ix,NX)
+        #ii = ((it -1)*NZ+iz-1)*NY+iy-1)
+        iy = ii % NY + 1
+        ii = div(ii-(iy-1),NY)
+        #ii = (it -1)*NZ+iz-1)
+        iz = ii % NZ + 1
+        it = div(ii -(iz-1),NZ)
+        return ix,iy,iz,it        
+    end
+
+    function Base.setindex!(x::Gaugefields_4D_wing,v,i1,i2,ii) 
+        ix,iy,iz,it =  get_latticeindex(ii,x.NX,x.NY,x.NZ,x.NT)
+        @inbounds x.U[i1,i2,ix + x.NDW,iy + x.NDW,iz + x.NDW,it + x.NDW] = v
+    end
+
+    @inline function Base.getindex(x::Gaugefields_4D_wing,i1,i2,ii)
+        ix,iy,iz,it =  get_latticeindex(ii,x.NX,x.NY,x.NZ,x.NT)
+        @inbounds return x.U[i1,i2,ix + x.NDW,iy + x.NDW,iz + x.NDW,it + x.NDW]
     end
 
 
@@ -46,6 +72,10 @@ module Gaugefields_4D_wing_module
 
     function Base.setindex!(U::Adjoint_Gaugefields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfields
         error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
+    @inline function Base.getindex(U::Adjoint_Gaugefields{T},i1,i2,ii) where T <: Abstractfields #U'
+        @inbounds return conj(U.parent[i2,i1,ii])
     end
 
     function substitute_U!(a::Array{T,1},b::Array{T,1}) where T <: Gaugefields_4D_wing
@@ -402,7 +432,9 @@ module Gaugefields_4D_wing_module
     end
 
     function exptU!(uout::T,t::N,u::Gaugefields_4D_wing{NC},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing, NC} #uout = exp(t*u)
-        #@assert NC != 3 "This function is for NC != 3"
+        @assert NC != 3 && NC != 2 "This function is for NC != 2,3"
+        error("1")
+        
         NT = u.NT
         NZ = u.NZ
         NY = u.NY
@@ -437,8 +469,10 @@ module Gaugefields_4D_wing_module
 
     # #=
     function exptU!(uout::T,t::N,v::Gaugefields_4D_wing{3},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing} #uout = exp(t*u)
+        error("2")
         ww = temps[1]
         w = temps[2]
+        
 
         NT = v.NT
         NZ = v.NZ

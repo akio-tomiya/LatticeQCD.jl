@@ -72,11 +72,11 @@ end
 
 =#
 
-function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <:AbstractFermionfields_4D #F'
+function Base.getindex(F::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion  #F'
     @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
 end
 
-function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: AbstractFermionfields_4D
+function Base.setindex!(F::Adjoint_fermionfields{T},v,i1,i2,i3,i4,i5,i6,μ)  where T <: Abstractfermion 
     error("type $(typeof(F)) has no setindex method. This type is read only.")
 end
 
@@ -126,6 +126,12 @@ end
 function Base.getindex(F::T,i1,i2,i3,i4,i5,i6)  where T <: Shifted_fermionfields_4D
     @inbounds return F.parent[i1,i2.+ F.shift[1],i3.+ F.shift[2],i4.+ F.shift[3],i5.+ F.shift[4],i6]
 end
+
+#=
+@inline function Base.getindex(U::Adjoint_fermionfields{T},i1,i2,i3,i4,i5,i6) where T <: Abstractfermion #F'
+    @inbounds return conj(F.parent[i1,i2,i3,i4,i5,i6])
+end
+=#
 
 function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {NC,T<:Abstractfields,T3 <:Abstractfermion}
     #@assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
@@ -212,6 +218,93 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{2},A::T,x::T3) where {T<
     end
 end
 
+function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},x::T3,A::T) where {NC,T<:Abstractfields,T3 <:Abstractfermion}
+    #@assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for k1=1:NC
+                            y[k1,ix,iy,iz,it,ialpha] = 0
+                            @simd for k2=1:NC
+                                y[k1,ix,iy,iz,it,ialpha] += x[k1,ix,iy,iz,it,ialpha]*A[k1,k2,ix,iy,iz,it]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function LinearAlgebra.mul!(y::AbstractFermionfields_4D{3},x::T3,A::T) where {T<:Abstractfields,T3 <:Abstractfermion}
+    #@assert 3 == x.NC "dimension mismatch! NC in y is 3 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        x1 = x[1,ix,iy,iz,it,ialpha]
+                        x2 = x[2,ix,iy,iz,it,ialpha]
+                        x3 = x[3,ix,iy,iz,it,ialpha]
+                        y[1,ix,iy,iz,it,ialpha] = x1*A[1,1,ix,iy,iz,it] + 
+                                                    x2*A[2,1,ix,iy,iz,it]+ 
+                                                    x3*A[3,1,ix,iy,iz,it]
+                        y[2,ix,iy,iz,it,ialpha] = x1*A[1,2,ix,iy,iz,it]+ 
+                                                    x2*A[2,2,ix,iy,iz,it] + 
+                                                    x3*A[3,2,ix,iy,iz,it]
+                        y[3,ix,iy,iz,it,ialpha] = x1*A[1,3,ix,iy,iz,it]+ 
+                                                    x2*A[2,3,ix,iy,iz,it] + 
+                                                    x3*A[3,3,ix,iy,iz,it]
+                    end
+                end
+            end
+        end
+    end
+end
+
+function LinearAlgebra.mul!(y::AbstractFermionfields_4D{2},x::T3,A::T) where {T<:Abstractfields,T3 <:Abstractfermion}
+    #@assert 2 == x.NC "dimension mismatch! NC in y is 2 but NC in x is $(x.NC)"
+    NX = y.NX
+    NY = y.NY
+    NZ = y.NZ
+    NT = y.NT
+    NG = y.NG
+
+    @inbounds for ialpha=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        x1 = x[1,ix,iy,iz,it,ialpha]
+                        x2 = x[2,ix,iy,iz,it,ialpha]
+                        y[1,ix,iy,iz,it,ialpha] = x1*A[1,1,ix,iy,iz,it] + 
+                                                    x2*A[2,1,ix,iy,iz,it]
+                        y[2,ix,iy,iz,it,ialpha] = x1*A[1,2,ix,iy,iz,it]+ 
+                                                    x2*A[2,2,ix,iy,iz,it]
+
+                    end
+                end
+            end
+        end
+    end
+end
+
+
+
 function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {NC,T<:Number,T3 <:Abstractfermion}
     @assert NC == x.NC "dimension mismatch! NC in y is $NC but NC in x is $(x.NC)"
     NX = y.NX
@@ -234,6 +327,63 @@ function LinearAlgebra.mul!(y::AbstractFermionfields_4D{NC},A::T,x::T3) where {N
         end
     end
 end
+
+"""
+mul!(u,x,y) -> u_{ab} = x_a*y_b
+"""
+function LinearAlgebra.mul!(u::T1,x::AbstractFermionfields_4D{NC},y::AbstractFermionfields_4D{NC}) where {T1 <: AbstractGaugefields,NC}
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    NG = x.NG
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+function LinearAlgebra.mul!(u::T1,x::AbstractFermionfields_4D{NC},y::Adjoint_fermionfields{<: AbstractFermionfields_4D{NC}}) where {T1 <: AbstractGaugefields,NC}
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    NG = x.NG
+    clear_U!(u)
+
+    for ik=1:NG
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ib=1:NC
+                            @simd for ia=1:NC
+                                u[ia,ib,ix,iy,iz,it] += x[ia,ix,iy,iz,it,ik]*y[ib,ix,iy,iz,it,ik]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_U!(u)
+end
+
+
 
 """
 mul!(y,A,x,α,β) -> α*A*x+β*y -> y
@@ -295,7 +445,7 @@ function LinearAlgebra.axpby!(a::Number, X::T, b::Number, Y::AbstractFermionfiel
     end
 end
 
-function add_fermion!(c::AbstractFermionfields_4D{NC},α::Number,a::T1,β::Number,b::T2) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c = alpha*a + beta*b
+function add_fermion!(c::AbstractFermionfields_4D{NC},α::Number,a::T1,β::Number,b::T2) where {NC,T1 <: Abstractfermion,T2 <: Abstractfermion}#c += alpha*a + beta*b
     n1,n2,n3,n4,n5,n6 = size(c.f)
 
     @inbounds for i6=1:n6
@@ -306,6 +456,26 @@ function add_fermion!(c::AbstractFermionfields_4D{NC},α::Number,a::T1,β::Numbe
                         @simd for i1=1:NC
                             #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
                             c.f[i1,i2,i3,i4,i5,i6] += α*a.f[i1,i2,i3,i4,i5,i6] + β*b.f[i1,i2,i3,i4,i5,i6] 
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return
+end
+
+function add_fermion!(c::AbstractFermionfields_4D{NC},α::Number,a::T1) where {NC,T1 <: Abstractfermion}#c += alpha*a 
+    n1,n2,n3,n4,n5,n6 = size(c.f)
+
+    @inbounds for i6=1:n6
+        for i5=1:n5
+            for i4=1:n4
+                for i3=1:n3
+                    for i2=1:n2
+                        @simd for i1=1:NC
+                            #println(a.f[i1,i2,i3,i4,i5,i6],"\t",b.f[i1,i2,i3,i4,i5,i6] )
+                            c.f[i1,i2,i3,i4,i5,i6] += α*a.f[i1,i2,i3,i4,i5,i6] 
                         end
                     end
                 end
@@ -338,4 +508,80 @@ function LinearAlgebra.dot(a::AbstractFermionfields_4D{NC},b::T2) where {NC, T2 
         end
     end  
     return c
+end
+
+"""
+c-------------------------------------------------c
+c     Random number function for Gaussian  Noise
+    with σ^2 = 1/2
+c-------------------------------------------------c
+    """
+function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC}) where NC
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    n6 = size(x.f)[6]
+    σ = sqrt(1/2)
+
+    for ialpha = 1:n6
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for ic=1:NC 
+                            x[ic,ix,iy,iz,it,ialpha] = σ*randn()+im*σ*randn()
+                        end
+                    end
+                end
+            end
+        end
+    end
+    set_wing_fermion!(x)
+    return
+end
+
+"""
+c-------------------------------------------------c
+c     Random number function for Gaussian  Noise
+    with σ^2 = 1/2
+c-------------------------------------------------c
+    """
+function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc,σ) where NC
+  
+    NX = x.NX
+    NY = x.NY
+    NZ = x.NZ
+    NT = x.NT
+    n6 = size(x.f)[6]
+    #σ = sqrt(1/2)
+
+    for mu = 1:n6
+        for ic=1:NC
+            for it=1:NT
+                for iz=1:NZ
+                    for iy=1:NY
+                        for ix=1:NX
+                            v1 = sqrt(-log(randomfunc()+1e-10))
+                            v2 = 2pi*randomfunc()
+
+                            xr = v1*cos(v2)
+                            xi = v1 * sin(v2)
+
+                            x[ic,ix,iy,iz,it,mu] = σ*xr + σ*im*xi
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    set_wing_fermion!(x)
+
+    return
+end
+
+function gauss_distribution_fermion!(x::AbstractFermionfields_4D{NC},randomfunc) where NC
+    σ = 1
+    gauss_distribution_fermion!(x,randomfunc,σ)
 end

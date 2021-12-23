@@ -60,7 +60,6 @@ function flow!(U,g::T) where T<: Gradientflow
         add_force!(F0,U,temps,plaqonly = true)
 
         #add_force!(F0,U,[temp1,temp2,temp3],gparam)
-        #println(F0[1][1,1,1,1,1])
         
         exp_aF_U!(W1,-eps*(1/4),F0,U,[temp1,temp2,temp3]) #exp(a*F)*U
 

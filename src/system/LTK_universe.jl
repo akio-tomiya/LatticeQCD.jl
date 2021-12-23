@@ -21,27 +21,36 @@ module LTK_universe
     
     import ..Gaugefields
                         
-    import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
-    import ..Fermionfields
-    import ..Actions:GaugeActionParam,FermiActionParam,
+    #import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
+    #import ..Fermionfields
+    import ..Actions:GaugeActionParam,
+                #FermiActionParam,
                 Setup_Gauge_action,Setup_Fermi_action,
-                GaugeActionParam_standard,FermiActionParam_Wilson,
+                GaugeActionParam_standard,
+                #FermiActionParam_Wilson,
                 show_parameters_action,
+                #FermiActionParam_WilsonClover,
+                #FermiActionParam_Staggered,
+                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single,Nosmearing
+                #FermiActionParam_Domainwall
+    import ..Fermionfield_LQCD:FermiActionParam,
+                FermiActionParam_Wilson,
                 FermiActionParam_WilsonClover,
-                FermiActionParam_Staggered,
-                GaugeActionParam_autogenerator,SmearingParam_multi,SmearingParam_single,Nosmearing,
-                FermiActionParam_Domainwall
+                FermiActionParam_Staggered
+                #FermiActionParam_Domainwall
+    
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add_gaugeforce!
     import ..LieAlgebrafields
     import ..Rand:Random_LCGs
     import ..System_parameters:Params
-    import ..Diracoperators:DdagD_operator,Domainwall_operator,make_densematrix,
-                D5DW_Domainwall_operator
-    import ..Diracoperators
+    #import ..Diracoperators:DdagD_operator,Domainwall_operator,make_densematrix,
+    #            D5DW_Domainwall_operator
+    #import ..Diracoperators
     import ..Gaugefield:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
     import ..Gaugefield:initialize_TA_Gaugefields,AbstractGaugefields,calculate_Plaquette
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1
+    import ..Fermionfield_LQCD#:DdagD_operator,Dirac_operator
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..IOmodule:loadU
     import ..SUN_generator:Generator
@@ -49,8 +58,10 @@ module LTK_universe
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
     import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Othermethods:tdlogdet
-    import ..CGmethods:bicg,cg,shiftedcg
-    import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+    #import ..CGmethods:bicg,cg,shiftedcg
+    import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse,
+                Fermionfields,AbstractFermionfields, gauss_distribution_fermion!,clear_fermion!,
+                add_fermion!,bicg,cg,shiftedcg, set_wing_fermion!
     #import ..Smearing:apply_smearing
 
 
@@ -725,17 +736,19 @@ module LTK_universe
             quench = true
         else
             Dirac_operator = fparam.Dirac_operator
-            φ = FermionFields(NC,NX,NY,NZ,NT,fparam,BoundaryCondition)
+            NC,_,NN... = size(U[1]) 
+
+            φ = Fermionfields(NC,fparam,BoundaryCondition,NN...)
             η = similar(φ)
             ξ = similar(φ)
-            _temporal_fermi = Array{FermionFields,1}(undef,num_tempfield_f )
+            _temporal_fermi = Array{typeof(φ),1}(undef,num_tempfield_f )
             for i=1:length(_temporal_fermi)
                 _temporal_fermi[i] = similar(φ)
             end
             quench = fparam.quench
 
             if Dirac_operator =="Domainwall"
-                gauss_distribution_fermi!(ξ)
+                gauss_distribution_fermion!(ξ)
                 #A = D5DW_Domainwall_operator(U,ξ,fparam)
                 A = Domainwall_operator(U,ξ,fparam)
                 A_dense_PV = make_densematrix(A.D5DW_PV)
@@ -886,7 +899,7 @@ module LTK_universe
 
         if univ.quench == false
         #if univ.fparam != nothing
-            Sf = univ.η*univ.η
+            Sf = dot(univ.η,univ.η)
             S += Sf
         end
         return real(S),real(plaq)
@@ -1094,20 +1107,20 @@ module LTK_universe
         return make_WdagWmatrix(U,univ._temporal_fermi,univ.fparam)
     end
 
-    function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
+    function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:AbstractFermionfields}
         x0 = temps[7]
         xi = temps[8]
         return make_WdagWmatrix(U,x0,xi,fparam) 
     end
 
-    function make_WdagWmatrix!(WdagW,U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:FermionFields}
+    function make_WdagWmatrix!(WdagW,U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:AbstractFermionfields}
         x0 = temps[7]
         xi = temps[8]
         make_WdagWmatrix!(WdagW,U,x0,xi,fparam) 
         return
     end
 
-    function make_WdagWmatrix(U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+    function make_WdagWmatrix(U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:AbstractFermionfields}
         NX = x0.NX
         NY = x0.NY
         NZ = x0.NZ
@@ -1125,9 +1138,9 @@ module LTK_universe
         return WdagW
     end
     
-    function make_WdagWmatrix!(WdagW,U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:FermionFields}
+    function make_WdagWmatrix!(WdagW,U::Array{G,1},x0::T,xi::T,fparam) where {G <: GaugeFields,T <:AbstractFermionfields}
         
-        Fermionfields.clear!(x0)
+        clear_fermion!(x0)
         NX = x0.NX
         NY = x0.NY
         NZ = x0.NZ
@@ -1184,45 +1197,84 @@ module LTK_universe
 
     end
 
-    
+
+    #=
     function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
         gauss_distribution_fermi!(univ.η,univ.ranf)
     end
+    =#
 
-    function construct_fermion_gauss_distribution!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
-        gauss_distribution_fermi!(univ.η,univ.ranf)
-        if univ.fparam.Nf == 4
-            U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
-
-            evensite = false
-            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
-            mul!(univ.φ,W',univ.η)
-
-            #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
-            Fermionfields.clear!(univ.φ,evensite)
-
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
+    function construct_fermion_gauss_distribution!(univ::Universe)  #where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
+        gauss_distribution_fermion!(univ.η,univ.ranf)
+        if univ.Dirac_operator == "Staggered"
+            if univ.fparam.Nf == 4
+                U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+    
+                evensite = false
+                W = Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
+                mul!(univ.φ,W',univ.η)
+    
+                #Wdagx!(univ.φ,univ.U,univ.η,univ._temporal_fermi,univ.fparam)
+                clear_fermion!(univ.φ,evensite)
+    
+                bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
+            end
         end
+
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
 
+        if univ.Dirac_operator == "Staggered"
+            if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
+        
+                W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
+                mul!(univ.φ,W',univ.η)
+            else
+                WdagW =  Fermionfield_LQCD.DdagD_operator(U,univ.η,univ.fparam)
+                N = get_order(univ.fparam.rhmc_action)
+    
+                x = univ.φ
+                vec_x = univ._temporal_fermi[end-N+1:end]
+                for j=1:N
+                    clear_fermion!(vec_x[j])
+                end
+    
+                # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
+                #(MdagM)^{alpha/2} eta ~ α0 eta + sum_k αk (MdagM + βk)^{-1} eta
+                vec_β = get_β(univ.fparam.rhmc_action)
+                vec_α = get_α(univ.fparam.rhmc_action)
+                α0 = get_α0(univ.fparam.rhmc_action)
+                shiftedcg(vec_x,vec_β,x,WdagW,univ.η,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
+                clear_fermion!(univ.φ)
+                add_fermion!(univ.φ,α0,univ.η)
+                for j=1:N
+                    αk = vec_α[j]
+                    add_fermion!(univ.φ,αk,vec_x[j])
+                end
+    
+    
+            end
+        else
+            W = Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
+            mul!(univ.φ,W',univ.η)
+        end
 
-        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
-        mul!(univ.φ,W',univ.η)
-        set_wing_fermi!(univ.φ)
+
+        set_wing_fermion!(univ.φ)
     end
 
+    #=
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
         
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
         
-            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
+            W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
             mul!(univ.φ,W',univ.η)
         else
-            WdagW = Diracoperators.DdagD_operator(U,univ.η,univ.fparam)
+            WdagW =  Fermionfield_LQCD.DdagD_operator(U,univ.η,univ.fparam)
             N = get_order(univ.fparam.rhmc_action)
 
             x = univ.φ
@@ -1250,44 +1302,52 @@ module LTK_universe
         set_wing_fermi!(univ.φ)
     end
 
+    =#
+    #=
     
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
 
 
-        W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
+        W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
         bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
     end
+    =#
 
-    function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
+    function construct_fermionfield_η!(univ::Universe)#{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
         U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
 
+        if univ.Dirac_operator == "Staggered"
 
-        if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
-            W = Diracoperators.Dirac_operator(U,univ.η,univ.fparam)
-            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+            if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
+                W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
+                bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
+            else
+                WdagW =  Fermionfield_LQCD.DdagD_operator(U,univ.η,univ.fparam)
+                N = get_order(univ.fparam.rhmc_action)
+
+                x = univ.η
+                vec_x = univ._temporal_fermi[end-N+1:end]
+                for j=1:N
+                    clear_fermion!(vec_x[j])
+                end
+
+                # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
+                #(MdagM)^{alpha/2} eta ~ α0 eta + sum_k αk (MdagM + βk)^{-1} eta
+                vec_β = get_β_inverse(univ.fparam.rhmc_action)
+                vec_α = get_α_inverse(univ.fparam.rhmc_action)
+                α0 = get_α0_inverse(univ.fparam.rhmc_action)
+                shiftedcg(vec_x,vec_β,x,WdagW,univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
+                clear_fermion!(univ.η)
+                add_fermion!(univ.η,α0,univ.φ)
+                for j=1:N
+                    αk = vec_α[j]
+                    add_fermion!(univ.η,αk,vec_x[j])
+                end
+            end
         else
-            WdagW = Diracoperators.DdagD_operator(U,univ.η,univ.fparam)
-            N = get_order(univ.fparam.rhmc_action)
-
-            x = univ.η
-            vec_x = univ._temporal_fermi[end-N+1:end]
-            for j=1:N
-                Fermionfields.clear!(vec_x[j])
-            end
-
-            # eta =  (MdagM)^{-alpha/2} phi -> phi = (MdagM)^{alpha/2} eta
-            #(MdagM)^{alpha/2} eta ~ α0 eta + sum_k αk (MdagM + βk)^{-1} eta
-            vec_β = get_β_inverse(univ.fparam.rhmc_action)
-            vec_α = get_α_inverse(univ.fparam.rhmc_action)
-            α0 = get_α0_inverse(univ.fparam.rhmc_action)
-            shiftedcg(vec_x,vec_β,x,WdagW,univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep)
-            Fermionfields.clear!(univ.η)
-            Fermionfields.add!(univ.η,α0,univ.φ)
-            for j=1:N
-                αk = vec_α[j]
-                Fermionfields.add!(univ.η,αk,vec_x[j])
-            end
+            W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
+            bicg(univ.η,W',univ.φ,eps = univ.fparam.eps,maxsteps= univ.fparam.MaxCGstep,verbose = univ.kind_of_verboselevel)
         end
     end
 

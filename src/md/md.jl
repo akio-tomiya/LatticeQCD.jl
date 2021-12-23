@@ -7,8 +7,10 @@ module MD
 
 
     import ..Actions:GaugeActionParam_standard,
-                        FermiActionParam_WilsonClover,FermiActionParam_Wilson,
-                        GaugeActionParam_autogenerator,SmearingParam_single,SmearingParam_multi,Nosmearing
+        GaugeActionParam_autogenerator
+    import ..Gaugefield:Stoutsmearing,Nosmearing
+                        #FermiActionParam_WilsonClover,FermiActionParam_Wilson,
+                        
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
                 construct_fermionfield_φ!,construct_fermionfield_η!
@@ -22,10 +24,14 @@ module MD
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
             StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
-    using ..Fermionfields
+    #using ..Fermionfields
     import ..Heatbath:heatbath!
     import ..Gaugefield:AbstractGaugefields,exptU!,substitute_U!,set_wing_U!,
-                        add_force!
+                        add_force!,TA_Gaugefields,staggered_U,clear_U!,
+                        Traceless_antihermitian_add!
+    import ..Fermionfield_LQCD:AbstractFermionfields,
+                                FermiActionParam_WilsonClover,FermiActionParam_Wilson,
+                                clear_fermion!,set_wing_fermion!,shift_fermion
 
 
 
@@ -33,11 +39,11 @@ module MD
     import ..Clover:Make_CloverFμν!,dSclover!
     import ..System_parameters:Params
 
-    import ..Diracoperators:Wilson_operator,Adjoint_Wilson_operator,WilsonClover_operator,
+    import ..Fermionfield_LQCD:Wilson_operator,Adjoint_Wilson_operator,WilsonClover_operator,
                 Dirac_operator,DdagD_operator
-    import ..CGmethods:bicg,cg,shiftedcg
+    import ..Fermionfield_LQCD:bicg,cg,shiftedcg
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
-    import ..Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+    import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
 
 
     abstract type MD_parameters end
@@ -803,6 +809,323 @@ module MD
         end
         return
 
+    end
+
+    function updateP_fermi!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+
+        if Y.Dirac_operator == "Staggered"
+            updateP_fermi_Staggered!(Y,φ,X,fparam,
+                p,mdparams,τ,Uin,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+        elseif findfirst("Wilson",Y.Dirac_operator) != nothing #Dirac_operator == "Wilson"
+            updateP_fermi_Wilson!(Y,φ,X,fparam,
+                p,mdparams,τ,Uin,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+        else
+            error("Dirac_operator = $(Y.Dirac_operator) is not supported")
+        end
+    end
+
+    function updateP_fermi_Staggered!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+
+        WdagW = DdagD_operator(U,φ,fparam)
+
+        if fparam.Nf == 4 || fparam.Nf == 8
+            #X = (D^dag D)^(-1) ϕ 
+            #
+            cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+            set_wing_fermion!(X)
+
+            if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+                updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+                p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+                temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+            else
+                updateP_fermi_fromX!(Y,φ,X,fparam,
+                p,mdparams,τ,U,
+                temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+            end
+        else
+            N_MD = get_order(fparam.rhmc_MD)
+            #numtemps_fermi = length(temps_fermi)
+            x = temps_fermi[end-N_MD]
+            vec_x = temps_fermi[end-N_MD+1:end]
+            for j=1:N_MD
+                clear_fermion!(vec_x[j])
+            end
+            vec_β = get_β_inverse(fparam.rhmc_MD)
+            vec_α = get_α_inverse(fparam.rhmc_MD)
+            α0 = get_α0_inverse(fparam.rhmc_MD)
+            shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
+            for j=1:N_MD
+                set_wing_fermion!(vec_x[j])
+                if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+                    updateP_fermi_fromX_smearing!(Y,φ,vec_x[j],fparam,
+                        p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+                        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel,coeff=vec_α[j])
+                else
+                    updateP_fermi_fromX!(Y,φ,vec_x[j],fparam,
+                        p,mdparams,τ,U,
+                        temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel,coeff=vec_α[j])
+                end
+            end
+        end
+
+
+
+    end
+
+
+
+    function updateP_fermi_Wilson!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+        WdagW = DdagD_operator(U,φ,fparam)
+        cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
+        set_wing_fermion!(X)
+
+        if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
+            updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
+            p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel)
+        else
+            updateP_fermi_fromX!(Y,φ,X,fparam,
+            p,mdparams,τ,U,
+            temps,temp_a,temps_fermi,kind_of_verboselevel = kind_of_verboselevel
+            )
+        end
+
+    end
+
+    function  updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+
+        if Y.Dirac_operator == "Staggered"
+            updateP_fermi_fromX_Staggered!(Y,φ,X,fparam,
+                p,mdparams,τ,U,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff=coeff
+                )
+        elseif findfirst("Wilson",Y.Dirac_operator) != nothing #Dirac_operator == "Wilson"
+            updateP_fermi_fromX_Wilson!(Y,φ,X,fparam,
+                p,mdparams,τ,U,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff=coeff
+                )
+        else
+            error("Dirac_operator = $(Y.Dirac_operator) is not supported")
+        end
+    end
+
+    function  updateP_fermi_fromX_Staggered!(Y::F,φ::F,X::AbstractFermionfields{NC,Dim},fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {NC,Dim,F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+
+        for μ=1:Dim
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            Xplus = shift_fermion(X,μ)
+            Us = staggered_U(U[μ],μ)
+            mul!(temp0_f,Us,Xplus)
+
+            #U_{k,μ} X_{k+μ}) ⊗ Y_k
+            mul!(temp2_g,temp0_f,Y') 
+            #...  p(new) = p(old) +factor * temp2_g
+            Traceless_antihermitian_add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,temp2_g)
+
+
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            Yplus = shift_fermion(Y,μ)
+            mul!(temp0_f,Yplus',Us')
+
+            #X_k ⊗ Y_{k+μ}^dag U_{k,μ}^dag
+            mul!(temp2_g,X,temp0_f) 
+
+            mul!(temp3_g,U[μ]',temp2_g)
+            #...  p(new) = p(old) + fac * c  .....
+            Traceless_antihermitian_add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,temp2_g)
+
+        end
+    end
+
+    function  updateP_fermi_fromX_Wilson!(Y::F,φ::F,X::AbstractFermionfields{NC,Dim},fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {NC,Dim,F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields} 
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+        set_wing_fermion!(Y)
+
+        for μ=1:Dim
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            Xplus = shift_fermion(X,μ)
+            mul!(temp0_f,U[μ],Xplus)
+            
+            
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp1_f,view(X.rminusγ,:,:,μ),temp0_f)
+            
+            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp0_f,X.hopp[μ],temp1_f)
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            mul!(temp2_g,temp0_f,Y') 
+            #vvmat!(temp2_g,temp1_f,Y,1)
+
+
+            Traceless_antihermitian_add!(p[μ],τ*mdparams.Δτ,temp2_g)
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            Yplus = shift_fermion(Y,μ)
+            mul!(temp0_f,Yplus',U[μ]')
+
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp1_f,temp0_f,view(X.rplusγ,:,:,μ))
+ 
+            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_f,X.hopm[μ],temp1_f)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp2_g,X,temp0_f) 
+
+            Traceless_antihermitian_add!(p[μ],-τ*mdparams.Δτ,temp2_g)
+
+            if typeof(fparam) == FermiActionParam_WilsonClover
+                error("not implemented yet.")
+                dSclover!(c,μ,X,Y,U,fparam,temps)
+                add!(p[μ],-τ*mdparams.Δτ,c)
+            end
+
+        end
+
+    end
+
+    function  updateP_fermi_fromX_smearing!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields}
+        
+        if Y.Dirac_operator == "Staggered"
+            updateP_fermi_fromX_smearing_Staggered!(Y,φ,X,fparam,
+                p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+        elseif findfirst("Wilson",Y.Dirac_operator) != nothing #Dirac_operator == "Wilson"
+            updateP_fermi_fromX_smearing_Wilson!(Y,φ,X,fparam,
+                p,mdparams,τ,U,Uout_multi,dSdU,Uin,
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+        else
+            error("Dirac_operator = $(Y.Dirac_operator) is not supported")
+        end
+
+    end
+
+    function  updateP_fermi_fromX_smearing_Staggered!(Y::F,φ::F,X::AbstractFermionfields{NC,Dim},fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {NC,Dim,F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields}
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+
+        for μ=1:Dim
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            Xplus = shift_fermion(X,μ)
+            Us = staggered_U(U[μ],μ)
+            mul!(temp0_f,Us,Xplus)
+
+            #U_{k,μ} X_{k+μ}) ⊗ Y_k
+            mul!(temp2_g,temp0_f,Y') 
+            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            Yplus = shift_fermion(Y,μ)
+            mul!(temp0_f,Yplus',Us')
+
+            #X_k ⊗ Y_{k+μ}^dag U_{k,μ}^dag
+            mul!(temp2_g,X,temp0_f) 
+
+            mul!(temp3_g,U[μ]',temp2_g)
+            add_U!(dSdU[μ],temp3_g)
+        end
+
+        if typeof(fparam.smearing) <: SmearingParam_single
+            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
+        elseif typeof(fparam.smearing) <: SmearingParam_multi
+            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+
+        for μ=1:Dim
+            mul!(temp2_g,Uin[μ],dSdUnew[μ])
+
+            Traceless_antihermitian_add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,temp2_g)
+        end
+        return
+
+
+    end
+
+    function  updateP_fermi_fromX_smearing_Wilson!(Y::F,φ::F,X::F,fparam,
+        p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
+        temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields}
+        error("updateP_fermi_fromX_smearing_Wilson! is not implemented")
     end
 
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,

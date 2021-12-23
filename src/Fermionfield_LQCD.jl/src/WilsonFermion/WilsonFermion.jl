@@ -5,7 +5,20 @@ function WilsonFermion(params,NC,NN...)
     if Dim == 4
         fermion = WilsonFermion_4D_wing(params,NC,NN...)
     else
-        error("Dimension $Dim is not supported")
+        error("Dimension $Dim is not supported. NN = $NN")
+    end
+    return fermion
+end
+
+
+function WilsonFermion(fparam::FermiActionParam,NC,BoundaryCondition,NN...)
+    Dim = length(NN)
+    if Dim == 4
+        fermion = WilsonFermion_4D_wing(NC,NN...,fparam.r,fparam.hop,fparam.eps,
+            fparam.MaxCGstep,BoundaryCondition)
+        #fermion = StaggeredFermion_4D_wing(params,NC,NN...)
+    else
+        error("Dimension $Dim is not supported. NN = $NN")
     end
     return fermion
 end

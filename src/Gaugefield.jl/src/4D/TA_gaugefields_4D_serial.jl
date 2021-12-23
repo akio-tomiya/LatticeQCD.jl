@@ -206,6 +206,49 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3,NumofBasis},
 
 end
 
+function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{2,NumofBasis},factor,vin::Gaugefields_4D_wing{2}) where NumofBasis
+    #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
+    fac12 = 1/2
+    NX = vin.NX
+    NY = vin.NY
+    NZ = vin.NZ
+    NT = vin.NT
+
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                @simd for ix=1:NX
+                    v11 = vin[1,1,ix,iy,iz,it]
+                    v22 = vin[2,2,ix,iy,iz,it]
+
+                    tri = fac12*(imag(v11)+imag(v22))
+
+                    
+
+                    v12 = vin[1,2,ix,iy,iz,it]
+                    #v13 = vin[1,3,ix,iy,iz,it]
+                    v21 = vin[2,1,ix,iy,iz,it]
+
+                    x12 = v12 - conj(v21)
+
+                    x21 = - conj(x12)
+
+                    y11 = (imag(v11)-tri)*im
+                    y12 = 0.5  * x12
+                    y21 = 0.5  * x21
+                    y22 = (imag(v22)-tri)*im
+
+                    c[1,ix,iy,iz,it] = (imag(y12)+imag(y21))*factor  + c[1,ix,iy,iz,it]
+                    c[2,ix,iy,iz,it] = (real(y12)-real(y21))*factor  + c[2,ix,iy,iz,it]
+                    c[3,ix,iy,iz,it] = (imag(y11)-imag(y22))*factor  + c[3,ix,iy,iz,it]
+
+                end
+            end
+        end
+    end
+
+
+end
 
 """
 -----------------------------------------------------c
@@ -294,7 +337,7 @@ function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{3,NumofBasis},vin:
 end
 
 function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},vin::Gaugefields_4D_wing{NC}) where {NC,NumofBasis}
-    @assert NC != 3
+    @assert NC != 3 && NC != 2 
     #NC = vout.NC
     fac1N = 1/NC
     nv = vin.NV
@@ -344,7 +387,7 @@ function Traceless_antihermitian!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},vin
 end
 
 function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC,NumofBasis},factor,vin::Gaugefields_4D_wing{NC}) where {NC,NumofBasis}
-    @assert NC != 3
+    @assert NC != 3 && NC != 2 "NC should be NC >4! in this function"
     #NC = vout.NC
     fac1N = 1/NC
     nv = vin.NV
@@ -371,12 +414,14 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC,NumofBasis}
                         matrix[k,k] = (imag(vin[k,k,ix,iy,iz,it])-tri)*im
                     end
 
-                    @simd for k2=k1+1:NC
-                        vv = 0.5*(vin[k1,k2,ix,iy,iz,it] - conj(vin[k2,k1,ix,iy,iz,it]))
-                        #vout[k1,k2,ix,iy,iz,it] = vv
-                        #vout[k2,k1,ix,iy,iz,it] = -conj(vv)
-                        matrix[k1,k2] = vv
-                        matrix[k2,k1] = -conj(vv)
+                    for k1=1:NC
+                        @simd for k2=k1+1:NC
+                            vv = 0.5*(vin[k1,k2,ix,iy,iz,it] - conj(vin[k2,k1,ix,iy,iz,it]))
+                            #vout[k1,k2,ix,iy,iz,it] = vv
+                            #vout[k2,k1,ix,iy,iz,it] = -conj(vv)
+                            matrix[k1,k2] = vv
+                            matrix[k2,k1] = -conj(vv)
+                        end
                     end
 
                     matrix2lie!(a,g,matrix)
@@ -393,8 +438,11 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{NC,NumofBasis}
     
 end
 
+
+
+
 function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{NC,NumofBasis},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing, NC,NumofBasis} #uout = exp(t*u)
-    @assert NC != 3 "This function is for NC != 3"
+    @assert NC != 3 && NC != 2 "This function is for NC != 2,3"
     g = u.generators
     NT = u.NT
     NZ = u.NZ
@@ -601,6 +649,46 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
     end
 
     mul!(uout,w',ww)
+
+
+end
+const tinyvalue =1e-100
+
+
+function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{2,NumofBasis},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing,NumofBasis} #uout = exp(t*u)     
+    NT = u.NT
+    NZ = u.NZ
+    NY = u.NY
+    NX = u.NX
+
+
+    for it=1:NT
+        for iz=1:NZ
+            for iy=1:NY
+                for ix=1:NX
+                    #icum = (((it-1)*NX+iz-1)*NY+iy-1)*NX+ix  
+                    u1 = t*u[1,ix,iy,iz,it]/2
+                    u2 = t*u[2,ix,iy,iz,it]/2
+                    u3 = t*u[3,ix,iy,iz,it]/2
+                    R = sqrt(u1^2+u2^2+u3^2) +  tinyvalue
+                    sR = sin(R)/R
+                    #sR = ifelse(R == 0,1,sR)
+                    a0 = cos(R)
+                    a1 = u1*sR
+                    a2 = u2*sR
+                    a3 = u3*sR
+
+                    uout[1,1,ix,iy,iz,it] = cos(R) + im*a3
+                    uout[1,2,ix,iy,iz,it] = im*a1 + a2
+                    uout[2,1,ix,iy,iz,it] = im*a1 - a2
+                    uout[2,2,ix,iy,iz,it]= cos(R) - im*a3
+
+                end
+            end
+        end
+    end
+
+
 
 
 end

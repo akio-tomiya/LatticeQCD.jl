@@ -81,6 +81,24 @@ function Dx!(xout::T,U::Array{G,1},
 end
 
 
+function clear_fermion!(x::StaggeredFermion_4D_wing{NC},evensite) where NC
+    ibush = ifelse(evensite,0,1)
+    for it=1:x.NT
+        for iz=1:x.NZ
+            for iy=1:x.NY
+                xran =1+(1+ibush+iy+iz+it)%2:2:x.NX
+                for ix in xran
+                    @simd for ic=1:NC
+                        x[ic,ix,iy,iz,it,1] = 0
+                    end
+                end
+            end
+        end
+    end
+    return
+end
+
+
 
 
 

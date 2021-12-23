@@ -271,6 +271,7 @@ module AbstractGaugefields_module
 
         for μ=1:Dim
             if plaqonly
+
                 construct_double_staple!(V,U,μ,temps[1:2])
 
                 mul!(temp1,U[μ],V') #U U*V
@@ -285,9 +286,7 @@ module AbstractGaugefields_module
                 mul!(temp1,U[μ],V) #U U*V
             end
 
-            #println("factor = ",factor)
             Traceless_antihermitian_add!(F[μ],factor,temp1)
-            #println("F = ",F[μ][1,1,1,1,1])
             #add_U!(F[μ],factor,temp2)
         end
 

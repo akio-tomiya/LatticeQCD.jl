@@ -167,7 +167,7 @@ module CGmethods
             mul!(q,A,p)
 
             pAp = p ⋅ q
-            rr = r*r
+            rr = dot(r,r)
             αk = rr / pAp
 
             #! ...  x   = x   + alpha * p   
@@ -176,7 +176,7 @@ module CGmethods
             #...  r = r - alpha * q 
             add!(r,-αk,q)
 
-            βk = (r*r)/ rr
+            βk = dot(r,r)/ rr
             add!(βk,p,1,r) #p = beta*p + r
 
             for j=1:N
