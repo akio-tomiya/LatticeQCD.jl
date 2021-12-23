@@ -5,18 +5,18 @@ module LTK_universe
     using MPI
     #export Universe
     
-
+    
     import ..Gaugefields:GaugeFields,GaugeFields_1d,
-                        IdentityGauges,RandomGauges,
+                        #IdentityGauges,RandomGauges,
                         set_wing!,
                         substitute!,
                         calc_GaugeAction,
-                        SU3GaugeFields,SU3GaugeFields_1d,
-                        SU2GaugeFields,SU2GaugeFields_1d,
-                        SUNGaugeFields,SUNGaugeFields_1d,
-                        Oneinstanton,
+                        #SU3GaugeFields,SU3GaugeFields_1d,
+                        #SU2GaugeFields,SU2GaugeFields_1d,
+                        #SUNGaugeFields,SUNGaugeFields_1d,
+                        #Oneinstanton,
                         evaluate_wilson_loops!,
-                        U1GaugeFields,U1GaugeFields_1d,
+                        #U1GaugeFields,U1GaugeFields_1d,
                         apply_smearing,calc_smearingU
     
     import ..Gaugefields
@@ -48,7 +48,8 @@ module LTK_universe
     #import ..Diracoperators
     import ..Gaugefield:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
-    import ..Gaugefield:initialize_TA_Gaugefields,AbstractGaugefields,calculate_Plaquette
+    import ..Gaugefield:initialize_TA_Gaugefields,AbstractGaugefields,calculate_Plaquette,
+                IdentityGauges,RandomGauges
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     import ..Fermionfield_LQCD#:DdagD_operator,Dirac_operator
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
@@ -451,7 +452,8 @@ module LTK_universe
         if initial == "cold"
             println(".....  Cold start")
             for μ=1:4
-                U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+                U[μ] = IdentityGauges(NC,Nwing,NX,NY,NZ,NT)
+                #U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
             end
         elseif initial == "hot"
             println(".....  Hot start")

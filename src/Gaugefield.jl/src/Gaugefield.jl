@@ -18,7 +18,8 @@ module Gaugefield
                                         add_force!,exp_aF_U!,clear_U!,add_U!,exptU!,
                                         Traceless_antihermitian!,Traceless_antihermitian,Generator,
                                         Staggered_Gaugefields,staggered_U,
-                                        Traceless_antihermitian_add! 
+                                        Traceless_antihermitian_add!,
+                                        IdentityGauges,RandomGauges
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!,evaluate_loops!

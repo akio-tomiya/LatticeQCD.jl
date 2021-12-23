@@ -109,6 +109,28 @@ module Gaugefields_4D_wing_module
         return 
     end
 
+    function randomGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
+        U = Gaugefields_4D_wing(NC,NDW,NX,NY,NZ,NT)
+    
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for j=1:NC
+                            @simd for i=1:NC
+                                U[i,j,ix,iy,iz,it] = rand()-0.5 + im*(rand()-0.5)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        normalize_U!(U)
+        set_wing_U!(U)
+        return U
+        
+    end
+
 
     function identityGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
         U = Gaugefields_4D_wing(NC,NDW,NX,NY,NZ,NT)
@@ -1317,8 +1339,176 @@ module Gaugefields_4D_wing_module
         return η#*boundary_factor_x*boundary_factor_y*boundary_factor_z*boundary_factor_t
     end
 
+    function gramschmidt!(v)
+        n = size(v)[1]
+        for i=1:n
+            @simd for j=1:i-1
+                v[:,i] = v[:,i] - v[:,j]'*v[:,i]*v[:,j]
+            end
+            v[:,i] = v[:,i]/norm(v[:,i])
+        end
+    end
+
+    function normalize_U!(u::Gaugefields_4D_wing{NC}) where NC
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+                        A = u[:,:,ix,iy,iz,it]
+                        gramschmidt!(A)
+                        u[:,:,ix,iy,iz,it] = A[:,:]
+                    end
+                end
+            end
+        end
+
+    end
+
+    function normalize_U!(u::Gaugefields_4D_wing{2}) 
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+
+                        α = u[1,1,ix,iy,iz,it]
+                        β = u[2,1,ix,iy,iz,it]
+                        detU = abs(α)^2 + abs(β)^2
+                        u[1,1,ix,iy,iz,it] = α/detU
+                        u[2,1,ix,iy,iz,it] = β/detU
+                        u[1,2,ix,iy,iz,it] = -conj(β)/detU
+                        u[2,2,ix,iy,iz,it] = conj(α)/detU
+
+                    end
+                end
+            end
+        end
+    end
+
+    function normalize_U!(u::Gaugefields_4D_wing{3}) 
+        NX = u.NX
+        NY = u.NY
+        NZ = u.NZ
+        NT = u.NT
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+
+                        w1 = 0
+                        w2 = 0
+                        @simd for ic=1:3
+                            w1 += u[2,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
+                            w2 += u[1,ic,ix,iy,iz,it]*conj(u[1,ic,ix,iy,iz,it])
+                        end
+                        zerock2 = w2
+                        if zerock2 == 0 
+                            println("w2 is zero  !!  (in normlz)")
+                            println("u[1,1),u[1,2),u[1,3) : ",u[1,1,ix,iy,iz,it], "\t",u[1,2,ix,iy,iz,it],"\t", u[1,3,ix,iy,iz,it])
+                        end
+
+                        w1 = -w1/w2
+
+                        x4 = (u[2,1,ix,iy,iz,it]) + w1*u[1,1,ix,iy,iz,it]
+                        x5 = (u[2,2,ix,iy,iz,it]) + w1*u[1,2,ix,iy,iz,it]
+                        x6 = (u[2,3,ix,iy,iz,it]) + w1*u[1,3,ix,iy,iz,it]
+
+                        w3 = x4*conj(x4) + x5*conj(x5) + x6*conj(x6)
+
+                        zerock3 = w3
+                        if zerock3 == 0
+                            println("w3 is zero  !!  (in normlz)")
+                            println("x4, x5, x6 : $x4, $x5, $x6")
+                            exit()
+                        end
+
+                        u[2,1,ix,iy,iz,it] = x4
+                        u[2,2,ix,iy,iz,it] = x5
+                        u[2,3,ix,iy,iz,it] = x6
+
+                        w3 = 1/sqrt(w3)
+                        w2 = 1/sqrt(w2)
+
+                        u[1,1,ix,iy,iz,it] = u[1,1,ix,iy,iz,it]*w2
+                        u[1,2,ix,iy,iz,it] = u[1,2,ix,iy,iz,it]*w2
+                        u[1,3,ix,iy,iz,it] = u[1,3,ix,iy,iz,it]*w2
+                        u[2,1,ix,iy,iz,it] = u[2,1,ix,iy,iz,it]*w3
+                        u[2,2,ix,iy,iz,it] = u[2,2,ix,iy,iz,it]*w3
+                        u[2,3,ix,iy,iz,it] = u[2,3,ix,iy,iz,it]*w3
+
+                        if zerock2*zerock3 == 0 
+                            println("!! devided by zero !! (in normalize)")
+                            println("w2 or w3 in normlz is zero !!")
+                            println("w2, w3 : $w2, $w3   ")
+                            exit()
+                        end
+                        #println(u[:,:,ix,iy,iz,it]'*u[:,:,ix,iy,iz,it])
+                    end
+                end
+            end
+        end
+        m3complv!(u)
+    end
+
     
+    function m3complv!(a::Gaugefields_4D_wing{3})
+        aa = zeros(Float64,18)
+        NX = a.NX
+        NY = a.NY
+        NZ = a.NZ
+        NT = a.NT
     
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+    
+                        aa[ 1] = real( a[1,1,ix,iy,iz,it])
+                        aa[ 2] = imag(a[1,1,ix,iy,iz,it])
+                        aa[ 3] = real( a[1,2,ix,iy,iz,it])
+                        aa[ 4] = imag(a[1,2,ix,iy,iz,it])
+                        aa[ 5] = real( a[1,3,ix,iy,iz,it])
+                        aa[ 6] = imag(a[1,3,ix,iy,iz,it])
+                        aa[ 7] = real( a[2,1,ix,iy,iz,it])
+                        aa[ 8] = imag(a[2,1,ix,iy,iz,it])
+                        aa[ 9] = real( a[2,2,ix,iy,iz,it])
+                        aa[10] = imag(a[2,2,ix,iy,iz,it])
+                        aa[11] = real( a[2,3,ix,iy,iz,it])
+                        aa[12] = imag(a[2,3,ix,iy,iz,it])
+    
+                        aa[13] = aa[ 3]*aa[11] - aa[ 4]*aa[12] -
+                                    aa[ 5]*aa[ 9] + aa[ 6]*aa[10]
+                        aa[14] = aa[ 5]*aa[10] + aa[ 6]*aa[ 9] -
+                                    aa[ 3]*aa[12] - aa[ 4]*aa[11]
+                        aa[15] = aa[ 5]*aa[ 7] - aa[ 6]*aa[ 8] -
+                                    aa[ 1]*aa[11] + aa[ 2]*aa[12]
+                        aa[16] = aa[ 1]*aa[12] + aa[ 2]*aa[11] -
+                                    aa[ 5]*aa[ 8] - aa[ 6]*aa[ 7]
+                        aa[17] = aa[ 1]*aa[ 9] - aa[ 2]*aa[10] -
+                                    aa[ 3]*aa[ 7] + aa[ 4]*aa[ 8]
+                        aa[18] = aa[ 3]*aa[ 8] + aa[ 4]*aa[ 7] -
+                                    aa[ 1]*aa[10] - aa[ 2]*aa[ 9]
+    
+                        a[3,1,ix,iy,iz,it] = aa[13]+im*aa[14]
+                        a[3,2,ix,iy,iz,it] = aa[15]+im*aa[16]
+                        a[3,3,ix,iy,iz,it] = aa[17]+im*aa[18]
+
+                        #println(a[:,:,ix,iy,iz,it]'*a[:,:,ix,iy,iz,it] )
+                    end
+                end
+            end
+        end
+    end
 
 
 # end
