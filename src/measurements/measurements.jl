@@ -686,7 +686,7 @@ end
     end
 # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
-    # definition in https://arxiv.org/abs/1508.05552  
+    # definition in https://arxiv.org/abs/1508.05552 (published version. There is a mistake in the arXiv version)
     # WL = 0.0+0.0im
     NV = U[1].NV
     #NC = U[1].NC
@@ -717,7 +717,7 @@ function  calc_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <:
             end
         end
     end
-    return real(E)/8^2 # (this is a factor in the Gmunu but including here)
+    return real(E)/4^2 # this is a factor in the Gmunu but including here
 end
 function make_clover_leaf!(G,U)
     W_operator,numofloops = calc_loopset_μν("clover")　# abstract clover loop
@@ -732,7 +732,7 @@ function instantiate_clover_leaf!(G,W_operator,U)
                 continue
             end
             loopset = Loops(U,W_operator[μ,ν])
-            G[μ,ν] = TA(evaluate_loops(loopset,U) ) # factor 1/8 is included above
+            G[μ,ν] = TA(evaluate_loops(loopset,U) ) # factor 1/4 is included above
         end
     end
     return 
