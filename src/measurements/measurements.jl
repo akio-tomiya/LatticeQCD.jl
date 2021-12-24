@@ -428,37 +428,34 @@ module Measurements
 
                     τ = 0.0
                     plaq = calc_plaquette(Usmr)
+                    Eclov = calc_energy_density(Usmr)
+                    Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                    Qclov = calc_topological_charge_clover(Usmr)
+                    Qimpr =  calc_topological_charge_improved(Usmr,temp_UμνTA,Qclov)
                     #Q = calc_topological_charge(Usmr)
                     # sign of topological charge defined to be positive for one-instanton.
-                    Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
-                    #println("Qplaq = ",Qplaq)
-                    Qclover= calc_topological_charge_clover(Usmr)
-                    #println("Qclover = ",Qclover)
-                    Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                    clov = calc_energy_density(Usmr)
+                    #println("Qplaq = ",Qplaq)                    
+                    #println("Qclover = ",Qclover)                  
                     #println_verbose1(verbose,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
                     #println(measfp,"$itrj $τ $plaq $(real(Qplaq)) $(real(Qclover)) #flow itrj flowtime plaq Qplaq Qclov")
-                    println_verbose1(verbose,"$itrj $τ $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                    println(measfp,"$itrj $τ $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                    println_verbose1(verbose,"$itrj $τ $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
+                    println(measfp,"$itrj $τ $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
                     flush(stdout)
-                    smearing_type = "gradient_flow"
+                    smearing_type = "gradient_flow" # now, gradient flow is the only scheme for toplogical charge.
                     #smearing_type = "APE"
                     #smearing_type = "stout"
                     if smearing_type == "gradient_flow"
                         for iflow = 1:method["numflow"]#5000 # eps=0.01: t_flow = 50
                             gradientflow!(Usmr,univ,W1,W2,Nflowsteps,eps_flow)
-                            #println(typeof(Usmr[1]))
-                            #println(Usmr[1][1,1,1,1,1,1])
-                            #error("Usmr")
-                            plaq = calc_plaquette(Usmr)
-                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
-                            Qclover= calc_topological_charge_clover(Usmr,temp_UμνTA)
-                            Qimproved= calc_topological_charge_improved(Usmr,temp_UμνTA,Qclover)
-                            clov = calc_energy_density(Usmr)
-                            #@time Q = calc_topological_charge(Usmr)
                             τ = iflow*eps_flow*Nflowsteps
-                            println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
-                            println(measfp,"$itrj $(round(τ, digits=3)) $plaq $clov $(real(Qplaq)) $(real(Qclover)) $(real(Qimproved)) #flow itrj flowtime plaq E Qplaq Qclov Qimproved")
+                            plaq = calc_plaquette(Usmr)
+                            Eclov = calc_energy_density(Usmr)
+                            Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
+                            Qclov = calc_topological_charge_clover(Usmr,temp_UμνTA)
+                            Qimpr = calc_topological_charge_improved(Usmr,temp_UμνTA,Qclov)
+                            #@time Q = calc_topological_charge(Usmr)
+                            println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
+                            println(measfp,"$itrj $(round(τ, digits=3)) $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
                             #if iflow%10 == 0
                             flush(stdout)
                             #end
@@ -692,23 +689,23 @@ function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
     # definition in https://arxiv.org/abs/1508.05552  
     # WL = 0.0+0.0im
     NV = U[1].NV
-    NC = U[1].NC
+    #NC = U[1].NC
     Gμν = Array{GaugeFields_1d,2}(undef,4,4)
     #
-    make_energy_density!(Gμν,U) # make wilon loop operator
-    E =  make_energy_density_core(Gμν,U,NV) # 
-    # NDir = 4.0*3.0/2 # choice of 2 axis from 4.
-    return real(E) /NV#/NDir/NC/8
+    make_clover_leaf!(Gμν,U) # make a clover Wilson loop operator, which is same as Gμν
+    E =  calc_energy_density_core(Gμν,U,NV) # 
+    #NDir = 4.0*3.0/2 # choice of 2 axis from 4.
+    return E/NV #/NDir/NC/8
 end
-function  make_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
-    if S == SU3
-        NC = 3
-    elseif S == SU2
-        NC = 2
-    else
-        NC = U[1].NC
-        #error("NC != 2,3 is not supported")
-    end
+function  calc_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+    #if S == SU3
+    #    NC = 3
+    #elseif S == SU2
+    #    NC = 2
+    #else
+    #    NC = U[1].NC
+    #    #error("NC != 2,3 is not supported")
+    #end
     E = 0.0 + 0.0im
     for n=1:NV
         for μ=1:4 # all directions
@@ -716,19 +713,19 @@ function  make_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <:
                 if μ == ν
                     continue
                 end
-                E += -tr(G[μ,ν][:,:,n]*G[μ,ν][:,:,n])/2/(8^2) 
+                E += -tr(G[μ,ν][:,:,n]*G[μ,ν][:,:,n])/2
             end
         end
     end
-    return E
+    return real(E)/8^2 # (this is a factor in the Gmunu but including here)
 end
-function make_energy_density!(G,U)
-    W_operator,numofloops = calc_loopset_μν("clover")#make_Wilson_loop(Lt,Ls)
-    make_clover_leaf!(G,W_operator,U)
+function make_clover_leaf!(G,U)
+    W_operator,numofloops = calc_loopset_μν("clover")　# abstract clover loop
+    instantiate_clover_leaf!(G,W_operator,U) # instantiate
     return 
 end
-function make_clover_leaf!(temp_Wmat,W_operator,U)
-    G = temp_Wmat
+function instantiate_clover_leaf!(G,W_operator,U)
+    #G = temp_Wmat
     for μ=1:4
         for ν=1:4
             if μ == ν
@@ -831,10 +828,11 @@ end
                     end
                     loops = Wilson_loop_set()
 
-                    loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)])
-                    loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)])
-                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)])
-                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)])
+                    # notation in 1508.05552
+                    loop_righttop = Wilson_loop([(μ,1),(ν,1),(μ,-1),(ν,-1)]) # Pmunu
+                    loop_rightbottom = Wilson_loop([(ν,-1),(μ,1),(ν,1),(μ,-1)]) # Qmunu
+                    loop_leftbottom= Wilson_loop([(μ,-1),(ν,-1),(μ,1),(ν,1)]) # Rmunu
+                    loop_lefttop = Wilson_loop([(ν,1),(μ,-1),(ν,-1),(μ,1)]) # Smunu
                     push!(loops,loop_righttop)
                     push!(loops,loop_lefttop)
                     push!(loops,loop_rightbottom)
