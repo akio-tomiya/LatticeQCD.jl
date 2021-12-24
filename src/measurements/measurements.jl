@@ -689,18 +689,18 @@ end
     end
 # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
-    # Making a ( Ls × Lt) Wilson loop operator for potential calculations
-    WL = 0.0+0.0im
+    # definition in https://arxiv.org/abs/1508.05552  
+    # WL = 0.0+0.0im
     NV = U[1].NV
     NC = U[1].NC
-    Wmat = Array{GaugeFields_1d,2}(undef,4,4)
+    Gμν = Array{GaugeFields_1d,2}(undef,4,4)
     #
-    make_energy_density!(Wmat,U) # make wilon loop operator and evaluate as a field, not traced.
-    WL =  make_energy_density_core(Wmat,U,NV) # tracing over color and average over spacetime and x,y,z.
-    NDir = 4.0*3.0/2 # choice of 2 axis from 4.
-    return real(WL)/NV/NDir/NC/8
+    make_energy_density!(Gμν,U) # make wilon loop operator
+    E =  make_energy_density_core(Gμν,U,NV) # 
+    # NDir = 4.0*3.0/2 # choice of 2 axis from 4.
+    return real(E) /NV#/NDir/NC/8
 end
-function  make_energy_density_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
+function  make_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
     if S == SU3
         NC = 3
     elseif S == SU2
@@ -709,35 +709,33 @@ function  make_energy_density_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S
         NC = U[1].NC
         #error("NC != 2,3 is not supported")
     end
-    W = 0.0 + 0.0im
+    E = 0.0 + 0.0im
     for n=1:NV
         for μ=1:4 # all directions
             for ν=1:4
                 if μ == ν
                     continue
                 end
-                W += tr(Wmat[μ,ν][:,:,n]*Wmat[μ,ν][:,:,n])/4
+                E += -tr(G[μ,ν][:,:,n]*G[μ,ν][:,:,n])/2/(8^2) 
             end
         end
     end
-    return W
+    return E
 end
-function make_energy_density!(Wmat,U)
+function make_energy_density!(G,U)
     W_operator,numofloops = calc_loopset_μν("clover")#make_Wilson_loop(Lt,Ls)
-    calc_large_wiloson_loop4d!(Wmat,W_operator,U)
+    make_clover_leaf!(G,W_operator,U)
     return 
 end
-function calc_large_wiloson_loop4d!(temp_Wmat,W_operator,U)
-    W = temp_Wmat
+function make_clover_leaf!(temp_Wmat,W_operator,U)
+    G = temp_Wmat
     for μ=1:4
         for ν=1:4
             if μ == ν
                 continue
             end
-            #println(typeof(μ)," ",typeof(ν))
-            #exit()
             loopset = Loops(U,W_operator[μ,ν])
-            W[μ,ν] = evaluate_loops(loopset,U)
+            G[μ,ν] = TA(evaluate_loops(loopset,U) ) # factor 1/8 is included above
         end
     end
     return 
