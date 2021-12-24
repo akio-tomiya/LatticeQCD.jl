@@ -52,8 +52,8 @@ module LatticeQCD
     include("./fermions/misc.jl")
 
 
-    include("./output/io.jl")
-    include("./output/ildg_format.jl")
+    #include("./output/io.jl")
+    #include("./output/ildg_format.jl")
 
     
 
@@ -114,10 +114,10 @@ module LatticeQCD
     import .System_parameters:Params,print_parameters,parameterloading,Params_set,make_parameters#,parameterloading2
     import .Print_config:write_config
     import .Smearing:gradientflow!
-    import .ILDG_format:ILDG,load_gaugefield
+    import .Gaugefield:ILDG,load_gaugefield
     import .Heatbath:heatbath!
     import .Gaugefield:make_plaq
-    import .IOmodule:saveU,loadU,loadU!
+    import .Gaugefield:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD
     import .RationalApprox:calc_exactvalue,calc_Anϕ,calc_det

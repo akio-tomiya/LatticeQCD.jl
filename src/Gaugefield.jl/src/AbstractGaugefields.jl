@@ -119,6 +119,29 @@ module AbstractGaugefields_module
         return U
     end
 
+    function Oneinstanton(NC,NDW,NN...;mpi = false,PEs=nothing,mpiinit = nothing)
+        dim = length(NN)
+        if mpi
+            if PEs == nothing || mpiinit == nothing
+                error("not implemented yet!")
+            else
+                if dim==4
+                    U = Oneinstanton_4D_wing_mpi(NC,NN[1],NN[2],NN[3],NN[4],NDW,PEs,mpiinit = mpiinit)
+                else
+                    error("not implemented yet!")
+                end
+                
+            end
+        else
+            if dim == 4
+                U = Oneinstanton_4D_wing(NC,NN[1],NN[2],NN[3],NN[4],NDW)
+            else
+                error("not implemented yet!")
+            end
+        end
+        return U
+    end
+
     function construct_gauges(NC,NDW,NN...;mpi = false,PEs=nothing,mpiinit = nothing)
         dim = length(NN)
         if mpi

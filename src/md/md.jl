@@ -28,7 +28,7 @@ module MD
     import ..Heatbath:heatbath!
     import ..Gaugefield:AbstractGaugefields,exptU!,substitute_U!,set_wing_U!,
                         add_force!,TA_Gaugefields,staggered_U,clear_U!,
-                        Traceless_antihermitian_add!
+                        Traceless_antihermitian_add!,add_U!
     import ..Fermionfield_LQCD:AbstractFermionfields,
                                 FermiActionParam_WilsonClover,FermiActionParam_Wilson,
                                 clear_fermion!,set_wing_fermion!,shift_fermion

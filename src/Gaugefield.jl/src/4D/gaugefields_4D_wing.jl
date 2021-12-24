@@ -128,7 +128,6 @@ module Gaugefields_4D_wing_module
         normalize_U!(U)
         set_wing_U!(U)
         return U
-        
     end
 
 
@@ -147,8 +146,75 @@ module Gaugefields_4D_wing_module
             end
         end
         set_wing_U!(U)
+        return U
+    end
+
+    function Oneinstanton_4D_wing(NC,NX,NY,NZ,NT,NDW)
+        @assert NC == 2 "NC should be 2"
+        u = Gaugefields_4D_wing(NC,NDW,NX,NY,NZ,NT)
+        U = Array{typeof(u),1}(undef,4)
+        U[1] = u
+        for μ = 2:4
+            U[μ] = similar(u)
+        end
+        L = (NX,NY,NZ,NT)
+        NV = prod(L)
+
+        R = div(NX,2) # instanton radius
+
+        println("# Starting from a instanton backgorund with radius R=$R ")
+        inst_cent = [L[1]/2+0.5, L[2]/2+0.5, L[3]/2+0.5, L[4]/2+0.5]
+        #eps = 1/10000000
+        s1 = [
+        0.0 1.0
+        1.0 0.0]
+        s2 = [
+        0.0 -im*1.0
+        im*1.0 0.0]
+        s3 = [
+        1.0 0.0
+        0.0 -1.0]
+        En = [
+        1.0 0.0
+        0.0 1.0]
+        ss=[ im*s1,  im*s2,  im*s3, En]
+        sd=[-im*s1, -im*s2, -im*s3, En]
+        nn = 0
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX  
+                        nn += 0
+                        nv=[ix-1, iy-1, iz-1, it-1]-inst_cent
+                        n2=nv⋅nv
+                        for mu = 1:4
+                            tau=[
+                                0 0
+                                0 0]
+                            for nu = 1:4
+                                smunu = sd[mu]*ss[nu]-sd[nu]*ss[mu]
+                                tau+=smunu*nv[nu]
+                            end
+                            sq = sqrt(n2+R^2)
+                            tau = exp(im*tau*(1/2)*(1/(n2))*(im*R^2/(n2+R^2)) ) #1b
+                            for j=1:2
+                                for i=1:2
+                                    U[mu][i,j,ix,iy,iz,it] = tau[i,j]
+                                end
+                            end
+                        
+                        end
+                    end
+                end
+            end
+        end
+
 
         return U
+
+
+
     end
 
 
@@ -455,7 +521,7 @@ module Gaugefields_4D_wing_module
 
     function exptU!(uout::T,t::N,u::Gaugefields_4D_wing{NC},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing, NC} #uout = exp(t*u)
         @assert NC != 3 && NC != 2 "This function is for NC != 2,3"
-        error("1")
+        
         
         NT = u.NT
         NZ = u.NZ
@@ -526,7 +592,7 @@ module Gaugefields_4D_wing_module
                         v18 = t*imag(v[3,3,ix,iy,iz,it])
                 
                 #c find eigenvalues of v
-                        trv3 = (v1 + v9 + v17) / 3.0
+                        trv3 = (v1 + v9 + v17) / 3.0 
                         cofac = v1 *  v9  - v3^2  - v4^2 + 
                                 v1 * v17 -  v5^2  - v6^2 + 
                                 v9 * v17 - v11^2 - v12^2
@@ -560,6 +626,7 @@ module Gaugefields_4D_wing_module
                         w6 = 0.0
                 
                         coeff = 1.0 / sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)
+                        
                 
                         w1 = w1 * coeff
                         w2 = w2 * coeff
@@ -575,6 +642,7 @@ module Gaugefields_4D_wing_module
                         w12 = 0.0
                 
                         coeff = 1.0 / sqrt(w7^2  + w8^2 + w9^2+ w10^2 + w11^2)
+                        
                         w7  = w7  * coeff
                         w8  = w8  * coeff
                         w9  = w9  * coeff

@@ -7,8 +7,20 @@ mutable struct Stoutsmearing <: Abstractsmearing
 end
 
 function Stoutsmearing(loops_smearing,ρs)
+    numloops = length(loops_smearing)
+    staplesforsmear_set, tensor_derivative, staplesforsmear_dag_set, tensor_derivative_dag = make_loops_Stoutsmearing(loops_smearing,rand(numloops))
+    return Stoutsmearing(
+        staplesforsmear_set, 
+        tensor_derivative,
+        staplesforsmear_dag_set,
+        tensor_derivative_dag,
+        ρs
+    )
+end
+
+function make_loops_Stoutsmearing(loops_smearing,ρs)
     num = length(loops_smearing)
-    @assert num == length(ρs) "number of ρ elements in stout smearing scheme should be $num. Now $(length(ρs))"
+    @assert num == length(ρs) "number of ρ elements in stout smearing scheme should be $num. Now $(length(ρs)). "
     staplesforsmear_set = Array{Wilson_loop_set,1}[]
     staplesforsmear_dag_set = Array{Wilson_loop_set,1}[]
     println("staple for stout smearing")
@@ -46,11 +58,9 @@ function Stoutsmearing(loops_smearing,ρs)
 
     end
 
-    return Stoutsmearing(
-        staplesforsmear_set, 
+    return staplesforsmear_set, 
         tensor_derivative, 
         staplesforsmear_dag_set, 
-        tensor_derivative_dag,
-        ρs 
-        ) 
+        tensor_derivative_dag 
+        
 end

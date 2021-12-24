@@ -10,10 +10,12 @@ module Mainrun
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
     import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
-    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    import ..Gaugefield:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    #import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!,overrelaxation!
     import ..Gaugefield:make_plaq,make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops
-    import ..IOmodule:saveU,loadU,loadU!
+    #import ..IOmodule:saveU,loadU,loadU!
+    import ..Gaugefield:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
     import ..Gaugefields:calc_GaugeAction
 

@@ -3,6 +3,8 @@ module Gaugefield
     include("./SUN_generator.jl")
     include("./autostaples/wilsonloops.jl")
     include("./AbstractGaugefields.jl") 
+    include("./output/io.jl")
+    include("./output/ildg_format.jl")
     include("./autostaples/Loops.jl")
     include("./smearing/Abstractsmearing.jl")
     
@@ -19,7 +21,7 @@ module Gaugefield
                                         Traceless_antihermitian!,Traceless_antihermitian,Generator,
                                         Staggered_Gaugefields,staggered_U,
                                         Traceless_antihermitian_add!,
-                                        IdentityGauges,RandomGauges
+                                        IdentityGauges,RandomGauges,Oneinstanton
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!,evaluate_loops!
@@ -38,5 +40,7 @@ module Gaugefield
     #import .Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3
     import .Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
     print_verbose1,print_verbose2,print_verbose3
+    import .ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    import .IOmodule:saveU,loadU,loadU!
     
 end

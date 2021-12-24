@@ -476,13 +476,14 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
     NZ = u.NZ
     NY = u.NY
     NX = u.NX
+    
 
 
     for it=1:NT
         for iz=1:NZ
             for iy=1:NY
                 for ix=1:NX
-                    c1 = t*u[1,ix,iy,iz,it] * 0.5
+                    c1 = t*u[1,ix,iy,iz,it] * 0.5 
                     c2 = t*u[2,ix,iy,iz,it] * 0.5
                     c3 = t*u[3,ix,iy,iz,it] * 0.5
                     c4 = t*u[4,ix,iy,iz,it] * 0.5
@@ -490,6 +491,30 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
                     c6 = t*u[6,ix,iy,iz,it] * 0.5
                     c7 = t*u[7,ix,iy,iz,it] * 0.5
                     c8 = t*u[8,ix,iy,iz,it] * 0.5
+                    csum = c1+c2+c3+c4+c5+c6+c7+c8
+                    if csum == 0
+                        w[1,1,ix,iy,iz,it]=   1 
+                        w[1,2,ix,iy,iz,it]=   0
+                        w[1,3,ix,iy,iz,it]=   0 
+                        w[2,1,ix,iy,iz,it]=  0
+                        w[2,2,ix,iy,iz,it]=   1 
+                        w[2,3,ix,iy,iz,it]=   0
+                        w[3,1,ix,iy,iz,it]=   0 
+                        w[3,2,ix,iy,iz,it]=   0  
+                        w[3,3,ix,iy,iz,it]=   1  
+                
+                        ww[1,1,ix,iy,iz,it]=   1
+                        ww[1,2,ix,iy,iz,it]=   0
+                        ww[1,3,ix,iy,iz,it]=   0
+                        ww[2,1,ix,iy,iz,it]=   0
+                        ww[2,2,ix,iy,iz,it]=   1 
+                        ww[2,3,ix,iy,iz,it]=   0 
+                        ww[3,1,ix,iy,iz,it]=   0
+                        ww[3,2,ix,iy,iz,it]=   0  
+                        ww[3,3,ix,iy,iz,it]=   1
+                        continue
+                    end
+
                 
                     #x[1,1,icum] =  c3+sr3i*c8 +im*(  0.0 )
                     v1 = c3+sr3i*c8
@@ -536,9 +561,11 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
                             v17 * (v3^2 + v4^2) +
                             (v5 * (v3 * v11 - v4 * v12) +
                             v6 * (v3 * v12 + v4 * v11)) * 2.0
+                    
                     p3 = cofac / 3.0 - trv3^2
                     q = trv3 * cofac - det - 2.0 * trv3^3
                     x = sqrt(-4.0 * p3) + tinyvalue
+                    
                     arg = q / (x * p3)
 
                     arg = min(1, max(-1, arg))
@@ -552,14 +579,18 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
 
             # solve for eigenvectors
 
-                    w1 =   v5 * (v9 - e1) - v3 * v11 + v4 * v12
+                    w1 =   v5 * (v9 - e1) - v3 * v11 + v4 * v12 
                     w2 = - v6 * (v9 - e1) + v4 * v11 + v3 * v12
                     w3 =   (v1 - e1) * v11 - v3 * v5 - v4 * v6
                     w4 = - (v1 - e1) * v12 - v4 * v5 + v3 * v6
                     w5 = - (v1 - e1) * (v9 - e1) +  v3^2 + v4^2
                     w6 = 0.0
-
+                    #println("1c $w1 $w2 $w3 $w4 $w5 $w6 ",)
+                    #coeffv = sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)
+                    
+                    #coeff = ifelse(coeffv == zero(coeffv),0,coeffv)
                     coeff = 1.0 / sqrt(w1^2 + w2^2 + w3^2 + w4^2 + w5^2)
+                    #println("1 ",coeff)
 
                     w1 = w1 * coeff
                     w2 = w2 * coeff
@@ -575,6 +606,7 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
                     w12 = 0.0
             
                     coeff = 1.0 / sqrt(w7^2  + w8^2 + w9^2+ w10^2 + w11^2)
+                    
                     w7  = w7  * coeff
                     w8  = w8  * coeff
                     w9  = w9  * coeff

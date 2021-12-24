@@ -15,9 +15,9 @@ module LTK_universe
                         #SU2GaugeFields,SU2GaugeFields_1d,
                         #SUNGaugeFields,SUNGaugeFields_1d,
                         #Oneinstanton,
-                        evaluate_wilson_loops!,
+                        evaluate_wilson_loops!
                         #U1GaugeFields,U1GaugeFields_1d,
-                        apply_smearing,calc_smearingU
+                        #apply_smearing,calc_smearedU
     
     import ..Gaugefields
                         
@@ -49,20 +49,22 @@ module LTK_universe
     import ..Gaugefield:make_loopforactions,Wilson_loop_set,make_originalactions_fromloops,
                 make_cloverloops
     import ..Gaugefield:initialize_TA_Gaugefields,AbstractGaugefields,calculate_Plaquette,
-                IdentityGauges,RandomGauges
+                IdentityGauges,RandomGauges,Oneinstanton
     import ..Gaugefield:Verbose_level,Verbose_3,Verbose_2,Verbose_1
+    import ..Gaugefield:loadU,ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Fermionfield_LQCD#:DdagD_operator,Dirac_operator
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
-    import ..IOmodule:loadU
+    #import ..IOmodule:loadU
     import ..SUN_generator:Generator
 
     import ..RationalApprox:calc_exactvalue,calc_Anϕ
-    import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
+    #import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Othermethods:tdlogdet
     #import ..CGmethods:bicg,cg,shiftedcg
     import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse,
                 Fermionfields,AbstractFermionfields, gauss_distribution_fermion!,clear_fermion!,
                 add_fermion!,bicg,cg,shiftedcg, set_wing_fermion!
+    import ..Gaugefield:calc_smearedU
     #import ..Smearing:apply_smearing
 
 
@@ -458,7 +460,8 @@ module LTK_universe
         elseif initial == "hot"
             println(".....  Hot start")
             for μ=1:4
-                U[μ] = RandomGauges(NC,NX,NY,NZ,NT,Nwing)
+                #U[μ] = RandomGauges(NC,NX,NY,NZ,NT,Nwing)
+                U[μ] = RandomGauges(NC,Nwing,NX,NY,NZ,NT)
             end
         elseif initial == "one instanton"
             @assert NC == 2 "From one instanton start, NC should be 2!"
@@ -473,7 +476,8 @@ module LTK_universe
                 ildg = ILDG(initial)
                 i = 1
                 for μ=1:4
-                    U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+                    U[μ] = IdentityGauges(NC,Nwing,NX,NY,NZ,NT)
+                    #U[μ] = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
                 end
                 load_gaugefield!(U,i,ildg,L,NC)
             else
@@ -1210,7 +1214,8 @@ module LTK_universe
         gauss_distribution_fermion!(univ.η,univ.ranf)
         if univ.Dirac_operator == "Staggered"
             if univ.fparam.Nf == 4
-                U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+                U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
+                #U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
     
                 evensite = false
                 W = Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
@@ -1226,7 +1231,7 @@ module LTK_universe
     end
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
 
         if univ.Dirac_operator == "Staggered"
             if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
@@ -1269,7 +1274,7 @@ module LTK_universe
 
     #=
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
         
         if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
         
@@ -1308,7 +1313,7 @@ module LTK_universe
     #=
     
     function construct_fermionfield_η!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
 
 
         W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
@@ -1317,7 +1322,7 @@ module LTK_universe
     =#
 
     function construct_fermionfield_η!(univ::Universe)#{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi <: StaggeredFermion,GaugeP,FermiP,Gauge_temp} # eta = Wdag^{-1} phi
-        U,_... = calc_smearingU(univ.U,univ.fparam.smearing)
+        U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
 
         if univ.Dirac_operator == "Staggered"
 
