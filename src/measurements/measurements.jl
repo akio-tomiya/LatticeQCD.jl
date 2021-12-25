@@ -1230,7 +1230,7 @@ end
         end
         if rho < 0
             sign*=-1
-            rh=-rho
+            rho=-rho
         end
         if sigma < 0
             sign*=-1
