@@ -1,17 +1,17 @@
 module Wilsonloops
-    export make_staple,Gaugeline, make_staple_and_loop
+    export make_staple,Gaugeline, make_staple_and_loop,derive_U
     using LaTeXStrings
     using LinearAlgebra
     import Base
 
-    abstract type Gaugelink end
+    abstract type Gaugelink{Dim} end
 
-    struct GLink{Dim} <: Gaugelink
+    struct GLink{Dim} <: Gaugelink{Dim}
         direction::Int8
         position::NTuple{Dim,Int64}
     end
 
-    struct Adjoint_GLink{Dim} <: Gaugelink
+    struct Adjoint_GLink{Dim} <: Gaugelink{Dim}
         parent::GLink{Dim}
     end
 
@@ -76,6 +76,8 @@ module Wilsonloops
         end
     end
 
+
+
     function Base.push!(w::Gaugeline,link)
         push!(w.glinks,link)
     end
@@ -108,34 +110,43 @@ module Wilsonloops
         end
     end
 
-    function Base.display(w::Gaugeline{Dim}) where Dim
-        outputstring = ""
-        for (i,glink) in enumerate(w.glinks)
-            direction  = get_direction(glink)
-            nstring = "$(direction),n"
-
-            dagornot = ifelse(typeof(glink) <: GLink,"","^{\\dagger}")
-            position = get_position(glink)
-
-            for μ=1:Dim
-                m = position[μ]
-                if m != 0
-                    if abs(m)==1
-                        if m >0
-                            nstring = nstring*"+e_{$(μ)}"
-                        else
-                            nstring = nstring*"-e_{$(μ)}"
-                        end
+    function get_printstring_direction(glink::Gaugelink{Dim}) where Dim
+        
+        nstring = "n"
+        
+        position = get_position(glink)
+        for μ=1:Dim
+            m = position[μ]
+            if m != 0
+                if abs(m)==1
+                    if m >0
+                        nstring = nstring*"+e_{$(μ)}"
                     else
-                        if m >0
-                            nstring = nstring*"+$(m)e_{$(μ)}"
-                        else
-                            nstring = nstring*"-$(abs(m))e_{$(μ)}"
-                        end
+                        nstring = nstring*"-e_{$(μ)}"
+                    end
+                else
+                    if m >0
+                        nstring = nstring*"+$(m)e_{$(μ)}"
+                    else
+                        nstring = nstring*"-$(abs(m))e_{$(μ)}"
                     end
                 end
             end
-            outputstring = outputstring*"U_{$(nstring)}$(dagornot) "
+        end
+        return nstring
+    end
+
+    function get_printstring(glink::Gaugelink{Dim}) where Dim
+        direction  = get_direction(glink)
+        dagornot = ifelse(typeof(glink) <: GLink,"","^{\\dagger}")
+        nstring = "$(direction),"*get_printstring_direction(glink)
+        return "U_{$(nstring)}$(dagornot) "
+    end
+
+    function Base.display(w::Gaugeline{Dim}) where Dim
+        outputstring = ""
+        for (i,glink) in enumerate(w.glinks)
+            outputstring = outputstring*get_printstring(glink)
         end
         println(outputstring)
         return outputstring
@@ -209,6 +220,84 @@ module Wilsonloops
             end
         end
         return linkindices
+    end
+
+    struct DwDU{Dim,μ}
+        parent::Gaugeline{Dim}
+        insertindex::Int64
+        position::NTuple{Dim,Int64}
+        leftlinks::Gaugeline{Dim}
+        rightlinks::Gaugeline{Dim}
+    end
+
+    """
+        like U U U U -> U U otimes U 
+    """
+    function derive_U(w::Gaugeline{Dim},μ) where Dim
+        numlinks = length(w)
+        linkindices = check_link(w,μ)
+        numstaples = length(linkindices)
+        dwdU = Array{DwDU{Dim,μ},1}(undef,numstaples)
+
+        for (i,ith) in enumerate(linkindices)
+            #wi =Gaugeline(Dim=Dim)
+            rightlinks = Gaugeline(Dim=Dim)
+            leftlinks = Gaugeline(Dim=Dim)
+            origin = w[ith].position
+            position = zero(collect(origin))
+            position[w[ith].direction] += 1
+
+            for j=ith+1:numlinks
+                link = w[j]
+                if typeof(link) <: GLink 
+                    link_rev = set_position(link,Tuple(position))
+                    position[get_direction(link)] += 1
+                else
+                    position[get_direction(link)] += -1
+                    link_rev = set_position(link,Tuple(position))
+                end
+                push!(rightlinks,link_rev)
+            end
+
+            for j=1:ith-1
+                link = w[j]
+                position = collect(get_position(link)) .- origin
+                link_rev =  set_position(link,Tuple(position))
+                push!(leftlinks,link_rev)
+            end
+            dwdU[i] = DwDU{Dim,μ}(w,ith,origin,leftlinks,rightlinks)
+            #println("μ = ",μ)
+            #display(wi)
+        end
+        return dwdU
+    end
+
+    function Base.display(dwdU::DwDU{Dim,μ}) where {Dim,μ}
+        outputstring = ""
+        if length(dwdU.leftlinks.glinks) == 0
+            outputstring =outputstring*"I "
+        else
+            for glink in dwdU.leftlinks.glinks
+                outputstring =outputstring*get_printstring(glink)
+            end
+        end
+
+        outputstring = outputstring*" \\otimes "
+
+        if length(dwdU.rightlinks.glinks) == 0
+            outputstring =outputstring*"I "
+        else
+            for glink in dwdU.rightlinks.glinks
+                outputstring =outputstring*get_printstring(glink)
+            end
+        end
+
+        nstring = get_printstring_direction(dwdU.parent.glinks[dwdU.insertindex])
+
+        outputstring = outputstring*"\\delta_{n,$(nstring)}"
+
+        println(outputstring)
+        return outputstring
     end
 
 
