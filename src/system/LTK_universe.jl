@@ -2,7 +2,7 @@ module LTK_universe
     using LinearAlgebra
     using SparseArrays
     using Random
-    using MPI
+    #using MPI
     #export Universe
     
     

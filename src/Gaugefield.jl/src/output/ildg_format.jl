@@ -2,7 +2,7 @@
 module ILDG_format
     using CLIME_jll
     using EzXML
-    using MPI
+    #using MPI
 
 
     import ..IOmodule:IOFormat
@@ -156,6 +156,7 @@ module ILDG_format
         #close(fp)
     end
 
+    #=
     function load_binarydata!(U::Array{T,1},NX,NY,NZ,NT,NC,filename,precision) where T <: Gaugefields_4D_wing_mpi
         if U[1].myrank == 0
             bi = Binarydata_ILDG(filename,precision)
@@ -277,6 +278,7 @@ module ILDG_format
 
         #close(fp)
     end
+    =#
 
     function load_gaugefield!(U,i,ildg::ILDG,L,NC;NDW = 1)
         NX = L[1]
