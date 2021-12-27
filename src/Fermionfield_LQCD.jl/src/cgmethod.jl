@@ -139,6 +139,7 @@ module CGmethods
 
 
     function shiftedcg(vec_x,vec_β,x,A,b;eps=1e-10,maxsteps = 1000,verbose = Verbose_2()) #Ax=b
+        
         println_verbose3(verbose,"--------------------------------------")
         println_verbose3(verbose,"shifted cg method")
         N = length(vec_β)
@@ -167,8 +168,10 @@ module CGmethods
             mul!(q,A,p)
 
             pAp = p ⋅ q
+
             rr = dot(r,r)
             αk = rr / pAp
+
 
             #! ...  x   = x   + alpha * p   
             add!(x,αk,p)

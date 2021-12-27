@@ -841,6 +841,8 @@ module MD
         NV = temp2_g.NV
 
         U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
+        println("Uin ",Uin[1][1,1,1,1,1,1])
+        println("U ",U[1][1,1,1,1,1,1])
 
         WdagW = DdagD_operator(U,φ,fparam)
 
@@ -849,6 +851,7 @@ module MD
             #
             cg(X,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep,verbose = kind_of_verboselevel)
             set_wing_fermion!(X)
+            
 
             if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
                 updateP_fermi_fromX_smearing!(Y,φ,X,fparam,
@@ -870,9 +873,11 @@ module MD
             vec_β = get_β_inverse(fparam.rhmc_MD)
             vec_α = get_α_inverse(fparam.rhmc_MD)
             α0 = get_α0_inverse(fparam.rhmc_MD)
+            println("φ ",φ[1,1,1,1,1,1])
             shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
             for j=1:N_MD
                 set_wing_fermion!(vec_x[j])
+                println("X ",vec_x[j][1,1,1,1,1,1])
                 if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
                     updateP_fermi_fromX_smearing!(Y,φ,vec_x[j],fparam,
                         p,mdparams,τ,U,Uout_multi,dSdU,Uin,
@@ -1086,9 +1091,11 @@ module MD
             Xplus = shift_fermion(X,μ)
             Us = staggered_U(U[μ],μ)
             mul!(temp0_f,Us,Xplus)
+            println(temp0_f[1,1,1,1,1,1])
 
             #U_{k,μ} X_{k+μ}) ⊗ Y_k
             mul!(temp2_g,temp0_f,Y') 
+            #println(temp2_g[1,1,1,1,1,1])
             mul!(dSdU[μ],U[μ]',temp2_g) #additional term
 
             #!  Construct P2*U_adj(x,mu)
@@ -1102,6 +1109,9 @@ module MD
             mul!(temp3_g,U[μ]',temp2_g)
             add_U!(dSdU[μ],temp3_g)
         end
+
+        println(dSdU[1][1,1,1,1,1,1])
+        error("stga")
 
         if typeof(fparam.smearing) <: SmearingParam_single
             dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 

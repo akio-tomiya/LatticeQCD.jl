@@ -1232,6 +1232,7 @@ module LTK_universe
 
     function construct_fermionfield_φ!(univ::Universe{Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp})  where {Gauge,Lie,Fermi,GaugeP,FermiP,Gauge_temp}
         U,_... = calc_smearedU(univ.U,univ.fparam.smearing)
+        #U = univ.U
 
         if univ.Dirac_operator == "Staggered"
             if univ.fparam.Nf == 4 || univ.fparam.Nf == 8
@@ -1239,6 +1240,7 @@ module LTK_universe
                 W =  Fermionfield_LQCD.Dirac_operator(U,univ.η,univ.fparam)
                 mul!(univ.φ,W',univ.η)
             else
+
                 WdagW =  Fermionfield_LQCD.DdagD_operator(U,univ.η,univ.fparam)
                 N = get_order(univ.fparam.rhmc_action)
     

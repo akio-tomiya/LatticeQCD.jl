@@ -4,7 +4,7 @@ module Abstractsmearing_module
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..AbstractGaugefields_module:AbstractGaugefields,Abstractfields,initialize_TA_Gaugefields,add_force!,
                         exp_aF_U!,clear_U!,add_U!,evaluate_wilson_loops!,exptU!,
-                        Traceless_antihermitian_add!,set_wing_U!
+                        Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian
 
     abstract type Abstractsmearing end
 
@@ -41,9 +41,8 @@ module Abstractsmearing_module
             #println(smearing)
             println(typeof(smearing))
             Uout_multi = apply_smearing_U(Uin,smearing)
-            println("Uout_multi type ",typeof(Uout_multi))
             U = Uout_multi[end]
-            println("Utype ",typeof(U))
+
             #=
             if typeof(smearing) <: SmearingParam_single
                 Uout_multi = nothing
@@ -146,13 +145,14 @@ module Abstractsmearing_module
         num = length(ρs)
 
         for μ=1:Dim
+            clear_U!(V)
             for i=1:num
                 loops = staples[i][μ]
                 evaluate_wilson_loops!(temp3,loops,U,[temp1,temp2])
                 add_U!(V,ρs[i],temp3)
             end
             mul!(temp1,V,U[μ]') #U U*V
-            
+            clear_U!(F0)
             Traceless_antihermitian_add!(F0,1,temp1)
             
             exptU!(temp3,1,F0,[temp1,temp2])
@@ -161,6 +161,9 @@ module Abstractsmearing_module
             mul!(Uout[μ],temp3,U[μ])        
         end
         set_wing_U!(Uout)
+
+
+        #error("ee")
 
         #error("not implemented")
     end
