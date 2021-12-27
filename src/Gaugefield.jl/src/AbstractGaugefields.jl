@@ -207,21 +207,28 @@ module AbstractGaugefields_module
         for i=1:num
             glinks = w[i]
             numlinks = length(glinks)
-            show(glinks)
-            j = 1
-            direction = get_direction(glinks[j])
-            position = get_position(glinks[j])
+            show(glinks)        
+            j = 1    
+            U1link = glinks[1]
+            direction = get_direction(U1link)
+            position = get_position(U1link)
             println("i = $i j = $j position = $position")
             substitute_U!(Uold,U[direction])
             Ushift1 = shift_U(Uold,position)
+            isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
             for j=2:numlinks
-                position =get_position(glinks[j])
+                Ujlink = glinks[j]
+                isUkdag = ifelse(typeof(Uklink) <: Adjoint_GLink,true,false)
+                position =get_position(Ujlink)
+                direction = get_direction(Ujlink)
                 println("i = $i j = $j position = $position")
-                evaluate_gaugelinks_inside!(U,glinks,Ushift1,Uold,Unew,numlinks)
+                Ushift2 = shift_U(U[direction],position)
+                multiply_12!(Unew,Ushift1,Ushift2,k,isUkdag,isU1dag)
             end
         end
     end
 
+    #=
     function evaluate_gaugelinks_inside!(U,glinks,Ushift1,Uold,Unew,numlinks)
         for k=2:numlinks
             position =get_position(glinks[k])
@@ -233,34 +240,35 @@ module AbstractGaugefields_module
             Ushift1 = shift_U(Uold,(0,0,0,0))
         end
     end
-
-
-    function multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
-        if loopk[2] == 1
-            if k==2
-                if loopk1_2 == 1
-                    mul!(temp3,temp1,temp2)
+    =#
+    
+    function multiply_12!(temp3,temp1,temp2,k,isUkdag::Bool,isU1dag::Bool)
+        if k==2
+            if isUkdag
+                if isU1dag
+                    mul!(temp3,temp1',temp2')
                 else
-                    mul!(temp3,temp1',temp2)
+                    mul!(temp3,temp1,temp2')
                 end
             else
-                mul!(temp3,temp1,temp2)
-            end
-        elseif loopk[2] == -1
-            if k==2
-                if loopk1_2 == 1
-                    mul!(temp3,temp1,temp2')
+                if isU1dag
+                    mul!(temp3,temp1',temp2)
                 else
-                    mul!(temp3,temp1',temp2')
+                    mul!(temp3,temp1,temp2)
                 end
+            end
+        else
+            if isUkdag
+                mul!(temp3,temp1,temp2')
             else
                 mul!(temp3,temp1,temp2')
             end
-        else
-            error("Second element should be 1 or -1 but now $(loopk)")
         end
         return
     end
+
+
+
 
     function evaluate_wilson_loops!(xout::T,w::Wilson_loop_set,U::Array{T,1},temps::Array{T,1}) where T<: AbstractGaugefields
         num = length(w)
