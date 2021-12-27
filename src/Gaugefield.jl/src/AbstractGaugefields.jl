@@ -509,7 +509,7 @@ module AbstractGaugefields_module
 
     function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
         #println("mu = ",μ)
-        loops = loops_staple_prime_old[Dim,μ] #make_plaq_staple_prime(μ,Dim)
+        #loops = loops_staple_prime_old[Dim,μ] #make_plaq_staple_prime(μ,Dim)
         #println("staple")
         #@time evaluate_wilson_loops!(staple,loops,U,temps)
         #println(staple[1,1,1,1,1,1])
