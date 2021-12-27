@@ -1,6 +1,6 @@
 module Abstractsmearing_module
     using LinearAlgebra
-    import ..Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
+    import ..Wilsonloops_module:Wilson_loop_set,make_staples,Wilson_loop_set,
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..AbstractGaugefields_module:AbstractGaugefields,Abstractfields,initialize_TA_Gaugefields,add_force!,
                         exp_aF_U!,clear_U!,add_U!,evaluate_wilson_loops!,exptU!,

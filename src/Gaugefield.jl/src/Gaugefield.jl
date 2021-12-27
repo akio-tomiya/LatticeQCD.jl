@@ -1,4 +1,7 @@
 module Gaugefield
+    include("../../Wilsonloops/src/Wilsonloops.jl")
+
+    
     include("./output/verboseprint.jl")
     include("./SUN_generator.jl")
     include("./autostaples/wilsonloops.jl")
@@ -7,6 +10,7 @@ module Gaugefield
     include("./output/ildg_format.jl")
     include("./autostaples/Loops.jl")
     include("./smearing/Abstractsmearing.jl")
+    import .Wilsonloops:loops_staple_prime
     
 
     
@@ -25,7 +29,7 @@ module Gaugefield
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!,evaluate_loops!
-    import .Wilsonloops:Wilson_loop_set,make_staples,Wilson_loop_set,
+    import .Wilsonloops_module:Wilson_loop_set,make_staples,Wilson_loop_set,
                 make_cloverloops,Tensor_derivative_set, make_loops,
                 make_plaq_staple,make_links,make_plaq,
                 make_loopforactions,make_plaqloops,make_rectloops,make_polyakovloops,

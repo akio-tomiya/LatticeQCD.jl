@@ -6,6 +6,11 @@ mutable struct Stoutsmearing <: Abstractsmearing
     ρs::Array{Array{Float64,1},1}
 end
 
+mutable struct STOUT_smearing <: Abstractsmearing
+    ρs::Array{Array{Float64,1},1}
+    #C::Array{}
+end
+
 function Stoutsmearing(loops_smearing,ρs)
     numloops = length(loops_smearing)
     staplesforsmear_set, tensor_derivative, staplesforsmear_dag_set, tensor_derivative_dag = make_loops_Stoutsmearing(loops_smearing,rand(numloops))

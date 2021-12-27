@@ -2,6 +2,20 @@ using Test
 include("../src/Wilsonloops.jl")
 using .Wilsonloops
 function test()
+    println("plaq")
+    plaq = make_plaq()
+    display(plaq)
+    for μ=1:4
+        println("μ = $μ")
+        staples = make_plaq_staple(μ)
+        display(staples)
+    end
+
+    display(loops_staple_prime[(4,4)])
+
+    return
+
+
     loop = [(1,+1),(2,+1),(1,-1),(2,-1)]
     println(loop)
     w = Gaugeline(loop)

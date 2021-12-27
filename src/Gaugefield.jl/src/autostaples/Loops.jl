@@ -1,7 +1,7 @@
 module Loops_module
     using LinearAlgebra
     import ..AbstractGaugefields_module:AbstractGaugefields,clear_U!,shift_U,add_U!,substitute_U!,construct_gauges,evaluate_wilson_loops!
-    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
+    import ..Wilsonloops_module:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                             Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                             get_leftstartposition,get_rightstartposition,Wilson_loop    
 

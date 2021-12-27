@@ -1,5 +1,6 @@
 module Wilsonloops
-    export make_staple,Gaugeline, make_staple_and_loop,derive_U,make_Cμ
+    export make_staple,Gaugeline, make_staple_and_loop,derive_U,make_Cμ,
+            make_plaq_staple,make_plaq, loops_staple_prime,get_position
     using LaTeXStrings
     using LinearAlgebra
     import Base
@@ -123,6 +124,33 @@ module Wilsonloops
         return wa
     end
 
+    function LinearAlgebra.adjoint(ws::Array{<: Gaugeline{Dim},1}) where Dim
+        num = length(ws)
+        wad = Array{eltype(ws),1}(undef,num)
+        for i=1:num
+            wad[i] = ws[i]'
+        end
+        return wad
+    end
+
+
+    function Base.show(io::IO,ws::Array{<: Gaugeline{Dim},1}) where Dim
+        for i=1:length(ws)
+            if i==1
+                st ="st"
+            elseif i==2
+                st ="nd"
+            elseif i==3
+                st ="rd"
+            else
+                st ="th"
+            end
+            println(io,"$i-$st loop")
+            show(io,ws[i])
+            #display(io,ws[i])
+        end
+    end
+
     function Base.display(ws::Array{<: Gaugeline{Dim},1}) where Dim
         for i=1:length(ws)
             if i==1
@@ -172,12 +200,26 @@ module Wilsonloops
         return "U_{$(nstring)}$(dagornot) "
     end
 
+    function Base.show(io::IO,glink::Gaugelink{Dim}) where Dim
+        outputstring =get_printstring(glink)
+        println(io,outputstring)
+    end
+
     function Base.display(w::Gaugeline{Dim}) where Dim
         outputstring = ""
         for (i,glink) in enumerate(w.glinks)
             outputstring = outputstring*get_printstring(glink)
         end
         println(outputstring)
+        return outputstring
+    end
+
+    function Base.show(io::IO,w::Gaugeline{Dim}) where Dim
+        outputstring = ""
+        for (i,glink) in enumerate(w.glinks)
+            outputstring = outputstring*get_printstring(glink)
+        end
+        println(io,outputstring)
         return outputstring
     end
 
@@ -320,5 +362,90 @@ module Wilsonloops
         end
         return links
     end
+
+    function make_plaq(μ,ν;Dim=4)
+        return Gaugeline([(μ,1),(ν,1),(μ,-1),(ν,-1)],Dim = Dim)
+    end
+
+    function make_plaq(;Dim=4)
+        loops = Gaugeline{Dim}[]
+        for μ=1:Dim
+            #for ν=1:4
+            for ν=μ:Dim
+                if ν == μ
+                    continue
+                end
+
+                plaq = make_plaq(μ,ν,Dim=Dim)
+                push!(loops,plaq)
+            end
+        end
+        return loops
+    end
+
+    function make_rect(;Dim=4)
+        loops = Gaugeline{Dim}[]
+        for μ=1:4
+            for ν=μ:4
+                if ν == μ
+                    continue
+                end
+                #loop = make_links([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+
+                loop1 = Gaugeline([(μ,1),(ν,2),(μ,-1),(ν,-2)],Dim = Dim)
+                #loop1 = Wilson_loop([(μ,1),(ν,2),(μ,-1),(ν,-2)])
+                #loop1 = Wilson_loop(loop,Tuple(origin))
+                push!(loops,loop1)
+                loop1 = Gaugeline([(μ,2),(ν,1),(μ,-2),(ν,-1)],Dim = Dim)
+                #loop1 = Wilson_loop([(μ,2),(ν,1),(μ,-2),(ν,-1)])
+                push!(loops,loop1)
+            end
+        end
+        return loops
+    end
+
+
+    function make_plaq_staple(μ;Dim=4)
+        loops = Gaugeline{Dim}[]
+        plaqs = make_plaq(Dim = Dim)
+        numplaq = length(plaqs)
+        for i=1:numplaq
+            plaq = plaqs[i]
+            staples = make_staple(plaq,μ)
+            for j=1:length(staples)
+                push!(loops,staples[j])
+            end
+
+            plaqdag = plaqs[i]'
+            staples = make_staple(plaqdag,μ)
+            for j=1:length(staples)
+                push!(loops,staples[j])
+            end
+        end
+
+        return loops
+    end
+
+    function construct_staple_prime()
+        loops_staple_prime = Dict{Tuple{Int8,Int8},Any}()
+        for Dim=1:4
+            for μ=1:Dim
+                loops_staple_prime[(Dim,μ)] = make_plaq_staple(μ,Dim=Dim)'
+            end
+        end
+        return loops_staple_prime
+    end
+
+    function construct_staple()
+        loops_staple = Dict{Tuple{Int8,Int8},Any}()
+        for Dim=1:4
+            for μ=1:Dim
+                loops_staple[(Dim,μ)] = make_plaq_staple(μ,Dim=Dim)
+            end
+        end
+        return loops_staple
+    end
+    const loops_staple_prime = construct_staple_prime()
+    const loops_staple = construct_staple()
 
 end

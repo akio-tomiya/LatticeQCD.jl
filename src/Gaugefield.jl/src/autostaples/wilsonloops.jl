@@ -1,4 +1,4 @@
-module Wilsonloops
+module Wilsonloops_module
 
 
     mutable struct Wilson_loop 

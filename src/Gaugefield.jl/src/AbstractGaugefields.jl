@@ -1,8 +1,9 @@
 module AbstractGaugefields_module
     using LinearAlgebra
-    import ..Wilsonloops:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
+    import ..Wilsonloops_module:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                         Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                         get_leftstartposition,get_rightstartposition,Wilson_loop,calc_loopset_μν_name   
+    import ..Wilsonloops:loops_staple_prime,Gaugeline,get_position,get_direction
     
 
     using MPI
@@ -196,6 +197,69 @@ module AbstractGaugefields_module
 
     function set_wing_U!(U::T) where T <: AbstractGaugefields
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
+    end
+
+    function evaluate_gaugelinks!(xout::T,w::Array{<: Gaugeline{Dim}},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
+        num = length(w)
+        clear_U!(xout)
+        Uold = temps[1]
+        Unew = temps[2]
+        for i=1:num
+            glinks = w[i]
+            numlinks = length(glinks)
+            show(glinks)
+            j = 1
+            direction = get_direction(glinks[j])
+            position = get_position(glinks[j])
+            println("i = $i j = $j position = $position")
+            substitute_U!(Uold,U[direction])
+            Ushift1 = shift_U(Uold,position)
+            for j=2:numlinks
+                position =get_position(glinks[j])
+                println("i = $i j = $j position = $position")
+                evaluate_gaugelinks_inside!(U,glinks,Ushift1,Uold,Unew,numlinks)
+            end
+        end
+    end
+
+    function evaluate_gaugelinks_inside!(U,glinks,Ushift1,Uold,Unew,numlinks)
+        for k=2:numlinks
+            position =get_position(glinks[k])
+            direction = get_direction(glinks[k])
+            Ushift2 = shift_U(U[direction],position)
+            multiply_12!(Unew,Ushift1,Ushift2,k,loopk,loopk1_2)
+
+            Unew,Uold = Uold,Unew
+            Ushift1 = shift_U(Uold,(0,0,0,0))
+        end
+    end
+
+
+    function multiply_12!(temp3,temp1,temp2,k,loopk,loopk1_2)
+        if loopk[2] == 1
+            if k==2
+                if loopk1_2 == 1
+                    mul!(temp3,temp1,temp2)
+                else
+                    mul!(temp3,temp1',temp2)
+                end
+            else
+                mul!(temp3,temp1,temp2)
+            end
+        elseif loopk[2] == -1
+            if k==2
+                if loopk1_2 == 1
+                    mul!(temp3,temp1,temp2')
+                else
+                    mul!(temp3,temp1',temp2')
+                end
+            else
+                mul!(temp3,temp1,temp2')
+            end
+        else
+            error("Second element should be 1 or -1 but now $(loopk)")
+        end
+        return
     end
 
     function evaluate_wilson_loops!(xout::T,w::Wilson_loop_set,U::Array{T,1},temps::Array{T,1}) where T<: AbstractGaugefields
@@ -424,14 +488,17 @@ module AbstractGaugefields_module
         end
         return loops_staple_prime
     end
-    const loops_staple_prime = staple_prime()
+    const loops_staple_prime_old = staple_prime()
 
 
     function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
         #println("mu = ",μ)
-        loops = loops_staple_prime[Dim,μ] #make_plaq_staple_prime(μ,Dim)
+        loops = loops_staple_prime_old[Dim,μ] #make_plaq_staple_prime(μ,Dim)
         evaluate_wilson_loops!(staple,loops,U,temps)
-        
+        println(staple[1,1,1,1,1,1])
+        loops = loops_staple_prime[(Dim,μ)]
+        evaluate_gaugelinks!(staple,loops,U,temps)
+        error("construct!!")
     end
 
 
