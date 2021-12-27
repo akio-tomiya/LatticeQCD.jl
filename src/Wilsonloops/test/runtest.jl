@@ -11,15 +11,13 @@ function test()
     display(w')
     println("staple")
     for μ=1:4
-        make_staple(w,μ)
-        make_staple(w',μ)
+        println("μ = $μ")
+        V1 = make_staple(w,μ)
+        V2 = make_staple(w',μ)
+        display(V1)
+        display(V2)
     end
 
-    println("CUdag")
-    for μ=1:4
-        CUdag = make_staple_and_loop(w,μ)
-        display(CUdag)
-    end
 
     println("derive w")
     for μ=1:4
@@ -32,6 +30,8 @@ function test()
     println("-------------------------------------------------------")
     println("C and dC/dU")
     for μ=1:4
+        C = make_Cμ(w,μ)
+        #=
         V1 = make_staple(w,μ)
         V2 = make_staple(w',μ)
         C = eltype(V1)[]
@@ -41,6 +41,7 @@ function test()
         for i=1:length(V2)
             push!(C,V2[i]')
         end
+        =#
         println("-------------------------------------------")
         println("μ = $μ")
         for i=1:length(C)

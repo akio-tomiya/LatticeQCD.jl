@@ -1,5 +1,5 @@
 module Wilsonloops
-    export make_staple,Gaugeline, make_staple_and_loop,derive_U
+    export make_staple,Gaugeline, make_staple_and_loop,derive_U,make_Cμ
     using LaTeXStrings
     using LinearAlgebra
     import Base
@@ -76,10 +76,30 @@ module Wilsonloops
         end
     end
 
+    struct DwDU{Dim,μ}
+        parent::Gaugeline{Dim}
+        insertindex::Int64
+        position::NTuple{Dim,Int64}
+        leftlinks::Gaugeline{Dim}
+        rightlinks::Gaugeline{Dim}
+    end
+
+    function get_leftlinks(dw::DwDU)
+        return dw.leftlinks
+    end
+
+    function get_rightlinks(dw::DwDU)
+        return dw.rightlinks
+    end
+
 
 
     function Base.push!(w::Gaugeline,link)
         push!(w.glinks,link)
+    end
+
+    function Base.append!(w::Gaugeline,a::Gaugeline)
+        append!(w.glinks,a.glinks)
     end
 
     function Base.length(w::Gaugeline)
@@ -105,7 +125,16 @@ module Wilsonloops
 
     function Base.display(ws::Array{<: Gaugeline{Dim},1}) where Dim
         for i=1:length(ws)
-            println("$i-th loop")
+            if i==1
+                st ="st"
+            elseif i==2
+                st ="nd"
+            elseif i==3
+                st ="rd"
+            else
+                st ="th"
+            end
+            println("$i-$st loop")
             display(ws[i])
         end
     end
@@ -153,45 +182,29 @@ module Wilsonloops
     end
 
     function make_staple(w::Gaugeline{Dim},μ) where Dim
-        numlinks = length(w)
-        linkindices = check_link(w,μ)
-        numstaples = length(linkindices)
+        dwdUs = derive_U(w,μ)
+        numstaples = length(dwdUs)
         staple = Array{typeof(w),1}(undef,numstaples)
-        count = 0
-        for (i,ith) in enumerate(linkindices)
+        for i=1:numstaples
             wi =Gaugeline(Dim=Dim)
-            position = zero(collect(w[ith].position))
-            position[w[ith].direction] += 1
-
-            for j=ith+1:numlinks
-                link = w[j]
-                if typeof(link) <: GLink 
-                    link_rev = set_position(link,Tuple(position))
-                    position[get_direction(link)] += 1
-                else
-                    position[get_direction(link)] += -1
-                    link_rev = set_position(link,Tuple(position))
-                end
-                push!(wi,link_rev)
-            end
-
-            for j=1:ith-1
-                link = w[j]
-                if typeof(link) <: GLink
-                    link_rev = set_position(link,Tuple(position))
-                    position[get_direction(link)] += 1
-                else
-                    position[get_dimension(link)] += -1
-                    link_rev = set_direction(link,Tuple(position))
-                end
-                push!(wi,link_rev)
-            end
+            append!(wi,get_rightlinks(dwdUs[i]))
+            append!(wi,get_leftlinks(dwdUs[i]))
             staple[i] = wi
-            #println("μ = ",μ)
-            #display(wi)
         end
         return staple
+    end
 
+    function make_Cμ(w::Gaugeline{Dim},μ) where Dim
+        V1 = make_staple(w,μ)
+        V2 = make_staple(w',μ)
+        C = eltype(V1)[]
+        for i=1:length(V1)
+            push!(C,V1[i]')
+        end
+        for i=1:length(V2)
+            push!(C,V2[i]')
+        end
+        return C
     end
 
     function make_staple_and_loop(w::Gaugeline{Dim},μ) where Dim
@@ -220,14 +233,6 @@ module Wilsonloops
             end
         end
         return linkindices
-    end
-
-    struct DwDU{Dim,μ}
-        parent::Gaugeline{Dim}
-        insertindex::Int64
-        position::NTuple{Dim,Int64}
-        leftlinks::Gaugeline{Dim}
-        rightlinks::Gaugeline{Dim}
     end
 
     """
@@ -299,9 +304,6 @@ module Wilsonloops
         println(outputstring)
         return outputstring
     end
-
-
-
 
     function make_links(segments::Array{Tuple{T,T},1}) where T <: Integer
         links = Tuple{Int8,Int8}[]
