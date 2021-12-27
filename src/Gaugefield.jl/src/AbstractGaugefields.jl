@@ -503,10 +503,10 @@ module AbstractGaugefields_module
         #println("mu = ",μ)
         loops = loops_staple_prime_old[Dim,μ] #make_plaq_staple_prime(μ,Dim)
         evaluate_wilson_loops!(staple,loops,U,temps)
-        println(staple[1,1,1,1,1,1])
-        loops = loops_staple_prime[(Dim,μ)]
-        evaluate_gaugelinks!(staple,loops,U,temps)
-        error("construct!!")
+        #println(staple[1,1,1,1,1,1])
+        #loops = loops_staple_prime[(Dim,μ)]
+        #evaluate_gaugelinks!(staple,loops,U,temps)
+        #error("construct!!")
     end
 
 
