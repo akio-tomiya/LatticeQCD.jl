@@ -3,7 +3,7 @@ module AbstractGaugefields_module
     import ..Wilsonloops_module:Wilson_loop_set,calc_coordinate,make_plaq_staple_prime,calc_shift,make_plaq,make_plaq_staple,
                         Tensor_wilson_lines_set,Tensor_wilson_lines,Tensor_derivative_set,
                         get_leftstartposition,get_rightstartposition,Wilson_loop,calc_loopset_μν_name   
-    import ..Wilsonloops:loops_staple_prime,Gaugeline,get_position,get_direction
+    import Wilsonloop:loops_staple_prime,Wilsonline,get_position,get_direction,Adjoint_GLink,GLink
     
 
     using MPI
@@ -199,7 +199,7 @@ module AbstractGaugefields_module
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
     end
 
-    function evaluate_gaugelinks!(xout::T,w::Array{<: Gaugeline{Dim}},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
+    function evaluate_gaugelinks!(xout::T,w::Array{<:Wilsonline{Dim}},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
         num = length(w)
         clear_U!(xout)
         Uold = temps[1]
@@ -207,24 +207,30 @@ module AbstractGaugefields_module
         for i=1:num
             glinks = w[i]
             numlinks = length(glinks)
-            show(glinks)        
+            #show(glinks)        
             j = 1    
             U1link = glinks[1]
             direction = get_direction(U1link)
             position = get_position(U1link)
-            println("i = $i j = $j position = $position")
+            #println("i = $i j = $j position = $position")
             substitute_U!(Uold,U[direction])
             Ushift1 = shift_U(Uold,position)
             isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
             for j=2:numlinks
                 Ujlink = glinks[j]
-                isUkdag = ifelse(typeof(Uklink) <: Adjoint_GLink,true,false)
-                position =get_position(Ujlink)
+                isUkdag = ifelse(typeof(Ujlink) <: Adjoint_GLink,true,false)
+                position = get_position(Ujlink)
                 direction = get_direction(Ujlink)
-                println("i = $i j = $j position = $position")
+                #println("i = $i j = $j position = $position")
                 Ushift2 = shift_U(U[direction],position)
-                multiply_12!(Unew,Ushift1,Ushift2,k,isUkdag,isU1dag)
+                multiply_12!(Unew,Ushift1,Ushift2,j,isUkdag,isU1dag)
+
+                Unew,Uold = Uold,Unew
+                Ushift1 = shift_U(Uold,(0,0,0,0))
+                
             end
+            add_U!(xout,Uold)
+            #println("i = $i ",Uold[1,1,1,1,1,1])
         end
     end
 
@@ -261,7 +267,7 @@ module AbstractGaugefields_module
             if isUkdag
                 mul!(temp3,temp1,temp2')
             else
-                mul!(temp3,temp1,temp2')
+                mul!(temp3,temp1,temp2)
             end
         end
         return
@@ -314,6 +320,7 @@ module AbstractGaugefields_module
             end
             =#
             add_U!(xout,Uold)
+            #println("i = $i ",Uold[1,1,1,1,1,1])
             #add_U!(xout,Ushift1)
             #add!(xout,temp1)
             
@@ -335,6 +342,7 @@ module AbstractGaugefields_module
             
             Unew,Uold = Uold,Unew
             Ushift1 = shift_U(Uold,(0,0,0,0))
+            
             #Ushift1 = Uold
             #temp1,temp3 = temp3,temp1
         end
@@ -502,10 +510,12 @@ module AbstractGaugefields_module
     function construct_double_staple!(staple::AbstractGaugefields{NC,Dim},U::Array{T,1},μ,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim,T <: AbstractGaugefields}
         #println("mu = ",μ)
         loops = loops_staple_prime_old[Dim,μ] #make_plaq_staple_prime(μ,Dim)
-        evaluate_wilson_loops!(staple,loops,U,temps)
+        #println("staple")
+        #@time evaluate_wilson_loops!(staple,loops,U,temps)
         #println(staple[1,1,1,1,1,1])
-        #loops = loops_staple_prime[(Dim,μ)]
-        #evaluate_gaugelinks!(staple,loops,U,temps)
+        loops = loops_staple_prime[(Dim,μ)]
+        evaluate_gaugelinks!(staple,loops,U,temps)
+        #println(staple[1,1,1,1,1,1])
         #error("construct!!")
     end
 

@@ -1,5 +1,5 @@
 module Gaugefield
-    include("../../Wilsonloops/src/Wilsonloops.jl")
+    #include("../../Wilsonloops/src/Wilsonloops.jl")
 
     
     include("./output/verboseprint.jl")
@@ -10,7 +10,7 @@ module Gaugefield
     include("./output/ildg_format.jl")
     include("./autostaples/Loops.jl")
     include("./smearing/Abstractsmearing.jl")
-    import .Wilsonloops:loops_staple_prime
+    import Wilsonloop:loops_staple_prime
     
 
     
