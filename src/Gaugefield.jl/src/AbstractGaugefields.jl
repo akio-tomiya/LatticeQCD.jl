@@ -199,6 +199,7 @@ module AbstractGaugefields_module
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
     end
 
+
     function evaluate_gaugelinks!(xout::T,w::Array{<:Wilsonline{Dim}},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
         num = length(w)
         clear_U!(xout)
@@ -216,6 +217,7 @@ module AbstractGaugefields_module
             substitute_U!(Uold,U[direction])
             Ushift1 = shift_U(Uold,position)
             isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
+
             for j=2:numlinks
                 Ujlink = glinks[j]
                 isUkdag = ifelse(typeof(Ujlink) <: Adjoint_GLink,true,false)
@@ -227,7 +229,6 @@ module AbstractGaugefields_module
 
                 Unew,Uold = Uold,Unew
                 Ushift1 = shift_U(Uold,(0,0,0,0))
-                
             end
             add_U!(xout,Uold)
             #println("i = $i ",Uold[1,1,1,1,1,1])

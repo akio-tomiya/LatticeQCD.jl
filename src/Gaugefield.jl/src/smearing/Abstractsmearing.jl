@@ -4,15 +4,29 @@ module Abstractsmearing_module
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..AbstractGaugefields_module:AbstractGaugefields,Abstractfields,initialize_TA_Gaugefields,add_force!,
                         exp_aF_U!,clear_U!,add_U!,evaluate_wilson_loops!,exptU!,
-                        Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian
+                        Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian,evaluate_gaugelinks!
+    import Wilsonloop:Wilsonline,DwDU,make_loopforactions,make_Cμ,derive_U
 
     abstract type Abstractsmearing end
 
     struct Nosmearing <: Abstractsmearing 
     end
 
+    abstract type CovLayer{Dim} end
+
+    struct CovNeuralnet{Dim} <: Abstractsmearing
+        numlayers::Int64
+        layers::Array{CovLayer{Dim},1}
+        #_temp_gaugefields::Array{T,1}
+        #_temp_TA_gaugefields::Array{TF,1}
+    end
+
+
+
     include("./stout.jl")
     include("./gradientflow.jl")
+
+
 
     function construct_smearing(smearingparameters,loops_list,L,coefficients,numlayers)
         if smearingparameters == "nothing"
@@ -30,8 +44,16 @@ module Abstractsmearing_module
             end
 
             smearing = Stoutsmearing(loops,input_coefficients)
+        elseif smearingparameters == "covnet_stout"
+            if numlayers == 1
+                input_coefficients = [coefficients]
+            else
+                input_coefficients = coefficients
+            end
+            println("covnet verion of the stout smearing will be used")
+            smearing = CovNeuralnet_STOUT(loops_list,input_coefficients,L;Dim=length(L))
         else
-            
+            error("smearing = $smearing is not supported")
         end
         return smearing
     end
@@ -69,7 +91,37 @@ module Abstractsmearing_module
     end
 
     function apply_smearing_U(Uin::Array{T,1},smearing) where T<: Abstractfields
-        error("apply_smearing_U is not implemented in type $(typeof(Uin)) ")
+        error("apply_smearing_U is not implemented in type $(typeof(Uin)) and smearing type $(typeof(smearing))")
+    end
+
+    function apply_smearing_U(Uin::Array{T,1},smearing::CovNeuralnet{Dim}) where {T<: Abstractfields,Dim}
+        temp1  = similar(Uin[1])
+        temp2  = similar(Uin[1])
+        temp3  = similar(Uin[1])
+        temp4  = similar(Uin[1])
+        F0 = initialize_TA_Gaugefields(Uin[1])
+        numlayers = smearing.numlayers
+        Uout_multi = Array{typeof(Uin),1}(undef,numlayers)
+        for i=1:numlayers
+            Uout_multi[i] = similar(Uin)
+        end
+        apply_neuralnet!(Uout_multi,smearing,Uin,[temp1,temp2,temp3,temp4],[F0])
+        return Uout_multi
+
+        error("apply_smearing_U is not implemented in type $(typeof(Uin)) and smearing type $(typeof(smearing))")
+    end
+
+    function apply_neuralnet!(Uout_multi,net::CovNeuralnet{Dim},Uin,temps,temps_F) where {Dim}
+        layer = net.layers[1]
+        apply_layer!(Uout_multi[1],layer,Uin,temps,temps_F)
+        for i=2:net.numlayers
+            layer = net.layers[i]
+            apply_layer!(Uout_multi[i],layer,Uout_multi[i-1],temps,temps_F)
+        end
+    end
+
+    function apply_layer!(Uout,layer::T,Uin,temps,temps_F) where T <: CovLayer
+        error("apply_layer!(Uout,layer,Uin) is not implemented with type $(typeof(layer)) of layer.")
     end
 
     function apply_smearing_U(U::Array{T,1},smearing::Stoutsmearing) where T<: Abstractfields

@@ -191,12 +191,15 @@ module LTK_universe
         if p.Dirac_operator == nothing
             fparam = nothing
         else
+            #smearingparameters = "stout"
+            smearingparameters = "covnet_stout"
+
             if p.Dirac_operator == "Wilson"
                 if p.smearing_for_fermion == "nothing"
                     fparam = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench)
                 else
                     fparam = FermiActionParam_Wilson(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,
-                                                        smearingparameters = "stout",
+                                                        smearingparameters = smearingparameters,
                                                         loops_list = p.stout_loops,
                                                         coefficients  = p.stout_ρ,
                                                         numlayers = p.stout_numlayers,
@@ -244,7 +247,7 @@ module LTK_universe
                     fparam = FermiActionParam_WilsonClover(p.hop,p.r,p.eps,p.Dirac_operator,p.MaxCGstep,p.Clover_coefficient,
                                     internal_flags,inn_table,_ftmp_vectors,_is1,_is2,
                                     p.quench,SUNgenerator,_cloverloops,
-                                    smearingparameters = "stout",
+                                    smearingparameters = smearingparameters,
                                     loops_list = p.stout_loops,
                                     coefficients  = p.stout_ρ,
                                     numlayers = p.stout_numlayers,
@@ -255,7 +258,7 @@ module LTK_universe
                     fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf)
                 else
                     fparam = FermiActionParam_Staggered(p.mass,p.eps,p.Dirac_operator,p.MaxCGstep,p.quench,p.Nf,
-                                                            smearingparameters = "stout",
+                                                            smearingparameters = smearingparameters,
                                                             loops_list = p.stout_loops,
                                                             coefficients  = p.stout_ρ,
                                                             numlayers = p.stout_numlayers,
@@ -273,7 +276,7 @@ module LTK_universe
                                                             p.Domainwall_b,p.Domainwall_c,
                                                             p.eps,p.Dirac_operator,
                                                             p.MaxCGstep,p.quench,
-                                                            smearingparameters = "stout",
+                                                            smearingparameters = smearingparameters,
                                                             loops_list = p.stout_loops,
                                                             coefficients  = p.stout_ρ,
                                                             numlayers = p.stout_numlayers,
