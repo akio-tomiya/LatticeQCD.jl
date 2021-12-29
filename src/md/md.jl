@@ -28,7 +28,7 @@ module MD
     import ..Heatbath:heatbath!
     import ..Gaugefield:AbstractGaugefields,exptU!,substitute_U!,set_wing_U!,
                         add_force!,TA_Gaugefields,staggered_U,clear_U!,
-                        Traceless_antihermitian_add!,add_U!
+                        Traceless_antihermitian_add!,add_U!,back_prop,CovNeuralnet
     import ..Fermionfield_LQCD:AbstractFermionfields,
                                 FermiActionParam_WilsonClover,FermiActionParam_Wilson,
                                 clear_fermion!,set_wing_fermion!,shift_fermion
@@ -1111,6 +1111,14 @@ module MD
         end
 
         println(dSdU[1][1,1,1,1,1,1])
+
+        if typeof(fparam.smearing) <: CovNeuralnet
+            dSdUnew = back_prop(dSdU,fparam.smearing,Uout_multi)
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+
+
         error("stga")
 
         if typeof(fparam.smearing) <: SmearingParam_single

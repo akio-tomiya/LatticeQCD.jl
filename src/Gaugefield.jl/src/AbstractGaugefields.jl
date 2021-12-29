@@ -698,8 +698,8 @@ module AbstractGaugefields_module
         tmp_matrix1 = tempmatrices[3]
 
         trQ2 = 0.0
-        for i=1:NC
-            for j=1:NC
+        for i=1:2
+            for j=1:2
                 trQ2 += Qn[i,j]*Qn[j,i]
             end
         end
@@ -707,34 +707,34 @@ module AbstractGaugefields_module
         if abs(trQ2) > eps_Q
             q = sqrt((-1/2)*trQ2)
             calc_Bmatrix!(B,q,Qn,NC)
-            for i=1:NC
-                for j=1:NC
+            for i=1:2
+                for j=1:2
                     tmp_matrix1[j,i] = Un[j,i]
                 end
             end
 
             mul!(Unδn,tmp_matrix1,δn_prev)
             trsum = 0.0im
-            for i=1:NC
-                for j=1:NC
+            for i=1:2
+                for j=1:2
                     trsum += Unδn[i,j]*B[j,i]
                 end
             end
-            for i=1:NC
-                for j=1:NC
+            for i=1:2
+                for j=1:2
                     Mn[j,i] = (sin(q)/q)*Unδn[j,i] + trsum*Qn[j,i]
                 end
             end
         end
     end
 
-    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,U::Array{<: AbstractGaugefields{3,Dim},1},tempmatrices) where {Dim}
+    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,u::AbstractGaugefields{3,Dim},tempmatrices) where {Dim}
         Unδn = tempmatrices[1]
         tmp_matrix1 = tempmatrices[2]
         tmp_matrix2 = tempmatrices[3]
         trQ2 = 0.0
-        for i=1:NC
-            for j=1:NC
+        for i=1:3
+            for j=1:3
                 trQ2 += Qn[i,j]*Qn[j,i]
             end
         end
@@ -742,8 +742,8 @@ module AbstractGaugefields_module
         if abs(trQ2) > eps_Q
             Qn ./= im
             f0,f1,f2,b10,b11,b12,b20,b21,b22 = calc_coefficients_Q(Qn)
-            for i=1:NC
-                for j=1:NC
+            for i=1:3
+                for j=1:3
                     tmp_matrix1[j,i] = Un[j,i]
                 end
             end
@@ -752,15 +752,15 @@ module AbstractGaugefields_module
             B1 .= 0
             B2 = tmp_matrix2
             B2 .= 0
-            for i=1:NC
+            for i=1:3
                 B1[i,i] = b10
                 B2[i,i] = b20
             end
-            for j=1:NC
-                for i=1:NC
+            for j=1:3
+                for i=1:3
                     B1[i,j] += b11*Qn[i,j]
                     B2[i,j] += b21*Qn[i,j]
-                    for k=1:NC  
+                    for k=1:3  
                         B1[i,j] += b12*Qn[i,k]*Qn[k,j]
                         B2[i,j] += b22*Qn[i,k]*Qn[k,j]
                     end
@@ -769,17 +769,17 @@ module AbstractGaugefields_module
 
             trB1 = 0.0
             trB2 = 0.0
-            for i=1:NC
-                for j=1:NC
+            for i=1:3
+                for j=1:3
                     trB1 += Unδn[i,j]*B1[j,i]
                     trB2 += Unδn[i,j]*B2[j,i]
                 end
             end
 
-            for j=1:NC
-                for i=1:NC
+            for j=1:3
+                for i=1:3
                     Mn[i,j] = trB1*Qn[i,j] + f1*Unδn[i,j]
-                    for k=1:NC  
+                    for k=1:3  
                         Mn[i,j] += trB2*Qn[i,k]*Qn[k,j]+f2*(Qn[i,k]*Unδn[k,j]+Unδn[i,k]*Qn[k,j])
                     end
                 end
@@ -788,7 +788,7 @@ module AbstractGaugefields_module
         end
     end
 
-    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,U::Array{<: AbstractGaugefields{NC,Dim},1},tempmatrices) where {NC,Dim}
+    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,u::AbstractGaugefields{NC,Dim},tempmatrices) where {NC,Dim}
         error("not supported yet")
 
         @assert NC > 3 "NC > 3 not NC = $NC"
@@ -824,6 +824,110 @@ module AbstractGaugefields_module
         end
 
     end
+
+    function calc_Bmatrix!(B,q,Q,NC)
+        @assert NC == 2 "NC should be 2! now $NC"
+        mul!(B,cos(q)/q -sin(q)/q^2,Q)
+        for i=1:NC
+            B[i,i] += -sin(q)
+        end
+        B .*= -1/2q
+        #B[:,:] .= (cos(q)/q -sin(q)/q^2 )*Q
+    
+        #q = sqrt((-1/2)*tr(Q^2))
+        #B = -(-sin(q)*I0_2 +(cos(q)/q -sin(q)/q^2 )*Q)*(1/2q)
+    end
+
+    function calc_coefficients_Q(Q)
+        @assert size(Q) == (3,3)
+        c0 = Q[1,1]*Q[2,2]*Q[3,3]+Q[1,2]*Q[2,3]*Q[3,1]+Q[1,3]*Q[2,1]*Q[3,2]-Q[1,3]*Q[2,2]*Q[3,1]-Q[1,2]*Q[2,1]*Q[3,3]-Q[1,1]*Q[2,3]*Q[3,2]
+        #@time cdet = det(Q)
+        ##println(c0,"\t",cdet)
+        #exit() 
+        
+        c1 = 0.0
+        for i=1:3
+            for j=1:3
+                c1 += Q[i,j]*Q[j,i]
+            end
+        end
+        c1 /= 2
+        c0max = 2*(c1/3)^(3/2)
+        θ = acos(c0/c0max)
+        u = sqrt(c1/3)*cos(θ/3)
+        w = sqrt(c1)*sin(θ/3)
+        ξ0 = sin(w)/w
+        ξ1 = cos(w)/w^2 - sin(w)/w^3
+    
+        emiu = exp(-im*u)
+        e2iu = exp(2*im*u)
+    
+        h0 = (u^2-w^2)*e2iu + emiu*(
+            8u^2*cos(w)+2*im*u*(3u^2+w^2)* ξ0
+        )
+        h1 = 2u*e2iu-emiu*(
+            2u*cos(w)-im*(3u^2-w^2)* ξ0
+        )
+        h2 = e2iu - emiu*(cos(w)+3*im*u*ξ0)
+    
+        denom = 9u^2-w^2
+        
+        f0 = h0/denom
+        f1 = h1/denom
+        f2 = h2/denom
+    
+        r10 = 2*(u+im*(u^2-w^2))*e2iu + 
+                2*emiu*(
+                    4u*(2-im*u)*cos(w) + 
+                    im*(9u^2+w^2-im*u*(3u^2+w^2))*ξ0
+                )
+        r11 = 2*(1+2*im*u)*e2iu+ 
+                emiu*(
+                    -2*(1-im*u)*cos(w)+
+                    im*(6u+im*(w^2-3u^2))*ξ0
+                )
+        r12 = 2*im*e2iu + im*emiu*(
+            cos(w) -3*(1-im*u)*ξ0
+        )
+        r20 = -2*e2iu+2*im*u*emiu*(
+            cos(w)+(1+4*im*u)*ξ0+3u^2*ξ1
+        )
+        r21 = -im*emiu*(
+            cos(w)+(1+2*im*u)*ξ0 - 
+            3*u^2*ξ1
+        )
+        r22 = emiu*(
+            ξ0-3*im*u*ξ1
+        )
+        b10 = (
+            2*u*r10+(3u^2-w^2)*r20 - 2*(15u^2+w^2)*f0
+            )/(
+                2*denom^2
+            )
+        
+        b11 = (
+                2*u*r11+(3u^2-w^2)*r21 - 2*(15u^2+w^2)*f1
+                )/(
+                    2*denom^2
+                )
+        b12 = (
+            2*u*r12+(3u^2-w^2)*r22 - 2*(15u^2+w^2)*f2
+            )/(
+                2*denom^2
+            )
+        b20 = (
+            r10 - 3*u*r20 - 24*u*f0
+            )/(2*denom^2)
+        b21 = (
+                r11 - 3*u*r21 - 24*u*f1
+                )/(2*denom^2)
+        b22 = (
+            r12 - 3*u*r22 - 24*u*f2
+            )/(2*denom^2)
+    
+        return f0,f1,f2,b10,b11,b12,b20,b21,b22
+    end
+    
 
     function staggered_phase(μ,iii...)
         error("staggered_phase is not implemented")

@@ -110,6 +110,24 @@ module Abstractsmearing_module
         error("apply_smearing_U is not implemented in type $(typeof(Uin)) and smearing type $(typeof(smearing))")
     end
 
+    function back_prop(δL,net::CovNeuralnet{Dim},Uout_multi) where Dim
+        temps = similar(Uout_multi[1])
+        temps_F1 = initialize_TA_Gaugefields(temps[1])
+        tempf = [temps_F1]
+
+        layer = net.layers[net.numlayers]
+        δ_prev = similar(δL)
+        δ_current = deepcopy(δL)
+        
+        for i=net.numlayers:-1:1
+            layer_pullback!(δ_prev,δ_current,layer,Uout_multi[i],temps,tempf)
+            δ_current,δ_prev = δ_prev,δ_current
+        end
+    
+        return δ_current
+    end
+
+
     function apply_neuralnet!(Uout_multi,net::CovNeuralnet{Dim},Uin,temps,temps_F) where {Dim}
         layer = net.layers[1]
         apply_layer!(Uout_multi[1],layer,Uin,temps,temps_F)
@@ -120,7 +138,7 @@ module Abstractsmearing_module
     end
 
     function apply_layer!(Uout,layer::T,Uin,temps,temps_F) where T <: CovLayer
-        error("apply_layer!(Uout,layer,Uin,,temps,temps_F) is not implemented with type $(typeof(layer)) of layer.")
+        error("apply_layer!(Uout,layer,Uin,temps,temps_F) is not implemented with type $(typeof(layer)) of layer.")
     end
 
     """
@@ -129,7 +147,7 @@ module Abstractsmearing_module
         δ_next,Uprev -> δ_prev
     """
     function layer_pullback!(δ_prev,δ_next,layer::T,Uprev,temps,tempf) where T <: CovLayer
-        error("layer_pullback!(δ_prev,δ_next,layer,Uprev,temps,tmeps_F) is not implemented with type $(typeof(layer)) of layer.")
+        error("layer_pullback!(δ_prev,δ_next,layer::T,Uprev,temps,tempf) is not implemented with type $(typeof(layer)) of layer.")
     end
     
 

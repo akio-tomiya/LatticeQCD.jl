@@ -149,58 +149,56 @@ end
 """
 function layer_pullback!(δ_prev::Array{<: AbstractGaugefields{NC,Dim},1},δ_current,layer::STOUT_Layer{Dim},Uprev,temps,tempf) where {NC,Dim}
     clear_U!(δ_prev)
-    #δ_prev[μ](n) = δ_current[μ](n)*exp(Qμ[Uprev](n)) + F(δ_current,Uprev)
-    #F(δ_current,Uprev) = sum_μ' sum_m Fm[μ](δ_current,Uprev)
+    #δ_prev[ν](n) = δ_current[ν](n)*exp(Qν[Uprev](n)) + F(δ_current,Uprev)
+    #F(δ_current,Uprev) = sum_μ sum_m Fm[μ](δ_current,Uprev)
+    #δ_prev[ν](n) = dS/dU[ν](n)
 
     Cμs = similar(Uprev)
     construct_Cμ!(Cμs,layer,Uprev,temps)
     Qμs = similar(Uprev)
     construct_Qμs!(Qμs,Cμs,Uprev,temps)
     Λs = similar(Uprev)
+    temp1 = temps[1]
+    temp2 = temps[2]
+    temp3 = temps[3]
 
     for μ=1:Dim
         construct_Λmatrix_forSTOUT!(Λs[μ],δ_current[μ],Qμs[μ],Uprev[μ])
-        exptU!(δ_prev[μ],1,Qμs[μ],[temp1,temp2])
-    end
+        exptU!(temp3,1,Qμs[μ],[temp1,temp2]) # exp(Q)
+        mul!(δ_prev[μ],δ_current[μ],temp3) #δ_prev  =δ_current*exp(Q)
 
-    for μ=1:Dim
-        for μd=1:Dim
-            Λμd = Λs[μd]
-            Uμd = Uprev[μd]
-
-        end
-    end
-
-    temp1 = temps[1]
-    temp2 = temps[2]
-
-    for μ=1:Dim
+        mul!(temp1,Cμs[μ]',Λs[μ])
+        add_U!(δ_prev[μ],-1,temp1) #δ_prev += -C'Λ
         
     end
 
-    F0 = tempf[1]
-    temp1 = temps[1]
-    Qμ = temps[2]
+    numterms = length(layer)
+
+    for i=1:numterms
+        dCμdUν = get_dCμdUν(layer,i)
+        dCμdUνdag = get_dCμdUνdag(layer,i)
+        ρi = get_ρ(layer,i)
 
 
-    
-    Traceless_antihermitian_add!(Qμ,1,temp1)
+        for ν=1:Dim
+            for μ=1:Dim
+                Λμ = Λs[μ]
+                Uμ = Uprev[μ]
+                numdCμdUν = length(dCμdUν[μ,ν])
+                for j=1:numdCμdUν 
 
-    Λ = temps[2]
+                end
 
-    #δ_next*exp(Q[Uprev]) 
-    for μ=1:Dim
-        #construct_Qμ!(Qμ,μ,Cμs,Uin,temps)
-        construct_Λmatrix_forSTOUT!(Λ,δ_current,Qμs[μ],Uin[μ])
+                numdCμdUνdag = length(dCμdUνdag[μ,ν])
+                for j=1:numdCμdUνdag
+
+                end
 
 
-        mul!(temp1,Cμs[μ],Uprev[μ]') #Cμ*U^+
-        clear_U!(F0)
-        Traceless_antihermitian_add!(F0,1,temp1)
-        exptU!(temp3,1,F0,[temp1,temp2])
-
-        mul!(δ_next[μ],δ_prev[μ],temp3)   #δ_next*exp(Q[Uprev]) 
+            end
+        end
     end
+
 
 end
 
@@ -212,15 +210,17 @@ M = U δ star dexp(Q)/dQ
 
 
 
-
+function construct_Qμ!(Qμ,μ,Cμs,Uin::Array{<: AbstractGaugefields{NC,Dim},1},temps) where {NC,Dim}
+    temp1  = temps[1]
+    mul!(temp1,Cμs[μ],Uin[μ]') 
+    clear_U!(Qμ)
+    Traceless_antihermitian!(Qμ,temp1)
+end
 
 
 function construct_Qμs!(Qμs,Cμs,Uin::Array{<: AbstractGaugefields{NC,Dim},1},temps) where {NC,Dim}
-    temp1  = temps[1]
     for μ=1:Dim
-        mul!(temp1,Cμs[μ],Uin[μ]') #Cμ*U^+
-        clear_U!(Qμs)
-        Traceless_antihermitian!(Qμs,temp1)
+        construct_Qμ!(Qμs[μ],μ,Cμs,Uin,temps)
     end
 end
 
@@ -355,105 +355,4 @@ function make_loops_Stoutsmearing(loops_smearing,ρs)
 end
 
 
-function calc_coefficients_Q(Q)
-    @assert size(Q) == (3,3)
-    c0 = Q[1,1]*Q[2,2]*Q[3,3]+Q[1,2]*Q[2,3]*Q[3,1]+Q[1,3]*Q[2,1]*Q[3,2]-Q[1,3]*Q[2,2]*Q[3,1]-Q[1,2]*Q[2,1]*Q[3,3]-Q[1,1]*Q[2,3]*Q[3,2]
-    #@time cdet = det(Q)
-    ##println(c0,"\t",cdet)
-    #exit() 
-    
-    c1 = 0.0
-    for i=1:3
-        for j=1:3
-            c1 += Q[i,j]*Q[j,i]
-        end
-    end
-    c1 /= 2
-    c0max = 2*(c1/3)^(3/2)
-    θ = acos(c0/c0max)
-    u = sqrt(c1/3)*cos(θ/3)
-    w = sqrt(c1)*sin(θ/3)
-    ξ0 = sin(w)/w
-    ξ1 = cos(w)/w^2 - sin(w)/w^3
 
-    emiu = exp(-im*u)
-    e2iu = exp(2*im*u)
-
-    h0 = (u^2-w^2)*e2iu + emiu*(
-        8u^2*cos(w)+2*im*u*(3u^2+w^2)* ξ0
-    )
-    h1 = 2u*e2iu-emiu*(
-        2u*cos(w)-im*(3u^2-w^2)* ξ0
-    )
-    h2 = e2iu - emiu*(cos(w)+3*im*u*ξ0)
-
-    denom = 9u^2-w^2
-    
-    f0 = h0/denom
-    f1 = h1/denom
-    f2 = h2/denom
-
-    r10 = 2*(u+im*(u^2-w^2))*e2iu + 
-            2*emiu*(
-                4u*(2-im*u)*cos(w) + 
-                im*(9u^2+w^2-im*u*(3u^2+w^2))*ξ0
-            )
-    r11 = 2*(1+2*im*u)*e2iu+ 
-            emiu*(
-                -2*(1-im*u)*cos(w)+
-                im*(6u+im*(w^2-3u^2))*ξ0
-            )
-    r12 = 2*im*e2iu + im*emiu*(
-        cos(w) -3*(1-im*u)*ξ0
-    )
-    r20 = -2*e2iu+2*im*u*emiu*(
-        cos(w)+(1+4*im*u)*ξ0+3u^2*ξ1
-    )
-    r21 = -im*emiu*(
-        cos(w)+(1+2*im*u)*ξ0 - 
-        3*u^2*ξ1
-    )
-    r22 = emiu*(
-        ξ0-3*im*u*ξ1
-    )
-    b10 = (
-        2*u*r10+(3u^2-w^2)*r20 - 2*(15u^2+w^2)*f0
-        )/(
-            2*denom^2
-        )
-    
-    b11 = (
-            2*u*r11+(3u^2-w^2)*r21 - 2*(15u^2+w^2)*f1
-            )/(
-                2*denom^2
-            )
-    b12 = (
-        2*u*r12+(3u^2-w^2)*r22 - 2*(15u^2+w^2)*f2
-        )/(
-            2*denom^2
-        )
-    b20 = (
-        r10 - 3*u*r20 - 24*u*f0
-        )/(2*denom^2)
-    b21 = (
-            r11 - 3*u*r21 - 24*u*f1
-            )/(2*denom^2)
-    b22 = (
-        r12 - 3*u*r22 - 24*u*f2
-        )/(2*denom^2)
-
-    return f0,f1,f2,b10,b11,b12,b20,b21,b22
-end
-
-function calc_Bmatrix!(B,q,Q,NC)
-    @assert NC == 2 "NC should be 2! now $NC"
-    mul!(B,cos(q)/q -sin(q)/q^2,Q)
-    for i=1:NC
-        B[i,i] += -sin(q)
-    end
-    B .*= -1/2q
-    #B[:,:] .= (cos(q)/q -sin(q)/q^2 )*Q
-
-    #q = sqrt((-1/2)*tr(Q^2))
-    #B = -(-sin(q)*I0_2 +(cos(q)/q -sin(q)/q^2 )*Q)*(1/2q)
-end

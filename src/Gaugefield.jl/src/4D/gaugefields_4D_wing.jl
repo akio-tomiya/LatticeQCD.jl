@@ -636,7 +636,6 @@ module Gaugefields_4D_wing_module
 
     # #=
     function exptU!(uout::T,t::N,v::Gaugefields_4D_wing{3},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing} #uout = exp(t*u)
-        error("2")
         ww = temps[1]
         w = temps[2]
         
