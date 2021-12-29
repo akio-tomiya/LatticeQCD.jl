@@ -4,8 +4,9 @@ module Abstractsmearing_module
             make_cloverloops,Tensor_derivative_set, make_loops
     import ..AbstractGaugefields_module:AbstractGaugefields,Abstractfields,initialize_TA_Gaugefields,add_force!,
                         exp_aF_U!,clear_U!,add_U!,evaluate_wilson_loops!,exptU!,
-                        Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian,evaluate_gaugelinks!
-    import Wilsonloop:Wilsonline,DwDU,make_loopforactions,make_Cμ,derive_U
+                        Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian,evaluate_gaugelinks!,
+                        construct_Λmatrix_forSTOUT!,Traceless_antihermitian!
+    import Wilsonloop:Wilsonline,DwDU,make_loopforactions,make_Cμ,derive_U,derive_Udag
 
     abstract type Abstractsmearing end
 
@@ -17,8 +18,6 @@ module Abstractsmearing_module
     struct CovNeuralnet{Dim} <: Abstractsmearing
         numlayers::Int64
         layers::Array{CovLayer{Dim},1}
-        #_temp_gaugefields::Array{T,1}
-        #_temp_TA_gaugefields::Array{TF,1}
     end
 
 
@@ -121,8 +120,18 @@ module Abstractsmearing_module
     end
 
     function apply_layer!(Uout,layer::T,Uin,temps,temps_F) where T <: CovLayer
-        error("apply_layer!(Uout,layer,Uin) is not implemented with type $(typeof(layer)) of layer.")
+        error("apply_layer!(Uout,layer,Uin,,temps,temps_F) is not implemented with type $(typeof(layer)) of layer.")
     end
+
+    """
+    layer_pullback!(δ_prev,δ_next,layer::T,Uprev,temps,tempf) 
+    This is a function for a back propagation
+        δ_next,Uprev -> δ_prev
+    """
+    function layer_pullback!(δ_prev,δ_next,layer::T,Uprev,temps,tempf) where T <: CovLayer
+        error("layer_pullback!(δ_prev,δ_next,layer,Uprev,temps,tmeps_F) is not implemented with type $(typeof(layer)) of layer.")
+    end
+    
 
     function apply_smearing_U(U::Array{T,1},smearing::Stoutsmearing) where T<: Abstractfields
         numlayer = length(smearing.ρs)

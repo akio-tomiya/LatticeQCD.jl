@@ -653,6 +653,177 @@ module AbstractGaugefields_module
         error("LinearAlgebra.tr! is not implemented in type $(typeof(a)) ")
     end
 
+    """
+    M = (U*δ_prev) star (dexp(Q)/dQ)
+    Λ = TA(M)
+    """
+    function construct_Λmatrix_forSTOUT!(Λ,δ_prev::T,Q,u::T) where T <: AbstractGaugefields
+        error("construct_Λmatrix_forSTOUT! is not implemented in type $(typeof(u)) ")
+    end
+
+    const eps_Q = 1e-18
+
+    function calc_Λmatrix!(Λ,M,NC)
+        #println("M= ", M)
+        if NC == 1
+            #Λ = -(M - M')
+            @. Λ[:,:] = (M - M')
+        elseif NC == 2
+            #Λ = (1/2)*(M - M') - (1/(2NC))*tr(M - M')*I0_2
+            @. Λ[:,:] = (1/2)*(M - M')
+            trM = (1/(2NC))*(M[1,1]-conj(M[1,1]) + M[2,2] - conj(M[2,2]))#  tr(M - M')
+            #trM = (1/(2NC))*tr(M - M')
+            for i=1:NC
+                Λ[i,i] += - trM
+            end
+            #Λ = 2*Λ
+        else
+            @. Λ[:,:] = (1/2)*(M - M')
+            trM = (1/(2NC))*tr(M - M')
+            for i=1:NC
+                Λ[i,i] += - trM
+            end
+        end
+        #display(Λ)
+        #println("\t")
+        #exit()
+        return 
+    #        return Λ
+    end
+    
+
+    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,u::AbstractGaugefields{2,Dim},tempmatrices) where {Dim}
+        Unδn = tempmatrices[1]
+        B = tempmatrices[2]
+        tmp_matrix1 = tempmatrices[3]
+
+        trQ2 = 0.0
+        for i=1:NC
+            for j=1:NC
+                trQ2 += Qn[i,j]*Qn[j,i]
+            end
+        end
+
+        if abs(trQ2) > eps_Q
+            q = sqrt((-1/2)*trQ2)
+            calc_Bmatrix!(B,q,Qn,NC)
+            for i=1:NC
+                for j=1:NC
+                    tmp_matrix1[j,i] = Un[j,i]
+                end
+            end
+
+            mul!(Unδn,tmp_matrix1,δn_prev)
+            trsum = 0.0im
+            for i=1:NC
+                for j=1:NC
+                    trsum += Unδn[i,j]*B[j,i]
+                end
+            end
+            for i=1:NC
+                for j=1:NC
+                    Mn[j,i] = (sin(q)/q)*Unδn[j,i] + trsum*Qn[j,i]
+                end
+            end
+        end
+    end
+
+    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,U::Array{<: AbstractGaugefields{3,Dim},1},tempmatrices) where {Dim}
+        Unδn = tempmatrices[1]
+        tmp_matrix1 = tempmatrices[2]
+        tmp_matrix2 = tempmatrices[3]
+        trQ2 = 0.0
+        for i=1:NC
+            for j=1:NC
+                trQ2 += Qn[i,j]*Qn[j,i]
+            end
+        end
+
+        if abs(trQ2) > eps_Q
+            Qn ./= im
+            f0,f1,f2,b10,b11,b12,b20,b21,b22 = calc_coefficients_Q(Qn)
+            for i=1:NC
+                for j=1:NC
+                    tmp_matrix1[j,i] = Un[j,i]
+                end
+            end
+            mul!(Unδn,tmp_matrix1,δn_prev)
+            B1 = tmp_matrix1
+            B1 .= 0
+            B2 = tmp_matrix2
+            B2 .= 0
+            for i=1:NC
+                B1[i,i] = b10
+                B2[i,i] = b20
+            end
+            for j=1:NC
+                for i=1:NC
+                    B1[i,j] += b11*Qn[i,j]
+                    B2[i,j] += b21*Qn[i,j]
+                    for k=1:NC  
+                        B1[i,j] += b12*Qn[i,k]*Qn[k,j]
+                        B2[i,j] += b22*Qn[i,k]*Qn[k,j]
+                    end
+                end
+            end
+
+            trB1 = 0.0
+            trB2 = 0.0
+            for i=1:NC
+                for j=1:NC
+                    trB1 += Unδn[i,j]*B1[j,i]
+                    trB2 += Unδn[i,j]*B2[j,i]
+                end
+            end
+
+            for j=1:NC
+                for i=1:NC
+                    Mn[i,j] = trB1*Qn[i,j] + f1*Unδn[i,j]
+                    for k=1:NC  
+                        Mn[i,j] += trB2*Qn[i,k]*Qn[k,j]+f2*(Qn[i,k]*Unδn[k,j]+Unδn[i,k]*Qn[k,j])
+                    end
+                end
+            end
+            Mn ./= im
+        end
+    end
+
+    function calc_Mmatrix!(Mn,δn_prev,Qn,Un,U::Array{<: AbstractGaugefields{NC,Dim},1},tempmatrices) where {NC,Dim}
+        error("not supported yet")
+
+        @assert NC > 3 "NC > 3 not NC = $NC"
+        Unδn = tempmatrices[1]
+        B = tempmatrices[2]
+        tempmatrix = tempmatrices[3]
+
+
+
+        trQ2 = 0.0
+        for i=1:NC
+            for j=1:NC
+                trQ2 += Qn[i,j]*Qn[j,i]
+            end
+        end
+
+        if abs(trQ2) > eps_Q
+            e,v = eigen(Qn) 
+            mul!(Unδn,Un,δn_prev)
+            #=
+                    A star dexp(Q)/dQ = \sum_{n=0}^{infty} \frac{1}{n!} 
+                                            \sum_{k=0}^{n-1} i^{n-1-k}P^+ D^{n-1-k} P A P^+ D^k P i^k
+                                    = P^+ (\sum_{n=0}^{infty} (i^{n-1}/n!) sum_{k=0}^{n-1} D^{n-1-k} B D^k)  P
+                                    B = P A P+
+                =#
+
+            mul!(tempmatrix,Unδn,v)
+            mul!(B,v',tempmatrix)
+
+            
+
+
+        end
+
+    end
 
     function staggered_phase(μ,iii...)
         error("staggered_phase is not implemented")

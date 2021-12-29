@@ -25,7 +25,8 @@ module Gaugefield
                                         Traceless_antihermitian!,Traceless_antihermitian,Generator,
                                         Staggered_Gaugefields,staggered_U,
                                         Traceless_antihermitian_add!,
-                                        IdentityGauges,RandomGauges,Oneinstanton
+                                        IdentityGauges,RandomGauges,Oneinstanton,
+                                        construct_Λmatrix_forSTOUT!
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!,evaluate_loops!

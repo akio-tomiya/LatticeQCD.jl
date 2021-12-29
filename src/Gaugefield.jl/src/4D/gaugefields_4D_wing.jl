@@ -229,7 +229,7 @@ module Gaugefields_4D_wing_module
         NZ::Int64
         NT::Int64
         NDW::Int64
-        
+
         #function Shifted_Gaugefields(U::T,shift,Dim) where {T <: AbstractGaugefields}
         function Shifted_Gaugefields_4D(U::Gaugefields_4D_wing{NC},shift) where NC
             outside = check_outside(U.NDW,shift)
@@ -432,6 +432,54 @@ module Gaugefields_4D_wing_module
         end
         set_wing_U!(Uμ)
 
+    end
+
+    """
+    M = (U*δ_prev) star (dexp(Q)/dQ)
+    Λ = TA(M)
+    """
+    function construct_Λmatrix_forSTOUT!(Λ,δ_current::Gaugefields_4D_wing{NC},Q,u::Gaugefields_4D_wing{NC}) where NC
+        NT = u.NT
+        NY = u.NY
+        NZ = u.NZ
+        NX = u.NX
+        Qn = zeros(ComplexF64,NC,NC)
+        Un = zero(Qn)
+        Mn = zero(Qn)
+        Λn = zero(Qn)
+        δn_current = zero(Qn)
+        temp1 = similar(Qn)
+        temp2 = similar(Qn)
+        temp3 = similar(Qn)
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+
+                        for jc=1:NC
+                            for ic=1:NC
+                                Un[ic,jc] = u[ic,jc,ix,iy,iz,it]
+                                Qn[ic,jc] = Q[ic,jc,ix,iy,iz,it]
+                                δn_current[ic,jc] = δ_current[ic,jc,ix,iy,iz,it]
+                            end
+                        end
+
+                        calc_Mmatrix!(Mn,δn_current,Qn,Un,u,[temp1,temp2,temp3])
+                        calc_Λmatrix!(Λn,Mn,NC)
+
+
+                        for jc=1:NC
+                            for ic=1:NC
+                                Λ[ic,jc,ix,iy,iz,it] = Λn[ic,jc]
+                            end
+                        end
+
+                    end
+                end
+            end
+        end
+        set_wing_U!(Λ)
     end
 
 
@@ -827,6 +875,47 @@ module Gaugefields_4D_wing_module
         end
 
     end
+
+    function Traceless_antihermitian!(vout::Gaugefields_4D_wing{2},vin::Gaugefields_4D_wing{2})
+        #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
+        fac13 = 1/3
+        NX = vin.NX
+        NY = vin.NY
+        NZ = vin.NZ
+        NT = vin.NT
+
+
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+
+                        v11 = vin[1,1,ix,iy,iz,it]
+                        v22 = vin[2,2,ix,iy,iz,it]
+
+                        tri = fac12*(imag(v11)+imag(v22))
+
+                        
+
+                        v12 = vin[1,2,ix,iy,iz,it]
+                        #v13 = vin[1,3,ix,iy,iz,it]
+                        v21 = vin[2,1,ix,iy,iz,it]
+
+                        x12 = v12 - conj(v21)
+
+                        x21 = - conj(x12)
+
+                        vout[1,1,ix,iy,iz,it] = (imag(v11)-tri)*im
+                        vout[1,2,ix,iy,iz,it] = 0.5  * x12
+                        vout[2,1,ix,iy,iz,it] = 0.5  * x21
+                        vout[2,2,ix,iy,iz,it] = (imag(v22)-tri)*im
+                    end
+                end
+            end
+        end
+
+    end
+
 
     function Traceless_antihermitian!(vout::Gaugefields_4D_wing{NC},vin::Gaugefields_4D_wing{NC}) where NC
         #NC = vout.NC
