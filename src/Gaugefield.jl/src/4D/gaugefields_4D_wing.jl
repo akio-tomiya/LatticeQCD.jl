@@ -78,7 +78,7 @@ module Gaugefields_4D_wing_module
         @inbounds return conj(U.parent[i2,i1,ii])
     end
 
-    function substitute_U!(a::Array{T,1},b::Array{T,1}) where T <: Gaugefields_4D_wing
+    function substitute_U!(a::Array{T1,1},b::Array{T2,1}) where {T1 <: Gaugefields_4D_wing,T2 <: Gaugefields_4D_wing}
         for μ=1:4
             substitute_U!(a[μ],b[μ])
         end
@@ -107,6 +107,28 @@ module Gaugefields_4D_wing_module
         a.U[:,:,:,:,:,:] = copy(b.U)
         #error("substitute_U! is not implemented in type $(typeof(a)) ")
         return 
+    end
+
+    function substitute_U!(a::Gaugefields_4D_wing{NC},b::T2) where {NC, T2 <: Abstractfields}
+        NT = a.NT
+        NZ = a.NZ
+        NY = a.NY
+        NX = a.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                @inbounds a[k1,k2,ix,iy,iz,it] = b[k1,k2,ix,iy,iz,it]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        set_wing_U!(a)
+
     end
 
     function randomGaugefields_4D_wing(NC,NX,NY,NZ,NT,NDW)
@@ -434,6 +456,30 @@ module Gaugefields_4D_wing_module
 
     end
 
+        
+    function unit_U!(Uμ::Gaugefields_4D_wing{NC}) where NC
+        NT = Uμ.NT
+        NZ = Uμ.NZ
+        NY = Uμ.NY
+        NX = Uμ.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+
+                        for k2=1:NC                            
+                            for k1=1:NC
+                                @inbounds Uμ[k1,k2,ix,iy,iz,it] = ifelse(k1 == k2,1,0)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        set_wing_U!(Uμ)
+
+    end
+
     """
     M = (U*δ_prev) star (dexp(Q)/dQ)
     Λ = TA(M)
@@ -460,12 +506,31 @@ module Gaugefields_4D_wing_module
                         for jc=1:NC
                             for ic=1:NC
                                 Un[ic,jc] = u[ic,jc,ix,iy,iz,it]
-                                Qn[ic,jc] = Q[ic,jc,ix,iy,iz,it]
+                                Qn[ic,jc] = Q[ic,jc,ix,iy,iz,it]#*im
+                                #if (ix,iy,iz,it) == (1,1,1,1)
+                                #    println("Qij $ic $jc ",Qn[ic,jc],"\t ",Q[ic,jc,ix,iy,iz,it])
+                                #end
                                 δn_current[ic,jc] = δ_current[ic,jc,ix,iy,iz,it]
                             end
                         end
 
+                        #=
+                        if (ix,iy,iz,it) == (1,1,1,1)
+                            println("Qn = ",Qn[1:3,1:3])
+                        end
+                        =#
+
                         calc_Mmatrix!(Mn,δn_current,Qn,Un,u,[temp1,temp2,temp3])
+                        #=
+                        if (ix,iy,iz,it) == (1,1,1,1)
+                            println(" Un ",  Un[1,1])
+                            println("δn_current ", δn_current[1,1])
+                            #println("Qn[1,1] = ",Qn[1,1])
+                            println("M[1,1] = ",Mn[1,1])
+
+                            #println("Qn = ",Qn[1:3,1:3])
+                        end
+                        =#
                         calc_Λmatrix!(Λn,Mn,NC)
 
 
@@ -633,6 +698,7 @@ module Gaugefields_4D_wing_module
 
     const tinyvalue =1e-100
     const pi23 = 2pi/3
+    const fac13 = 1/3
 
     # #=
     function exptU!(uout::T,t::N,v::Gaugefields_4D_wing{3},temps::Array{T,1}) where {N <: Number, T <: Gaugefields_4D_wing} #uout = exp(t*u)
@@ -646,28 +712,125 @@ module Gaugefields_4D_wing_module
         NX = v.NX
         #t = 1
 
-        for it=1:NT
+        @inbounds for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX
-                        v1  = t*real(v[1,1,ix,iy,iz,it])
-                        v2  = t*imag(v[1,1,ix,iy,iz,it])
-                        v3  = t*real(v[1,2,ix,iy,iz,it])
-                        v4  = t*imag(v[1,2,ix,iy,iz,it])
-                        v5  = t*real(v[1,3,ix,iy,iz,it])
-                        v6  = t*imag(v[1,3,ix,iy,iz,it])
-                        v7  = t*real(v[2,1,ix,iy,iz,it])
-                        v8  = t*imag(v[2,1,ix,iy,iz,it])
-                        v9  = t*real(v[2,2,ix,iy,iz,it])
-                        v10 = t*imag(v[2,2,ix,iy,iz,it])
-                        v11 = t*real(v[2,3,ix,iy,iz,it])
-                        v12 = t*imag(v[2,3,ix,iy,iz,it])
-                        v13 = t*real(v[3,1,ix,iy,iz,it])
-                        v14 = t*imag(v[3,1,ix,iy,iz,it])
-                        v15 = t*real(v[3,2,ix,iy,iz,it])
-                        v16 = t*imag(v[3,2,ix,iy,iz,it])
-                        v17 = t*real(v[3,3,ix,iy,iz,it])
-                        v18 = t*imag(v[3,3,ix,iy,iz,it])
+                        v11 = v[1,1,ix,iy,iz,it]
+                        v22 = v[2,2,ix,iy,iz,it]
+                        v33 = v[3,3,ix,iy,iz,it]
+
+                        tri = fac13*(imag(v11)+imag(v22)+imag(v33))
+
+                        #=
+                        vout[1,1,ix,iy,iz,it] = (imag(v11)-tri)*im
+                        vout[2,2,ix,iy,iz,it] = (imag(v22)-tri)*im
+                        vout[3,3,ix,iy,iz,it] = (imag(v33)-tri)*im
+                        =#
+                        y11 = (imag(v11)-tri)*im
+                        y22 = (imag(v22)-tri)*im
+                        y33 = (imag(v33)-tri)*im
+
+                        v12 = v[1,2,ix,iy,iz,it]
+                        v13 = v[1,3,ix,iy,iz,it]
+                        v21 = v[2,1,ix,iy,iz,it]
+                        v23 = v[2,3,ix,iy,iz,it]
+                        v31 = v[3,1,ix,iy,iz,it]
+                        v32 = v[3,2,ix,iy,iz,it]
+
+                        x12 = v12 - conj(v21)
+                        x13 = v13 - conj(v31)
+                        x23 = v23 - conj(v32)
+                    
+                        x21 = - conj(x12)
+                        x31 = - conj(x13)
+                        x32 = - conj(x23)
+
+                        y12 = 0.5  * x12
+                        y13 = 0.5  * x13
+                        y21 = 0.5  * x21
+                        y23 = 0.5  * x23
+                        y31 = 0.5  * x31
+                        y32 =  0.5  * x32
+
+                        c1_0 = ( imag(y12) + imag(y21) )
+                        c2_0 = ( real(y12) - real(y21) )
+                        c3_0 = ( imag(y11) - imag(y22) )
+                        c4_0= ( imag(y13) + imag(y31) )
+                        c5_0 = ( real(y13) - real(y31) )
+                        
+                        c6_0 = ( imag(y23) + imag(y32) )
+                        c7_0 = ( real(y23) - real(y32) )
+                        c8_0 = sr3i *
+                                ( imag(y11) + imag(y22) -
+                                        2*imag(y33) )
+
+                        c1 = t*c1_0 * 0.5 
+                        c2 = t*c2_0 * 0.5
+                        c3 = t*c3_0 * 0.5
+                        c4 = t*c4_0 * 0.5
+                        c5 = t*c5_0 * 0.5
+                        c6 = t*c6_0 * 0.5
+                        c7 = t*c7_0 * 0.5
+                        c8 = t*c8_0 * 0.5
+                        csum = c1+c2+c3+c4+c5+c6+c7+c8
+                        if csum == 0
+                            w[1,1,ix,iy,iz,it]=   1 
+                            w[1,2,ix,iy,iz,it]=   0
+                            w[1,3,ix,iy,iz,it]=   0 
+                            w[2,1,ix,iy,iz,it]=  0
+                            w[2,2,ix,iy,iz,it]=   1 
+                            w[2,3,ix,iy,iz,it]=   0
+                            w[3,1,ix,iy,iz,it]=   0 
+                            w[3,2,ix,iy,iz,it]=   0  
+                            w[3,3,ix,iy,iz,it]=   1  
+                    
+                            ww[1,1,ix,iy,iz,it]=   1
+                            ww[1,2,ix,iy,iz,it]=   0
+                            ww[1,3,ix,iy,iz,it]=   0
+                            ww[2,1,ix,iy,iz,it]=   0
+                            ww[2,2,ix,iy,iz,it]=   1 
+                            ww[2,3,ix,iy,iz,it]=   0 
+                            ww[3,1,ix,iy,iz,it]=   0
+                            ww[3,2,ix,iy,iz,it]=   0  
+                            ww[3,3,ix,iy,iz,it]=   1
+                            continue
+                        end
+
+
+                        #x[1,1,icum] =  c3+sr3i*c8 +im*(  0.0 )
+                        v1 = c3+sr3i*c8
+                        v2 = 0.0
+                        #x[1,2,icum] =  c1         +im*( -c2   )
+                        v3 = c1
+                        v4 = -c2
+                        #x[1,3,icum] =  c4         +im*(-c5   )
+                        v5 = c4
+                        v6 = -c5
+                    
+                        #x[2,1,icum] =  c1         +im*(  c2   )
+                        v7 = c1
+                        v8 = c2
+
+                        #x[2,2,icum] =  -c3+sr3i*c8+im*(  0.0 )
+                        v9 =-c3+sr3i*c8
+                        v10 = 0.0
+
+                        #x[2,3,icum] =  c6         +im*( -c7   )
+                        v11 = c6
+                        v12 = -c7
+                    
+                        #x[3,1,icum] =  c4         +im*(  c5   )
+                        v13 = c4
+                        v14 = c5
+
+                        #x[3,2,icum] =  c6         +im*(  c7   )
+                        v15 = c6 
+                        v16 = c7
+                        #x[3,3,icum] =  -sr3i2*c8  +im*(  0.0 )
+                        v17 = -sr3i2*c8
+                        v18 = 0.0
+
                 
                 #c find eigenvalues of v
                         trv3 = (v1 + v9 + v17) / 3.0 
@@ -816,6 +979,100 @@ module Gaugefields_4D_wing_module
      wher   x = vin - Conjg(vin)      
 -----------------------------------------------------c
     """
+
+    #Q = -(1/2)*(Ω' - Ω) + (1/(2NC))*tr(Ω' - Ω)*I0_2
+    #Omega' - Omega = -2i imag(Omega)
+    function Traceless_antihermitian!(vout::Gaugefields_4D_wing{3},vin::Gaugefields_4D_wing{3}) 
+        #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
+        fac13 = 1/3
+        NX = vin.NX
+        NY = vin.NY
+        NZ = vin.NZ
+        NT = vin.NT
+    
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+                        v11 = vin[1,1,ix,iy,iz,it]
+                        v21 = vin[2,1,ix,iy,iz,it]
+                        v31 = vin[3,1,ix,iy,iz,it]
+
+                        v12 = vin[1,2,ix,iy,iz,it]
+                        v22 = vin[2,2,ix,iy,iz,it]
+                        v32 = vin[3,2,ix,iy,iz,it]
+
+                        v13 = vin[1,3,ix,iy,iz,it]
+                        v23 = vin[2,3,ix,iy,iz,it]
+                        v33 = vin[3,3,ix,iy,iz,it]
+
+    
+                        tri = fac13*(imag(v11)+imag(v22)+imag(v33))
+    
+                        #=
+                        vout[1,1,ix,iy,iz,it] = (imag(v11)-tri)*im
+                        vout[2,2,ix,iy,iz,it] = (imag(v22)-tri)*im
+                        vout[3,3,ix,iy,iz,it] = (imag(v33)-tri)*im
+                        =#
+                        y11 = (imag(v11)-tri)*im
+                        y22 = (imag(v22)-tri)*im
+                        y33 = (imag(v33)-tri)*im
+    
+                        
+    
+                        x12 = v12 - conj(v21)
+                        x13 = v13 - conj(v31)
+                        x23 = v23 - conj(v32)
+                    
+                        x21 = - conj(x12)
+                        x31 = - conj(x13)
+                        x32 = - conj(x23)
+    
+                        #=
+                        vout[1,2,ix,iy,iz,it] = 0.5  * x12
+                        vout[1,3,ix,iy,iz,it] = 0.5  * x13
+                        vout[2,1,ix,iy,iz,it] = 0.5  * x21
+                        vout[2,3,ix,iy,iz,it] = 0.5  * x23
+                        vout[3,1,ix,iy,iz,it] = 0.5  * x31
+                        vout[3,2,ix,iy,iz,it] = 0.5  * x32
+                        =#
+                        y12 = 0.5  * x12
+                        y13 = 0.5  * x13
+                        y21 = 0.5  * x21
+                        y23 = 0.5  * x23
+                        y31 = 0.5  * x31
+                        y32 =  0.5  * x32
+
+                        
+                        
+                        
+                        
+                        
+                        
+
+                        vout[1,1,ix,iy,iz,it] = y11
+                        vout[2,1,ix,iy,iz,it] = y21
+                        vout[3,1,ix,iy,iz,it] = y31
+
+                        vout[1,2,ix,iy,iz,it] = y12
+                        vout[2,2,ix,iy,iz,it] = y22
+                        vout[3,2,ix,iy,iz,it] = y32
+
+                        vout[1,3,ix,iy,iz,it] = y13
+                        vout[2,3,ix,iy,iz,it] = y23
+                        vout[3,3,ix,iy,iz,it] = y33
+
+
+                    end
+                end
+            end
+        end
+    
+    
+    end
+
+
+    #=
     function Traceless_antihermitian!(vout::Gaugefields_4D_wing{3},vin::Gaugefields_4D_wing{3})
         #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
         fac13 = 1/3
@@ -874,6 +1131,7 @@ module Gaugefields_4D_wing_module
         end
 
     end
+    =#
 
     function Traceless_antihermitian!(vout::Gaugefields_4D_wing{2},vin::Gaugefields_4D_wing{2})
         #error("Traceless_antihermitian! is not implemented in type $(typeof(vout)) ")
@@ -1186,16 +1444,16 @@ module Gaugefields_4D_wing_module
 
 
     function add_U!(c::Gaugefields_4D_wing{NC},α::N,a::T1) where {NC,T1 <: Abstractfields, N<:Number}
-        @inbounds for i=1:length(c.U)
-            c.U[i] += α*a.U[i]
-        end
-        return 
+        #@inbounds for i=1:length(c.U)
+        #    c.U[i] += α*a.U[i]
+        #end
+        #return 
 
         NT = c.NT
         NZ = c.NZ
         NY = c.NY
         NX = c.NX
-        for it=1:NT
+        @inbounds for it=1:NT
             for iz=1:NZ
                 for iy=1:NY
                     for ix=1:NX

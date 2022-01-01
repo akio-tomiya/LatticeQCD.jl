@@ -841,8 +841,8 @@ module MD
         NV = temp2_g.NV
 
         U,Uout_multi,dSdU = calc_smearingU(Uin,fparam.smearing,calcdSdU = true,temps = temps)
-        println("Uin ",Uin[1][1,1,1,1,1,1])
-        println("U ",U[1][1,1,1,1,1,1])
+        #println("Uin ",Uin[1][1,1,1,1,1,1])
+        #println("U ",U[1][1,1,1,1,1,1])
 
         WdagW = DdagD_operator(U,φ,fparam)
 
@@ -873,11 +873,11 @@ module MD
             vec_β = get_β_inverse(fparam.rhmc_MD)
             vec_α = get_α_inverse(fparam.rhmc_MD)
             α0 = get_α0_inverse(fparam.rhmc_MD)
-            println("φ ",φ[1,1,1,1,1,1])
+            #println("φ ",φ[1,1,1,1,1,1])
             shiftedcg(vec_x,vec_β,x,WdagW,φ,eps = fparam.eps,maxsteps= fparam.MaxCGstep)
             for j=1:N_MD
                 set_wing_fermion!(vec_x[j])
-                println("X ",vec_x[j][1,1,1,1,1,1])
+                #println("X ",vec_x[j][1,1,1,1,1,1])
                 if fparam.smearing != nothing && typeof(fparam.smearing) != Nosmearing
                     updateP_fermi_fromX_smearing!(Y,φ,vec_x[j],fparam,
                         p,mdparams,τ,U,Uout_multi,dSdU,Uin,
@@ -1059,11 +1059,11 @@ module MD
         if Y.Dirac_operator == "Staggered"
             updateP_fermi_fromX_smearing_Staggered!(Y,φ,X,fparam,
                 p,mdparams,τ,U,Uout_multi,dSdU,Uin,
-                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff=coeff)
         elseif findfirst("Wilson",Y.Dirac_operator) != nothing #Dirac_operator == "Wilson"
             updateP_fermi_fromX_smearing_Wilson!(Y,φ,X,fparam,
                 p,mdparams,τ,U,Uout_multi,dSdU,Uin,
-                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel)
+                temps,temp_a,temps_fermi;kind_of_verboselevel = kind_of_verboselevel,coeff=coeff)
         else
             error("Dirac_operator = $(Y.Dirac_operator) is not supported")
         end
@@ -1110,16 +1110,19 @@ module MD
             add_U!(dSdU[μ],temp3_g)
         end
 
-        println(dSdU[1][1,1,1,1,1,1])
+        #println(dSdU[1][1,1,1,1,1,1])
 
         if typeof(fparam.smearing) <: CovNeuralnet
-            dSdUnew = back_prop(dSdU,fparam.smearing,Uout_multi)
+            dSdUnew = back_prop(dSdU,fparam.smearing,Uout_multi,Uin)
         else
             error("$(typeof(fparam.smearing)) is not supported")
         end
 
-
-        error("stga")
+        println("dSdUnew[1][1,1,1,1,1,1] = ", dSdUnew[1][1,1,1,1,1,1])
+        println("dSdUnew[2][1,1,1,1,1,1] = ", dSdUnew[2][1,1,1,1,1,1])
+        println("dSdUnew[4][1,1,1,1,1,1] = ", dSdUnew[4][:,:,1,1,1,1])
+        
+        #=
 
         if typeof(fparam.smearing) <: SmearingParam_single
             dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
@@ -1128,12 +1131,27 @@ module MD
         else
             error("$(typeof(fparam.smearing)) is not supported")
         end
+        =#
+
+        println("p[1][1,1,1,1,1] = ",p[1][1,1,1,1,1])
+        println("p[2][:,2,2,2,2] = ",p[2][:,2,2,2,2])
+        println("-0.5*τ*mdparams.Δτ*coeff ", -0.5*τ*mdparams.Δτ*coeff)
+        println("-0.5 $τ $(mdparams.Δτ) $coeff ")
+
+
 
         for μ=1:Dim
+            #println("Uin[μ] = ",Uin[μ][:,:,1,1,1,1])
             mul!(temp2_g,Uin[μ],dSdUnew[μ])
+            #println("temp2_g = ",temp2_g[:,:,1,1,1,1])
 
             Traceless_antihermitian_add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,temp2_g)
         end
+
+        println("p[1][1,1,1,1,1] = ",p[1][1,1,1,1,1])
+        println("p[2][:,2,2,2,2] = ",p[2][:,2,2,2,2])
+
+        error("stga")
         return
 
 

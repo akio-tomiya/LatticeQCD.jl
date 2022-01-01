@@ -25,6 +25,13 @@ module AbstractGaugefields_module
         Adjoint_Gaugefields{T}(U)
     end
 
+    abstract type Unit_Gaugefield{NC,Dim} <: Abstractfields
+    end
+
+    function Base.adjoint(U::Unit_Gaugefield) where T <: Unit_Gaugefield
+        return U
+    end
+
     abstract type Shifted_Gaugefields{NC,Dim} <: Abstractfields
     end
 
@@ -44,10 +51,23 @@ module AbstractGaugefields_module
         error("type $(typeof(U)) has no setindex method. This type is read only.")
     end
 
+    function Base.setindex!(U::T,v...)  where T <:  Unit_Gaugefield
+        error("type $(typeof(U)) has no setindex method. This type is read only.")
+    end
+
 
 
     include("./4D/gaugefields_4D.jl")
     include("TA_Gaugefields.jl")
+
+    function LinearAlgebra.mul!(C,A::T,B) where T <: Unit_Gaugefield
+        substitute_U!(C,B)
+    end
+
+    function LinearAlgebra.mul!(C,A,B::T) where T <: Unit_Gaugefield
+        substitute_U!(C,A)
+    end   
+    
 
     function Staggered_Gaugefields(u::AbstractGaugefields{NC,Dim}) where {NC,Dim}
         if Dim == 4
@@ -65,12 +85,12 @@ module AbstractGaugefields_module
         error("similar! is not implemented in type $(typeof(U)) ")
     end
 
-    function substitute_U!(a::Array{T,1},b::Array{T,1}) where T <: AbstractGaugefields
-        error("substitute_U! is not implemented in type $(typeof(a)) ")
+    function substitute_U!(a::Array{T1,1},b::Array{T2,1}) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+        error("substitute_U! is not implemented in type $(typeof(a)) and $(typeof(b))")
     end
 
-    function substitute_U!(a::T,b::T) where T <: AbstractGaugefields
-        error("substitute_U! is not implemented in type $(typeof(a)) ")
+    function substitute_U!(a::T1,b::T2) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+        error("substitute_U! is not implemented in type $(typeof(a)) and $(typeof(b))")
         return 
     end
 
@@ -178,6 +198,16 @@ module AbstractGaugefields_module
         end
     end
 
+    function unit_U!(U::T) where T <: AbstractGaugefields
+        error("unit_U! is not implemented in type $(typeof(U)) ")
+    end
+
+    function unit_U!(U::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim}
+        for μ=1:Dim
+            unit_U!(U[μ])
+        end
+    end
+
     
     function shift_U(U::AbstractGaugefields{NC,Dim},ν) where {NC,Dim}
         error("shift_U is not implemented in type $(typeof(U)) ")
@@ -199,12 +229,107 @@ module AbstractGaugefields_module
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
     end
 
+    function evaluate_gaugelinks!(uout::T,w::Wilsonline{Dim},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
 
-    function evaluate_gaugelinks!(xout::T,w::Array{<:Wilsonline{Dim}},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
+        #Uold = temps[1]
+        Unew = temps[1]
+        #Utemp2 = temps[2]
+        #clear_U!(uout)
+
+        glinks = w
+        numlinks = length(glinks)
+        if numlinks == 0
+            unit_U!(uout)
+            return
+        end
+
+        j = 1    
+        U1link = glinks[1]
+        direction = get_direction(U1link)
+        position = get_position(U1link)
+        isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
+
+        #show(glinks)   
+        #println("in evaluate_gaugelinks!")
+        #show(w)
+        #println("numlinks = $numlinks")
+        if numlinks == 1
+            substitute_U!(Unew,U[direction])
+            Ushift1 = shift_U(Unew,position)
+            if isU1dag 
+                #println("Ushift1 ",Ushift1'[1,1,1,1,1,1])
+                substitute_U!(uout,Ushift1')
+            else
+                substitute_U!(uout,Ushift1)
+            end
+            return
+        end
+
+        #j = 1    
+        #U1link = glinks[1]
+        #direction = get_direction(U1link)
+        #position = get_position(U1link)
+        #println("i = $i j = $j position = $position")
+        substitute_U!(Unew,U[direction])
+        Ushift1 = shift_U(Unew,position)
+
+        #ix,iy,iz,it=(2,2,2,2)
+        #println("posotion = $position")
+        #pos = Tuple([ix,iy,iz,it] .+ collect(position))
+        #U1 = Unew[:,:,pos...]
+        #println("U1, ",Unew[:,:,pos...])
+        #isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
+
+        
+
+
+        for j=2:numlinks
+            Ujlink = glinks[j]
+            isUkdag = ifelse(typeof(Ujlink) <: Adjoint_GLink,true,false)
+            position = get_position(Ujlink)
+            direction = get_direction(Ujlink)
+            #println("j = $j position = $position")
+            #println("a,b, $isUkdag , $isU1dag")
+            Ushift2 = shift_U(U[direction],position)
+            multiply_12!(uout,Ushift1,Ushift2,j,isUkdag,isU1dag)
+
+            #pos = Tuple([ix,iy,iz,it] .+ collect(position))
+            #U2 = U[direction][:,:,pos...]
+            #println("U1U2dag ", U1*U2')
+            substitute_U!(Unew,uout)
+            
+            #println("Unew ", Unew[:,:,ix,iy,iz,it])
+
+            Ushift1 = shift_U(Unew,(0,0,0,0))
+            #println("uout ", uout[:,:,ix,iy,iz,it])
+        end
+
+
+        #println("uout2 ", uout[:,:,ix,iy,iz,it])
+        
+        
+    end
+
+    function evaluate_gaugelinks!(xout::T,w::Array{<:Wilsonline{Dim},1},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
         num = length(w)
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        #ix,iy,iz,it=(2,2,2,2)
+        
         clear_U!(xout)
-        Uold = temps[1]
-        Unew = temps[2]
+        for i=1:num
+            glinks = w[i]
+            evaluate_gaugelinks!(temp2,glinks,U,[temp1])
+            #println("uout2 ", temp2[:,:,ix,iy,iz,it])
+            add_U!(xout,temp2)
+            #println("xout ", xout[:,:,ix,iy,iz,it])
+        end
+
+        #println("xout2 ", xout[:,:,ix,iy,iz,it])
+        return
+
+
         for i=1:num
             glinks = w[i]
             numlinks = length(glinks)
@@ -732,15 +857,18 @@ module AbstractGaugefields_module
         Unδn = tempmatrices[1]
         tmp_matrix1 = tempmatrices[2]
         tmp_matrix2 = tempmatrices[3]
+        #println("Qn ", Qn)
         trQ2 = 0.0
         for i=1:3
             for j=1:3
                 trQ2 += Qn[i,j]*Qn[j,i]
             end
         end
+        #println("tr", trQ2)
 
         if abs(trQ2) > eps_Q
             Qn ./= im
+            #println("Qn b ",Qn)
             f0,f1,f2,b10,b11,b12,b20,b21,b22 = calc_coefficients_Q(Qn)
             for i=1:3
                 for j=1:3
@@ -748,6 +876,7 @@ module AbstractGaugefields_module
                 end
             end
             mul!(Unδn,tmp_matrix1,δn_prev)
+            
             B1 = tmp_matrix1
             B1 .= 0
             B2 = tmp_matrix2
@@ -766,6 +895,9 @@ module AbstractGaugefields_module
                     end
                 end
             end
+            #println("coeff, ",(f0,f1,f2,b10,b11,b12,b20,b21,b22))
+            #println("B1 ",B1)
+            #println("B2 ",B2)
 
             trB1 = 0.0
             trB2 = 0.0

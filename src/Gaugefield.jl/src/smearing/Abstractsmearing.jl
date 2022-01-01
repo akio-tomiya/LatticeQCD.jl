@@ -5,8 +5,8 @@ module Abstractsmearing_module
     import ..AbstractGaugefields_module:AbstractGaugefields,Abstractfields,initialize_TA_Gaugefields,add_force!,
                         exp_aF_U!,clear_U!,add_U!,evaluate_wilson_loops!,exptU!,
                         Traceless_antihermitian_add!,set_wing_U!,Traceless_antihermitian,evaluate_gaugelinks!,
-                        construct_Λmatrix_forSTOUT!,Traceless_antihermitian!
-    import Wilsonloop:Wilsonline,DwDU,make_loopforactions,make_Cμ,derive_U,derive_Udag
+                        construct_Λmatrix_forSTOUT!,Traceless_antihermitian!,shift_U
+    import Wilsonloop:Wilsonline,DwDU,make_loopforactions,make_Cμ,derive_U,derive_Udag,get_leftlinks,get_rightlinks
 
     abstract type Abstractsmearing end
 
@@ -110,7 +110,7 @@ module Abstractsmearing_module
         error("apply_smearing_U is not implemented in type $(typeof(Uin)) and smearing type $(typeof(smearing))")
     end
 
-    function back_prop(δL,net::CovNeuralnet{Dim},Uout_multi) where Dim
+    function back_prop(δL,net::CovNeuralnet{Dim},Uout_multi,Uin) where Dim
         temps = similar(Uout_multi[1])
         temps_F1 = initialize_TA_Gaugefields(temps[1])
         tempf = [temps_F1]
@@ -118,11 +118,16 @@ module Abstractsmearing_module
         layer = net.layers[net.numlayers]
         δ_prev = similar(δL)
         δ_current = deepcopy(δL)
+        set_wing_U!(δ_current)
         
-        for i=net.numlayers:-1:1
-            layer_pullback!(δ_prev,δ_current,layer,Uout_multi[i],temps,tempf)
+        for i=net.numlayers:-1:2
+            layer_pullback!(δ_prev,δ_current,layer,Uout_multi[i-1],temps,tempf)
             δ_current,δ_prev = δ_prev,δ_current
+            #set_wing_U!(δ_current)
         end
+        layer = net.layers[1]
+        layer_pullback!(δ_prev,δ_current,layer,Uin,temps,tempf)
+        δ_current,δ_prev = δ_prev,δ_current
     
         return δ_current
     end

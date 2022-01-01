@@ -198,6 +198,8 @@ function Traceless_antihermitian_add!(c::TA_Gaugefields_4D_serial{3,NumofBasis},
                     c[8,ix,iy,iz,it] = sr3i *
                             ( imag(y11) + imag(y22) -
                                     2*imag(y33) )*factor  + c[8,ix,iy,iz,it] 
+
+                                   
                 end
             end
         end
@@ -451,7 +453,7 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{NC,NumofBasis},temps::A
 
     u0 = zeros(ComplexF64,NC,NC)
     a = zeros(Float64,length(g))
-    for it=1:NT
+    @inbounds for it=1:NT
         for iz=1:NZ
             for iy=1:NY
                 for ix=1:NX
@@ -479,7 +481,7 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{3,NumofBasis},temps::Ar
     
 
 
-    for it=1:NT
+    @inbounds for it=1:NT
         for iz=1:NZ
             for iy=1:NY
                 for ix=1:NX
@@ -694,7 +696,7 @@ function exptU!(uout::T,t::N,u::TA_Gaugefields_4D_serial{2,NumofBasis},temps::Ar
     NX = u.NX
 
 
-    for it=1:NT
+    @inbounds for it=1:NT
         for iz=1:NZ
             for iy=1:NY
                 for ix=1:NX

@@ -3947,6 +3947,11 @@ c-----------------------------------------------------c
             
                             #println("Λ")
                             calc_Λmatrix!(Λ,M,NC)
+                            #println((ix1,iy1,iz1,it1))
+                            println("Λ ", Λ)
+                            #error("err")
+                            #end
+                            
                             #@time Λ = calc_Λmatrix(M,NC)
                             #@time Umu = U[nu][:,:,ix1,iy1,iz1,it1]
                             #@time Vtmp = ρs[i]*rightmatrix*Umu'*Λ*leftmatrix
