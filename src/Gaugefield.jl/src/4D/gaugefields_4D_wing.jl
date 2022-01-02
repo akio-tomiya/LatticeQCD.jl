@@ -1150,7 +1150,7 @@ module Gaugefields_4D_wing_module
                         v11 = vin[1,1,ix,iy,iz,it]
                         v22 = vin[2,2,ix,iy,iz,it]
 
-                        tri = fac12*(imag(v11)+imag(v22))
+                        tri = (imag(v11)+imag(v22))*0.5
 
                         
 
