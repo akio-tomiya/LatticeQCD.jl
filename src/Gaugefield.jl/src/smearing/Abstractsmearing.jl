@@ -60,7 +60,7 @@ module Abstractsmearing_module
     function calc_smearedU(Uin::Array{T,1},smearing;calcdSdU = false,temps = nothing) where T<: AbstractGaugefields
         if smearing != nothing && typeof(smearing) != Nosmearing
             #println(smearing)
-            println(typeof(smearing))
+            #println(typeof(smearing))
             Uout_multi = apply_smearing_U(Uin,smearing)
             U = Uout_multi[end]
 

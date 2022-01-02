@@ -1091,7 +1091,7 @@ module MD
             Xplus = shift_fermion(X,μ)
             Us = staggered_U(U[μ],μ)
             mul!(temp0_f,Us,Xplus)
-            println(temp0_f[1,1,1,1,1,1])
+            #println(temp0_f[1,1,1,1,1,1])
 
             #U_{k,μ} X_{k+μ}) ⊗ Y_k
             mul!(temp2_g,temp0_f,Y') 
@@ -1118,27 +1118,6 @@ module MD
             error("$(typeof(fparam.smearing)) is not supported")
         end
 
-        println("dSdUnew[1][1,1,1,1,1,1] = ", dSdUnew[1][1,1,1,1,1,1])
-        println("dSdUnew[2][1,1,1,1,1,1] = ", dSdUnew[2][1,1,1,1,1,1])
-        println("dSdUnew[4][1,1,1,1,1,1] = ", dSdUnew[4][:,:,1,1,1,1])
-        
-        #=
-
-        if typeof(fparam.smearing) <: SmearingParam_single
-            dSdUnew,_ = stoutfource(dSdU,Uin,fparam.smearing) 
-        elseif typeof(fparam.smearing) <: SmearingParam_multi
-            dSdUnew,_ = stoutfource(dSdU,Uout_multi,Uin,fparam.smearing) 
-        else
-            error("$(typeof(fparam.smearing)) is not supported")
-        end
-        =#
-
-        println("p[1][1,1,1,1,1] = ",p[1][1,1,1,1,1])
-        println("p[2][:,2,2,2,2] = ",p[2][:,2,2,2,2])
-        println("-0.5*τ*mdparams.Δτ*coeff ", -0.5*τ*mdparams.Δτ*coeff)
-        println("-0.5 $τ $(mdparams.Δτ) $coeff ")
-
-
 
         for μ=1:Dim
             #println("Uin[μ] = ",Uin[μ][:,:,1,1,1,1])
@@ -1148,20 +1127,97 @@ module MD
             Traceless_antihermitian_add!(p[μ],-0.5*τ*mdparams.Δτ*coeff,temp2_g)
         end
 
-        println("p[1][1,1,1,1,1] = ",p[1][1,1,1,1,1])
-        println("p[2][:,2,2,2,2] = ",p[2][:,2,2,2,2])
 
-        error("stga")
         return
 
 
     end
 
-    function  updateP_fermi_fromX_smearing_Wilson!(Y::F,φ::F,X::F,fparam,
+    function  updateP_fermi_fromX_smearing_Wilson!(Y::F,φ::F,X::AbstractFermionfields{NC,Dim},fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T2,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
-        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields}
-        error("updateP_fermi_fromX_smearing_Wilson! is not implemented")
+        ) where {F <: AbstractFermionfields, T<: AbstractGaugefields,N<: TA_Gaugefields,T2 <: AbstractGaugefields,NC,Dim}
+
+        temp0_f = temps_fermi[1] #F_field
+        temp1_f = temps_fermi[2] #F_field
+        temp2_g = temps[1] #G_field1
+        temp3_g = temps[2] #G_field1
+        c = temp_a[1]
+        NV = temp2_g.NV
+
+        W = Dirac_operator(U,φ,fparam)
+        mul!(Y,W,X)
+        set_wing_fermion!(Y)
+
+        for μ=1:Dim
+            #!  Construct U(x,mu)*P1
+
+            # U_{k,μ} X_{k+μ}
+            Xplus = shift_fermion(X,μ)
+            mul!(temp0_f,U[μ],Xplus)
+            
+            
+            # (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp1_f,view(X.rminusγ,:,:,μ),temp0_f)
+            
+            # κ (r-γ_μ) U_{k,μ} X_{k+μ}
+            mul!(temp0_f,X.hopp[μ],temp1_f)
+
+            # κ ((r-γ_μ) U_{k,μ} X_{k+μ}) ⊗ Y_k
+            mul!(temp2_g,temp0_f,Y') 
+            #vvmat!(temp2_g,temp1_f,Y,1)
+            mul!(dSdU[μ],U[μ]',temp2_g) #additional term
+
+
+            #Traceless_antihermitian_add!(p[μ],τ*mdparams.Δτ,temp2_g)
+
+            #!  Construct P2*U_adj(x,mu)
+            # Y_{k+μ}^dag U_{k,μ}^dag
+            Yplus = shift_fermion(Y,μ)
+            mul!(temp0_f,Yplus',U[μ]')
+
+            # Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp1_f,temp0_f,view(X.rplusγ,:,:,μ))
+ 
+            # κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp0_f,X.hopm[μ],temp1_f)
+
+            # X_k ⊗ κ Y_{k+μ}^dag U_{k,μ}^dag*(r+γ_μ)
+            mul!(temp2_g,X,temp0_f) 
+
+            #add_U!(dSdU[μ],temp2_g)
+            mul!(temp3_g,U[μ]',temp2_g)
+            add_U!(dSdU[μ],-1,temp3_g)
+
+            #Traceless_antihermitian_add!(p[μ],-τ*mdparams.Δτ,temp2_g)
+
+            if typeof(fparam) == FermiActionParam_WilsonClover
+                error("not implemented yet.")
+                dSclover!(c,μ,X,Y,U,fparam,temps)
+                add!(p[μ],-τ*mdparams.Δτ,c)
+                
+            end
+
+        end
+
+        if typeof(fparam.smearing) <: CovNeuralnet
+            dSdUnew = back_prop(dSdU,fparam.smearing,Uout_multi,Uin)
+        else
+            error("$(typeof(fparam.smearing)) is not supported")
+        end
+
+        for μ=1:Dim
+            #println("Uin[μ] = ",Uin[μ][:,:,1,1,1,1])
+            mul!(temp2_g,Uin[μ],dSdUnew[μ])
+            #println("temp2_g = ",temp2_g[:,:,1,1,1,1])
+
+            Traceless_antihermitian_add!(p[μ],τ*mdparams.Δτ*coeff,temp2_g)
+        end
+
+
+
+
+        #error("updateP_fermi_fromX_smearing_Wilson! is not implemented")
     end
 
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
