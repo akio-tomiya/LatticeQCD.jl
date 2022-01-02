@@ -107,6 +107,47 @@ module Heatbath
         
     end
 
+    function heatbath!(u::Array{<: AbstractGaugefields{NC,Dim},1},ranf,gparam::GaugeActionParam,temps::Array{<: AbstractGaugefields{NC,Dim},1}) where {NC,Dim}
+        beta = gparam.β
+        ITERATION_MAX = 10^5
+        temp1 = temps[1]
+        temp2 = temps[2]
+        V = temps[3]
+
+        mapfunc!(A,B) = SUNupdate_matrix!(A,B,beta,NC,ITERATION_MAX)
+
+
+        for μ=1:Dim
+            if typeof(gparam) == GaugeActionParam_standard
+                #loops = make_plaq_staple(μ)
+                #println(loops)
+                loops = loops_staple[(Dim,μ)]
+                #show(loops)
+
+            end
+
+            iseven = true
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+
+            #normalize!(u[μ])
+            
+
+            iseven = false
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+            #normalize!(u[μ])
+            
+        end
+        
+    end
+
     function heatbath!(u,ranf,gparam::GaugeActionParam,temps) 
         error("heatbath! is not implemented with type $(typeof(u))")
     end
@@ -214,6 +255,55 @@ module Heatbath
         normalize3!(AU)
         u[:,:] = AU[:,:]
         #u[mu][:,:,ix,iy,iz,it] = AU
+    end
+
+    function SUNupdate_matrix!(u,V,beta,NC,ITERATION_MAX)
+        for l=1:NC
+            #for l=1:2NC
+            
+
+            UV = u[:,:]*V
+
+            n = rand(1:NC-1)#l
+            m = rand(n:NC)
+            while(n==m)
+                m = rand(n:NC)
+            end
+            
+            #=
+            if l < NC
+                n = l
+                m = l+1
+            else
+                n = rand(1:NC)#l
+                m = rand(1:NC)
+                while(n==m)
+                    m = rand(1:NC)
+                end
+            end
+            =#
+
+
+
+            S = make_submatrix(UV,n,m)
+            #gramschmidt_special!(S)
+            project_onto_SU2!(S)
+
+            K = SU2update_KP(S,beta,NC,ITERATION_MAX)
+
+
+            A = make_largematrix(K,n,m,NC)
+
+            AU = A*u[:,:]
+
+            u[:,:] = AU
+            #println("det U ",det(AU))
+
+        end
+
+        AU = u[:,:]
+        normalizeN!(AU)
+        u[:,:] = AU
     end
 
     function SU2update_KP!(Unew,V,beta,NC,ITERATION_MAX = 10^5)

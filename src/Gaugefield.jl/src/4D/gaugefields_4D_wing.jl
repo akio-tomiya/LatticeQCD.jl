@@ -1603,6 +1603,33 @@ module Gaugefields_4D_wing_module
         end
     end
 
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing{NC},a::T1,b::T2,iseven::Bool) where {NC,T1 <: Abstractfields,T2 <: Abstractfields}
+        @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        @inbounds for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+                            for k2=1:NC                            
+                                for k1=1:NC
+                                    c[k1,k2,ix,iy,iz,it] = 0
+                                    @simd for k3=1:NC
+                                        c[k1,k2,ix,iy,iz,it] += a[k1,k3,ix,iy,iz,it]*b[k3,k2,ix,iy,iz,it]
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     function LinearAlgebra.mul!(c::Gaugefields_4D_wing{NC},a::T1,b::T2) where {NC,T1 <: Number,T2 <: Abstractfields}
         @assert NC != 2 && NC != 3 "This function is for NC != 2,3"
         @inbounds for i=1:length(c)
