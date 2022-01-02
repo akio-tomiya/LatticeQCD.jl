@@ -804,6 +804,14 @@ git-tree-sha1 = "66d72dc6fcc86352f01676e8f0f698562e60510f"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
 version = "1.23.0+0"
 
+[[Wilsonloop]]
+deps = ["LaTeXStrings", "LinearAlgebra"]
+git-tree-sha1 = "d25537820df96b6d5365858e22bf26c447a944ed"
+repo-rev = "master"
+repo-url = "https://github.com/akio-tomiya/Wilsonloop.jl"
+uuid = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
+version = "0.1.0"
+
 [[XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "1acf5bdf07aa0907e0a37d3718bb88d4b687b74a"
