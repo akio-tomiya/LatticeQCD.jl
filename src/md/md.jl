@@ -14,17 +14,23 @@ module MD
     import ..LTK_universe:Universe,calc_Action,gauss_distribution,make_WdagWmatrix,set_β!,
                 calc_IntegratedFermionAction,construct_fermion_gauss_distribution!,
                 construct_fermionfield_φ!,construct_fermionfield_η!
+                #=
     import ..Gaugefields:GaugeFields,substitute!,SU3GaugeFields,set_wing!,
                             projlink!,make_staple_double!,
                             GaugeFields_1d,SU3GaugeFields_1d,SU2GaugeFields_1d,calc_Plaq_notrace_1d,
                             calc_GaugeAction,apply_smearing,calc_smearingU
     import ..Gaugefields
+    =#
+
+    #=
+
     import ..LieAlgebrafields:gauss_distribution_lie!,LieAlgebraFields,SU3AlgebraFields,SU2AlgebraFields,
                                 Gauge2Lie!,add!,add_gaugeforce!,expA!,stoutfource
     import ..Fermionfields:gauss_distribution_fermi!,set_wing_fermi!,Wdagx!,vvmat!,
             FermionFields,fermion_shift!,WilsonFermion, fermion_shiftB!,
             StaggeredFermion,Wx!,clear!,WdagWx!,substitute_fermion!
     #using ..Fermionfields
+    =#
     import ..Heatbath:heatbath!
     import ..Gaugefield:AbstractGaugefields,exptU!,substitute_U!,set_wing_U!,
                         add_force!,TA_Gaugefields,staggered_U,clear_U!,
@@ -36,14 +42,14 @@ module MD
 
 
     #import ..CGfermion:cg0!,cg0_WdagW!,shiftedcg0_WdagW!
-    import ..Clover:Make_CloverFμν!,dSclover!
+    import ..Fermionfield_LQCD:Make_CloverFμν!,dSclover!
     import ..System_parameters:Params
 
     import ..Fermionfield_LQCD:Wilson_operator,Adjoint_Wilson_operator,WilsonClover_operator,
                 Dirac_operator,DdagD_operator
     import ..Fermionfield_LQCD:bicg,cg,shiftedcg
-    import ..RationalApprox:calc_exactvalue,calc_Anϕ
-    import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+    #import ..RationalApprox:calc_exactvalue,calc_Anϕ
+    import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse,calc_exactvalue,calc_Anϕ
 
 
     abstract type MD_parameters end
@@ -523,7 +529,7 @@ module MD
 
 
 
-
+#=
     function updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -598,7 +604,9 @@ module MD
         
 
     end
+    =#
 
+    #=
     function updateP_fermi_fromX_smearing!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -688,7 +696,9 @@ module MD
         
 
     end
+    =#
 
+    #=
     function  updateP_fermi_fromX!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
@@ -746,7 +756,9 @@ module MD
         return
 
     end
+    =#
 
+    #=
     function  updateP_fermi_fromX_smearing!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,U::Array{T,1},Uout_multi,dSdU,Uin,
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2(),coeff=1
@@ -810,6 +822,7 @@ module MD
         return
 
     end
+    =#
 
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
@@ -1220,6 +1233,7 @@ module MD
         #error("updateP_fermi_fromX_smearing_Wilson! is not implemented")
     end
 
+    #=
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -1256,8 +1270,10 @@ module MD
         return
 
     end
+    =#
 
 
+    #=
     function updateP_fermi!(Y::F,φ::F,X::F,fparam,
         p::Array{N,1},mdparams::MD_parameters,τ,Uin::Array{T,1},
         temps::Array{T_1d,1},temp_a::Array{N,1},temps_fermi;kind_of_verboselevel = Verbose_2()
@@ -1318,6 +1334,7 @@ module MD
         return
 
     end
+    =#
 
 
     function updateP!(univ::Universe,mdparams::MD_parameters,τ)
@@ -1326,6 +1343,7 @@ module MD
         return
     end
 
+    #=
     function updateP!(p::Array{N,1},factor,τ,U::Array{T,1},temps::Array{T_1d,1},temp_a::N,gparam::GaugeActionParam_autogenerator) where {T<: GaugeFields,N<: LieAlgebraFields,T_1d <: GaugeFields_1d} 
         add_gaugeforce!(p,U,temps,temp_a,gparam,fac = τ*factor)
         return
@@ -1336,12 +1354,14 @@ module MD
         
         return
     end
+    =#
 
     function updateU!(univ::Universe,mdparams::MD_parameters,τ)
         updateU!(univ.U,mdparams,τ,univ.p,univ._temporal_gauge,univ._temporal_algebra[1])
         return
     end
 
+    #=
     function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps,temp_a::N) where {N<: LieAlgebraFields}  
         temp1 = temps[1]
         temp2 = temps[2]
@@ -1370,6 +1390,7 @@ module MD
         end
         
     end
+    =#
 
     #function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N<: LieAlgebraFields,T_1d <: GaugeFields_1d}  
     function updateU!(U,mdparams::MD_parameters,τ,p::Array{N,1},temps::Array{T_1d,1},temp_a::N) where {N,T_1d}  

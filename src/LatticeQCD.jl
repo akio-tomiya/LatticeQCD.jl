@@ -6,12 +6,12 @@ module LatticeQCD
 
     #include("./SLMC/logdet.jl")
 
-    include("./rhmc/AlgRemez.jl")
-    include("./rhmc/rhmc.jl")
+    ## include("./rhmc/AlgRemez.jl")
+    ## include("./rhmc/rhmc.jl")
 
-    include("./gaugefields/SUN_generator.jl")
+    ## include("./gaugefields/SUN_generator.jl")
     include("./output/verboseprint.jl")
-    include("./fermions/cgmethod.jl")
+    #include("./fermions/cgmethod.jl")
 
 
     #include("./autostaples/wilsonloops.jl")
@@ -31,25 +31,25 @@ module LatticeQCD
     
    
     #include("./gauge_fields/Loops.jl")
-    include("./gaugefields/gaugefields.jl")
+    ## include("./gaugefields/gaugefields.jl")
     
     
     
     #include("gaugefields.jl")
-    include("./fermions/AbstractFermion.jl")
-    include("./fermions/WilsonFermion.jl")
-    include("./fermions/DomainwallFermion.jl")
-    include("./fermions/StaggeredFermion.jl")
-    include("./fermions/fermionfields.jl")
-    include("./liealgebra/liealgebrafields.jl")
+    ## include("./fermions/AbstractFermion.jl")
+    ## include("./fermions/WilsonFermion.jl")
+    ## include("./fermions/DomainwallFermion.jl")
+    ## include("./fermions/StaggeredFermion.jl")
+    ## include("./fermions/fermionfields.jl")
+    ## include("./liealgebra/liealgebrafields.jl")
 
-    include("./rationalapprox/rationalapprox.jl")
+    #include("./rationalapprox/rationalapprox.jl")
 
     
-    include("./fermions/clover.jl")
+    ## include("./fermions/clover.jl")
     
-    include("./fermions/diracoperator.jl")
-    include("./fermions/misc.jl")
+    ## include("./fermions/diracoperator.jl")
+    ## include("./fermions/misc.jl")
 
 
     #include("./output/io.jl")
@@ -58,7 +58,7 @@ module LatticeQCD
     
 
     include("./system/LTK_universe.jl")
-    include("./gaugefields/smearing.jl")
+    ## include("./gaugefields/smearing.jl")
 
 
     include("./output/print_config.jl")
@@ -101,6 +101,8 @@ module LatticeQCD
             import .Analyze:plot_plaquette,plot_polyakov,plot_plaq_and_poly
             export plot_plaquette,plot_polyakov,plot_plaq_and_poly
         end
+
+
     end
     
     
@@ -113,14 +115,14 @@ module LatticeQCD
     import  .MD:md_initialize!,MD_parameters_standard,md!,metropolis_update!,construct_MD_parameters
     import .System_parameters:Params,print_parameters,parameterloading,Params_set,make_parameters#,parameterloading2
     import .Print_config:write_config
-    import .Smearing:gradientflow!
+    import .Gaugefield:gradientflow!
     import .Gaugefield:ILDG,load_gaugefield
     import .Heatbath:heatbath!
     import .Gaugefield:make_plaq
     import .Gaugefield:saveU,loadU,loadU!
     import .Wizard:run_wizard
     import .Mainrun:run_LQCD
-    import .RationalApprox:calc_exactvalue,calc_Anϕ,calc_det
+    import .Fermionfield_LQCD:calc_exactvalue,calc_Anϕ,calc_det
     #,run_LQCD!
 
     import .Analyze:analyze,get_plaquette,get_polyakov,get_plaquette_average,get_polyakov_average,get_trjs

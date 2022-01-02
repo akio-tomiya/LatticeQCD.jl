@@ -9,7 +9,8 @@ module Measure_topological_charge_module
             print_verbose1,print_verbose2,print_verbose3
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
     import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,get_tempG,get_eps,flow!
-    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
+
+    #import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
 
 

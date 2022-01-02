@@ -1,5 +1,6 @@
 module Gaugefield
     #include("../../Wilsonloops/src/Wilsonloops.jl")
+    using Requires
 
     
     include("./output/verboseprint.jl")
@@ -10,6 +11,17 @@ module Gaugefield
     include("./output/ildg_format.jl")
     include("./autostaples/Loops.jl")
     include("./smearing/Abstractsmearing.jl")
+
+    function __init__()
+        @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin   
+            import .AbstractGaugefields_module:identityGaugefields_4D_wing_mpi,
+                    Gaugefields_4D_wing_mpi,calc_rank_and_indices,barrier,comm,
+                    setvalue!
+        end
+    end
+
+
+
     import Wilsonloop:loops_staple_prime
     
 
@@ -17,8 +29,6 @@ module Gaugefield
     import .AbstractGaugefields_module:AbstractGaugefields,identitymatrix,Abstractfields,
                                         shift_U,construct_staple!,set_wing_U!,
                                         calculate_Plaquette,substitute_U!,calculate_Polyakov_loop,construct_gauges,
-                                        Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
-                                        calc_rank_and_indices,barrier,comm,setvalue!,
                                         Gaugefields_4D_wing,
                                         identityGaugefields_4D_wing,
                                         add_force!,exp_aF_U!,clear_U!,add_U!,exptU!,
@@ -49,5 +59,6 @@ module Gaugefield
     print_verbose1,print_verbose2,print_verbose3
     import .ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import .IOmodule:saveU,loadU,loadU!
+    import .SUN_generator:Generator
     
 end

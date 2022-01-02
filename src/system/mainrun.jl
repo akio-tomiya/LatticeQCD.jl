@@ -9,7 +9,7 @@ module Mainrun
     import  ..MD:md_initialize!,MD_parameters_standard,md!,metropolis_update!,construct_MD_parameters
     import ..System_parameters:Params,print_parameters,parameterloading,Params_set#,parameterloading2
     import ..Print_config:write_config
-    import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
+    #import ..Smearing:gradientflow!,calc_fatlink_APE,calc_stout
     import ..Gaugefield:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     #import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
     import ..Heatbath:heatbath!,overrelaxation!
@@ -17,7 +17,7 @@ module Mainrun
     #import ..IOmodule:saveU,loadU,loadU!
     import ..Gaugefield:saveU,loadU,loadU!
     import ..SLMC:SLMC_data,show_effbeta,update_slmcdata!
-    import ..Gaugefields:calc_GaugeAction
+    #import ..Gaugefields:calc_GaugeAction
 
     import ..Actions:GaugeActionParam_standard,
                     GaugeActionParam,

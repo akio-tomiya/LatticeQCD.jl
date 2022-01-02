@@ -13,7 +13,7 @@ module Measure_chiral_condensate_module
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,calc_loopset_μν_name            
     import ..Gaugefield:Loops,evaluate_loops,TA_Gaugefields,calc_smearedU
     import ..Fermionfield_LQCD:Dirac_operator
-    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
+    #import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     #import ..Actions:GaugeActionParam_autogenerator,GaugeActionParam
     import ..Fermionfield_LQCD:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
                 FermiActionParam,clear_fermion!,Z4_distribution_fermion!,bicg

@@ -1687,7 +1687,7 @@ evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
                         if evenodd == iseven
 =#
 
-    function LinearAlgebra.mul!(c::Gaugefields_4D_wing{2},a::T1,b::T2,iseven) where {T1 <: Abstractfields,T2 <: Abstractfields}
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing{2},a::T1,b::T2,iseven::Bool) where {T1 <: Abstractfields,T2 <: Abstractfields}
         NT = c.NT
         NZ = c.NZ
         NY = c.NY

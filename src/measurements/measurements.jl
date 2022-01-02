@@ -3,6 +3,7 @@ module Measurements
     using SparseArrays
     using KrylovKit
     import ..LTK_universe:Universe,make_WdagWmatrix,calc_IntegratedFermionAction
+    #=
     import ..Gaugefields:GaugeFields,set_wing!,substitute!,
             make_staple!,calc_Plaq!,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
@@ -10,17 +11,20 @@ module Measurements
             SUNGaugeFields,SUNGaugeFields_1d,
             Loops,evaluate_loops!,evaluate_loops,
             U1GaugeFields,U1GaugeFields_1d,calc_smearingU
+            =#
+    #=
     import ..Fermionfields:clear!,FermionFields,WilsonFermion
     import ..Fermionfields:Z4_distribution_fermi!,gauss_distribution_fermi!,set_wing_fermi!
-    import ..CGmethods:bicg
+    =#
+    #import ..CGmethods:bicg
     #import ..CGfermion:cg0!
     import ..System_parameters:Params
     import ..Actions:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover
-    import ..Diracoperators:Dirac_operator,γ5D_operator
+    #import ..Diracoperators:Dirac_operator,γ5D_operator
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1,println_verbose3,println_verbose2,println_verbose1,
     #        print_verbose1,print_verbose2,print_verbose3
              
-    import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
+    #import ..Smearing:gradientflow!,calc_stout!,calc_fatlink_APE!,calc_stout,calc_fatlink_APE,calc_multihit!
     import ..Gaugefield:Wilson_loop,Wilson_loop_set
     import ..System_parameters:set_params
 
@@ -428,6 +432,8 @@ module Measurements
     =#
 
 
+    
+    #=
     function measurements(itrj,U::Array{UT,1},univ,measset::Measurement_set;verbose = Verbose_2()) where UT <: GaugeFields
         plaq = 0.0
         poly = 0.0 + 0.0im
@@ -582,6 +588,8 @@ module Measurements
         return plaq,poly
     end
 
+    =#
+
 
 
 
@@ -597,6 +605,7 @@ module Measurements
     end
 
 
+    #=
 # - - - Polyakov loop correlator
 function calc_Polyakov_loop_correlator(U::Array{T,1}, R) where T <: GaugeFields
     WL = 0.0+0.0im
@@ -609,12 +618,16 @@ function calc_Polyakov_loop_correlator(U::Array{T,1}, R) where T <: GaugeFields
     NDir = 3.0 # in 4 diemension, 3 associated staples. t-x plane, t-y plane, t-z plane
     return real(WL)/NV/NDir/NC
 end
+
+=#
 function construct_Polyakov_correlator!(Wmat,U)
     NT = U[1].NT
     W_operator = make_2Polyakov_loop(NT)
     calc_2Polyakov_loop!(Wmat,W_operator,U)
     return 
 end
+
+#=
 function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,R) where S <: SUn
     if S == SU3
         NC = 3
@@ -653,6 +666,8 @@ function calc_Polyakov_loop_correlator_core(Wmat, U::Array{GaugeFields{S},1} ,R)
     end
     return W
 end
+
+=#
 function make_2Polyakov_loop(NT)
     #= Making a Wilson loop operator for potential calculations
         Ls × Lt
@@ -684,6 +699,8 @@ function calc_2Polyakov_loop!(temp_Wmat,loops_μν,U)
 end
 # - - - end Polyakov loop correlator
 
+
+#=
     function calc_Wilson_loop(U::Array{T,1},Lt,Ls) where T <: GaugeFields
         # Making a ( Ls × Lt) Wilson loop operator for potential calculations
         WL = 0.0+0.0im
@@ -714,6 +731,8 @@ end
         end
         return W
     end
+
+    =#
     function calc_large_wiloson_loop!(Wmat,Lt,Ls,U)
         W_operator = make_Wilson_loop(Lt,Ls)
         calc_large_wiloson_loop!(Wmat,W_operator,U)
@@ -749,6 +768,8 @@ end
         end
         return 
     end
+
+    #=
 # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
     # Making a ( Ls × Lt) Wilson loop operator for potential calculations
@@ -784,6 +805,8 @@ function  make_energy_density_core(Wmat, U::Array{GaugeFields{S},1} ,NV) where S
     end
     return W
 end
+
+=#
 function make_energy_density!(Wmat,U)
     W_operator,numofloops = calc_loopset_μν("clover")#make_Wilson_loop(Lt,Ls)
     calc_large_wiloson_loop4d!(Wmat,W_operator,U)
@@ -804,6 +827,8 @@ function calc_large_wiloson_loop4d!(temp_Wmat,W_operator,U)
     end
     return 
 end
+
+#=
 # = = = end of energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
         plaq = 0
@@ -870,6 +895,8 @@ end
         UμνTA = Array{GaugeFields_1d,2}(undef,4,4)
         return calc_topological_charge_plaq(U,UμνTA )
     end
+
+    =#
 
     function calc_loopset_μν(name)
         loops_μν= Array{Wilson_loop_set,2}(undef,4,4)
@@ -964,6 +991,8 @@ end
         return numofloops
     end
 
+
+    #=
     #=
     implementation of topological charge is based on
     https://arxiv.org/abs/1509.04259
@@ -1013,7 +1042,7 @@ end
 
 
     
-
+    =#
     function TAm(M)
         NC = size(M)[1]
         AM = (M - M')/2

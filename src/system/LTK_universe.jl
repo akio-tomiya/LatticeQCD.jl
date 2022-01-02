@@ -6,6 +6,7 @@ module LTK_universe
     #export Universe
     
     
+    #=
     import ..Gaugefields:GaugeFields,GaugeFields_1d,
                         #IdentityGauges,RandomGauges,
                         set_wing!,
@@ -20,6 +21,7 @@ module LTK_universe
                         #apply_smearing,calc_smearedU
     
     import ..Gaugefields
+    =#
                         
     #import ..Fermionfields:FermionFields,WilsonFermion,StaggeredFermion,substitute_fermion!,gauss_distribution_fermi!,set_wing_fermi!
     #import ..Fermionfields
@@ -39,8 +41,10 @@ module LTK_universe
                 FermiActionParam_Staggered
                 #FermiActionParam_Domainwall
     
+                #=
     import ..LieAlgebrafields:LieAlgebraFields,clear!,add_gaugeforce!
     import ..LieAlgebrafields
+    =#
     import ..Rand:Random_LCGs
     import ..System_parameters:Params
     #import ..Diracoperators:DdagD_operator,Domainwall_operator,make_densematrix,
@@ -55,16 +59,16 @@ module LTK_universe
     import ..Fermionfield_LQCD#:DdagD_operator,Dirac_operator
     #import ..Verbose_print:Verbose_level,Verbose_3,Verbose_2,Verbose_1
     #import ..IOmodule:loadU
-    import ..SUN_generator:Generator
+    import ..Gaugefield:Generator
 
-    import ..RationalApprox:calc_exactvalue,calc_Anϕ
+    import ..Fermionfield_LQCD:calc_exactvalue,calc_Anϕ
     #import ..ILDG_format:ILDG,load_gaugefield,load_gaugefield!,save_binarydata
-    import ..Othermethods:tdlogdet
+    #import ..Othermethods:tdlogdet
     #import ..CGmethods:bicg,cg,shiftedcg
     import ..Fermionfield_LQCD:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse,
                 Fermionfields,AbstractFermionfields, gauss_distribution_fermion!,clear_fermion!,
                 add_fermion!,bicg,cg,shiftedcg, set_wing_fermion!
-    import ..Gaugefield:calc_smearedU
+    import ..Gaugefield:calc_smearedU,Gaugefields_4D_wing,set_wing_U!, IdentityGauges,calculate_Plaquette,substitute_U!
     #import ..Smearing:apply_smearing
 
 
@@ -422,8 +426,12 @@ module LTK_universe
             num_tempfield_g += 1
         end
 
-        U = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,dim)
-        _temporal_gauge = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,num_tempfield_g)
+        #U = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,dim)
+        #_temporal_gauge = Array{Gaugefields.Gaugefields_4D_wing{NC},1}(undef,num_tempfield_g)
+
+        U = Array{Gaugefields_4D_wing{NC},1}(undef,dim)
+        _temporal_gauge = Array{Gaugefields_4D_wing{NC},1}(undef,num_tempfield_g)
+
 
         #U = Array{SUNGaugeFields{NC},1}(undef,4)
         #    _temporal_gauge = Array{SUNGaugeFields_1d{NC},1}(undef,num_tempfield_g)
@@ -489,14 +497,14 @@ module LTK_universe
 
             #error("not supported yet.")
         end
-        set_wing!(U)
+        set_wing_U!(U)
 
         p = initialize_TA_Gaugefields(U)
 
-        temp1 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
-        temp2 = Gaugefields.IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+        temp1 = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
+        temp2 = IdentityGauges(NC,NX,NY,NZ,NT,Nwing)
         factor = 2/(U[1].NV*4*3*U[1].NC)
-        @time plaq_t = Gaugefields.calculate_Plaquette(U,temp1,temp2)*factor
+        @time plaq_t = calculate_Plaquette(U,temp1,temp2)*factor
         println("plaq_t = $plaq_t")
 
         if false #debug
@@ -704,7 +712,7 @@ module LTK_universe
 
         
         Uold = similar(U)
-        substitute!(Uold,U)
+        substitute_U!(Uold,U)
 
         
         #=
@@ -844,7 +852,7 @@ module LTK_universe
 
 
 
-
+    #=
     function expF_U!(U::Array{T,1},F::Array{N,1},Δτ,univ::Universe) where {T<: GaugeFields, N <: LieAlgebraFields} 
         LieAlgebrafields.expF_U!(U,F,Δτ,univ._temporal_gauge,univ._temporal_algebra[1])
     end
@@ -862,7 +870,9 @@ module LTK_universe
         #add_gaugeforce!(F,U,univ._temporal_gauge,univ._temporal_algebra[1],univ.gparam) 
         return
     end
+    =#
 
+    #=
     function calc_gaugeforce!(F::Array{N,1},U::Array{T,1},univ::Universe,gparam::GP) where {N<: LieAlgebraFields, 
                                                                                             T<: GaugeFields,
                                                                                             GP <: GaugeActionParam_autogenerator} 
@@ -879,13 +889,16 @@ module LTK_universe
         return
     end
 
-    function Gaugefields.calc_GaugeAction(univ::Universe)
+    =#
+    function calc_GaugeAction(univ::Universe)
         Sg,plaq = calc_GaugeAction(univ.U,univ.gparam,univ._temporal_gauge)
         return real(Sg),real(plaq)
     end
 
+    
 
-    function Gaugefields.calc_GaugeAction(U::Array{T1,1},gparam::GaugeActionParam_standard,temps::Array{T2,1}) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+
+    function calc_GaugeAction(U::Array{T1,1},gparam::GaugeActionParam_standard,temps::Array{T2,1}) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
         temp1 = temps[1]
         temp2 = temps[2]
         plaq = calculate_Plaquette(U,temp1,temp2)
@@ -1112,10 +1125,13 @@ module LTK_universe
         return
     end
 
+    #=
     function make_WdagWmatrix(univ::Universe,U::Array{T,1}) where T <: GaugeFields
         return make_WdagWmatrix(U,univ._temporal_fermi,univ.fparam)
     end
+    =#
 
+    #=
     function make_WdagWmatrix(U::Array{G,1},temps::Array{T,1},fparam) where {G <: GaugeFields,T <:AbstractFermionfields}
         x0 = temps[7]
         xi = temps[8]
@@ -1205,6 +1221,8 @@ module LTK_universe
         #return WdagW
 
     end
+
+    =#
 
 
     #=

@@ -1,6 +1,7 @@
 module Heatbath
     using LinearAlgebra
     import ..LTK_universe:Universe
+    #=
     import ..Gaugefields:GaugeFields,SU3GaugeFields,
             SU2GaugeFields,SU3GaugeFields_1d,SU2GaugeFields_1d,
             GaugeFields_1d,elementwise_tr!,set_wing!,make_staple_double!,substitute!,clear!,
@@ -8,6 +9,8 @@ module Heatbath
             SUNGaugeFields,SUNGaugeFields_1d,normalizeN!
             #,
             #set_wing_x!,set_wing_y!,set_wing_z!,set_wing_t!
+
+            =#
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator,GaugeActionParam
     import ..Gaugefield:AbstractGaugefields,evaluate_gaugelinks_evenodd!,map_U! 
@@ -152,6 +155,7 @@ module Heatbath
         error("heatbath! is not implemented with type $(typeof(u))")
     end
 
+    #=
     function heatbath!(u::Array{T,1},ranf,gparam::GaugeActionParam,temps::Array{T_1d,1}) where {T <: SU2GaugeFields,T_1d <: SU2GaugeFields_1d}
         beta = gparam.β
 
@@ -220,6 +224,7 @@ module Heatbath
         end
 
     end
+    =#
 
     function SU3update_matrix!(u,V,beta,NC,ITERATION_MAX)
         #println("#Heatbath for one SU(3) link started")
@@ -565,6 +570,7 @@ module Heatbath
         return Unew
     end
 
+    #=
     function heatbath!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SU3GaugeFields,T_1d <: SU3GaugeFields_1d}
         #println("Warning!!!!!!!!")
         #error("Heatbath update for SU(3) is not implemented")
@@ -799,6 +805,10 @@ module Heatbath
 
     end
 
+    =#
+
+    #=
+
     function overrelaxation!(u::Array{T,1},ranf,gparam,temps::Array{T_1d,1}) where {T <: SUNGaugeFields,T_1d <: SUNGaugeFields_1d}
         #println("OR is called!")
         #println("Warning!!!!!!!!")
@@ -924,6 +934,8 @@ module Heatbath
         end
 
     end
+
+    =#
 
     function gramschmidt!(v)
         n = size(v)[1]

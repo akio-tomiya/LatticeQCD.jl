@@ -1,8 +1,9 @@
 module Actions
     import ..Gaugefield:Wilson_loop_set,make_staples,Wilson_loop_set,
-            make_cloverloops,Tensor_derivative_set, make_loops,construct_smearing
-    import ..SUN_generator:Generator
-    import ..Rhmc:RHMC
+            make_cloverloops,Tensor_derivative_set, make_loops,construct_smearing,Generator
+    #import ..SUN_generator:Generator
+    import ..Fermionfield_LQCD:RHMC
+    #import ..Rhmc:RHMC
 
 
     abstract type GaugeActionParam end

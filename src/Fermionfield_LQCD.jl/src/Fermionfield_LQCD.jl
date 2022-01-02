@@ -1,13 +1,16 @@
 module Fermionfield_LQCD
     import ..Gaugefield
     include("./cgmethod.jl")
+
     include("./rhmc/AlgRemez.jl")
     include("./rhmc/rhmc.jl")
     include("./Fermionaction.jl")
     include("./AbstractFermionfields.jl")
+    include("./clover.jl")
     
     include("./WilsonFermion/clover.jl")
     include("./Dirac_operators.jl")
+    include("./rationalapprox/rationalapprox.jl")
     
     import .FermionAction_module:FermiActionParam_Wilson,FermiActionParam_Staggered,FermiActionParam_WilsonClover,
     FermiActionParam
@@ -19,7 +22,9 @@ module Fermionfield_LQCD
                                     WilsonClover_operator
 
     import .CGmethods:bicg,cg,shiftedcg
-    import .Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse
+    import .Rhmc:get_order,get_β,get_α,get_α0,get_β_inverse,get_α_inverse,get_α0_inverse,RHMC
+    import .RationalApprox:AlgRemez_coeffs,calc_exactvalue,calc_Anϕ
+    import .Clover:Make_CloverFμν!,dSclover!
     #import .Clover:Make_CloverFμν
     
 end
