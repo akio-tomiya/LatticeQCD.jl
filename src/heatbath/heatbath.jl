@@ -10,6 +10,9 @@ module Heatbath
             #set_wing_x!,set_wing_y!,set_wing_z!,set_wing_t!
     import ..Gaugefield:Wilson_loop,Wilson_loop_set,make_plaq_staple,make_links,make_staples,make_plaq
     import ..Actions:GaugeActionParam_standard,GaugeActionParam_autogenerator,GaugeActionParam
+    import ..Gaugefield:AbstractGaugefields,evaluate_gaugelinks_evenodd!,map_U! 
+    import Wilsonloop:loops_staple_prime,Wilsonline,get_position,get_direction,Adjoint_GLink,GLink,loops_staple
+  
 
     function heatbath!(univ::Universe)
         heatbath!(univ.U,univ.ranf,univ.gparam,univ._temporal_gauge)
@@ -19,6 +22,93 @@ module Heatbath
     function overrelaxation!(univ::Universe)
         overrelaxation!(univ.U,univ.ranf,univ.gparam,univ._temporal_gauge)
         #heatbath!(univ.U,univ.ranf,univ.gparam.β,univ._temporal_gauge)
+    end
+
+
+
+    function heatbath!(u::Array{<: AbstractGaugefields{2,Dim},1},ranf,gparam::GaugeActionParam,temps::Array{<: AbstractGaugefields{2,Dim},1}) where Dim
+        beta = gparam.β
+        ITERATION_MAX = 10^5
+        temp1 = temps[1]
+        temp2 = temps[2]
+        V = temps[3]
+        NC = 2
+
+        mapfunc!(A,B) = SU2update_KP!(A,B,beta,NC,ITERATION_MAX)
+
+
+        for μ=1:Dim
+            if typeof(gparam) == GaugeActionParam_standard
+                #loops = make_plaq_staple(μ)
+                #println(loops)
+                loops = loops_staple[(Dim,μ)]
+                #show(loops)
+
+            end
+
+            iseven = true
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+            
+
+            iseven = false
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+            
+        end
+        
+    end
+
+    function heatbath!(u::Array{<: AbstractGaugefields{3,Dim},1},ranf,gparam::GaugeActionParam,temps::Array{<: AbstractGaugefields{3,Dim},1}) where Dim
+        beta = gparam.β
+        ITERATION_MAX = 10^5
+        temp1 = temps[1]
+        temp2 = temps[2]
+        V = temps[3]
+        NC = 3
+
+        mapfunc!(A,B) = SU3update_matrix!(A,B,beta,NC,ITERATION_MAX)
+
+
+        for μ=1:Dim
+            if typeof(gparam) == GaugeActionParam_standard
+                #loops = make_plaq_staple(μ)
+                #println(loops)
+                loops = loops_staple[(Dim,μ)]
+                #show(loops)
+
+            end
+
+            iseven = true
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+
+            #normalize!(u[μ])
+            
+
+            iseven = false
+            if typeof(gparam) == GaugeActionParam_standard
+                evaluate_gaugelinks_evenodd!(V,loops,u,[temp1,temp2],iseven)
+                map_U!(u[μ],mapfunc!,V,iseven) 
+            end
+
+            #normalize!(u[μ])
+            
+        end
+        
+    end
+
+    function heatbath!(u,ranf,gparam::GaugeActionParam,temps) 
+        error("heatbath! is not implemented with type $(typeof(u))")
     end
 
     function heatbath!(u::Array{T,1},ranf,gparam::GaugeActionParam,temps::Array{T_1d,1}) where {T <: SU2GaugeFields,T_1d <: SU2GaugeFields_1d}
@@ -46,6 +136,7 @@ module Heatbath
         Vtemp = zeros(ComplexF64,NC,NC)
 
         a = zeros(Float64,4)
+
 
         for mu=1:4
             #make_staple_double!(staple,u,mu,temp1,temp2,temp3)
@@ -89,7 +180,148 @@ module Heatbath
 
     end
 
+    function SU3update_matrix!(u,V,beta,NC,ITERATION_MAX)
+        #println("#Heatbath for one SU(3) link started")
+        for l=1:3
+
+            UV = u*V
+            #println("UV $UV $V $u")
+
+            if l==1
+                n,m = 1,2
+            elseif l==2
+                n,m = 2,3
+            else
+                n,m = 1,3
+
+            end
+
+            S = make_submatrix(UV,n,m)
+            #gramschmidt_special!(S)
+            project_onto_SU2!(S)
+
+            K = SU2update_KP(S,beta,NC,ITERATION_MAX)
+
+
+            A = make_largematrix(K,n,m,NC)
+
+            AU = A*u
+
+            u[:,:] = AU[:,:]
+        end
+
+        AU = u[:,:] #u[mu][:,:,ix,iy,iz,it]
+        normalize3!(AU)
+        u[:,:] = AU[:,:]
+        #u[mu][:,:,ix,iy,iz,it] = AU
+    end
+
+    function SU2update_KP!(Unew,V,beta,NC,ITERATION_MAX = 10^5)
+        eps = 0.000000000001
+
+        #R = real(sqrt(det(V)))
+        #V0 = inv(V/R)
+        #w = zeros(Float64,4)
+        #println("V = ",V)
+
+        ρ0 = real(V[1,1]+V[2,2])/2
+        ρ1 = -imag(V[1,2]+V[2,1])/2
+        #ρ1 = imag(V[1,2]+V[2,1])/2
+        ρ2 = real(V[2,1]-V[1,2])/2
+        ρ3 = imag(V[2,2]-V[1,1])/2
+        ρ = sqrt(ρ0^2+ρ1^2+ρ2^2+ρ3^2)
+        #println("R = ",R," ρ ",ρ)
+        #println("detV = , ", det(V)," ",ρ0^2+ρ1^2+ρ2^2+ρ3^2)
+        V0 = inv(V/ρ)
+
+        #
+        #Nc = 2 # Since Ishikawa's book uses 1/g^2 notation.
+        #k = (beta/NC)*ρ
+        k = 2*(beta/NC)*ρ
+        #println("k $k, $ρ")
+
+        
+        #k = (beta/2)*ρ
+
+        R = rand() + eps
+        Rp = rand() + eps
+        X = -log(R)/k
+        Xp = -log(Rp)/k
+        Rpp = rand()
+        C = cos(2pi*Rpp)^2
+        A = X*C
+        delta = Xp + A
+        Rppp = rand()
+
+        a = zeros(Float64,4)
+        while(Rppp^2 > 1-0.5*delta)
+            R = rand()
+            Rp = rand()
+            X = -log(R)/k
+            Xp = -log(Rp)/k
+            Rpp = rand()
+            C = cos(2pi*Rpp)^2
+            A = X*C
+            delta = Xp + A
+            Rppp = rand()
+            #println(Rppp^2,"\t",1-0.5*delta)
+        end
+        a[1] = 1-delta
+
+
+        rr = sqrt(1.0-a[1]^2)
+        ϕ = rand()*pi*2.0 # ϕ = [0,2pi]
+        cosθ = (rand()-0.5)*2.0 # -1<cosθ<1
+        sinθ = sqrt(1-cosθ^2)
+
+        a[2]=rr*cos(ϕ)*sinθ
+        a[3]=rr*sin(ϕ)*sinθ
+        a[4]=rr*cosθ
+        Unew[1,1] = a[1]+im*a[4]
+        Unew[1,2] = a[3]+im*a[2]
+        Unew[2,1] = -a[3]+im*a[2] 
+        Unew[2,2] = a[1]-im*a[4]
+        Unew[:,:] = Unew*V0
+        #Unew = [a[1]+im*a[4] a[3]+im*a[2]
+        #        -a[3]+im*a[2] a[1]-im*a[4]]*V0
+
+        #=
+        w[1]=(1/ρ)*( a[1]*ρ0+a[2]*ρ1+a[3]*ρ2+a[4]*ρ3)
+        w[2]=(1/ρ)*(-a[1]*ρ1+a[2]*ρ0+a[3]*ρ3-a[4]*ρ2)
+        w[3]=(1/ρ)*(-a[1]*ρ2-a[2]*ρ3+a[3]*ρ0+a[4]*ρ1)
+        w[4]=(1/ρ)*(-a[1]*ρ3+a[2]*ρ2-a[3]*ρ1+a[4]*ρ0)
+
+        Unew = [w[1]+im*w[4] w[3]+im*w[2]
+                -w[3]+im*w[2] w[1]-im*w[4]]
+        =#
+
+        #normalize2!(Unew)
+        #display(Unew)
+
+        #α = Unew[1,1]
+        #β = Unew[2,1]
+        
+
+        α = Unew[1,1]*0.5 + conj(Unew[2,2])*0.5
+        β = Unew[2,1]*0.5 - conj(Unew[1,2])*0.5
+
+        detU = abs(α)^2 + abs(β)^2
+        Unew[1,1] = α/detU
+        Unew[2,1]  = β/detU
+        Unew[1,2] = -conj(β)/detU
+        Unew[2,2] = conj(α)/detU     
+        
+        
+
+        #return Unew
+    end
+
     function SU2update_KP(V,beta,NC,ITERATION_MAX = 10^5)
+        #println("V = ",V)
+        Unew = zero(V)
+        SU2update_KP!(Unew,V,beta,NC,ITERATION_MAX)
+        return Unew
+
         eps = 0.000000000001
 
         #R = real(sqrt(det(V)))

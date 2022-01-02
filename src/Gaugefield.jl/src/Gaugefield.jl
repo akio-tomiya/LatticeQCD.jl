@@ -26,7 +26,9 @@ module Gaugefield
                                         Staggered_Gaugefields,staggered_U,
                                         Traceless_antihermitian_add!,
                                         IdentityGauges,RandomGauges,Oneinstanton,
-                                        construct_Λmatrix_forSTOUT!
+                                        construct_Λmatrix_forSTOUT!,
+                                        evaluate_gaugelinks_evenodd!,
+                                        map_U!
 
                                         
     import .Loops_module:Loops,evaluate_loops,calc_large_wilson_loop!,evaluate_loops!

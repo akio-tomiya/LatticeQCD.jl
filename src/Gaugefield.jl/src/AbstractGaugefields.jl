@@ -14,6 +14,7 @@ module AbstractGaugefields_module
     abstract type AbstractGaugefields{NC,Dim} <: Abstractfields
     end
 
+
     abstract type Adjoint_fields{T} <: Abstractfields
     end
 
@@ -55,7 +56,24 @@ module AbstractGaugefields_module
         error("type $(typeof(U)) has no setindex method. This type is read only.")
     end
 
+    struct Gaugefield_latticeindices{Dim,NC,T}
+        NN::NTuple{Dim,Int64}
+        NC::Int8
 
+        function Gaugefield_latticeindices(u::AbstractGaugefields{Dim,NC}) where {Dim,NC}
+            _,_,NN... = size(u)
+            return new{Dim,NC,typeof{u}}(NN,NC)
+        end
+    end
+
+    function Gaugefield_latticeindices(U::Array{<: AbstractGaugefields{Dim,NC},1}) where {Dim,NC}
+        return Gaugefield_latticeindices(U[1])
+    end
+
+    function Base.iterate(g::Gaugefield_latticeindices{Dim,NC,T}) where {Dim,NC,T}
+        N<1 && return nothing
+        return (1, 2)
+    end
 
     include("./4D/gaugefields_4D.jl")
     include("TA_Gaugefields.jl")
@@ -93,6 +111,16 @@ module AbstractGaugefields_module
         error("substitute_U! is not implemented in type $(typeof(a)) and $(typeof(b))")
         return 
     end
+
+    function substitute_U!(a::Array{T1,1},b::Array{T2,1},iseven::Bool) where {T1 <: AbstractGaugefields,T2 <: AbstractGaugefields}
+        error("substitute_U! is not implemented in type $(typeof(a)) and $(typeof(b))")
+    end
+
+    function substitute_U!(a::T1,b::T2,iseven::Bool) where {T1 <: AbstractGaugefields,T2 <: Abstractfields}
+        error("substitute_U! is not implemented in type $(typeof(a)) and $(typeof(b))")
+        return 
+    end
+
 
     function RandomGauges(NC,NDW,NN...;mpi = false,PEs=nothing,mpiinit = nothing)
         dim = length(NN)
@@ -198,6 +226,16 @@ module AbstractGaugefields_module
         end
     end
 
+    function clear_U!(U::T,iseven::Bool) where T <: AbstractGaugefields
+        error("clear_U! is not implemented in type $(typeof(U)) ")
+    end
+
+    function clear_U!(U::Array{<: AbstractGaugefields{NC,Dim},1},iseven::Bool) where {NC,Dim}
+        for μ=1:Dim
+            clear_U!(U[μ],iseven)
+        end
+    end
+
     function unit_U!(U::T) where T <: AbstractGaugefields
         error("unit_U! is not implemented in type $(typeof(U)) ")
     end
@@ -211,6 +249,11 @@ module AbstractGaugefields_module
     
     function shift_U(U::AbstractGaugefields{NC,Dim},ν) where {NC,Dim}
         error("shift_U is not implemented in type $(typeof(U)) ")
+        return nothing
+    end
+
+    function map_U!(U::AbstractGaugefields{NC,Dim},f::Function,V::AbstractGaugefields{NC,Dim},iseven::Bool) where {NC,Dim, T<: Abstractfields}
+        error("map_U! is not implemented in type $(typeof(U)) ")
         return nothing
     end
     
@@ -227,6 +270,60 @@ module AbstractGaugefields_module
 
     function set_wing_U!(U::T) where T <: AbstractGaugefields
         error("set_wing_U! is not implemented in type $(typeof(U)) ")
+    end
+
+    function evaluate_gaugelinks_evenodd!(uout::T,w::Wilsonline{Dim},U::Array{T,1},temps::Array{T,1},iseven) where {T<: AbstractGaugefields,Dim}
+
+        #Uold = temps[1]
+        Unew = temps[1]
+        #Utemp2 = temps[2]
+        #clear_U!(uout)
+
+        glinks = w
+        numlinks = length(glinks)
+        if numlinks == 0
+            unit_U!(uout)
+            return
+        end
+
+        j = 1    
+        U1link = glinks[1]
+        direction = get_direction(U1link)
+        position = get_position(U1link)
+        isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
+
+
+        if numlinks == 1
+            substitute_U!(Unew,U[direction])
+            Ushift1 = shift_U(Unew,position)
+            if isU1dag 
+                #println("Ushift1 ",Ushift1'[1,1,1,1,1,1])
+                substitute_U!(uout,Ushift1',iseven)
+            else
+                substitute_U!(uout,Ushift1,iseven)
+            end
+            return
+        end
+
+        substitute_U!(Unew,U[direction])
+        Ushift1 = shift_U(Unew,position)
+
+        for j=2:numlinks
+            Ujlink = glinks[j]
+            isUkdag = ifelse(typeof(Ujlink) <: Adjoint_GLink,true,false)
+            position = get_position(Ujlink)
+            direction = get_direction(Ujlink)
+
+            Ushift2 = shift_U(U[direction],position)
+            multiply_12!(uout,Ushift1,Ushift2,j,isUkdag,isU1dag,iseven)
+
+
+            substitute_U!(Unew,uout)
+
+            Ushift1 = shift_U(Unew,(0,0,0,0))
+        end
+
+
     end
 
     function evaluate_gaugelinks!(uout::T,w::Wilsonline{Dim},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
@@ -310,6 +407,28 @@ module AbstractGaugefields_module
         
     end
 
+    function evaluate_gaugelinks_evenodd!(xout::T,w::Array{<:Wilsonline{Dim},1},U::Array{T,1},temps::Array{T,1},iseven) where {T<: AbstractGaugefields,Dim}
+        num = length(w)
+        temp1 = temps[1]
+        temp2 = temps[2]
+
+        #ix,iy,iz,it=(2,2,2,2)
+        
+        clear_U!(xout,iseven)
+        for i=1:num
+            glinks = w[i]
+            evaluate_gaugelinks_evenodd!(temp2,glinks,U,[temp1],iseven)
+            #println("uout2 ", temp2[:,:,ix,iy,iz,it])
+            add_U!(xout,temp2,iseven)
+            #println("xout ", xout[:,:,ix,iy,iz,it])
+        end
+
+        #println("xout2 ", xout[:,:,ix,iy,iz,it])
+        return
+
+
+    end
+
     function evaluate_gaugelinks!(xout::T,w::Array{<:Wilsonline{Dim},1},U::Array{T,1},temps::Array{T,1}) where {T<: AbstractGaugefields,Dim}
         num = length(w)
         temp1 = temps[1]
@@ -330,34 +449,6 @@ module AbstractGaugefields_module
         return
 
 
-        for i=1:num
-            glinks = w[i]
-            numlinks = length(glinks)
-            #show(glinks)        
-            j = 1    
-            U1link = glinks[1]
-            direction = get_direction(U1link)
-            position = get_position(U1link)
-            #println("i = $i j = $j position = $position")
-            substitute_U!(Uold,U[direction])
-            Ushift1 = shift_U(Uold,position)
-            isU1dag = ifelse(typeof(U1link) <: Adjoint_GLink,true,false)
-
-            for j=2:numlinks
-                Ujlink = glinks[j]
-                isUkdag = ifelse(typeof(Ujlink) <: Adjoint_GLink,true,false)
-                position = get_position(Ujlink)
-                direction = get_direction(Ujlink)
-                #println("i = $i j = $j position = $position")
-                Ushift2 = shift_U(U[direction],position)
-                multiply_12!(Unew,Ushift1,Ushift2,j,isUkdag,isU1dag)
-
-                Unew,Uold = Uold,Unew
-                Ushift1 = shift_U(Uold,(0,0,0,0))
-            end
-            add_U!(xout,Uold)
-            #println("i = $i ",Uold[1,1,1,1,1,1])
-        end
     end
 
     #=
@@ -394,6 +485,32 @@ module AbstractGaugefields_module
                 mul!(temp3,temp1,temp2')
             else
                 mul!(temp3,temp1,temp2)
+            end
+        end
+        return
+    end
+
+        
+    function multiply_12!(temp3,temp1,temp2,k,isUkdag::Bool,isU1dag::Bool,iseven)
+        if k==2
+            if isUkdag
+                if isU1dag
+                    mul!(temp3,temp1',temp2',iseven)
+                else
+                    mul!(temp3,temp1,temp2',iseven)
+                end
+            else
+                if isU1dag
+                    mul!(temp3,temp1',temp2,iseven)
+                else
+                    mul!(temp3,temp1,temp2,iseven)
+                end
+            end
+        else
+            if isUkdag
+                mul!(temp3,temp1,temp2',iseven)
+            else
+                mul!(temp3,temp1,temp2,iseven)
             end
         end
         return
@@ -748,6 +865,16 @@ module AbstractGaugefields_module
     function add_U!(c::Array{<: AbstractGaugefields{NC,Dim},1},α::N,a::Array{T1,1}) where {NC,Dim,T1 <: Abstractfields, N<:Number}
         for μ=1:Dim
             add_U!(c[μ],α,a[μ])
+        end
+    end
+
+    function add_U!(c::T,a::T1,iseven) where {T<: AbstractGaugefields,T1 <: Abstractfields}
+        error("add_U! is not implemented in type $(typeof(c)) ")
+    end
+
+    function add_U!(c::Array{<: AbstractGaugefields{NC,Dim},1},α::N,a::Array{T1,1},iseven) where {NC,Dim,T1 <: Abstractfields, N<:Number}
+        for μ=1:Dim
+            add_U!(c[μ],α,a[μ],iseven)
         end
     end
 

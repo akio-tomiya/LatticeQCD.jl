@@ -84,6 +84,12 @@ module Gaugefields_4D_wing_module
         end
     end
 
+    function substitute_U!(a::Array{T1,1},b::Array{T2,1},iseven) where {T1 <: Gaugefields_4D_wing,T2 <: Gaugefields_4D_wing}
+        for μ=1:4
+            substitute_U!(a[μ],b[μ],iseven)
+        end
+    end
+
     function Base.similar(U::T) where T <: Gaugefields_4D_wing
         Uout = Gaugefields_4D_wing(U.NC,U.NDW,U.NX,U.NY,U.NZ,U.NT)
         #identityGaugefields_4D_wing(U.NC,U.NX,U.NY,U.NZ,U.NT,U.NDW)
@@ -103,10 +109,6 @@ module Gaugefields_4D_wing_module
             a.U[i] = b.U[i]
         end
         return 
-
-        a.U[:,:,:,:,:,:] = copy(b.U)
-        #error("substitute_U! is not implemented in type $(typeof(a)) ")
-        return 
     end
 
     function substitute_U!(a::Gaugefields_4D_wing{NC},b::T2) where {NC, T2 <: Abstractfields}
@@ -121,6 +123,32 @@ module Gaugefields_4D_wing_module
                         for k2=1:NC                            
                             for k1=1:NC
                                 @inbounds a[k1,k2,ix,iy,iz,it] = b[k1,k2,ix,iy,iz,it]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        set_wing_U!(a)
+
+    end
+
+
+    function substitute_U!(a::Gaugefields_4D_wing{NC},b::T2,iseven::Bool) where {NC, T2 <: Abstractfields}
+        NT = a.NT
+        NZ = a.NZ
+        NY = a.NY
+        NX = a.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+                            for k2=1:NC                            
+                                for k1=1:NC
+                                    @inbounds a[k1,k2,ix,iy,iz,it] = b[k1,k2,ix,iy,iz,it]
+                                end
                             end
                         end
                     end
@@ -430,7 +458,38 @@ module Gaugefields_4D_wing_module
     end
 
 
-    
+    function map_U!(U::Gaugefields_4D_wing{NC},f!::Function,V::Gaugefields_4D_wing{NC},iseven::Bool) where {NC} 
+        NT = U.NT
+        NZ = U.NZ
+        NY = U.NY
+        NX = U.NX
+        A = zeros(ComplexF64,NC,NC)
+        B = zeros(ComplexF64,NC,NC)
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven     
+                            for k2=1:NC                            
+                                for k1=1:NC
+                                    A[k1,k2] = V[k1,k2,ix,iy,iz,it]
+                                    B[k1,k2] = U[k1,k2,ix,iy,iz,it]
+                                end
+                            end
+                            f!(B,A)
+                            for k2=1:NC                            
+                                for k1=1:NC
+                                    U[k1,k2,ix,iy,iz,it] = B[k1,k2]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        set_wing_U!(U)
+    end
 
 
     
@@ -446,6 +505,31 @@ module Gaugefields_4D_wing_module
                         for k2=1:NC                            
                             for k1=1:NC
                                 @inbounds Uμ[k1,k2,ix,iy,iz,it] = 0
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        set_wing_U!(Uμ)
+
+    end
+
+    function clear_U!(Uμ::Gaugefields_4D_wing{NC},iseven::Bool) where NC
+        NT = Uμ.NT
+        NZ = Uμ.NZ
+        NY = Uμ.NY
+        NX = Uμ.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven     
+                            for k2=1:NC                            
+                                for k1=1:NC
+                                    @inbounds Uμ[k1,k2,ix,iy,iz,it] = 0
+                                end
                             end
                         end
                     end
@@ -1442,6 +1526,29 @@ module Gaugefields_4D_wing_module
         end
     end
 
+    function add_U!(c::Gaugefields_4D_wing{NC},a::T1,iseven::Bool) where {NC,T1 <: Abstractfields}
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        for it=1:NT
+            for iz=1:NZ
+                for iy=1:NY
+                    for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+                            for k2=1:NC                            
+                                @simd for k1=1:NC
+                                    c[k1,k2,ix,iy,iz,it] += a[k1,k2,ix,iy,iz,it]
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
 
     function add_U!(c::Gaugefields_4D_wing{NC},α::N,a::T1) where {NC,T1 <: Abstractfields, N<:Number}
         #@inbounds for i=1:length(c.U)
@@ -1548,6 +1655,44 @@ module Gaugefields_4D_wing_module
     end
 
 
+#=
+evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+=#
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing{2},a::T1,b::T2,iseven) where {T1 <: Abstractfields,T2 <: Abstractfields}
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        #println("threads = ", Threads.nthreads())
+        @inbounds  for it=1:NT#,iz=1:NZ,iy=1:NY
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+                            a11 = a[1,1,ix,iy,iz,it]
+                            a21 = a[2,1,ix,iy,iz,it]
+                            a12 = a[1,2,ix,iy,iz,it]
+                            a22 = a[2,2,ix,iy,iz,it]
+
+                            b11 = b[1,1,ix,iy,iz,it]
+                            b21 = b[2,1,ix,iy,iz,it]
+                            b12 = b[1,2,ix,iy,iz,it]
+                            b22 = b[2,2,ix,iy,iz,it]
+
+                            c[1,1,ix,iy,iz,it] = a11*b11+a12*b21
+                            c[2,1,ix,iy,iz,it] = a21*b11+a22*b21
+                            c[1,2,ix,iy,iz,it] = a11*b12+a12*b22
+                            c[2,2,ix,iy,iz,it] = a21*b12+a22*b22
+                        end
+
+                    end
+                end
+            end
+        end
+    end
 
 
     
@@ -1663,6 +1808,54 @@ module Gaugefields_4D_wing_module
                         c[1,3,ix,iy,iz,it] = a11*b13+a12*b23+a13*b33
                         c[2,3,ix,iy,iz,it] = a21*b13+a22*b23+a23*b33
                         c[3,3,ix,iy,iz,it] = a31*b13+a32*b23+a33*b33
+
+                    end
+                end
+            end
+        end
+    end
+
+    function LinearAlgebra.mul!(c::Gaugefields_4D_wing{3},a::T1,b::T2,iseven::Bool) where {T1 <: Abstractfields,T2 <: Abstractfields}
+        NT = c.NT
+        NZ = c.NZ
+        NY = c.NY
+        NX = c.NX
+        #println("threads = ", Threads.nthreads())
+        @inbounds  for it=1:NT#,iz=1:NZ,iy=1:NY
+            for iz=1:NZ
+                for iy=1:NY
+                    @simd for ix=1:NX
+                        evenodd = ifelse( (ix+iy+iz+it) % 2 ==0, true,false)
+                        if evenodd == iseven
+
+                            a11 = a[1,1,ix,iy,iz,it]
+                            a21 = a[2,1,ix,iy,iz,it]
+                            a31 = a[3,1,ix,iy,iz,it]
+                            a12 = a[1,2,ix,iy,iz,it]
+                            a22 = a[2,2,ix,iy,iz,it]
+                            a32 = a[3,2,ix,iy,iz,it]
+                            a13 = a[1,3,ix,iy,iz,it]
+                            a23 = a[2,3,ix,iy,iz,it]
+                            a33 = a[3,3,ix,iy,iz,it]
+                            b11 = b[1,1,ix,iy,iz,it]
+                            b21 = b[2,1,ix,iy,iz,it]
+                            b31 = b[3,1,ix,iy,iz,it]
+                            b12 = b[1,2,ix,iy,iz,it]
+                            b22 = b[2,2,ix,iy,iz,it]
+                            b32 = b[3,2,ix,iy,iz,it]
+                            b13 = b[1,3,ix,iy,iz,it]
+                            b23 = b[2,3,ix,iy,iz,it]
+                            b33 = b[3,3,ix,iy,iz,it]
+                            c[1,1,ix,iy,iz,it] = a11*b11+a12*b21+a13*b31
+                            c[2,1,ix,iy,iz,it] = a21*b11+a22*b21+a23*b31
+                            c[3,1,ix,iy,iz,it] = a31*b11+a32*b21+a33*b31
+                            c[1,2,ix,iy,iz,it] = a11*b12+a12*b22+a13*b32
+                            c[2,2,ix,iy,iz,it] = a21*b12+a22*b22+a23*b32
+                            c[3,2,ix,iy,iz,it] = a31*b12+a32*b22+a33*b32
+                            c[1,3,ix,iy,iz,it] = a11*b13+a12*b23+a13*b33
+                            c[2,3,ix,iy,iz,it] = a21*b13+a22*b23+a23*b33
+                            c[3,3,ix,iy,iz,it] = a31*b13+a32*b23+a33*b33
+                        end
 
                     end
                 end
