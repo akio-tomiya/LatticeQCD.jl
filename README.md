@@ -120,7 +120,7 @@ We support 4 dimensional euclidean spacetime.
 
 
 
-Many of smearing and improved fermion actions and parallelazation have not supported yet.
+Parallelazation have not supported yet.
 
 
 
