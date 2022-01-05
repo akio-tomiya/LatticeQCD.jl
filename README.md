@@ -105,13 +105,13 @@ We support 4 dimensional euclidean spacetime.
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson, Wilson-Clover, (stout) staggered)
-  - Momentum projected pion correlator (Wilson& Wilson-Clover fermion, (stout) staggered)
+  - Chiral condensates (Wilson, Wilson-Clover, staggered)
+  - Momentum projected pion correlator (Wilson, Wilson-Clover fermion, staggered)
   - Topological charge(plaquette and clover definition)
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
   - <s>APE, stout</s> (This will be public)
-  - Gradient flow for a generic action (Not well tested)
+  - Gradient flow for a generic action (experimental)
 - I/O for configurations
   - ILDG format
   - JLD format (default binary file for Julia, one of HDF5)
