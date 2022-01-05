@@ -14,6 +14,11 @@ module Gaugefields_4D_module
 
 
     include("./gaugefields_4D_wing.jl")
+    function __init__()
+        @require MPI="da04e1cc-30fd-572f-bb4f-1f8673147195" begin
+            include("./gaugefields_4D_mpi.jl")
+        end
+    end
     #include("./gaugefields_4D_mpi.jl")
 
     function Base.size(U::Gaugefields_4D{NC}) where NC

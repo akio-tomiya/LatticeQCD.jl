@@ -12,10 +12,16 @@ module Gaugefields
     import ..Gaugefield:AbstractGaugefields,identitymatrix,
                                         shift_U,construct_staple!,set_wing_U!,
                                         calculate_Plaquette,substitute_U!,calc_smearedU,calculate_Polyakov_loop,construct_gauges,
-                                        Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,
-                                        calc_rank_and_indices,barrier,comm,setvalue!,
                                         Gaugefields_4D_wing,
                                         identityGaugefields_4D_wing,calc_large_wilson_loop!,add_force!
+
+    using Requires
+
+    function __init__()
+        @require MPI="da04e1cc-30fd-572f-bb4f-1f8673147195" begin     
+            import ..Gaugefield:Gaugefields_4D_wing_mpi,identityGaugefields_4D_wing_mpi,calc_rank_and_indices,barrier,comm,setvalue!
+        end
+    end                              
     #import ..Gaugefield:calc_large_wiloson_loop!
 
     #import ..Gaugefields_4D_wing_module:Gaugefields_4D_wing,
