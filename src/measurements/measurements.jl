@@ -729,25 +729,32 @@ end
 # = = = Energy-Momentum tensor = = = 
 # based on https://arxiv.org/abs/2002.06897 (3.2), (3.3)
 # Originary https://arxiv.org/abs/1304.0533 (2.4)
-function calc_energy_momentum_tensor(U::Array{T,1},μ,ν) where T <: GaugeFields
+# We focus on 1pt function of Tμν = Σ_n Tμν(n)/V.
+function calc_energy_momentum_tensor_1pt(U::Array{T,1},univ) where T <: GaugeFields
     V = U[1].NV
-    F = Array{GaugeFields_1d,2}(undef,4,4)
-    T = Array{GaugeFields_1d,2}(undef,4,4)
+    Nc = U[1].NC
+    beta = univ.gparam.β
     #
+    F = Array{GaugeFields_1d,2}(undef,4,4)
     make_clover_leaf!(F,U) # make a clover Wilson loop operator, which is same as Fμν in O(a^2)
-    if μ==ν 
-        for ρ=1:4
-            for σ=1:4
-                T[μ,ν]-=F[ρ,σ]*F[ρ,σ] # this has to be corecctly normalized, and traced.
+    #
+    T = Array{GaugeFields_1d,2}(undef,4,4)
+    factor = beta/2/Nc
+    for n=1:V
+        for μ=1:4
+            for ν=1:4
+                for ρ=1:4
+                    T[μ,ν]+=2*tr(F[μ,ρ][:,:,n]*F[ν,ρ][:,:,n])-2*tr(F[μ,ρ][:,:,n])*tr(F[ν,ρ][:,:,n])/Nc 
+                    if μ==ν 
+                        for σ=1:4
+                            T[μ,ν]-=tr(F[ρ,σ][:,:,n]*F[ρ,σ][:,:,n])/2-tr(F[ρ,σ][:,:,n])*tr(F[ρ,σ][:,:,n])/2/Nc 
+                        end
+                    end
+                end
             end
         end
     end
-    for ρ=1:4
-        T[μ,ν]+=F[μ,ρ]*F[ν,ρ] # this has to be corecctly normalized, and traced.
-    end
-    # T has to be multipled 1/g^2.
-    # After here, We have to take spacetime average.
-#    return tr(T)/V #/NDir/NC/8
+    return T*factor/V # this returns spacetime average
 end
 # = = = end of Energy-Momentum tensor = = = 
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
