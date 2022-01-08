@@ -729,7 +729,7 @@ end
 # = = = Energy-Momentum tensor = = = 
 # based on https://arxiv.org/abs/2002.06897 (3.2), (3.3)
 # Originary https://arxiv.org/abs/1304.0533 (2.4)
-function calc_energy_energy_momentum_tensor(U::Array{T,1},μ,ν) where T <: GaugeFields
+function calc_energy_momentum_tensor(U::Array{T,1},μ,ν) where T <: GaugeFields
     V = U[1].NV
     F = Array{GaugeFields_1d,2}(undef,4,4)
     T = Array{GaugeFields_1d,2}(undef,4,4)
