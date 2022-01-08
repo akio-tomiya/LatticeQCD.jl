@@ -743,7 +743,7 @@ function calc_energy_momentum_tensor(U::Array{T,1},μ,ν) where T <: GaugeFields
         end
     end
     for ρ=1:4
-        T[μ,ν]=F[μ,ρ]*F[ν,ρ] # this has to be corecctly normalized, and traced.
+        T[μ,ν]+=F[μ,ρ]*F[ν,ρ] # this has to be corecctly normalized, and traced.
     end
     # T has to be multipled 1/g^2.
     # After here, We have to take spacetime average.
