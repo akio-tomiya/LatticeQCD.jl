@@ -687,25 +687,14 @@ end
 # = = = calc energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 function calc_energy_density(U::Array{T,1}) where T <: GaugeFields
     # definition in https://arxiv.org/abs/1508.05552 (published version. There is a mistake in the arXiv version)
-    # WL = 0.0+0.0im
     NV = U[1].NV
-    #NC = U[1].NC
     Gμν = Array{GaugeFields_1d,2}(undef,4,4)
     #
-    make_clover_leaf!(Gμν,U) # make a clover Wilson loop operator, which is same as Gμν
+    make_clover_leaf!(Gμν,U) # make a clover Wilson loop operator, which is same as Gμν in O(a^2)
     E =  calc_energy_density_core(Gμν,U,NV) # 
-    #NDir = 4.0*3.0/2 # choice of 2 axis from 4.
     return E/NV #/NDir/NC/8
 end
 function  calc_energy_density_core(G, U::Array{GaugeFields{S},1} ,NV) where S <: SUn
-    #if S == SU3
-    #    NC = 3
-    #elseif S == SU2
-    #    NC = 2
-    #else
-    #    NC = U[1].NC
-    #    #error("NC != 2,3 is not supported")
-    #end
     E = 0.0 + 0.0im
     for n=1:NV
         for μ=1:4 # all directions
@@ -725,7 +714,6 @@ function make_clover_leaf!(G,U)
     return 
 end
 function instantiate_clover_leaf!(G,W_operator,U)
-    #G = temp_Wmat
     for μ=1:4
         for ν=1:4
             if μ == ν
@@ -738,6 +726,30 @@ function instantiate_clover_leaf!(G,W_operator,U)
     return 
 end
 # = = = end of energy density = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# = = = Energy-Momentum tensor = = = 
+# based on https://arxiv.org/abs/2002.06897 (3.2), (3.3)
+# Originary https://arxiv.org/abs/1304.0533 (2.4)
+function calc_energy_energy_momentum_tensor(U::Array{T,1},μ,ν) where T <: GaugeFields
+    V = U[1].NV
+    F = Array{GaugeFields_1d,2}(undef,4,4)
+    T = Array{GaugeFields_1d,2}(undef,4,4)
+    #
+    make_clover_leaf!(F,U) # make a clover Wilson loop operator, which is same as Fμν in O(a^2)
+    if μ==ν 
+        for ρ=1:4
+            for σ=1:4
+                T[μ,ν]-=F[ρ,σ]*F[ρ,σ] # this has to be corecctly normalized, and traced.
+            end
+        end
+    end
+    for ρ=1:4
+        T[μ,ν]=F[μ,ρ]*F[ν,ρ] # this has to be corecctly normalized, and traced.
+    end
+    # T has to be multipled 1/g^2.
+    # After here, We have to take spacetime average.
+#    return tr(T)/V #/NDir/NC/8
+end
+# = = = end of Energy-Momentum tensor = = = 
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
         plaq = 0
         factor = calc_factor_plaq(U)
