@@ -501,7 +501,7 @@ module Wizard
             system["initialtrj"] = parse(Int64,Base.prompt("Start trj number?", default="1"))
 
         elseif initialconf == 4
-            system["initial"] = "Start from one instanton"
+            system["initial"] = "one instanton"
         end
     end
 
