@@ -463,7 +463,7 @@ module Measurements
                             T = calc_energy_momentum_tensor_1pt(Usmr,univ)
                             for μ=1:4
                                 for ν=1:4
-                                    println("$itrj $τ $μ $ν $(T[μ,ν]) # trj,τ,μ,ν,T[μ,ν] #EMtensor")
+                                    println("$itrj $(round(τ, digits=3)) $μ $ν $(T[μ,ν]) # trj,τ,μ,ν,T[μ,ν] #EMtensor")
                                 end
                             end
                             println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
