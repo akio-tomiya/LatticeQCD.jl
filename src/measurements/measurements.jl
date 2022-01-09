@@ -432,6 +432,12 @@ module Measurements
                     Qplaq = calc_topological_charge_plaq(Usmr,temp_UμνTA)
                     Qclov = calc_topological_charge_clover(Usmr)
                     Qimpr =  calc_topological_charge_improved(Usmr,temp_UμνTA,Qclov)
+                    T = calc_energy_momentum_tensor_1pt(Usmr,univ)
+                    for μ=1:4
+                        for ν=1:4
+                            println("$itrj $τ $μ $ν $(T[μ,ν]) # trj,τ,μ,ν,T[μ,ν] #EMtensor")
+                        end
+                    end
                     #Q = calc_topological_charge(Usmr)
                     # sign of topological charge defined to be positive for one-instanton.
                     #println("Qplaq = ",Qplaq)                    
@@ -454,6 +460,12 @@ module Measurements
                             Qclov = calc_topological_charge_clover(Usmr,temp_UμνTA)
                             Qimpr = calc_topological_charge_improved(Usmr,temp_UμνTA,Qclov)
                             #@time Q = calc_topological_charge(Usmr)
+                            T = calc_energy_momentum_tensor_1pt(Usmr,univ)
+                            for μ=1:4
+                                for ν=1:4
+                                    println("$itrj $τ $μ $ν $(T[μ,ν]) # trj,τ,μ,ν,T[μ,ν] #EMtensor")
+                                end
+                            end
                             println_verbose1(verbose,"$itrj $(round(τ, digits=3)) $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
                             println(measfp,"$itrj $(round(τ, digits=3)) $plaq $Eclov $(real(Qplaq)) $(real(Qclov)) $(real(Qimpr)) #flow itrj flowtime plaq Eclov Qplaq Qclov Qimproved")
                             #if iflow%10 == 0
@@ -729,32 +741,38 @@ end
 # = = = Energy-Momentum tensor = = = 
 # based on https://arxiv.org/abs/2002.06897 (3.2), (3.3)
 # Originary https://arxiv.org/abs/1304.0533 (2.4)
-# We focus on 1pt function of Tμν = Σ_n Tμν(n)/V.
-function calc_energy_momentum_tensor_1pt(U::Array{T,1},univ) where T <: GaugeFields
+# We focus on 1pt function of Tμν = (1/V) Σ_n Tμν(n).
+function calc_energy_momentum_tensor_1pt(U::Array{Tg,1},univ) where Tg <: GaugeFields
     V = U[1].NV
     Nc = U[1].NC
-    beta = univ.gparam.β
+    β = univ.gparam.β
     #
     F = Array{GaugeFields_1d,2}(undef,4,4)
     make_clover_leaf!(F,U) # make a clover Wilson loop operator, which is same as Fμν in O(a^2)
     #
-    T = Array{GaugeFields_1d,2}(undef,4,4)
-    factor = beta/2/Nc
+    T = zeros(ComplexF64,4,4)
+    g2inv = β/(2*Nc) # 1/g^2
     for n=1:V
         for μ=1:4
             for ν=1:4
                 for ρ=1:4
-                    T[μ,ν]+=2*tr(F[μ,ρ][:,:,n]*F[ν,ρ][:,:,n])-2*tr(F[μ,ρ][:,:,n])*tr(F[ν,ρ][:,:,n])/Nc 
+                    if (ρ == ν)|(ρ == μ)
+                        continue
+                    end
+                    T[μ,ν] += 2*tr(F[μ,ρ][:,:,n]*F[ν,ρ][:,:,n])-2*tr(F[μ,ρ][:,:,n])*tr(F[ν,ρ][:,:,n])/Nc 
                     if μ==ν 
                         for σ=1:4
-                            T[μ,ν]-=tr(F[ρ,σ][:,:,n]*F[ρ,σ][:,:,n])/2-tr(F[ρ,σ][:,:,n])*tr(F[ρ,σ][:,:,n])/2/Nc 
+                            if σ == ρ
+                                continue
+                            end
+                            T[μ,ν] -= tr(F[ρ,σ][:,:,n]*F[ρ,σ][:,:,n])/2-tr(F[ρ,σ][:,:,n])*tr(F[ρ,σ][:,:,n])/2/Nc 
                         end
                     end
                 end
             end
         end
     end
-    return T*factor/V # this returns spacetime average
+    return real(T)*g2inv/V # this returns spacetime average
 end
 # = = = end of Energy-Momentum tensor = = = 
     function calc_plaquette(U::Array{T,1}) where T <: GaugeFields
