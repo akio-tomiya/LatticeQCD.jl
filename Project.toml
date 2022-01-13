@@ -25,10 +25,13 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 AlgRemez_jll = "0.1.1"
+ArnoldiMethod = "0.2"
 Distributions = "0.25"
 EzXML = "1"
 FastGaussQuadrature = "0.4"
 GR = "0.62"
+JLD2 = "0.4"
+KrylovKit = "0.5"
 Plots = "1"
 Requires = "1"
 SpecialFunctions = "1"
