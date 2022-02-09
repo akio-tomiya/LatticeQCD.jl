@@ -926,6 +926,19 @@ module Gaugefields
     end
 
     function Oneinstanton(NC,NX,NY,NZ,NT,NDW)
+    # https://inspirehep.net/literature/213949
+    # One instanto for finite volume, SU(2)
+    #=
+    A CLASSICAL INSTANTON ON A FOUR-DIMENSIONAL PERIODIC LATTICE
+    I.A. Fox(DESY), M.L. Laursen(DESY), G. Schierholz(DESY), J.P. Gilchrist(Edinburgh U.), M. Gockeler(Heidelberg U.)
+    Apr, 1985
+    3 pages
+    Published in: Phys.Lett.B 158 (1985) 332-334
+    Published: 1985
+    DOI: 10.1016/0370-2693(85)91193-1
+    Report number: DESY-85-031
+    View in: ADS Abstract Service
+    =#
         U = Array{SU2GaugeFields,1}(undef,4)
         for μ = 1:4
             U[μ] = GaugeFields(NC,NDW,NX,NY,NZ,NT)
