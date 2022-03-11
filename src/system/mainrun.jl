@@ -1,6 +1,12 @@
 module Mainrun
     using Dates
     using InteractiveUtils
+
+    import ..Universe_module:Univ,get_gauge_action,is_quenched
+    import ..AbstractMD_module:MD,runMD!
+    import ..AbstractUpdate_module:Updatemethod,update!
+    import ..AbstractMeasurement_module:Plaquette_measurement,measure
+
     import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
                             Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site
     import ..Actions:Setup_Gauge_action,Setup_Fermi_action,GaugeActionParam_autogenerator
@@ -25,6 +31,7 @@ module Mainrun
 
 
     import ..System_parameters:system,actions,md,cg,wilson,staggered,measurement
+    
 
     
 
@@ -63,12 +70,42 @@ module Mainrun
         return plaq
     end
 
+
     function run_LQCD(params_set::Params_set)
         parameters = parameterloading(params_set)
+        univ = Univ(parameters)
+        plaq = run_LQCD_new!(univ,parameters)
+
+        error("error!")
         univ = Universe(parameters)
         plaq = run_LQCD!(univ,parameters)
 
         return  plaq
+    end
+
+    function run_LQCD_new!(univ::Univ,parameters::Params)
+        #md = MD(parameters,univ)
+        #update_Uold!(univ)
+        #substitute_U!(univ.Uold,univ.U)
+        gauge_action = get_gauge_action(univ)
+        quench = is_quenched(univ)
+        updatemethod = Updatemethod(univ.U,gauge_action,parameters.update_method,quench,
+            parameters.Δτ,parameters.MDsteps,
+            fermi_action = univ.fermi_action,
+            SextonWeingargten=parameters.SextonWeingargten)
+        #runMD!(univ.U,md)
+
+        plaq_m = Plaquette_measurement(univ.U,filename="plaq.txt")
+        plaq = measure(plaq_m,0,univ.U)
+
+
+        for itrj=parameters.initialtrj:parameters.Nsteps
+            @time update!(updatemethod,univ.U)
+            plaq = measure(plaq_m,itrj,univ.U)
+
+        end
+
+        error("error in run_LQCD_new!")
     end
 
     function run_LQCD!(univ::Universe,parameters::Params)

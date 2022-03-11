@@ -6,7 +6,7 @@ module System_parameters
     printlist_physical = ["L","β","NC","Nthermalization","Nsteps","initial","initialtrj","update_method","useOR","numOR","Nwing"]
     # Physical setting(fermions)
     printlist_fermions  = ["quench","Dirac_operator","Clover_coefficient","r","hop","Nf","mass",
-                            "Domainwall_M","Domainwall_m","Domainwall_N5","Domainwall_ωs","Domainwall_b","Domainwall_c","Domainwall_r",
+                            "Domainwall_M","Domainwall_m","Domainwall_L5",
                             "BoundaryCondition",
                                 "smearing_for_fermion","stout_numlayers","stout_ρ","stout_loops"]
     # System Control
@@ -206,11 +206,11 @@ module System_parameters
     
         Domainwall_M::Union{Nothing,Float64}
         Domainwall_m::Union{Nothing,Float64}
-        Domainwall_N5::Union{Nothing,Int64}
-        Domainwall_b::Union{Nothing,Float64}
-        Domainwall_c::Union{Nothing,Float64}
-        Domainwall_ωs::Union{Nothing,Array{Float64,1}}
-        Domainwall_r::Union{Nothing,Float64}
+        Domainwall_L5::Union{Nothing,Int64}
+        #Domainwall_b::Union{Nothing,Float64}
+        ##Domainwall_c::Union{Nothing,Float64}
+        #Domainwall_ωs::Union{Nothing,Array{Float64,1}}
+        #Domainwall_r::Union{Nothing,Float64}
 
         julian_random_number::Bool
 
@@ -318,21 +318,21 @@ module System_parameters
                 println("$Dirac_operator fermion is used")
                 Domainwall_M = wilson["Domainwall_M"]
                 Domainwall_m = wilson["Domainwall_m"]
-                Domainwall_N5 = wilson["Domainwall_N5"]
-                Domainwall_b = wilson["Domainwall_b"]
-                Domainwall_c = wilson["Domainwall_c"]
-                Domainwall_ωs =wilson["Domainwall_ωs"]
-                Domainwall_r = wilson["Domainwall_r"]
+                Domainwall_L5 = wilson["Domainwall_L5"]
+                #Domainwall_b = wilson["Domainwall_b"]
+                #Domainwall_c = wilson["Domainwall_c"]
+                #Domainwall_ωs =wilson["Domainwall_ωs"]
+                #Domainwall_r = wilson["Domainwall_r"]
                 #r = wilson["r"]
 
 
 
             else
-                Domainwall_N5 = nothing
-                Domainwall_b = nothing
-                Domainwall_c = nothing
-                Domainwall_ωs = nothing
-                Domainwall_r = nothing
+                Domainwall_L5 = nothing
+                #Domainwall_b = nothing
+                #Domainwall_c = nothing
+                #Domainwall_ωs = nothing
+                #Domainwall_r = nothing
                 Domainwall_M = nothing
                 Domainwall_m = nothing
             end
@@ -628,11 +628,11 @@ module System_parameters
                 stout_loops,
                 Domainwall_M,#::Float64
                 Domainwall_m,#::Float64
-                Domainwall_N5,#::Int64
-                Domainwall_b,#::Float64
-                Domainwall_c,#::Float64
-                Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
-                Domainwall_r,
+                Domainwall_L5,#::Int64
+                #Domainwall_b,#::Float64
+                #Domainwall_c,#::Float64
+                #Domainwall_ωs,#::Union{Nothing,Array{Float64,1}}
+                #Domainwall_r,
                 julian_random_number
             )
 

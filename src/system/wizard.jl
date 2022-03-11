@@ -206,13 +206,18 @@ module Wizard
         println("Domain wall Fermion will be used (test mode). ")
         system["Dirac_operator"] = "Domainwall"
 
-        N5 = parse(Int64,Base.prompt("Input the size of the extra dimension N5", default="4"))
-        wilson["Domainwall_N5"] = N5
+        N5 = parse(Int64,Base.prompt("Input the size of the extra dimension L5", default="4"))
+        wilson["Domainwall_L5"] = N5
 
+        #=
         wtype = request("Choose domain wall fermion type",RadioMenu([
             "Standard Domainwall fermion action",
             "Other Domain wall fermion action",
         ]))
+        =#
+        println("Standard Domainwall fermion action is uded")
+        #=
+        wtype = 1
         if wtype == 1
             println("Parameters b and c are b=c=1. and ωs = 1. ")
             b = 1
@@ -227,9 +232,10 @@ module Wizard
                 ωs[i] = parse(Float64,Base.prompt("Input the parameter ωs[i]", default="1"))
             end
         end
-        wilson["Domainwall_b"] = b
-        wilson["Domainwall_c"] = c
-        wilson["Domainwall_ωs"] = ωs
+        =#
+        #wilson["Domainwall_b"] = b
+        #wilson["Domainwall_c"] = c
+        #wilson["Domainwall_ωs"] = ωs
 
 
         wilson["r"] = 1
@@ -545,7 +551,7 @@ module Wizard
                         "Nothing (quenched approximation)",
                         "Wilson Fermion (2-flavor)",
                         "Staggered Fermion",
-                        #"Domain-wall Fermion (DO NOT USE IT! test mode.)",
+                        "Domain-wall Fermion (DO NOT USE IT! test mode.)",
                     ]))
             if ftype == 1
                 cg = Dict()
