@@ -10,6 +10,7 @@ abstract type AbstractUpdate end
 
 include("./standardHMC.jl")
 include("./givenconfigurations.jl")
+include("./heatbath.jl")
 
 function Updatemethod(p::Params,univ::Univ)
     gauge_action = get_gauge_action(univ)
@@ -25,14 +26,23 @@ function Updatemethod(U,gauge_action,update_method,quench,
             ;fermi_action = nothing,
             SextonWeingargten=false,
             loadU_dir = nothing,
-            loadU_format = nothing
+            loadU_format = nothing,
+            isevenodd= true,
+            β = 5.7,
+            ITERATION_MAX=10^5,
+            numOR=3,
+            useOR=false
             )
     if update_method == "HMC"
         updatemethod = StandardHMC(U,gauge_action,quench,Δτ,MDsteps,
                 fermi_action,
                 SextonWeingargten=SextonWeingargten)
-    if update_method == "Fileloading"
+    elseif update_method == "Fileloading"
         updatemethod = GivenConfigurations(U,loadU_dir,loadU_format)
+    elseif update_method == "Heatbath"
+        updatemethod = Heatbathupdate(U,gauge_action,quench,
+                    isevenodd=isevenodd,β = β,ITERATION_MAX=ITERATION_MAX,
+                        numOR = numOR,useOR = useOR)
     else
         error("update method $(update_method) is not supported!")
     end
@@ -41,10 +51,8 @@ function Updatemethod(U,gauge_action,update_method,quench,
 end
 
 
-
-
 function update!(updatemethod::T,U) where T <: AbstractUpdate
-    error("updatemethod type $(updatemethod) is not supported!!")
+    error("updatemethod type $(typeof(updatemethod)) is not supported!!")
 end
 
 end

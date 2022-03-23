@@ -11,7 +11,8 @@ include("./standardMD.jl")
 
 function MD(U,gauge_action,quench,Δτ,MDsteps,
                 fermi_action = nothing;
-                SextonWeingargten=false)
+                SextonWeingargten=false,Nsw = 2)
+                #=
     if SextonWeingargten 
         if quench == true
             error("The quench update does not need the SextonWeingargten method. Put SextonWeingargten = false")
@@ -19,6 +20,8 @@ function MD(U,gauge_action,quench,Δτ,MDsteps,
     else
         md = StandardMD(U,gauge_action,quench,Δτ,MDsteps,fermi_action)
     end
+    =#
+    md = StandardMD(U,gauge_action,quench,Δτ,MDsteps,fermi_action,SextonWeingargten=SextonWeingargten,Nsw=Nsw)
 
     return md
 end
@@ -27,7 +30,7 @@ function MD(p::Params,univ::Univ)
     gauge_action = get_gauge_action(univ)
     quench = is_quenched(univ)
     md = MD(univ.U,gauge_action,quench,p.Δτ,p.MDsteps,
-                SextonWeingargten = p.SextonWeingargten)
+                SextonWeingargten = p.SextonWeingargten,Nsw =p.N_SextonWeingargten)
 
     return md
 end

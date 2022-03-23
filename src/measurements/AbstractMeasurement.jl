@@ -11,6 +11,7 @@ function get_temporary_gaugefields(m::AbstractMeasurement)
 end
 
 include("measure_plaquette.jl")
+include("measure_polyakov.jl")
 
 function measure(measurement::M,itrj,U) where M <: AbstractMeasurement
     error("measure with a type $M is not supported")

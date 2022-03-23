@@ -8,8 +8,10 @@ struct StandardMD{Dim,TG,TA,quench,T_FA,TF} <: AbstractMD{Dim,TG}
     fermi_action::T_FA
     η::TF
     ξ::TF
+    SextonWeingargten::Bool
+    Nsw::Int64
 
-    function StandardMD(U,gauge_action::GaugeAction{Dim,TG},quench,Δτ,MDsteps,fermi_action = nothing;QPQ=true) where {Dim,TG}
+    function StandardMD(U,gauge_action::GaugeAction{Dim,TG},quench,Δτ,MDsteps,fermi_action = nothing;QPQ=true,SextonWeingargten=false,Nsw=2) where {Dim,TG}
         p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
         TA = eltype(p)
         T_FA = typeof(fermi_action)
@@ -17,6 +19,9 @@ struct StandardMD{Dim,TG,TA,quench,T_FA,TF} <: AbstractMD{Dim,TG}
         if quench 
             η = nothing
             ξ = nothing
+            if SextonWeingargten 
+                error("The quench update does not need the SextonWeingargten method. Put SextonWeingargten = false")
+            end
         else
             if fermi_action == nothing
                 η = nothing
@@ -28,7 +33,9 @@ struct StandardMD{Dim,TG,TA,quench,T_FA,TF} <: AbstractMD{Dim,TG}
         end
         TF = typeof(η)
 
-        return new{Dim,TG,TA,quench,T_FA,TF}(gauge_action,quench,Δτ,MDsteps,p,QPQ,fermi_action,η,ξ)
+        @assert Nsw % 2 == 0 "Nsw should be even number! now Nsw = $Nsw"
+
+        return new{Dim,TG,TA,quench,T_FA,TF}(gauge_action,quench,Δτ,MDsteps,p,QPQ,fermi_action,η,ξ,SextonWeingargten,Nsw)
     end
 end
 
@@ -43,29 +50,76 @@ function initialize_MD!(U,md::StandardMD{Dim,TG,TA,quench,T_FA}) where {Dim,TG,T
 end
 
 function runMD!(U,md::StandardMD{Dim,TG,TA,quench}) where {Dim,TG,TA,quench}
-    p = md.p
+    #p = md.p
 
     if md.QPQ
-        for itrj=1:md.MDsteps
-            U_update!(U,p,0.5,md)
-            P_update!(U,p,1.0,md)
-            if quench == false
-                P_update_fermion!(U,p,1.0,md)
-            end
-            U_update!(U,p,0.5,md)
+        if md.SextonWeingargten
+            runMD_QPQ_sw!(U,md)
+        else
+            runMD_QPQ!(U,md)
         end
     else
-        for itrj=1:md.MDsteps
-            P_update!(U,p,0.5,md)
-            if quench == false
-                P_update_fermion!(U,p,0.5,md)
-            end
+        if md.SextonWeingargten
+            error("PQP update with SextonWeingargten is not supported")
+        else
+            runMD_PQP!(U,md)
+        end
+    end
 
-            U_update!(U,p,1.0,md)
-            P_update!(U,p,0.5,md)
-            if quench == false
-                P_update_fermion!(U,p,0.5,md)
-            end
+    #error("type $(typeof(md)) is not supported")
+end
+
+function runMD_QPQ!(U,md::StandardMD{Dim,TG,TA,quench}) where {Dim,TG,TA,quench}
+    p = md.p
+
+    for itrj=1:md.MDsteps
+        U_update!(U,p,0.5,md)
+        P_update!(U,p,1.0,md)
+        if quench == false
+            P_update_fermion!(U,p,1.0,md)
+        end
+        U_update!(U,p,0.5,md)
+    end
+
+    #error("type $(typeof(md)) is not supported")
+end
+
+function runMD_QPQ_sw!(U,md::StandardMD{Dim,TG,TA,quench}) where {Dim,TG,TA,quench}
+    p = md.p
+
+    for itrj=1:md.MDsteps
+        for isw=1:div(md.Nsw,2)
+            U_update!(U,p,0.5/md.Nsw,md)
+            P_update!(U,p,1.0/md.Nsw,md)
+            U_update!(U,p,0.5/md.Nsw,md)
+        end
+        if quench == false
+            P_update_fermion!(U,p,1.0,md)
+        end
+        for isw=1:div(md.Nsw,2)
+            U_update!(U,p,0.5/md.Nsw,md)
+            P_update!(U,p,1.0/md.Nsw,md)
+            U_update!(U,p,0.5/md.Nsw,md)
+        end
+    end
+
+    #error("type $(typeof(md)) is not supported")
+end
+
+
+function runMD_PQP!(U,md::StandardMD{Dim,TG,TA,quench}) where {Dim,TG,TA,quench}
+    p = md.p
+
+    for itrj=1:md.MDsteps
+        P_update!(U,p,0.5,md)
+        if quench == false
+            P_update_fermion!(U,p,0.5,md)
+        end
+
+        U_update!(U,p,1.0,md)
+        P_update!(U,p,0.5,md)
+        if quench == false
+            P_update_fermion!(U,p,0.5,md)
         end
     end
 

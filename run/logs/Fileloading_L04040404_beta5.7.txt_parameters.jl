@@ -4,39 +4,40 @@ system["L"] = (4, 4, 4, 4)
 system["β"] = 5.7
 system["NC"] = 3
 system["Nthermalization"] = 0
-system["Nsteps"] = 101
+system["Nsteps"] = 100
 system["initial"] = "cold"
 system["initialtrj"] = 1
-system["update_method"] = "HMC"
+system["update_method"] = "Fileloading"
 system["Nwing"] = 1
 	
 # Physical setting(fermions)
-system["quench"] = false
-system["Dirac_operator"] = "Wilson"
+system["quench"] = true
+system["Dirac_operator"] = nothing
 wilson["Clover_coefficient"] = 0
 wilson["r"] = 1
-wilson["hop"] = 0.141139
+wilson["hop"] = 0
 staggered["Nf"] = 0
 staggered["mass"] = 0
 system["BoundaryCondition"] = [1, 1, 1, -1]
-system["smearing_for_fermion"] = "nothing"
 	
 # System Control
 system["log_dir"] = "./logs"
-system["logfile"] = "HMC_L04040404_beta5.7_Wilson_kappa0.141139.txt"
+system["logfile"] = "Fileloading_L04040404_beta5.7.txt"
+system["loadU_format"] = "ILDG"
+system["loadU_dir"] = "./confs"
+system["loadU_fromfile"] = false
 system["saveU_dir"] = ""
 system["saveU_format"] = nothing
 system["saveU_every"] = 1
 system["verboselevel"] = 2
 system["randomseed"] = 111
 measurement["measurement_basedir"] = "./measurements"
-measurement["measurement_dir"] = "HMC_L04040404_beta5.7_Wilson_kappa0.141139"
+measurement["measurement_dir"] = "Fileloading_L04040404_beta5.7"
 system["julian_random_number"] = false
 	
 # HMC related
 md["Δτ"] = 0.05
-md["SextonWeingargten"] = true
-md["N_SextonWeingargten"] = 10
+md["SextonWeingargten"] = false
 md["MDsteps"] = 20
 cg["eps"] = 1.0e-19
 cg["MaxCGstep"] = 3000
