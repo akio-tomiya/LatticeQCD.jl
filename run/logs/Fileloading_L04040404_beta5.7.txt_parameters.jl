@@ -50,6 +50,15 @@ actions["coupling_loops"] = nothing
 	
 # Measurement set
 measurement["measurement_methods"] = Dict[ 
+  Dict{Any,Any}("methodname" => "Polyakov_loop",
+    "measure_every" => 1
+  ),
+  Dict{Any,Any}("methodname" => "Topological_charge",
+    "Nflowsteps" => 1,
+    "numflow" => 1,
+    "measure_every" => 1,
+    "eps_flow" => 0.01
+  ),
   Dict{Any,Any}("methodname" => "Plaquette",
     "measure_every" => 1
   )

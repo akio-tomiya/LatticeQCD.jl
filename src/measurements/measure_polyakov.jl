@@ -41,14 +41,14 @@ mutable struct Polyakov_measurement{Dim,TG} <: AbstractMeasurement
 
 end
 
-function measure(m::M,itrj,U) where M <: Polyakov_measurement
+function measure(m::M,itrj,U;additional_string="") where M <: Polyakov_measurement
     temps = get_temporary_gaugefields(m)
     poly = calculate_Polyakov_loop(U,temps[1],temps[2])
 
     if m.printvalues
-        println_verbose_level2(U[1],"-----------------")
-        println_verbose_level2(m.verbose_print,"$itrj $(real(poly)) $(imag(poly)) # poly")
-        println_verbose_level2(U[1],"-----------------")
+        #println_verbose_level2(U[1],"-----------------")
+        println_verbose_level2(m.verbose_print,"$itrj $additional_string $(real(poly)) $(imag(poly)) # poly")
+        #println_verbose_level2(U[1],"-----------------")
     end
 
     return poly

@@ -49,14 +49,14 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
 
 end
 
-function measure(m::M,itrj,U) where M <: Plaquette_measurement
+function measure(m::M,itrj,U;additional_string="") where M <: Plaquette_measurement
     temps = get_temporary_gaugefields(m)
     plaq = real(calculate_Plaquette(U,temps[1],temps[2])*m.factor)
 
     if m.printvalues
-        println_verbose_level2(U[1],"-----------------")
-        println_verbose_level2(m.verbose_print,"$itrj $plaq # plaq")
-        println_verbose_level2(U[1],"-----------------")
+        #println_verbose_level2(U[1],"-----------------")
+        println_verbose_level2(m.verbose_print,"$itrj $additional_string $plaq # plaq")
+        #println_verbose_level2(U[1],"-----------------")
     end
 
     return plaq

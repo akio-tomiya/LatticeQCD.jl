@@ -5,7 +5,8 @@ module Mainrun
     import ..Universe_module:Univ,get_gauge_action,is_quenched
     import ..AbstractMD_module:MD,runMD!
     import ..AbstractUpdate_module:Updatemethod,update!
-    import ..AbstractMeasurement_module:Plaquette_measurement,measure,Polyakov_measurement
+    import ..AbstractMeasurement_module:Plaquette_measurement,measure,Polyakov_measurement,
+                Topological_charge_measurement,Energy_density_measurement, Measurements_set
 
     import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
                             Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site
@@ -103,16 +104,35 @@ module Mainrun
             )
         #runMD!(univ.U,md)
 
+        meas =  Measurements_set(univ.U,parameters.measuredir,parameters.measurement_methods)
+
+        #=
         plaq_m = Plaquette_measurement(univ.U,filename="plaq.txt")
         poly_m = Polyakov_measurement(univ.U,filename="poly.txt")
+        topo_m = Topological_charge_measurement(univ.U, filename="topo.txt",
+                TC_methods = ["plaquette","clover"])
+        energy_m = Energy_density_measurement(univ.U, filename="energydensity.txt")
+=#
+
+        #=
         plaq = measure(plaq_m,0,univ.U)
         poly = measure(poly_m,0,univ.U)
+        topo = measure(topo_m,0,univ.U)
+        energy = measure(energy_m,0,univ.U)
+        =#
+
+        measure(meas,0,univ.U)
 
 
         for itrj=parameters.initialtrj:parameters.Nsteps
             @time update!(updatemethod,univ.U)
+            measure(meas,itrj,univ.U)
+            #=
             plaq = measure(plaq_m,itrj,univ.U)
             poly = measure(poly_m,itrj,univ.U)
+            topo = measure(topo_m,itrj,univ.U)
+            energy = measure(energy_m,itrj,univ.U)
+            =#
 
         end
 
