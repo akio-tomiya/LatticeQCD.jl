@@ -1,12 +1,13 @@
 module Mainrun
     using Dates
     using InteractiveUtils
+    import  Gaugefields:Gradientflow
 
     import ..Universe_module:Univ,get_gauge_action,is_quenched
     import ..AbstractMD_module:MD,runMD!
     import ..AbstractUpdate_module:Updatemethod,update!
     import ..AbstractMeasurement_module:Plaquette_measurement,measure,Polyakov_measurement,
-                Topological_charge_measurement,Energy_density_measurement, Measurements_set
+                Topological_charge_measurement,Energy_density_measurement, Measurements_set,measure_withflow 
 
     import ..LTK_universe:Universe,show_parameters,make_WdagWmatrix,calc_Action,set_β!,set_βs!,get_β,
                             Wilsonloops_actions,calc_looptrvalues,calc_trainingdata,calc_looptrvalues_site
@@ -103,9 +104,13 @@ module Mainrun
             useOR = parameters.useOR
             )
         #runMD!(univ.U,md)
+        eps_flow = 0.01
+        numflow = 10
+        Nflow = 1
+
 
         meas =  Measurements_set(univ.U,parameters.measuredir,parameters.measurement_methods)
-
+        gradientflow = Gradientflow(univ.U,Nflow = 1,eps = eps_flow)
         #=
         plaq_m = Plaquette_measurement(univ.U,filename="plaq.txt")
         poly_m = Polyakov_measurement(univ.U,filename="poly.txt")
@@ -121,12 +126,15 @@ module Mainrun
         energy = measure(energy_m,0,univ.U)
         =#
 
+        dτ = Nflow*eps_flow
         measure(meas,0,univ.U)
+        measure_withflow(meas,0,univ.U,gradientflow,numflow,dτ)
 
 
         for itrj=parameters.initialtrj:parameters.Nsteps
             @time update!(updatemethod,univ.U)
             measure(meas,itrj,univ.U)
+            measure_withflow(meas,itrj,univ.U,gradientflow,numflow,dτ)
             #=
             plaq = measure(plaq_m,itrj,univ.U)
             poly = measure(poly_m,itrj,univ.U)

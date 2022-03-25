@@ -31,7 +31,11 @@ struct GivenConfigurations <: AbstractUpdate
         current_fileindex = Vector{Int64}(undef,1)
         current_fileindex[1] = 0
 
-        return new(loadU_dir,loadU_format,filename_load,current_fileindex)
+        updatemethod = new(loadU_dir,loadU_format,filename_load,current_fileindex)
+
+        update!(updatemethod,U)
+
+        return updatemethod #new(loadU_dir,loadU_format,filename_load,current_fileindex)
 
     end
 end
