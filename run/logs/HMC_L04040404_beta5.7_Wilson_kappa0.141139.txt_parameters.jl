@@ -24,9 +24,9 @@ system["smearing_for_fermion"] = "nothing"
 # System Control
 system["log_dir"] = "./logs"
 system["logfile"] = "HMC_L04040404_beta5.7_Wilson_kappa0.141139.txt"
-system["saveU_dir"] = ""
-system["saveU_format"] = nothing
-system["saveU_every"] = 1
+system["saveU_dir"] = "./confs_HMC_L04040404_beta5.7_Wilson_kappa0.141139"
+system["saveU_format"] = "ILDG"
+system["saveU_every"] = 10
 system["verboselevel"] = 2
 system["randomseed"] = 111
 measurement["measurement_basedir"] = "./measurements"
@@ -35,8 +35,8 @@ system["julian_random_number"] = false
 	
 # HMC related
 md["Δτ"] = 0.05
-md["SextonWeingargten"] = true
-md["N_SextonWeingargten"] = 10
+md["SextonWeingargten"] = false
+md["N_SextonWeingargten"] = 2
 md["MDsteps"] = 20
 cg["eps"] = 1.0e-19
 cg["MaxCGstep"] = 3000

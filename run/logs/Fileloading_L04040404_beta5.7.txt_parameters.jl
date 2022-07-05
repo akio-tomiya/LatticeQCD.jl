@@ -1,6 +1,6 @@
 # - - parameters - - - - - - - - - - - 
 # Physical setting 
-system["L"] = (4, 4, 4, 4)
+system["L"] = (8, 8, 8, 8)
 system["β"] = 5.7
 system["NC"] = 3
 system["Nthermalization"] = 0
@@ -24,7 +24,7 @@ system["BoundaryCondition"] = [1, 1, 1, -1]
 system["log_dir"] = "./logs"
 system["logfile"] = "Fileloading_L04040404_beta5.7.txt"
 system["loadU_format"] = "ILDG"
-system["loadU_dir"] = "./confs"
+system["loadU_dir"] = "./confsdata"
 system["loadU_fromfile"] = false
 system["saveU_dir"] = ""
 system["saveU_format"] = nothing
@@ -50,17 +50,14 @@ actions["coupling_loops"] = nothing
 	
 # Measurement set
 measurement["measurement_methods"] = Dict[ 
-  Dict{Any,Any}("methodname" => "Chiral_condensate",
-    "eps" => 1.0e-19,
-    "fermiontype" => "Staggered",
-    "Nf" => 4,
-    "smearing_for_fermion" => "nothing",
-    "mass" => 0.5,
-    "measure_every" => 1,
-    "MaxCGstep" => 3000
-  ),
   Dict{Any,Any}("methodname" => "Polyakov_loop",
     "measure_every" => 1
+  ),
+  Dict{Any,Any}("methodname" => "Topological_charge",
+    "Nflowsteps" => 1,
+    "numflow" => 1,
+    "measure_every" => 1,
+    "eps_flow" => 0.01
   ),
   Dict{Any,Any}("methodname" => "Plaquette",
     "measure_every" => 1
