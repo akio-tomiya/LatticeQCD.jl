@@ -1,3 +1,3 @@
 module SLMC_Flux
-    using Flux
+using Flux
 end
