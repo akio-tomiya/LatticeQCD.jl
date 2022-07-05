@@ -10,7 +10,7 @@ end
 
 Base.@kwdef mutable struct MD
     MDsteps::Int64 = 20
-    Δτ::Float64 = 1/20
+    Δτ::Float64 = 1 / 20
     SextonWeingargten::Bool = false
     N_SextonWeingargten::Int64 = 2
 end
@@ -66,43 +66,62 @@ abstract type Measurement_parameters end
 Base.@kwdef mutable struct Measurement_common_parameters
     methodname::String = ""
     measure_every::Int64 = 10
-    fermiontype::String= "nothing"
+    fermiontype::String = "nothing"
 end
 
-Base.@kwdef mutable struct Plaq_parameters  <: Measurement_parameters
-    common::Measurement_common_parameters = Measurement_common_parameters()
+Base.@kwdef mutable struct Plaq_parameters <: Measurement_parameters
+    #common::Measurement_common_parameters = Measurement_common_parameters()
+    methodname::String = ""
+    measure_every::Int64 = 10
+    fermiontype::String = "nothing"
 end
 
-Base.@kwdef mutable struct Poly_parameters  <: Measurement_parameters
-    common::Measurement_common_parameters = Measurement_common_parameters()
+Base.@kwdef mutable struct Poly_parameters <: Measurement_parameters
+    methodname::String = ""
+    measure_every::Int64 = 10
+    fermiontype::String = "nothing"
+    #common::Measurement_common_parameters = Measurement_common_parameters()
 end
 
-Base.@kwdef mutable struct TopologicalCharge_parameters  <: Measurement_parameters
-    common::Measurement_common_parameters = Measurement_common_parameters()
+Base.@kwdef mutable struct TopologicalCharge_parameters <: Measurement_parameters
+    methodname::String = ""
+    measure_every::Int64 = 10
+    fermiontype::String = "nothing"
+    #common::Measurement_common_parameters = Measurement_common_parameters()
     numflow::Int64 = 1 #number of flows
     Nflowsteps::Int64 = 1
-    eps_flow::Float64  = 0.01
+    eps_flow::Float64 = 0.01
 end
 
-Base.@kwdef mutable struct ChiralCondensate_parameters  <: Measurement_parameters
-    common::Measurement_common_parameters = Measurement_common_parameters()
+Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
+    #common::Measurement_common_parameters = Measurement_common_parameters()
+    methodname::String = ""
+    measure_every::Int64 = 10
     fermiontype::String = "Staggered"
     Nf::Int64 = 4
     eps::Float64 = 1e-19
     mass::Float64 = 0.5
     MaxCGstep::Int64 = 3000
     smearing_for_fermion::String = "nothing"
-    smearing::Smearing_parameters = Stout_parameters()
+    stout_numlayers::Int64 = 1
+    stout_ρ::Vector{Float64} = []
+    stout_loops::Vector{String} = []
+    #smearing::Smearing_parameters = Stout_parameters()
 end
 
-Base.@kwdef mutable struct Pion_parameters  <: Measurement_parameters
-    common::Measurement_common_parameters = Measurement_common_parameters()
+Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
+    #common::Measurement_common_parameters = Measurement_common_parameters()
+    methodname::String = ""
+    measure_every::Int64 = 10
     fermiontype::String = "Wilson"
     eps::Float64 = 1e-19
     MaxCGstep::Int64 = 3000
     smearing_for_fermion::String = "nothing"
-    smearing::Smearing_parameters = NoSmearing_parameters()
-    fermion_parameters::Fermion_parameters  = Wilson_parameters()
+    stout_numlayers::Int64 = 1
+    stout_ρ::Vector{Float64} = []
+    stout_loops::Vector{String} = []
+    #smearing::Smearing_parameters = NoSmearing_parameters()
+    fermion_parameters::Fermion_parameters = Wilson_parameters()
 end
 
 Base.@kwdef mutable struct System
@@ -110,27 +129,39 @@ Base.@kwdef mutable struct System
     Nwing::Int8 = 1
     verboselevel::Int8 = 1
     randomseed::Int64 = 111
-    L::NTuple{4,Int64} = (4, 4, 4, 4)
+    L::Vector{Int64} = [4,4,4,4]
     NC::Int8 = 3
     β::Float64 = 5.7
     initialtrj::Int64 = 1
-    loadU_format::Union{Nothing,String} = nothing
+    loadU_format::String = "nothing"
     update_method::String = "HMC"
-    loadU_dir::Union{Nothing,String} = nothing
+    loadU_dir::String = "nothing"
     loadU_fromfile::Bool = false
-    loadU_filename::Union{Nothing,String} = nothing
+    loadU_filename::String = "nothing"
     initial::String = "cold"
-    Dirac_operator::Union{Nothing,String} = nothing
+    Dirac_operator::String = "nothing"
     quench::Bool = true
     smearing_for_fermion::String = "nothing"
+    stout_numlayers::Int64 = 1
+    stout_ρ::Vector{Float64} = []
+    stout_loops::Vector{String} = []
     useOR::Bool = false #Over relaxation method for heatbath updates
     numOR::Int64 = 0 #number of Over relaxation method
     βeff::Float64 = 5.7 #effective beta for SLHMC
     firstlearn::Int64 = 1
     Nthermalization::Int64 = 0 #number of updates without measuring
-    smearing::Smearing_parameters = NoSmearing_parameters()
-    measurement_methods::Vector{Measurement_parameters} = []
+    #smearing::Smearing_parameters = NoSmearing_parameters()
+    log_dir::String = ""
+    logfile::String = ""
+    saveU_format::String = "nothing"
+    saveU_dir::String = ""
+    saveU_every::Int64 = 10
+end
 
+Base.@kwdef mutable struct Measurement_parameterset
+    measurement_methods::Vector{Measurement_parameters} = []
+    measurement_basedir::String = ""
+    measurement_dir::String = ""
 end
 
 
@@ -140,8 +171,8 @@ end
 function Plaq_parameters_interactive()
     method = Plaq_parameters()
     println("You measure Plaquette loops")
-    method.common.methodname = "Plaquette"
-    method.common.measure_every =
+    method.methodname = "Plaquette"
+    method.measure_every =
         parse(Int64, Base.prompt("How often measure Plaquette loops?", default = "1"))
     return method
 end
@@ -151,8 +182,8 @@ end
 function Poly_parameters_interactive()
     method = Poly_parameters()
     println("You measure Polyakov loops")
-    method.common.methodname = "Polyakov_loop"
-    method.common.measure_every =
+    method.methodname = "Polyakov_loop"
+    method.measure_every =
         parse(Int64, Base.prompt("How often measure Polyakov loops?", default = "1"))
     return method
 end
@@ -162,23 +193,24 @@ end
 function TopologicalCharge_parameters_interactive()
     method = TopologicalCharge_parameters()
     println("You measure a topological charge")
-    method.common.methodname = "Topological_charge"
-    method.common.measure_every =
+    method.methodname = "Topological_charge"
+    method.measure_every =
         parse(Int64, Base.prompt("How often measure a topological charge?", default = "1"))
 
     method.numflow = parse(
-            Int64,
-            Base.prompt(
-                "How many times do you want to flow gauge fields to measure the topological charge?",
-                default = "10",
-    ),)
+        Int64,
+        Base.prompt(
+            "How many times do you want to flow gauge fields to measure the topological charge?",
+            default = "10",
+        ),
+    )
 
     Nflowsteps = 1#L[1]
     eps_flow = 0.01
-    
+
     method.Nflowsteps = parse(Int64, Base.prompt("Nflowsteps?", default = "$Nflowsteps"))
     method.eps_flow = parse(Float64, Base.prompt("eps_flow?", default = "$eps_flow"))
-        
+
     return method
 end
 
@@ -189,7 +221,7 @@ end
 
 
 
-function MD_interactive(;Dirac_operator=nothing)
+function MD_interactive(; Dirac_operator = nothing)
     md = MD()
     println("Choose parameters for MD")
     MDsteps = parse(Int64, Base.prompt("Input MD steps", default = "20"))
@@ -199,9 +231,9 @@ function MD_interactive(;Dirac_operator=nothing)
 
     if Dirac_operator != nothing
         SW = request(
-                "Use SextonWeingargten method? multi-time scale",
-                RadioMenu(["false", "true"]),
-            )
+            "Use SextonWeingargten method? multi-time scale",
+            RadioMenu(["false", "true"]),
+        )
         SextonWeingargten = ifelse(SW == 1, false, true)
 
         if SextonWeingargten
@@ -270,11 +302,11 @@ end
 
 
 
-function ChiralCondensate_parameters_interactive(;mass= 0.5)
+function ChiralCondensate_parameters_interactive(; mass = 0.5)
     method = ChiralCondensate_parameters()
     println("You measure chiral condensates with the statteggred fermion")
-    method.common.methodname = "Chiral_condensate"
-    method.common.measure_every =
+    method.methodname = "Chiral_condensate"
+    method.measure_every =
         parse(Int64, Base.prompt("How often measure chiral condensates?", default = "1"))
     method.mass = parse(
         Float64,
@@ -301,18 +333,21 @@ function ChiralCondensate_parameters_interactive(;mass= 0.5)
     method.eps = eps
     method.MaxCGstep = MaxCGstep
 
-    smearing =
-            request(
-                "Choose a configuration format for loading",
-                RadioMenu(["No smearing", "stout smearing"]),
-            ) |> SmearingMethod
+    smearingmethod =
+        request(
+            "Choose a configuration format for loading",
+            RadioMenu(["No smearing", "stout smearing"]),
+        ) |> SmearingMethod
 
-    if smearing == Nosmearing
+    if smearingmethod == Nosmearing
         method.smearing_for_fermion = "nothing"
-        method.smearing = NoSmearing_parameters()
-    elseif smearing == STOUT
-        method.system.smearing_for_fermion = "stout"
-        method.smearing = Stout_parameters_interactive()
+        smearing = NoSmearing_parameters()
+    elseif smearingmethod == STOUT
+        method.smearing_for_fermion = "stout"
+        smearing = Stout_parameters_interactive()
+        method.stout_ρ =  smearing.ρ
+        method.stout_loops = smearing.stout_loops
+        method.stout_numlayers = smearing.numlayers
     end
 
     return method
@@ -324,8 +359,8 @@ end
 function Pion_parameters_interactive()
     method = Pion_parameters()
     println("You measure Pion_correlator")
-    method.common.methodname = "Pion_correlator"
-    method.common.measure_every =
+    method.methodname = "Pion_correlator"
+    method.measure_every =
         parse(Int64, Base.prompt("How often measure Pion_correlator?", default = "1"))
 
     wtype = request(
@@ -354,18 +389,21 @@ function Pion_parameters_interactive()
     method.eps = cg.eps
     method.MaxCGstep = cg.MaxCGstep
 
-    smearing =
-            request(
-                "Choose a configuration format for loading",
-                RadioMenu(["No smearing", "stout smearing"]),
-            ) |> SmearingMethod
+    smearingmethod =
+        request(
+            "Choose a configuration format for loading",
+            RadioMenu(["No smearing", "stout smearing"]),
+        ) |> SmearingMethod
 
-    if smearing == Nosmearing
+    if smearingmethod == Nosmearing
         method.smearing_for_fermion = "nothing"
-        method.smearing = NoSmearing_parameters()
-    elseif smearing == STOUT
+        smearing = NoSmearing_parameters()
+    elseif smearingmethod == STOUT
         method.smearing_for_fermion = "stout"
-        method.smearing = Stout_parameters_interactive()
+        smearing = Stout_parameters_interactive()
+        method.stout_ρ =  smearing.ρ
+        method.stout_loops = smearing.stout_loops
+        method.stout_numlayers = smearing.numlayers
     end
 
     return method
@@ -432,7 +470,7 @@ function Domainwall_wizard()
     fermion_parameters = Domainwall_parameters()
     N5 =
         parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
-    fermion_parameters.N5 =  N5
+    fermion_parameters.N5 = N5
     println("Standard Domainwall fermion action is uded")
 
     M = parse(Float64, Base.prompt("Input M", default = "-1"))
@@ -446,7 +484,7 @@ function Domainwall_wizard()
     fermion_parameters.m = m
 
     cg = CG_params_interactive()
-    return fermion_parameters,cg
+    return fermion_parameters, cg
 end
 
 

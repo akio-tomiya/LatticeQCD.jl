@@ -1,5 +1,6 @@
 module Wizard
 using REPL.TerminalMenus
+using TOML
 import ..System_parameters: Params_set, print_parameters, Params
 import ..Parameter_structs:
     System,
@@ -25,14 +26,16 @@ import ..Parameter_structs:
     staggered_wizard,
     wilson_wizard,
     Domainwall_wizard,
-    Pion_parameters_interactive
+    Pion_parameters_interactive,
+    Measurement_parameterset
 
 @enum Wizardmode simple = 1 expert = 2
 @enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
-@enum Fileformat JLD = 1 ILDG = 2 BridgeText = 3
+@enum Fileformat JLD = 1 ILDG = 2 BridgeText = 3 Nosave = 0
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
-@enum Fermiontype Nofermion=1 Wilsonfermion=2 Staggeredfermion=3 Domainwallfermion=4
-@enum Options Plaquette=1 Polyakov_loop=2 Topological_charge=3 Chiral_condensate=4 Pion_correlator=5
+@enum Fermiontype Nofermion = 1 Wilsonfermion = 2 Staggeredfermion = 3 Domainwallfermion = 4
+@enum Options Plaquette = 1 Polyakov_loop = 2 Topological_charge = 3 Chiral_condensate = 4 Pion_correlator =
+    5
 
 
 
@@ -192,27 +195,29 @@ function run_wizard()
                     default = "./confs/conf_00000001.$(extstring)",
                 ),
             )
-            system.initialtrj = parse(Int64, Base.prompt("Start trj number?", default = "1"))
+            system.initialtrj =
+                parse(Int64, Base.prompt("Start trj number?", default = "1"))
         elseif initialconf == instantonstart
             system.initial = "one instanton"
         end
 
         if isexpert
-            ftype = request(
-                "Choose a dynamical fermion",
-                RadioMenu([
-                    "Nothing (quenched approximation)",
-                    "Wilson Fermion (2-flavor)",
-                    "Staggered Fermion",
-                    "Domain-wall Fermion (DO NOT USE IT! test mode.)",
-                ]),
-            ) |> Fermiontype
+            ftype =
+                request(
+                    "Choose a dynamical fermion",
+                    RadioMenu([
+                        "Nothing (quenched approximation)",
+                        "Wilson Fermion (2-flavor)",
+                        "Staggered Fermion",
+                        "Domain-wall Fermion (DO NOT USE IT! test mode.)",
+                    ]),
+                ) |> Fermiontype
 
 
             if ftype == Nofermion
                 cg = ConjugateGradient()
                 fermion_parameters = Quench_parameters()
-                system.Dirac_operator = nothing
+                system.Dirac_operator = "nothing"
                 system.quench = true
             elseif ftype == Wilsonfermion
                 system.quench = false
@@ -239,7 +244,7 @@ function run_wizard()
             elseif ftype == Domainwallfermion
                 system.quench = false
                 system.Dirac_operator = "Domainwall"
-                fermion_parameters,cg =  Domainwall_wizard()
+                fermion_parameters, cg = Domainwall_wizard()
             end
 
 
@@ -250,21 +255,25 @@ function run_wizard()
         end
 
         if system.quench == false
-            smearing =
+            smearingmethod =
                 request(
                     "Choose a configuration format for loading",
                     RadioMenu(["No smearing", "stout smearing"]),
                 ) |> SmearingMethod
 
-            if smearing == Nosmearing
+            if smearingmethod == Nosmearing
                 system.smearing_for_fermion = "nothing"
-                system.smearing = NoSmearing_parameters()
-            elseif smearing == STOUT
+                smearing = NoSmearing_parameters()
+
+            elseif smearingmethod == STOUT
                 system.smearing_for_fermion = "stout"
-                system.smearing = Stout_parameters_interactive()
+                smearing = Stout_parameters_interactive()
+                system.stout_ρ =  smearing.ρ
+                system.stout_loops = smearing.stout_loops
+                system.stout_numlayers = smearing.numlayers
             end
         else
-            system.smearing = NoSmearing_parameters()
+            smearing = NoSmearing_parameters()
         end
 
 
@@ -287,23 +296,28 @@ function run_wizard()
                             ),
                         )
                     end
-                else methodtype  == 2
+                else
+                    methodtype == 2
                     system.update_method = "HMC"
                 end
             else
                 methodtype = request(
-                "Choose an update method",
-                RadioMenu([
-                    "Hybrid Monte Carlo",
-                    "Self-learning Hybrid Monte Carlo (SLHMC)"
-                ]),
+                    "Choose an update method",
+                    RadioMenu([
+                        "Hybrid Monte Carlo",
+                        "Self-learning Hybrid Monte Carlo (SLHMC)",
+                    ]),
                 )
 
                 if methodtype == 1
                     system.update_method = "HMC"
-                else methodtype  == 2
+                else
+                    methodtype == 2
                     system.update_method = "SLHMC"
-                    system.βeff = parse(Float64, Base.prompt("Input initial effective β", default = "$β"))
+                    system.βeff = parse(
+                        Float64,
+                        Base.prompt("Input initial effective β", default = "$β"),
+                    )
                     system.firstlearn = parse(
                         Int64,
                         Base.prompt(
@@ -312,7 +326,7 @@ function run_wizard()
                         ),
                     )
                 end
-            
+
             end
         else
             system.update_method = "HMC"
@@ -335,50 +349,120 @@ function run_wizard()
         end
 
         Nsteps = parse(
-                Int64,
-                Base.prompt(
-                    "Input the number of total trajectories after the thermalization",
-                    default = "$(100+system.initialtrj)",
-                ),
-            )
-            if Nsteps <= 0
-                error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
-            end
+            Int64,
+            Base.prompt(
+                "Input the number of total trajectories after the thermalization",
+                default = "$(100+system.initialtrj)",
+            ),
+        )
+        if Nsteps <= 0
+            error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
+        end
 
         if isexpert
-            md = MD_interactive(Dirac_operator=system.Dirac_operator)
+            md = MD_interactive(Dirac_operator = system.Dirac_operator)
         else
-            md  = MD()
+            md = MD()
         end
 
     end
 
+    measurement = Measurement_parameterset()
 
-    measurementmenu  = MultiSelectMenu(Options |> instances |> collect .|> string)
+    measurementmenu = MultiSelectMenu(Options |> instances |> collect .|> string)
 
-    choices = request("Select the measurement methods you want to do:", measurementmenu) |> collect .|> Options
+    if isexpert
+        choices =
+            request("Select the measurement methods you want to do:", measurementmenu) |>
+            collect .|>
+            Options
+    else
+        choices = [1, 2, 5] .|> Options
+    end
     nummeasurements = length(choices)
-    system.measurement_methods = Vector{Measurement_parameters}(undef, nummeasurements)
+    measurement.measurement_methods = Vector{Measurement_parameters}(undef, nummeasurements)
 
     #@enum Options Plaquette=1 Polyakov_loop=2 Topological_charge=3 Chiral_condensate=4 Pion_correlator=5
     count = 0
     for method in choices
         count += 1
         if method == Plaquette
-            system.measurement_methods[count] = Plaq_parameters_interactive() #plaq_wizard()
+            measurement.measurement_methods[count] = Plaq_parameters_interactive() #plaq_wizard()
         elseif method == Polyakov_loop
-            system.measurement_methods[count] = Poly_parameters_interactive()
+            measurement.measurement_methods[count] = Poly_parameters_interactive()
         elseif method == Topological_charge
-            system.measurement_methods[count] = TopologicalCharge_parameters_interactive()
+            measurement.measurement_methods[count] =
+                TopologicalCharge_parameters_interactive()
         elseif method == Chiral_condensate
-            system.measurement_methods[count] = ChiralCondensate_parameters_interactive()
+            measurement.measurement_methods[count] =
+                ChiralCondensate_parameters_interactive()
         elseif method == Pion_correlator
-            system.measurement_methods[count] = Pion_parameters_interactive()
+            measurement.measurement_methods[count] = Pion_parameters_interactive()
         end
     end
 
     headername = make_headername(system, fermion_parameters)
 
+
+    if nummeasurements != 0
+        measurement.measurement_basedir = String(
+            Base.prompt("base directory for measurements", default = "./measurements"),
+        )
+        measurement.measurement_dir = String(
+            Base.prompt(
+                "directory for measurements in $(measurement.measurement_basedir)/",
+                default = headername,
+            ),
+        )
+    end
+
+    system.log_dir = String(Base.prompt("log directory", default = "./logs"))
+    system.logfile = String(Base.prompt("logfile name", default = headername * ".txt"))
+
+
+    if isexpert
+        savetype =
+            request(
+                "Choose a configuration format for saving",
+                RadioMenu(["no save", "JLD", "ILDG", "Text format (BridgeText)"]),
+            ) |> x -> x - 1 |> Fileformat
+
+        if savetype == Nosave
+            system.saveU_format = "nothing"
+        elseif savetype == JLD
+            system.saveU_format = "JLD"
+        elseif savetype == ILDG
+            system.saveU_format = "ILDG"
+        elseif savetype == BridgeText
+            system.saveU_format = "BridgeText"
+        end
+
+        if system.saveU_format.≠
+            "nothing"
+
+            system.saveU_every = parse(
+                Int64,
+                Base.prompt(
+                    "How often do you save a configuration in file (Save every)?",
+                    default = "10",
+                ),
+            )
+            #system["saveU_basedir"] = String(Base.prompt("base directory for saving configuration", default="./confs"))
+            system.saveU_dir =
+                String(Base.prompt("Saving directory", default = "./confs_$(headername)"))
+            #system["saveU_dir"] = system["saveU_basedir"]*"/"*system["saveU_dir"]
+        end
+    end
+
+    struct2dict(x) = Dict(string(fn)=>getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
+
+    test = struct2dict(system) 
+
+    open("parametertest.toml", "w") do io
+        TOML.print(io, test)
+    end
+
+    display(test)
 
 
     error("err")
@@ -703,7 +787,8 @@ function set_Lattice_size(isexpert)
         NZ = parse(Int64, Base.prompt("Nz ?", default = "4"))
         NT = parse(Int64, Base.prompt("Nt ?", default = "4"))
         #NT = parse(Int64,readline(stdin))
-        L = (NX, NY, NZ, NT)
+        L = [NX, NY, NZ, NT]
+        #L = (NX, NY, NZ, NT)
         #system["L"] = L
         if (NX <= 0) | (NY <= 0) | (NZ <= 0) | (NT <= 0)
             error("Invalid parameter L=$L, elements must be positive integers")
@@ -711,7 +796,8 @@ function set_Lattice_size(isexpert)
     else
         NX = parse(Int64, Base.prompt("Input spatial lattice size ", default = "4"))
         NT = parse(Int64, Base.prompt("Input temporal lattice size ", default = "4"))
-        L = (NX, NX, NX, NT)
+        #L = (NX, NX, NX, NT)
+        L = [NX, NX, NX, NT]
         #system["L"] = L
         if (NX <= 0) | (NT <= 0)
             error("Invalid parameter L=$L, elements must be positive integers")
@@ -1323,7 +1409,7 @@ function set_measurementmethods!(system, measurement, staggered, wilson, options
     measurement["measurement_methods"] = measurement_methods
 end
 
-function make_headername(system,fermion_parameters)
+function make_headername(system, fermion_parameters)
     L = system.L
     headername =
         system.update_method *
@@ -1355,7 +1441,10 @@ function make_headername(system,fermion_parameters)
             headername *= "_" * system.Dirac_operator
             if system.Dirac_operator == "Staggered"
                 headername *=
-                    "_mass" * string(fermion_parameters.mass) * "_Nf" * string(fermion_parameters.Nf)
+                    "_mass" *
+                    string(fermion_parameters.mass) *
+                    "_Nf" *
+                    string(fermion_parameters.Nf)
             elseif system.Dirac_operator == "Wilson" ||
                    system.Dirac_operator == "WilsonClover"
                 headername *= "_kappa" * string(fermion_parameters.hop)
