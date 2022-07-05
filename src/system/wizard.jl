@@ -14,13 +14,26 @@ import ..Parameter_structs:
     Stout_parameters_interactive,
     ConjugateGradient,
     NoSmearing_parameters,
-    Domainwall_parameters
+    Domainwall_parameters,
+    MD,
+    MD_interactive,
+    Measurement_parameters,
+    Plaq_parameters_interactive,
+    Poly_parameters_interactive,
+    ChiralCondensate_parameters_interactive,
+    TopologicalCharge_parameters_interactive,
+    staggered_wizard,
+    wilson_wizard,
+    Domainwall_wizard,
+    Pion_parameters_interactive
 
 @enum Wizardmode simple = 1 expert = 2
 @enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
 @enum Fileformat JLD = 1 ILDG = 2 BridgeText = 3
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 @enum Fermiontype Nofermion=1 Wilsonfermion=2 Staggeredfermion=3 Domainwallfermion=4
+@enum Options Plaquette=1 Polyakov_loop=2 Topological_charge=3 Chiral_condensate=4 Pion_correlator=5
+
 
 
 
@@ -179,6 +192,7 @@ function run_wizard()
                     default = "./confs/conf_00000001.$(extstring)",
                 ),
             )
+            system.initialtrj = parse(Int64, Base.prompt("Start trj number?", default = "1"))
         elseif initialconf == instantonstart
             system.initial = "one instanton"
         end
@@ -244,13 +258,13 @@ function run_wizard()
 
             if smearing == Nosmearing
                 system.smearing_for_fermion = "nothing"
-                smearing = NoSmearing_parameters()
+                system.smearing = NoSmearing_parameters()
             elseif smearing == STOUT
                 system.smearing_for_fermion = "stout"
-                smearing = Stout_parameters_interactive()
+                system.smearing = Stout_parameters_interactive()
             end
         else
-            smearing = NoSmearing_parameters()
+            system.smearing = NoSmearing_parameters()
         end
 
 
@@ -261,7 +275,20 @@ function run_wizard()
                     RadioMenu(["Heatbath", "Hybrid Monte Carlo"]),
                 )
                 if methodtype == 1
+                    system.update_method = "Heatbath"
+                    or = request("Use overrelazation method?", RadioMenu(["true", "false"]))
+                    system.useOR = ifelse(or == 1, true, false)
+                    if system.useOR
+                        system.numOR = parse(
+                            Int64,
+                            Base.prompt(
+                                "How many times do you want to do the OR?",
+                                default = "3",
+                            ),
+                        )
+                    end
                 else methodtype  == 2
+                    system.update_method = "HMC"
                 end
             else
                 methodtype = request(
@@ -273,87 +300,90 @@ function run_wizard()
                 )
 
                 if methodtype == 1
+                    system.update_method = "HMC"
                 else methodtype  == 2
+                    system.update_method = "SLHMC"
+                    system.βeff = parse(Float64, Base.prompt("Input initial effective β", default = "$β"))
+                    system.firstlearn = parse(
+                        Int64,
+                        Base.prompt(
+                            "When do you want to start updating the effective action?",
+                            default = "10",
+                        ),
+                    )
                 end
-            )
+            
             end
         else
             system.update_method = "HMC"
         end
 
+        if isexpert
+            Nthermalization = parse(
+                Int64,
+                Base.prompt(
+                    "Input the number of thermalization steps (no mearurement)",
+                    default = "0",
+                ),
+            )
+            if Nthermalization < 0
+                error(
+                    "Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.",
+                )
+            end
+            system.Nthermalization = Nthermalization
+        end
 
-        error("err")
+        Nsteps = parse(
+                Int64,
+                Base.prompt(
+                    "Input the number of total trajectories after the thermalization",
+                    default = "$(100+system.initialtrj)",
+                ),
+            )
+            if Nsteps <= 0
+                error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
+            end
+
+        if isexpert
+            md = MD_interactive(Dirac_operator=system.Dirac_operator)
+        else
+            md  = MD()
+        end
+
+    end
 
 
-        set_initialconfs!(system)
+    measurementmenu  = MultiSelectMenu(Options |> instances |> collect .|> string)
 
-        wilson, cg, staggered, system = set_dynamicalfermion!(system, isexpert)
-        set_update_method!(system, isexpert)
-        set_nthermalization!(system, isexpert)
-        set_totaltrajectoy!(system, isexpert)
+    choices = request("Select the measurement methods you want to do:", measurementmenu) |> collect .|> Options
+    nummeasurements = length(choices)
+    system.measurement_methods = Vector{Measurement_parameters}(undef, nummeasurements)
 
-        if system["update_method"] == "HMC" ||
-           system["update_method"] == "IntegratedHMC" ||
-           system["update_method"] == "SLHMC"
-            set_MDparams!(system, md, isexpert)
+    #@enum Options Plaquette=1 Polyakov_loop=2 Topological_charge=3 Chiral_condensate=4 Pion_correlator=5
+    count = 0
+    for method in choices
+        count += 1
+        if method == Plaquette
+            system.measurement_methods[count] = Plaq_parameters_interactive() #plaq_wizard()
+        elseif method == Polyakov_loop
+            system.measurement_methods[count] = Poly_parameters_interactive()
+        elseif method == Topological_charge
+            system.measurement_methods[count] = TopologicalCharge_parameters_interactive()
+        elseif method == Chiral_condensate
+            system.measurement_methods[count] = ChiralCondensate_parameters_interactive()
+        elseif method == Pion_correlator
+            system.measurement_methods[count] = Pion_parameters_interactive()
         end
     end
 
-    #ここまで
-
-
-    set_verboselevel!(system, isexpert)
+    headername = make_headername(system, fermion_parameters)
 
 
 
-
-    simple = request("Choose wizard mode", RadioMenu(["simple", "expert"]))
-    if simple == 1
-        isexpert = false
-        #return run_wizard_simple()
-    else
-        isexpert = true
-    end
-
-    system, md, actions = initialize()
-    filename = Base.prompt(
-        "put the name of the parameter file you make",
-        default = "my_parameters.jl",
-    )
-    set_verboselevel!(system, isexpert)
-    set_randomseed!(system, isexpert)
-    set_Lattice_size!(system, isexpert)
-    set_gaugegroup!(system, isexpert)
-    set_beta!(system, isexpert)
-
-    system["initialtrj"] = 1
+    error("err")
 
 
-    if check_isfileloading()
-        wilson, cg, staggered = set_loadingformat!(system)
-    else
-        set_initialconfs!(system)
-
-        wilson, cg, staggered, system = set_dynamicalfermion!(system, isexpert)
-        set_update_method!(system, isexpert)
-        set_nthermalization!(system, isexpert)
-        set_totaltrajectoy!(system, isexpert)
-
-        if system["update_method"] == "HMC" ||
-           system["update_method"] == "IntegratedHMC" ||
-           system["update_method"] == "SLHMC"
-            set_MDparams!(system, md, isexpert)
-        end
-    end
-
-    measurement = Dict()
-    options = [
-        "Plaquette",
-        "Polyakov_loop",
-        "Topological_charge",
-        "Chiral_condensate",
-        "Pion_correlator",
-    ]
 
     set_measurementmethods!(system, measurement, staggered, wilson, options, isexpert)
 
@@ -407,82 +437,6 @@ function wilson_wizard_simple()
     cg = ConjugateGradient()
     return fermion_parameters, cg
 
-end
-
-function wilson_wizard()
-    fermion_parameters = Wilson_parameters()
-
-    hop = parse(Float64, Base.prompt("Input the hopping parameter κ", default = "0.141139"))
-    #hop = parse(Float64,readline(stdin))
-    if hop <= 0
-        error("Invalid value for κ=$hop. This has to be strictly positive.")
-    end
-    println("κ = $hop")
-    fermion_parameters.hop = hop
-
-    cg = CG_params_interactive()
-
-    return fermion_parameters, cg
-end
-
-function staggered_wizard()
-    staggered = Staggered_parameters()
-    mass = parse(Float64, Base.prompt("Input mass", default = "0.5"))
-    if mass <= 0
-        error("Invalid value for mass=$mass. This has to be strictly positive.")
-    end
-    staggered.mass = mass
-
-    Nftype = request(
-        "Choose the number of flavors(tastes)",
-        RadioMenu([
-            "2 (RHMC will be used)",
-            "3 (RHMC will be used)",
-            "4 (HMC will be used)",
-            "8 (HMC will be used)",
-            "1 (RHMC will be used)",
-        ]),
-    )
-
-    if Nftype == 1
-        Nf = 2
-    elseif Nftype == 2
-        Nf = 3
-    elseif Nftype == 3
-        Nf = 4
-    elseif Nftype == 4
-        Nf = 8
-    elseif Nftype == 5
-        Nf = 1
-    end
-
-    staggerd.Nf = Nf
-
-    cg = CG_params_interactive()
-
-    return staggered, cg
-
-end
-
-function Domainwall_wizard()
-    fermion_parameters = Domainwall_parameters()
-    N5 =
-        parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
-    fermion_parameters.N5 =  N5
-    println("Standard Domainwall fermion action is uded")
-
-    M = parse(Float64, Base.prompt("Input M", default = "-1"))
-    while M >= 0
-        println("M should be M < 0. ")
-        M = parse(Float64, Base.prompt("Input M", default = "-1"))
-    end
-    fermion_parameters.M = M
-
-    m = parse(Float64, Base.prompt("Input mass", default = "1"))
-    fermion_parameters.m = m
-
-    cg = CG_params_interactive()
-    return fermion_parameters,cg
 end
 
 
@@ -1369,6 +1323,49 @@ function set_measurementmethods!(system, measurement, staggered, wilson, options
     measurement["measurement_methods"] = measurement_methods
 end
 
+function make_headername(system,fermion_parameters)
+    L = system.L
+    headername =
+        system.update_method *
+        "_L" *
+        string(L[1], pad = 2) *
+        string(L[2], pad = 2) *
+        string(L[3], pad = 2) *
+        string(L[4], pad = 2) *
+        "_beta" *
+        string(system.β)
+
+    if system.update_method == "HMC"
+        if system.quench == true
+            headername *= "_quenched"
+        else
+            headername *= "_" * system.Dirac_operator
+            if system.Dirac_operator == "Staggered"
+                headername *=
+                    "_mass" * string(staggered.mass) * "_Nf" * string(staggered.Nf)
+            elseif system.Dirac_operator == "Wilson" ||
+                   system.Dirac_operator == "WilsonClover"
+                headername *= "_kappa" * string(fermion_parameters.hop)
+            end
+        end
+    elseif system.update_method == "Heatbath"
+        headername *= "_quenched"
+    else
+        if system.Dirac_operator != nothing
+            headername *= "_" * system.Dirac_operator
+            if system.Dirac_operator == "Staggered"
+                headername *=
+                    "_mass" * string(fermion_parameters.mass) * "_Nf" * string(fermion_parameters.Nf)
+            elseif system.Dirac_operator == "Wilson" ||
+                   system.Dirac_operator == "WilsonClover"
+                headername *= "_kappa" * string(fermion_parameters.hop)
+            end
+        else
+        end
+    end
+    return headername
+end
+
 function make_headername(system, staggered, wilson)
     L = system["L"]
     headername =
@@ -1526,8 +1523,6 @@ function topo_wizard(L, system)
 
     method["Nflowsteps"] = parse(Int64, Base.prompt("Nflowsteps?", default = "$Nflowsteps"))
     method["eps_flow"] = parse(Float64, Base.prompt("eps_flow?", default = "$eps_flow"))
-
-
 
     return method
 end
