@@ -456,13 +456,19 @@ function run_wizard()
 
     struct2dict(x) = Dict(string(fn)=>getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
 
-    test = struct2dict(system) 
+    system_dict = struct2dict(system) 
+    measurement_dict = struct2dict(measurement)
+    fermion_parameters_dict=  struct2dict(fermion_parameters)
+    params = Dict()
+    params["system"] = system_dict
+    params["measurement"] = measurement_dict
+    params["fermions"] = fermion_parameters_dict
 
     open("parametertest.toml", "w") do io
-        TOML.print(io, test)
+        TOML.print(io, params)
     end
 
-    display(test)
+    display(params)
 
 
     error("err")
