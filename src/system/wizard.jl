@@ -268,7 +268,7 @@ function run_wizard()
             elseif smearingmethod == STOUT
                 system.smearing_for_fermion = "stout"
                 smearing = Stout_parameters_interactive()
-                system.stout_ρ =  smearing.ρ
+                system.stout_ρ = smearing.ρ
                 system.stout_loops = smearing.stout_loops
                 system.stout_numlayers = smearing.numlayers
             end
@@ -437,8 +437,7 @@ function run_wizard()
             system.saveU_format = "BridgeText"
         end
 
-        if system.saveU_format.≠
-            "nothing"
+        if system.saveU_format .≠ "nothing"
 
             system.saveU_every = parse(
                 Int64,
@@ -454,9 +453,9 @@ function run_wizard()
         end
     end
 
-    struct2dict(x) = Dict(string(fn)=>getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
+    struct2dict(x) = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
 
-    test = struct2dict(system) 
+    test = struct2dict(system)
 
     open("parametertest.toml", "w") do io
         TOML.print(io, test)
