@@ -466,7 +466,7 @@ function run_wizard()
     system_parameters_dict["Physical setting(fermions)"] =
         merge(struct2dict(fermions), struct2dict(fermion_parameters))
     system_parameters_dict["System Control"] = struct2dict(control)
-    system_parameters_dict["HMC related"] = struct2dict(hmc)
+    system_parameters_dict["HMC related"] = merge(struct2dict(hmc),struct2dict(cg))
     system_parameters_dict["Measurement set"] = struct2dict(measurement)
 
 

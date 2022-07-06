@@ -17,6 +17,7 @@ include("./fermions/cgmethod.jl")
 
 include("./autostaples/wilsonloops.jl")
 
+include("./system/transform_oldinputfile.jl")
 include("./system/system_parameters.jl")
 include("./system/parameters_TOML.jl")
 
