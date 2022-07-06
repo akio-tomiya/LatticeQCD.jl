@@ -27,7 +27,9 @@ import ..Parameter_structs:
     wilson_wizard,
     Domainwall_wizard,
     Pion_parameters_interactive,
-    Measurement_parameterset
+    Measurement_parameterset,
+    generate_printable_parameters,
+    remove_default_values!
 
 @enum Wizardmode simple = 1 expert = 2
 @enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
@@ -453,7 +455,30 @@ function run_wizard()
         end
     end
 
+    physical, fermions, control, hmc, measure = generate_printable_parameters(system)
     struct2dict(x) = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
+
+    system_parameters_dict = Dict()
+
+    system_parameters_dict["Physical setting"] = struct2dict(physical)
+    system_parameters_dict["Physical setting(fermions)"] =
+        merge(struct2dict(fermions), struct2dict(fermion_parameters))
+    system_parameters_dict["System Control"] = struct2dict(control)
+    system_parameters_dict["HMC related"] = struct2dict(hmc)
+    measure_dict = struct2dict(measure)
+
+    remove_default_values!(system_parameters_dict)
+
+    open("parametertest.toml", "w") do io
+        TOML.print(io, system_parameters_dict)
+    end
+
+    #system_parameters_dict["Measurement set"]
+
+    error("err")
+
+
+
 
     test = struct2dict(system)
 

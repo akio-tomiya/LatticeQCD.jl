@@ -2,6 +2,55 @@ module Parameter_structs
 using REPL.TerminalMenus
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 
+
+
+Base.@kwdef mutable struct System
+    BoundaryCondition::Vector{Int64} = [1, 1, 1, -1]
+    Nwing::Int64 = 1
+    verboselevel::Int64 = 1
+    randomseed::Int64 = 111
+    L::Vector{Int64} = [4, 4, 4, 4]
+    NC::Int64 = 3
+    β::Float64 = 5.7
+    initialtrj::Int64 = 1
+    loadU_format::String = "nothing"
+    update_method::String = "HMC"
+    loadU_dir::String = ""
+    loadU_fromfile::Bool = false
+    loadU_filename::String = ""
+    initial::String = "cold"
+    Dirac_operator::String = "nothing"
+    quench::Bool = true
+    smearing_for_fermion::String = "nothing"
+    stout_numlayers::Union{Nothing,Int64} = nothing
+    stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
+    stout_loops::Union{Nothing,Array{String,1}} = nothing
+    useOR::Bool = false #Over relaxation method for heatbath updates
+    numOR::Int64 = 0 #number of Over relaxation method
+    βeff::Float64 = 5.7 #effective beta for SLHMC
+    firstlearn::Int64 = 1
+    Nthermalization::Int64 = 0 #number of updates without measuring
+    #smearing::Smearing_parameters = NoSmearing_parameters()
+    log_dir::String = ""
+    logfile::String = ""
+    saveU_format::String = "nothing"
+    saveU_dir::String = ""
+    saveU_every::Int64 = 1
+end
+
+
+
+const important_parameters = ["L", "β", "update_method", "MDsteps", "Δτ"]
+
+function check_important_parameters(key)
+    findornot = findfirst(x -> x == key, important_parameters)
+    if findornot == nothing
+        return false
+    else
+        return true
+    end
+end
+
 function generate_printlist(x::Type)
     pnames = fieldnames(x)
     plist = String[]
@@ -13,71 +62,71 @@ end
 
 
 # Physical setting 
-struct Print_Physical_parameters
-    L::NTuple{4,Int64}
-    β::Float64
-    NC::Int64
-    Nthermalization::Int64
-    Nsteps::Int64
-    initial::String
-    initialtrj::Int64
-    update_method::String
-    useOR::Bool
-    numOR::Int64
-    Nwing::Int64
+Base.@kwdef mutable struct Print_Physical_parameters
+    L::Vector{Int64} = [4, 4, 4, 4]
+    β::Float64 = 5.7
+    NC::Int64 = 3
+    Nthermalization::Int64 = 0
+    Nsteps::Int64 = 100
+    initial::String = "cold"
+    initialtrj::Int64 = 1
+    update_method::String = "HMC"
+    useOR::Bool = false
+    numOR::Int64 = 0
+    Nwing::Int64 = 1
 end
 
 const printlist_physical = generate_printlist(Print_Physical_parameters)
 
 # Physical setting(fermions)
-struct Print_Fermions_parameters
-    quench::Bool
-    Dirac_operator::Union{Nothing,String}
-    Clover_coefficient::Float64
-    r::Float64
-    hop::Float64
-    Nf::Int8
-    mass::Float64
-    Domainwall_M::Union{Nothing,Float64}
-    Domainwall_m::Union{Nothing,Float64}
-    Domainwall_L5::Union{Nothing,Int64}
-    BoundaryCondition::Array{Int8,1}
-    smearing_for_fermion::String
-    stout_numlayers::Union{Nothing,Int64}
-    stout_ρ::Union{Nothing,Array{Float64,1}}
-    stout_loops::Union{Nothing,Array{String,1}}
+Base.@kwdef mutable struct Print_Fermions_parameters
+    quench::Bool = true
+    Dirac_operator::Union{Nothing,String} = nothing
+    Clover_coefficient::Float64 = 1.5612
+    r::Float64 = 1
+    hop::Float64 = 0.141139
+    Nf::Int64 = 4
+    mass::Float64 = 0.5
+    Domainwall_M::Union{Nothing,Float64} = nothing
+    Domainwall_m::Union{Nothing,Float64} = nothing
+    Domainwall_L5::Union{Nothing,Int64} = nothing
+    BoundaryCondition::Array{Int64,1} = [1, 1, 1, -1]
+    smearing_for_fermion::String = "nothing"
+    stout_numlayers::Union{Nothing,Int64} = nothing
+    stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
+    stout_loops::Union{Nothing,Array{String,1}} = nothing
 end
 
 const printlist_fermions = generate_printlist(Print_Fermions_parameters)
 
 # System Control
-struct Print_System_control_parameters
-    log_dir::String
-    logfile::String
-    loadU_format::String
-    loadU_dir::String
-    loadU_fromfile::Bool
-    loadU_filename::String
-    saveU_dir::String
-    saveU_format::String
-    saveU_every::Int64
-    verboselevel::Int64
-    randomseed::Int64
-    measurement_basedir::String
-    measurement_dir::String
-    julian_random_number::Bool
+Base.@kwdef mutable struct Print_System_control_parameters
+    log_dir::String = ""
+    logfile::String = ""
+    loadU_format::Union{Nothing,String} = nothing
+    loadU_dir::String = ""
+    loadU_fromfile::Bool = false
+    loadU_filename::String = ""
+    saveU_dir::String = ""
+    saveU_format::Union{String,Nothing} = nothing
+    saveU_every::Int64 = 1
+    verboselevel::Int64 = 1
+    randomseed::Int64 = 111
+    measurement_basedir::String = ""
+    measurement_dir::String = ""
+    julian_random_number::Bool = false
 end
 
 const printlist_systemcontrol = generate_printlist(Print_System_control_parameters)
 
 # HMC related
-struct Print_HMCrelated_parameters
-    Δτ::Float64
-    SextonWeingargten::Bool
-    N_SextonWeingargten::Int64
-    MDsteps::Int64
-    eps::Float64
-    MaxCGstep::Int64
+Base.@kwdef mutable struct Print_HMCrelated_parameters
+    Δτ::Float64 = 0.05
+    SextonWeingargten::Bool = false
+    N_SextonWeingargten::Int64 = 2
+    MDsteps::Int64 = 20
+    eps::Float64 = 1e-19
+    MaxCGstep::Int64 = 3000
 end
 
 # HMC related
@@ -97,11 +146,12 @@ end
 const printlist_parameters_SLMC = generate_printlist(Print_SLMC_parameters)
 
 # Measurement set
-struct Print_Measurement_parameters
-    measurement_methods::Array{Dict,1}
+Base.@kwdef mutable struct Print_Measurement_parameters
+    measurement_methods::Array{Dict,1} = Dict[]
 end
 
 const printlist_measurement = generate_printlist(Print_Measurement_parameters)
+
 
 Base.@kwdef mutable struct Action
     use_autogeneratedstaples::Bool = false
@@ -133,7 +183,7 @@ const kindsof_loops = [
 Base.@kwdef mutable struct Stout_parameters <: Smearing_parameters
     numlayers::Int64 = 1
     ρ::Vector{Float64} = []
-    stout_loops::Vector{String} = []
+    stout_loops::Union{Nothing,Array{String,1}} = nothing
 end
 
 abstract type Fermion_parameters end
@@ -204,9 +254,9 @@ Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
     mass::Float64 = 0.5
     MaxCGstep::Int64 = 3000
     smearing_for_fermion::String = "nothing"
-    stout_numlayers::Int64 = 1
-    stout_ρ::Vector{Float64} = []
-    stout_loops::Vector{String} = []
+    stout_numlayers::Union{Nothing,Int64} = nothing
+    stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
+    stout_loops::Union{Nothing,Array{String,1}} = nothing
     #smearing::Smearing_parameters = Stout_parameters()
 end
 
@@ -218,46 +268,14 @@ Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
     eps::Float64 = 1e-19
     MaxCGstep::Int64 = 3000
     smearing_for_fermion::String = "nothing"
-    stout_numlayers::Int64 = 1
-    stout_ρ::Vector{Float64} = []
-    stout_loops::Vector{String} = []
+    stout_numlayers::Union{Nothing,Int64} = nothing
+    stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
+    stout_loops::Union{Nothing,Array{String,1}} = nothing
     #smearing::Smearing_parameters = NoSmearing_parameters()
     fermion_parameters::Fermion_parameters = Wilson_parameters()
 end
 
-Base.@kwdef mutable struct System
-    BoundaryCondition::Vector{Int64} = [1, 1, 1, -1]
-    Nwing::Int8 = 1
-    verboselevel::Int8 = 1
-    randomseed::Int64 = 111
-    L::Vector{Int64} = [4, 4, 4, 4]
-    NC::Int8 = 3
-    β::Float64 = 5.7
-    initialtrj::Int64 = 1
-    loadU_format::String = "nothing"
-    update_method::String = "HMC"
-    loadU_dir::String = "nothing"
-    loadU_fromfile::Bool = false
-    loadU_filename::String = "nothing"
-    initial::String = "cold"
-    Dirac_operator::String = "nothing"
-    quench::Bool = true
-    smearing_for_fermion::String = "nothing"
-    stout_numlayers::Int64 = 1
-    stout_ρ::Vector{Float64} = []
-    stout_loops::Vector{String} = []
-    useOR::Bool = false #Over relaxation method for heatbath updates
-    numOR::Int64 = 0 #number of Over relaxation method
-    βeff::Float64 = 5.7 #effective beta for SLHMC
-    firstlearn::Int64 = 1
-    Nthermalization::Int64 = 0 #number of updates without measuring
-    #smearing::Smearing_parameters = NoSmearing_parameters()
-    log_dir::String = ""
-    logfile::String = ""
-    saveU_format::String = "nothing"
-    saveU_dir::String = ""
-    saveU_every::Int64 = 10
-end
+
 
 Base.@kwdef mutable struct Measurement_parameterset
     measurement_methods::Vector{Measurement_parameters} = []
@@ -587,6 +605,111 @@ function Domainwall_wizard()
     cg = CG_params_interactive()
     return fermion_parameters, cg
 end
+
+function generate_printable_parameters(p::System)
+    pnames = fieldnames(System)
+    physical = Print_Physical_parameters()
+    names_physical = fieldnames(typeof(physical))
+    fermions = Print_Fermions_parameters()
+    names_fermions = fieldnames(typeof(fermions))
+    control = Print_System_control_parameters()
+    names_control = fieldnames(typeof(control))
+    hmc = Print_HMCrelated_parameters()
+    names_hmc = fieldnames(typeof(hmc))
+    measure = Print_Measurement_parameters()
+    names_measure = fieldnames(typeof(measure))
+
+    for pname_i in pnames
+        value = getfield(p, pname_i)
+        println(value)
+        hasvalue = false
+
+        physical_index = findfirst(x -> x == pname_i, names_physical)
+        if physical_index != nothing
+            setfield!(physical, pname_i, value)
+            println(value, "\t", pname_i)
+            hasvalue = true
+        end
+
+        fermions_index = findfirst(x -> x == pname_i, names_fermions)
+        if fermions_index != nothing
+            setfield!(fermions, pname_i, value)
+            println(value, "\t", pname_i)
+            hasvalue = true
+        end
+
+        control_index = findfirst(x -> x == pname_i, names_control)
+        if control_index != nothing
+            setfield!(control, pname_i, value)
+            println(value, "\t", pname_i)
+            hasvalue = true
+        end
+
+        hmc_index = findfirst(x -> x == pname_i, names_hmc)
+        if hmc_index != nothing
+            setfield!(hmc, pname_i, value)
+            println(value, "\t", pname_i)
+            hasvalue = true
+        end
+
+        measure_index = findfirst(x -> x == pname_i, names_measure)
+        if measure_index != nothing
+            setfield!(measure, pname_i, value)
+            println(value, "\t", pname_i)
+            hasvalue = true
+        end
+
+        if hasvalue == false
+            @warn "$(pname_i) is not set!"
+        end
+        #@assert hasvalue "$(pname_i) is not set!"
+    end
+
+    return physical, fermions, control, hmc, measure
+end
+
+
+function remove_default_values!(x::Dict, defaultsystem)
+    for (key, value) in x
+        if hasfield(typeof(defaultsystem), Symbol(key))
+            default_value = getfield(defaultsystem, Symbol(key))
+            println(key, "\t", value, "\t", default_value)
+            if value == default_value || string(value) == string(default_value)
+                if check_important_parameters(key) == false
+                    delete!(x, key)
+                end
+            else
+                if value == nothing
+                    x[key] = "nothing"
+                end
+            end
+        else
+            if value == nothing
+                x[key] = "nothing"
+            end
+        end
+    end
+
+end
+
+function remove_default_values!(x::Dict)
+    physical = Print_Physical_parameters()
+    fermions = Print_Fermions_parameters()
+    control = Print_System_control_parameters()
+    hmc = Print_HMCrelated_parameters()
+    measure = Print_Measurement_parameters()
+
+
+    defaultsystem = System()
+    for (params, paramsname) in x
+        remove_default_values!(x[params], physical)
+        remove_default_values!(x[params], fermions)
+        remove_default_values!(x[params], control)
+        remove_default_values!(x[params], hmc)
+        remove_default_values!(x[params], measure)
+    end
+end
+
 
 
 
