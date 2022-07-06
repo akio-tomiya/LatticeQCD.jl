@@ -40,7 +40,7 @@ end
 
 
 
-const important_parameters = ["L", "β", "update_method", "MDsteps", "Δτ"]
+const important_parameters = ["L", "β", "update_method", "MDsteps", "Δτ","Dirac_operator","fermion_parameters"]
 
 function check_important_parameters(key)
     findornot = findfirst(x -> x == key, important_parameters)
@@ -50,6 +50,9 @@ function check_important_parameters(key)
         return true
     end
 end
+
+struct2dict(x::T) where T = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
+
 
 function generate_printlist(x::Type)
     pnames = fieldnames(x)
@@ -188,20 +191,25 @@ end
 
 abstract type Fermion_parameters end
 
-Base.@kwdef mutable struct Quench_parameters <: Fermion_parameters end
+Base.@kwdef mutable struct Quench_parameters <: Fermion_parameters 
+    Dirac_operator::String = "nothing"
+end
 
 Base.@kwdef mutable struct Wilson_parameters <: Fermion_parameters
+    Dirac_operator::String = "Wilson"
     hop::Float64 = 0.141139
     r::Float64 = 1
     Clover_coefficient::Float64 = 1.5612
 end
 
 Base.@kwdef mutable struct Staggered_parameters <: Fermion_parameters
+    Dirac_operator::String = "Staggered"
     mass::Float64 = 0.5 #mass
     Nf::Int64 = 2 #flavor 
 end
 
 Base.@kwdef mutable struct Domainwall_parameters <: Fermion_parameters
+    Dirac_operator::String = "Domainwall"
     N5::Int64 = 4
     M::Float64 = -1 #mass for Wilson operator which should be negative
     m::Float64 = 0.1 #physical mass
@@ -282,6 +290,8 @@ Base.@kwdef mutable struct Measurement_parameterset
     measurement_basedir::String = ""
     measurement_dir::String = ""
 end
+
+
 
 
 
@@ -525,6 +535,7 @@ function Pion_parameters_interactive()
         method.stout_numlayers = smearing.numlayers
     end
 
+    
     return method
 end
 
@@ -616,48 +627,50 @@ function generate_printable_parameters(p::System)
     names_control = fieldnames(typeof(control))
     hmc = Print_HMCrelated_parameters()
     names_hmc = fieldnames(typeof(hmc))
-    measure = Print_Measurement_parameters()
-    names_measure = fieldnames(typeof(measure))
+    #measure = Print_Measurement_parameters()
+    #names_measure = fieldnames(typeof(measure))
 
     for pname_i in pnames
         value = getfield(p, pname_i)
-        println(value)
+        #println(value)
         hasvalue = false
 
         physical_index = findfirst(x -> x == pname_i, names_physical)
         if physical_index != nothing
             setfield!(physical, pname_i, value)
-            println(value, "\t", pname_i)
+            #println(value, "\t", pname_i)
             hasvalue = true
         end
 
         fermions_index = findfirst(x -> x == pname_i, names_fermions)
         if fermions_index != nothing
             setfield!(fermions, pname_i, value)
-            println(value, "\t", pname_i)
+            #println(value, "\t", pname_i)
             hasvalue = true
         end
 
         control_index = findfirst(x -> x == pname_i, names_control)
         if control_index != nothing
             setfield!(control, pname_i, value)
-            println(value, "\t", pname_i)
+            #println(value, "\t", pname_i)
             hasvalue = true
         end
 
         hmc_index = findfirst(x -> x == pname_i, names_hmc)
         if hmc_index != nothing
             setfield!(hmc, pname_i, value)
-            println(value, "\t", pname_i)
+            #println(value, "\t", pname_i)
             hasvalue = true
         end
 
+        #=
         measure_index = findfirst(x -> x == pname_i, names_measure)
         if measure_index != nothing
             setfield!(measure, pname_i, value)
-            println(value, "\t", pname_i)
+            #println(value, "\t", pname_i)
             hasvalue = true
         end
+        =#
 
         if hasvalue == false
             @warn "$(pname_i) is not set!"
@@ -665,7 +678,7 @@ function generate_printable_parameters(p::System)
         #@assert hasvalue "$(pname_i) is not set!"
     end
 
-    return physical, fermions, control, hmc, measure
+    return physical, fermions, control, hmc#, measure
 end
 
 
@@ -673,7 +686,7 @@ function remove_default_values!(x::Dict, defaultsystem)
     for (key, value) in x
         if hasfield(typeof(defaultsystem), Symbol(key))
             default_value = getfield(defaultsystem, Symbol(key))
-            println(key, "\t", value, "\t", default_value)
+            #println(key, "\t", value, "\t", default_value)
             if value == default_value || string(value) == string(default_value)
                 if check_important_parameters(key) == false
                     delete!(x, key)
@@ -688,8 +701,36 @@ function remove_default_values!(x::Dict, defaultsystem)
                 x[key] = "nothing"
             end
         end
-    end
 
+        if typeof(value) == Vector{Measurement_parameters}
+            construct_dict_from_measurement!(x,value)
+        end
+        if typeof(value) <: Fermion_parameters
+            construct_dict_from_fermion!(x,value)
+        end
+    end
+end
+
+function construct_dict_from_fermion!(x,value)
+    fermiondic = struct2dict(value)
+    fermiondic_default = typeof(value)()
+    remove_default_values!(fermiondic,fermiondic_default)
+    x["fermion_parameters"] = fermiondic
+
+end
+
+
+function construct_dict_from_measurement!(x,value)
+
+    measuredic = Dict()
+    println(value)
+    for measure in value
+        methoddic = struct2dict(measure)
+        measure_struct_default = typeof(measure)() 
+        remove_default_values!(methoddic, measure_struct_default)
+        measuredic[methoddic["methodname"]] = methoddic 
+    end
+    x["measurement_methods"] = measuredic
 end
 
 function remove_default_values!(x::Dict)
@@ -697,16 +738,16 @@ function remove_default_values!(x::Dict)
     fermions = Print_Fermions_parameters()
     control = Print_System_control_parameters()
     hmc = Print_HMCrelated_parameters()
-    measure = Print_Measurement_parameters()
+    #measure = Print_Measurement_parameters()
 
 
-    defaultsystem = System()
+    #defaultsystem = System()
     for (params, paramsname) in x
         remove_default_values!(x[params], physical)
         remove_default_values!(x[params], fermions)
         remove_default_values!(x[params], control)
         remove_default_values!(x[params], hmc)
-        remove_default_values!(x[params], measure)
+        #remove_default_values!(x[params], measure)
     end
 end
 
