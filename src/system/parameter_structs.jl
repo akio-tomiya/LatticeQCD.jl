@@ -40,7 +40,8 @@ end
 
 
 
-const important_parameters = ["L", "β", "update_method", "MDsteps", "Δτ","Dirac_operator","fermion_parameters"]
+const important_parameters =
+    ["L", "β", "update_method", "MDsteps", "Δτ", "Dirac_operator", "fermion_parameters"]
 
 function check_important_parameters(key)
     findornot = findfirst(x -> x == key, important_parameters)
@@ -51,7 +52,7 @@ function check_important_parameters(key)
     end
 end
 
-struct2dict(x::T) where T = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
+struct2dict(x::T) where {T} = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
 
 
 function generate_printlist(x::Type)
@@ -191,7 +192,7 @@ end
 
 abstract type Fermion_parameters end
 
-Base.@kwdef mutable struct Quench_parameters <: Fermion_parameters 
+Base.@kwdef mutable struct Quench_parameters <: Fermion_parameters
     Dirac_operator::String = "nothing"
 end
 
@@ -535,7 +536,7 @@ function Pion_parameters_interactive()
         method.stout_numlayers = smearing.numlayers
     end
 
-    
+
     return method
 end
 
@@ -672,9 +673,12 @@ function generate_printable_parameters(p::System)
         end
         =#
 
+        #=
         if hasvalue == false
             @warn "$(pname_i) is not set!"
         end
+        =#
+
         #@assert hasvalue "$(pname_i) is not set!"
     end
 
@@ -703,32 +707,32 @@ function remove_default_values!(x::Dict, defaultsystem)
         end
 
         if typeof(value) == Vector{Measurement_parameters}
-            construct_dict_from_measurement!(x,value)
+            construct_dict_from_measurement!(x, value)
         end
         if typeof(value) <: Fermion_parameters
-            construct_dict_from_fermion!(x,value)
+            construct_dict_from_fermion!(x, value)
         end
     end
 end
 
-function construct_dict_from_fermion!(x,value)
+function construct_dict_from_fermion!(x, value)
     fermiondic = struct2dict(value)
     fermiondic_default = typeof(value)()
-    remove_default_values!(fermiondic,fermiondic_default)
+    remove_default_values!(fermiondic, fermiondic_default)
     x["fermion_parameters"] = fermiondic
 
 end
 
 
-function construct_dict_from_measurement!(x,value)
+function construct_dict_from_measurement!(x, value)
 
     measuredic = Dict()
     println(value)
     for measure in value
         methoddic = struct2dict(measure)
-        measure_struct_default = typeof(measure)() 
+        measure_struct_default = typeof(measure)()
         remove_default_values!(methoddic, measure_struct_default)
-        measuredic[methoddic["methodname"]] = methoddic 
+        measuredic[methoddic["methodname"]] = methoddic
     end
     x["measurement_methods"] = measuredic
 end

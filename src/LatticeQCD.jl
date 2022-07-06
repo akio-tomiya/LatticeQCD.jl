@@ -6,6 +6,7 @@ using Requires
 #include("./SLMC/logdet.jl")
 include("./system/parameter_structs.jl")
 
+
 include("./rhmc/AlgRemez.jl")
 include("./rhmc/rhmc.jl")
 
@@ -17,6 +18,7 @@ include("./fermions/cgmethod.jl")
 include("./autostaples/wilsonloops.jl")
 
 include("./system/system_parameters.jl")
+include("./system/parameters_TOML.jl")
 
 include("./system/universe.jl")
 include("./md/AbstractMD.jl")

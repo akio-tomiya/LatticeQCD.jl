@@ -31,6 +31,7 @@ import ..Parameter_structs:
     generate_printable_parameters,
     remove_default_values!,
     struct2dict
+import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 
 @enum Wizardmode simple = 1 expert = 2
 @enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
@@ -109,9 +110,9 @@ function run_wizard()
     print_wizard_logo(stdout)
 
     system = System()
-    action = Action()
-    println(system)
-    println(action)
+    #action = Action()
+    #println(system)
+    #println(action)
 
 
     mode =
@@ -123,7 +124,7 @@ function run_wizard()
 
     filename = Base.prompt(
         "put the name of the parameter file you make",
-        default = "my_parameters.jl",
+        default = "my_parameters.toml",
     )
 
     system.L = set_Lattice_size(isexpert)
@@ -458,7 +459,7 @@ function run_wizard()
     end
 
     physical, fermions, control, hmc = generate_printable_parameters(system)
-    
+
     system_parameters_dict = Dict()
 
     system_parameters_dict["Physical setting"] = struct2dict(physical)
@@ -466,48 +467,19 @@ function run_wizard()
         merge(struct2dict(fermions), struct2dict(fermion_parameters))
     system_parameters_dict["System Control"] = struct2dict(control)
     system_parameters_dict["HMC related"] = struct2dict(hmc)
-    system_parameters_dict["Measurement set"] =struct2dict(measurement) 
+    system_parameters_dict["Measurement set"] = struct2dict(measurement)
 
 
 
     remove_default_values!(system_parameters_dict)
 
-    open("parametertest.toml", "w") do io
+    open(filename, "w") do io
         TOML.print(io, system_parameters_dict)
     end
 
     #system_parameters_dict["Measurement set"]
 
-    error("err")
-
-
-
-
-    test = struct2dict(system)
-
-    open("parametertest.toml", "w") do io
-        TOML.print(io, params)
-    end
-
-    display(params)
-
-
-    error("err")
-
-
-
-    set_measurementmethods!(system, measurement, staggered, wilson, options, isexpert)
-
-    headername = make_headername(system, staggered, wilson)
-
-    set_measurementdir!(measurement, headername)
-    set_logdir!(system, headername)
-    set_saveU!(system, headername, isexpert)
-
-    params_set = Params_set(system, actions, md, cg, wilson, staggered, measurement)
-
-
-    print_parameters(filename, params_set)
+    params_set = construct_Params_from_TOML(filename)
 
     #p = Params(params_set)
 
