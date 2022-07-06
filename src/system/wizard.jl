@@ -27,7 +27,9 @@ import ..Parameter_structs:
     wilson_wizard,
     Domainwall_wizard,
     Pion_parameters_interactive,
-    Measurement_parameterset
+    Measurement_parameterset,
+    generate_printable_parameters,
+    remove_default_values!
 
 @enum Wizardmode simple = 1 expert = 2
 @enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
@@ -268,7 +270,7 @@ function run_wizard()
             elseif smearingmethod == STOUT
                 system.smearing_for_fermion = "stout"
                 smearing = Stout_parameters_interactive()
-                system.stout_ρ =  smearing.ρ
+                system.stout_ρ = smearing.ρ
                 system.stout_loops = smearing.stout_loops
                 system.stout_numlayers = smearing.numlayers
             end
@@ -437,8 +439,7 @@ function run_wizard()
             system.saveU_format = "BridgeText"
         end
 
-        if system.saveU_format.≠
-            "nothing"
+        if system.saveU_format .≠ "nothing"
 
             system.saveU_every = parse(
                 Int64,
@@ -454,15 +455,32 @@ function run_wizard()
         end
     end
 
-    struct2dict(x) = Dict(string(fn)=>getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
+    physical, fermions, control, hmc, measure = generate_printable_parameters(system)
+    struct2dict(x) = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(typeof(x)))
 
-    system_dict = struct2dict(system) 
-    measurement_dict = struct2dict(measurement)
-    fermion_parameters_dict=  struct2dict(fermion_parameters)
-    params = Dict()
-    params["system"] = system_dict
-    params["measurement"] = measurement_dict
-    params["fermions"] = fermion_parameters_dict
+    system_parameters_dict = Dict()
+
+    system_parameters_dict["Physical setting"] = struct2dict(physical)
+    system_parameters_dict["Physical setting(fermions)"] =
+        merge(struct2dict(fermions), struct2dict(fermion_parameters))
+    system_parameters_dict["System Control"] = struct2dict(control)
+    system_parameters_dict["HMC related"] = struct2dict(hmc)
+    measure_dict = struct2dict(measure)
+
+    remove_default_values!(system_parameters_dict)
+
+    open("parametertest.toml", "w") do io
+        TOML.print(io, system_parameters_dict)
+    end
+
+    #system_parameters_dict["Measurement set"]
+
+    error("err")
+
+
+
+
+    test = struct2dict(system)
 
     open("parametertest.toml", "w") do io
         TOML.print(io, params)
