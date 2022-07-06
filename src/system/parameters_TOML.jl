@@ -6,12 +6,15 @@ import ..Parameter_structs:
     Print_Fermions_parameters,
     Print_System_control_parameters,
     Print_HMCrelated_parameters,
-    struct2dict
+    struct2dict,
+    initialize_fermion_parameters
+
 
 function demo_TOML()
     println("demo for TOML format")
     p = construct_Params_from_TOML("parametertest.toml")
 end
+
 
 
 function set_params_value!(value_Params, values)
@@ -138,8 +141,33 @@ function construct_Params_from_TOML(filename)
 end
 
 function construct_measurement_dir(x)
-    valuedir = Dict[]
-    @error "not done!"
-    return valuedir
+    #println(x)
+    valuedic = Dict[]
+
+    for (method,methoddic) in x
+        dic_i = Dict()
+        for (key,value) in methoddic
+            if key == "fermion_parameters"
+                fermion_type = value["Dirac_operator"]
+                fermion_dict = struct2dict(initialize_fermion_parameters(fermion_type))
+                for (key_i,value_i) in fermion_dict
+                    if haskey(value,key_i)
+                        dic_i[key_i] = value[key_i]
+                    else
+                        dic_i[key_i] = value_i
+                    end
+                end
+            else
+                dic_i[key] = value
+            end
+        end
+        push!(valuedic,dic_i)
+    end
+
+    #display(valuedic)
+
+    return valuedic
 end
+
+#demo_TOML()
 end

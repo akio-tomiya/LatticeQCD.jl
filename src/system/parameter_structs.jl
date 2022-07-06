@@ -200,6 +200,7 @@ Base.@kwdef mutable struct Wilson_parameters <: Fermion_parameters
     Dirac_operator::String = "Wilson"
     hop::Float64 = 0.141139
     r::Float64 = 1
+    hasclover::Bool = false
     Clover_coefficient::Float64 = 1.5612
 end
 
@@ -214,6 +215,21 @@ Base.@kwdef mutable struct Domainwall_parameters <: Fermion_parameters
     N5::Int64 = 4
     M::Float64 = -1 #mass for Wilson operator which should be negative
     m::Float64 = 0.1 #physical mass
+end
+
+function initialize_fermion_parameters(fermion_type)
+    if fermion_type ==  "nothing"
+        fermion_parameter = Quench_parameters()
+    elseif fermion_type ==  "Wilson" || "WilsonClover"
+        fermion_parameter =  Wilson_parameters()
+    elseif fermion_type ==  "Staggered"
+        fermion_parameter =  Staggered_parameters()
+    elseif fermion_type ==  "Domainwall"
+        fermion_parameter = Domainwall_parameters()
+    else
+        @error "$fermion_type is not implemented in parameter_structs.jl"
+    end
+    return fermion_parameter
 end
 
 Base.@kwdef mutable struct ConjugateGradient
