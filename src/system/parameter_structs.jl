@@ -36,6 +36,7 @@ Base.@kwdef mutable struct System
     saveU_format::String = "nothing"
     saveU_dir::String = ""
     saveU_every::Int64 = 1
+    isevenodd = true
 end
 
 
@@ -125,6 +126,7 @@ Base.@kwdef mutable struct Print_System_control_parameters
     measurement_basedir::String = ""
     measurement_dir::String = ""
     julian_random_number::Bool = false
+    isevenodd = true
 end
 
 
