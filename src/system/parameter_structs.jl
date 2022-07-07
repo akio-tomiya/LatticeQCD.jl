@@ -40,8 +40,17 @@ end
 
 
 
-const important_parameters =
-    ["L", "β", "update_method", "MDsteps", "Δτ", "Dirac_operator", "fermion_parameters","methodname","measurement_basedir"]
+const important_parameters = [
+    "L",
+    "β",
+    "update_method",
+    "MDsteps",
+    "Δτ",
+    "Dirac_operator",
+    "fermion_parameters",
+    "methodname",
+    "measurement_basedir",
+]
 
 function check_important_parameters(key)
     findornot = findfirst(x -> x == key, important_parameters)
@@ -215,13 +224,13 @@ Base.@kwdef mutable struct Domainwall_parameters <: Fermion_parameters
 end
 
 function initialize_fermion_parameters(fermion_type)
-    if fermion_type ==  "nothing"
+    if fermion_type == "nothing"
         fermion_parameter = Quench_parameters()
-    elseif fermion_type ==  "Wilson" || fermion_type == "WilsonClover"
-        fermion_parameter =  Wilson_parameters()
-    elseif fermion_type ==  "Staggered"
-        fermion_parameter =  Staggered_parameters()
-    elseif fermion_type ==  "Domainwall"
+    elseif fermion_type == "Wilson" || fermion_type == "WilsonClover"
+        fermion_parameter = Wilson_parameters()
+    elseif fermion_type == "Staggered"
+        fermion_parameter = Staggered_parameters()
+    elseif fermion_type == "Domainwall"
         fermion_parameter = Domainwall_parameters()
     else
         @error "$fermion_type is not implemented in parameter_structs.jl"
@@ -293,20 +302,20 @@ Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
 end
 
 function initialize_measurement_parameters(methodname)
-    if methodname ==  "Plaquette"
+    if methodname == "Plaquette"
         method = Plaq_parameters()
-    elseif methodname ==  "Polyakov_loop" 
-        method =  Poly_parameters()
-    elseif methodname ==  "Topological_charge"
-        method =  TopologicalCharge_parameters()        
-    elseif methodname ==  "Chiral_condensate"
-        method =  ChiralCondensate_parameters()
-    elseif methodname ==  "Pion_correlator"
+    elseif methodname == "Polyakov_loop"
+        method = Poly_parameters()
+    elseif methodname == "Topological_charge"
+        method = TopologicalCharge_parameters()
+    elseif methodname == "Chiral_condensate"
+        method = ChiralCondensate_parameters()
+    elseif methodname == "Pion_correlator"
         method = Pion_parameters()
     else
         @error "$methodname is not implemented in parameter_structs.jl"
     end
-    return  method
+    return method
 end
 
 
@@ -711,7 +720,14 @@ function generate_printable_parameters(p::System)
     return physical, fermions, control, hmc#, measure
 end
 
-function construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+function construct_printable_parameters_fromdict!(
+    key,
+    value,
+    physical,
+    fermions,
+    control,
+    hmc,
+)
     if key == "L"
         value = collect(value)
     elseif key == "r"
@@ -756,10 +772,10 @@ function construct_printable_parameters_fromdict!(key,value,physical,fermions,co
     return hasvalue
 end
 
-function construct_printable_parameters_fromdict!(x::Dict,physical,fermions,control,hmc)
+function construct_printable_parameters_fromdict!(x::Dict, physical, fermions, control, hmc)
 
 
-    for (key,value) in x
+    for (key, value) in x
         hasvalue = false
         pname_i = Symbol(key)
         physical_index = findfirst(x -> x == pname_i, names_physical)

@@ -57,7 +57,7 @@ import ..Smearing:
     calc_fatlink_APE,
     calc_multihit!
 import ..Wilsonloops: Wilson_loop, Wilson_loop_set
-import ..System_parameters: set_params
+#import ..System_parameters: set_params
 
 #=
 abstract type MeasureMethod end

@@ -1,15 +1,16 @@
 module Transform_oldinputfile
-import ..Parameter_structs:Print_Physical_parameters,
-Print_Fermions_parameters,
-Print_System_control_parameters,
-Print_HMCrelated_parameters,
-construct_printable_parameters_fromdict!,
-remove_default_values!,
-struct2dict,
-initialize_fermion_parameters,
-Measurement_parameters,
-initialize_measurement_parameters,
-generate_printlist
+import ..Parameter_structs:
+    Print_Physical_parameters,
+    Print_Fermions_parameters,
+    Print_System_control_parameters,
+    Print_HMCrelated_parameters,
+    construct_printable_parameters_fromdict!,
+    remove_default_values!,
+    struct2dict,
+    initialize_fermion_parameters,
+    Measurement_parameters,
+    initialize_measurement_parameters,
+    generate_printlist
 
 using TOML
 
@@ -75,7 +76,7 @@ function default_actions()
     return actions
 end
 
-function  default_cg()
+function default_cg()
     cg = Dict()
     cg["eps"] = 1e-19
     cg["MaxCGstep"] = 3000
@@ -105,7 +106,7 @@ end
 system = default_system()
 md = default_md()
 defaultmeasures = default_defaultmeasures()
-actions  =default_actions()
+actions = default_actions()
 cg = default_cg()
 wilson = default_wilson()
 staggered = default_staggered()
@@ -113,43 +114,85 @@ measurement = default_measurement()
 
 function transform_to_toml(filename)
     include(abspath(filename))
-    
+
 
     physical = Print_Physical_parameters()
     fermions = Print_Fermions_parameters()
     control = Print_System_control_parameters()
     hmc = Print_HMCrelated_parameters()
 
-    for (key,value) in system
-        hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    for (key, value) in system
+        hasvalue = construct_printable_parameters_fromdict!(
+            key,
+            value,
+            physical,
+            fermions,
+            control,
+            hmc,
+        )
 
     end
 
-    for (key,value) in md
-        hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    for (key, value) in md
+        hasvalue = construct_printable_parameters_fromdict!(
+            key,
+            value,
+            physical,
+            fermions,
+            control,
+            hmc,
+        )
 
     end
 
-    for (key,value) in cg
-        hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    for (key, value) in cg
+        hasvalue = construct_printable_parameters_fromdict!(
+            key,
+            value,
+            physical,
+            fermions,
+            control,
+            hmc,
+        )
     end
 
-    for (key,value) in wilson
-        hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    for (key, value) in wilson
+        hasvalue = construct_printable_parameters_fromdict!(
+            key,
+            value,
+            physical,
+            fermions,
+            control,
+            hmc,
+        )
 
     end
 
-    for (key,value) in staggered
-        hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    for (key, value) in staggered
+        hasvalue = construct_printable_parameters_fromdict!(
+            key,
+            value,
+            physical,
+            fermions,
+            control,
+            hmc,
+        )
     end
 
     measurement_dict = Dict()
-    for (key,value) in measurement
+    for (key, value) in measurement
         if key == "measurement_methods"
             valuem = transform_measurement_dict(value)
             measurement_dict[key] = valuem
         else
-            hasvalue = construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+            hasvalue = construct_printable_parameters_fromdict!(
+                key,
+                value,
+                physical,
+                fermions,
+                control,
+                hmc,
+            )
         end
     end
 
@@ -169,7 +212,7 @@ function transform_to_toml(filename)
     system_parameters_dict = Dict()
 
     system_parameters_dict["Physical setting"] = struct2dict(physical)
-    system_parameters_dict["Physical setting(fermions)"] =struct2dict(fermions)
+    system_parameters_dict["Physical setting(fermions)"] = struct2dict(fermions)
     system_parameters_dict["System Control"] = struct2dict(control)
     system_parameters_dict["HMC related"] = struct2dict(hmc)
     system_parameters_dict["Measurement set"] = measurement_dict
@@ -186,7 +229,7 @@ function transform_to_toml(filename)
 
     #println(system_parameters_dict["System Control"])
 
-    filename_toml = splitext(filename)[1]*".toml"
+    filename_toml = splitext(filename)[1] * ".toml"
 
     open(filename_toml, "w") do io
         TOML.print(io, system_parameters_dict)
@@ -197,40 +240,40 @@ end
 function transform_measurement_dict(value)
     #println(value)
     nummeasure = length(value)
-    value_out = Vector{Measurement_parameters}(undef,nummeasure)
-    for i=1:nummeasure
+    value_out = Vector{Measurement_parameters}(undef, nummeasure)
+    for i = 1:nummeasure
         value_i = value[i]
-        @assert haskey(value_i,"methodname") "methodname should be set in measurement."
+        @assert haskey(value_i, "methodname") "methodname should be set in measurement."
         methodname = value_i["methodname"]
         method = initialize_measurement_parameters(methodname)
         method_dict = struct2dict(method)
-        if haskey(value_i,"fermiontype")
+        if haskey(value_i, "fermiontype")
             fermiontype = value_i["fermiontype"]
         else
             fermiontype = "nothing"
-            
+
         end
         fermion_parameters = initialize_fermion_parameters(fermiontype)
         fermion_parameters_dict = struct2dict(fermion_parameters)
 
-        for (key_ii,value_ii) in value_i
+        for (key_ii, value_ii) in value_i
             #println("$key_ii $value_ii")
-            if haskey(method_dict,key_ii)
-                keytype = typeof(getfield(method,Symbol(key_ii)))
-                setfield!(method,Symbol(key_ii),keytype(value_ii))
+            if haskey(method_dict, key_ii)
+                keytype = typeof(getfield(method, Symbol(key_ii)))
+                setfield!(method, Symbol(key_ii), keytype(value_ii))
             else
-                if haskey(fermion_parameters_dict,key_ii)
+                if haskey(fermion_parameters_dict, key_ii)
                     #println("fermion $key_ii $value_ii")
-                    keytype = typeof(getfield(fermion_parameters,Symbol(key_ii)))
-                    setfield!(fermion_parameters,Symbol(key_ii),keytype(value_ii))
+                    keytype = typeof(getfield(fermion_parameters, Symbol(key_ii)))
+                    setfield!(fermion_parameters, Symbol(key_ii), keytype(value_ii))
                 else
                     @warn "$key_ii is not found!"
                 end
             end
         end
 
-        if haskey(method_dict,"fermion_parameters")
-            setfield!(method,Symbol("fermion_parameters"),fermion_parameters)
+        if haskey(method_dict, "fermion_parameters")
+            setfield!(method, Symbol("fermion_parameters"), fermion_parameters)
         end
         value_out[i] = deepcopy(method)
     end

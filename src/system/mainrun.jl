@@ -39,7 +39,7 @@ import ..Measurements:
     Measurement_set
 import ..MD:
     md_initialize!, MD_parameters_standard, md!, metropolis_update!, construct_MD_parameters
-import ..System_parameters: Params, print_parameters, parameterloading, Params_set#,parameterloading2
+import ..System_parameters: Params
 import ..Print_config: write_config
 import ..Smearing: gradientflow!, calc_fatlink_APE, calc_stout
 import ..ILDG_format: ILDG, load_gaugefield, load_gaugefield!, save_binarydata
@@ -58,7 +58,7 @@ import ..Verbose_print: println_verbose1, println_verbose2, Verbose_1
 
 import ..System_parameters: system, actions, md, cg, wilson, staggered, measurement
 import ..Transform_oldinputfile: transform_to_toml
-import ..Parameters_TOML:construct_Params_from_TOML
+import ..Parameters_TOML: construct_Params_from_TOML
 
 
 
@@ -67,7 +67,7 @@ function run_LQCD(filenamein::String)
 
     filename_head = splitext(filenamein)[1]
     ext = splitext(filenamein)[end]
-    filename = filename_head*".toml"
+    filename = filename_head * ".toml"
     if ext == ".jl"
         transform_to_toml(filenamein)
         println("input file $filenamein is transformed to $filename")
@@ -75,7 +75,7 @@ function run_LQCD(filenamein::String)
     else
         @error "$filenamein is not supported. use a TOML format."
     end
-    
+
     parameters = construct_Params_from_TOML(filename)
 
     univ = Univ(parameters)
@@ -122,17 +122,6 @@ function run_LQCD(parameters::Params)
 end
 
 
-function run_LQCD(params_set::Params_set)
-    parameters = parameterloading(params_set)
-    univ = Univ(parameters)
-    plaq = run_LQCD_new!(univ, parameters)
-
-    error("error!")
-    univ = Universe(parameters)
-    plaq = run_LQCD!(univ, parameters)
-
-    return plaq
-end
 
 function run_LQCD_new!(univ::Univ, parameters::Params)
     println_verbose_level1(univ.U[1], "# " * pwd())

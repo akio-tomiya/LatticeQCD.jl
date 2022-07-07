@@ -100,13 +100,16 @@ function construct_Params_from_TOML(filename)
 
 
 
-    if haskey(parameters["Measurement set"],"measurement_basedir") && haskey(parameters["System Control"],"measurement_basedir") == false
+    if haskey(parameters["Measurement set"], "measurement_basedir") &&
+       haskey(parameters["System Control"], "measurement_basedir") == false
         measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
         measurement_dir = parameters["Measurement set"]["measurement_dir"]
-    elseif haskey(parameters["Measurement set"],"measurement_basedir") == false && haskey(parameters["System Control"],"measurement_basedir") 
+    elseif haskey(parameters["Measurement set"], "measurement_basedir") == false &&
+           haskey(parameters["System Control"], "measurement_basedir")
         measurement_basedir = parameters["System Control"]["measurement_basedir"]
         measurement_dir = parameters["System Control"]["measurement_dir"]
-    elseif haskey(parameters["Measurement set"],"measurement_basedir") && haskey(parameters["System Control"],"measurement_basedir") 
+    elseif haskey(parameters["Measurement set"], "measurement_basedir") &&
+           haskey(parameters["System Control"], "measurement_basedir")
         @error "both \"Measurement set\" and \"System Control\" have \"measurement_basedir\". remove one."
     else
         measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
@@ -207,21 +210,21 @@ function parameter_check(p::Params)
     end
 
 
-    
+
 end
 
 function construct_measurement_dir(x)
     #println(x)
     valuedic = Dict[]
 
-    for (method,methoddic) in x
+    for (method, methoddic) in x
         dic_i = Dict()
-        for (key,value) in methoddic
+        for (key, value) in methoddic
             if key == "fermion_parameters"
                 fermion_type = value["Dirac_operator"]
                 fermion_dict = struct2dict(initialize_fermion_parameters(fermion_type))
-                for (key_i,value_i) in fermion_dict
-                    if haskey(value,key_i)
+                for (key_i, value_i) in fermion_dict
+                    if haskey(value, key_i)
                         dic_i[key_i] = value[key_i]
                     else
                         dic_i[key_i] = value_i
@@ -231,7 +234,7 @@ function construct_measurement_dir(x)
                 dic_i[key] = value
             end
         end
-        push!(valuedic,dic_i)
+        push!(valuedic, dic_i)
     end
 
     #display(valuedic)
