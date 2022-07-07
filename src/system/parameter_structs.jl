@@ -53,7 +53,8 @@ const important_parameters = [
     "methodname",
     "measurement_basedir",
     "hasgradientflow",
-    "measurement_dir"
+    "measurement_dir",
+    "kinds_of_topological_charge"
 ]
 
 function check_important_parameters(key)
@@ -303,7 +304,7 @@ Base.@kwdef mutable struct TopologicalCharge_parameters <: Measurement_parameter
     #eps_flow::Float64 = 0.01
     verbose_level::Int64 = 2
     printvalues::Bool = true
-    kinds_of_topological_charge::Vector{String} = ["plaquette"]
+    kinds_of_topological_charge::Vector{String} = ["plaquette","clover"]
 end
 
 Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
