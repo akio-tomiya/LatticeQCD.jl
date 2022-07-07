@@ -134,6 +134,10 @@ struct Params
     julian_random_number::Bool
     ITERATION_MAX::Int64
     isevenodd::Bool
+    hasgradientflow::Bool
+    eps_flow::Float64
+    numflow::Int64
+    Nflow::Int64
 
 end
 

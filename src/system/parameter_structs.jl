@@ -127,11 +127,25 @@ Base.@kwdef mutable struct Print_System_control_parameters
     measurement_dir::String = ""
     julian_random_number::Bool = false
     isevenodd = true
+    hasgradientflow::Bool = false
+    eps_flow::Float64 = 0.01
+    numflow::Int64 = 100
+    Nflow::Int64 = 1
 end
 
 
 # HMC related
 Base.@kwdef mutable struct Print_HMCrelated_parameters
+    Δτ::Float64 = 0.05
+    SextonWeingargten::Bool = false
+    N_SextonWeingargten::Int64 = 2
+    MDsteps::Int64 = 20
+    eps::Float64 = 1e-19
+    MaxCGstep::Int64 = 3000
+end
+
+# Gradient Flow
+Base.@kwdef mutable struct Print_Gradientflow_parameters
     Δτ::Float64 = 0.05
     SextonWeingargten::Bool = false
     N_SextonWeingargten::Int64 = 2
@@ -253,12 +267,25 @@ Base.@kwdef mutable struct Plaq_parameters <: Measurement_parameters
     methodname::String = "Plaquette"
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
 end
 
 Base.@kwdef mutable struct Poly_parameters <: Measurement_parameters
     methodname::String = "Polyakov_loop"
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
+    #common::Measurement_common_parameters = Measurement_common_parameters()
+end
+
+Base.@kwdef mutable struct Energy_density_parameters <: Measurement_parameters
+    methodname::String = "Energy_density"
+    measure_every::Int64 = 10
+    fermiontype::String = "nothing"
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
     #common::Measurement_common_parameters = Measurement_common_parameters()
 end
 
@@ -270,6 +297,9 @@ Base.@kwdef mutable struct TopologicalCharge_parameters <: Measurement_parameter
     numflow::Int64 = 1 #number of flows
     Nflowsteps::Int64 = 1
     eps_flow::Float64 = 0.01
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
+    kinds_of_topological_charge::Vector{String} = ["plaquette"]
 end
 
 Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
@@ -285,6 +315,9 @@ Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
     stout_numlayers::Union{Nothing,Int64} = nothing
     stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
     stout_loops::Union{Nothing,Array{String,1}} = nothing
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
+    Nr = 10
     #smearing::Smearing_parameters = Stout_parameters()
 end
 
@@ -301,6 +334,8 @@ Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
     stout_loops::Union{Nothing,Array{String,1}} = nothing
     #smearing::Smearing_parameters = NoSmearing_parameters()
     fermion_parameters::Fermion_parameters = Wilson_parameters()
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
 end
 
 function initialize_measurement_parameters(methodname)
@@ -314,6 +349,8 @@ function initialize_measurement_parameters(methodname)
         method = ChiralCondensate_parameters()
     elseif methodname == "Pion_correlator"
         method = Pion_parameters()
+    elseif methodname == "Energy_density"
+        method = Energy_density_parameters()
     else
         @error "$methodname is not implemented in parameter_structs.jl"
     end
@@ -327,6 +364,57 @@ Base.@kwdef mutable struct Measurement_parameterset
     measurement_dir::String = ""
 end
 
+function transform_measurement_dictvec(value)
+    #println(value)
+    nummeasure = length(value)
+    value_out = Vector{Measurement_parameters}(undef, nummeasure)
+    for i = 1:nummeasure
+        value_out[i] = construct_Measurement_parameters_from_dict(value[i])
+    end
+    return value_out
+end
+
+
+function construct_Measurement_parameters_from_dict(value_i::Dict)
+    #println(value)
+    @assert haskey(value_i, "methodname") "methodname should be set in measurement."
+    methodname = value_i["methodname"]
+    method = initialize_measurement_parameters(methodname)
+    method_dict = struct2dict(method)
+    #println("value_i ",value_i)
+    if haskey(value_i, "Dirac_operator")
+        fermiontype = value_i["Dirac_operator"]
+    else
+        fermiontype = "nothing"
+
+    end
+    fermion_parameters = initialize_fermion_parameters(fermiontype)
+    fermion_parameters_dict = struct2dict(fermion_parameters)
+    #println("femriontype ",fermiontype)
+
+    for (key_ii, value_ii) in value_i
+        #println("$key_ii $value_ii")
+        if haskey(method_dict, key_ii)
+            keytype = typeof(getfield(method, Symbol(key_ii)))
+            setfield!(method, Symbol(key_ii), keytype(value_ii))
+        else
+            if haskey(fermion_parameters_dict, key_ii)
+                #println("fermion $key_ii $value_ii")
+                keytype = typeof(getfield(fermion_parameters, Symbol(key_ii)))
+                setfield!(fermion_parameters, Symbol(key_ii), keytype(value_ii))
+            else
+                @warn "$key_ii is not found!"
+            end
+        end
+    end
+
+    if haskey(method_dict, "fermion_parameters")
+        setfield!(method, Symbol("fermion_parameters"), fermion_parameters)
+    end
+    value_out = deepcopy(method)
+
+    return value_out
+end
 
 
 
@@ -842,6 +930,7 @@ end
 
 function construct_dict_from_fermion!(x, value)
     fermiondic = struct2dict(value)
+    #println("fermiondic",fermiondic)
     fermiondic_default = typeof(value)()
     remove_default_values!(fermiondic, fermiondic_default)
     x["fermion_parameters"] = fermiondic

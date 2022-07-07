@@ -16,7 +16,8 @@ if length(ARGS) == 0
 end
 
 function runtest()
-    run_LQCD(ARGS[1])
+    run_LQCD_file(ARGS[1])
+    #run_LQCD(ARGS[1])
     #parameters = parameterloading()
     #run_LQCD(parameters)
 end

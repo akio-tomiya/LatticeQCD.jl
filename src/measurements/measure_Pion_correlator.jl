@@ -129,6 +129,59 @@ mutable struct Pion_correlator_measurement{Dim,TG,TD,TF,TF_vec,Dim_2} <: Abstrac
 
 end
 
+function Pion_correlator_measurement(U::Vector{T},params::Pion_parameters,filename
+) where {T}
+
+    if params.smearing_for_fermion != "nothing"
+        error("smearing is not implemented in Pion correlator")
+    end
+
+    fermionparameters = params.fermion_parameters
+    if params.fermiontype == "Staggered"
+        method = Pion_correlator_measurement(
+            U;
+            filename = filename,
+            verbose_level = params.verbose_level,
+            printvalues = params.printvalues,
+            fermiontype = params.fermiontype,
+            mass = fermionparameters.mass,
+            Nf = fermionparameters.Nf,
+            eps_CG = params.eps,
+            MaxCGstep = params.MaxCGstep
+        )
+    elseif params.fermiontype == "Wilson" || params.fermiontype == "WilsonClover"
+        if fermionparameters.hasclover
+            error("WilsonClover is not implemented in Pion measurement")
+        end
+        method = Pion_correlator_measurement(
+            U;
+            filename = filename,
+            verbose_level = params.verbose_level,
+            printvalues = params.printvalues,
+            fermiontype = params.fermiontype,
+            κ = fermionparameters.hop,
+            r = fermionparameters.r,
+            eps_CG = params.eps,
+            MaxCGstep = params.MaxCGstep
+        )
+    elseif params.fermiontype == "Domainwall"
+        error("Domainwall fermion is not implemented in Pion measurement!")
+        method = Pion_correlator_measurement(
+            U;
+            filename = filename,
+            verbose_level = params.verbose_level,
+            printvalues = params.printvalues,
+            fermiontype = params.fermiontype,
+            L5 = fermionparameters.N5,
+            M = fermionparameters.M,
+            eps_CG = params.eps,
+            MaxCGstep = params.MaxCGstep
+        )
+    end
+
+    return method
+end
+
 @inline function spincolor(ic, is, NC)
     return ic - 1 + (is - 1) * NC + 1
 end

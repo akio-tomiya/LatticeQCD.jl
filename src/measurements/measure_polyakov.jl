@@ -6,6 +6,7 @@ mutable struct Polyakov_measurement{Dim,TG} <: AbstractMeasurement
     verbose_print::Union{Verbose_print,Nothing}
     printvalues::Bool
 
+
     function Polyakov_measurement(
         U::Vector{T};
         filename = nothing,
@@ -26,22 +27,28 @@ mutable struct Polyakov_measurement{Dim,TG} <: AbstractMeasurement
             verbose_print = nothing
         end
         Dim = length(U)
-
-
+    
+    
         numg = 2
         _temporary_gaugefields = Vector{T}(undef, numg)
         _temporary_gaugefields[1] = similar(U[1])
         for i = 2:numg
             _temporary_gaugefields[i] = similar(U[1])
         end
-
+    
         return new{Dim,T}(filename, _temporary_gaugefields, Dim, verbose_print, printvalues)
-
+    
     end
-
-
-
 end
+
+function Polyakov_measurement(
+    U::Vector{T},params::Poly_parameters,filename
+) where {T}
+    return Polyakov_measurement(U,filename=filename,verbose_level=params.verbose_level,printvalues=params.printvalues)
+end
+
+
+
 
 function measure(m::M, itrj, U; additional_string = "") where {M<:Polyakov_measurement}
     temps = get_temporary_gaugefields(m)

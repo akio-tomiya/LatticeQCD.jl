@@ -12,6 +12,7 @@ include("./standardHMC.jl")
 include("./givenconfigurations.jl")
 include("./heatbath.jl")
 
+#=
 function Updatemethod(p::Params, univ::Univ)
     gauge_action = get_gauge_action(univ)
     quench = is_quenched(univ)
@@ -24,6 +25,31 @@ function Updatemethod(p::Params, univ::Univ)
         p.Δτ,
         p.MDsteps,
         SextonWeingargten = SextonWeingargten,
+    )
+    return updatemethod
+end
+=#
+
+function Updatemethod(parameters::Params, univ::Univ)
+    gauge_action = get_gauge_action(univ)
+    quench = is_quenched(univ)
+
+    updatemethod = Updatemethod(
+        univ.U,
+        gauge_action,
+        parameters.update_method,
+        quench,
+        parameters.Δτ,
+        parameters.MDsteps,
+        fermi_action = univ.fermi_action,
+        SextonWeingargten = parameters.SextonWeingargten,
+        loadU_dir = parameters.loadU_dir,
+        loadU_format = parameters.loadU_format,
+        isevenodd = parameters.isevenodd,
+        β = parameters.β,
+        ITERATION_MAX = parameters.ITERATION_MAX,
+        numOR = parameters.numOR,
+        useOR = parameters.useOR,
     )
     return updatemethod
 end

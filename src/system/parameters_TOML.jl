@@ -232,6 +232,7 @@ function construct_measurement_dir(x)
                 dic_i[key] = value
             end
         end
+        #println("dic_i $dic_i")
         push!(valuedic, dic_i)
     end
 

@@ -6,6 +6,8 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
     verbose_print::Union{Verbose_print,Nothing}
     printvalues::Bool
 
+
+    
     function Plaquette_measurement(
         U::Vector{T};
         filename = nothing,
@@ -26,7 +28,7 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
             verbose_print = nothing
         end
         Dim = length(U)
-
+    
         if Dim == 4
             comb = 6
         elseif Dim == 2
@@ -35,14 +37,14 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
             error("Dim = $Dim is not supported in Plaquette_measurement")
         end
         factor = 1 / (comb * U[1].NV * U[1].NC)
-
+    
         numg = 2
         _temporary_gaugefields = Vector{T}(undef, numg)
         _temporary_gaugefields[1] = similar(U[1])
         for i = 2:numg
             _temporary_gaugefields[i] = similar(U[1])
         end
-
+    
         return new{Dim,T}(
             filename,
             _temporary_gaugefields,
@@ -51,12 +53,22 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
             verbose_print,
             printvalues,
         )
-
+    
     end
-
-
-
 end
+
+
+function Plaquette_measurement(
+    U::Vector{T},params::Plaq_parameters,
+    filename
+) where {T}
+    return Plaquette_measurement(U,filename=filename,verbose_level=params.verbose_level,printvalues=params.printvalues)
+end
+
+
+
+
+
 
 function measure(m::M, itrj, U; additional_string = "") where {M<:Plaquette_measurement}
     temps = get_temporary_gaugefields(m)

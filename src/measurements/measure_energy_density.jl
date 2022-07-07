@@ -49,8 +49,18 @@ mutable struct Energy_density_measurement{Dim,TG} <: AbstractMeasurement
 
     end
 
+end
 
+function Energy_density_measurement(
+    U,params,filename
+) where {T}
 
+    return Energy_density_measurement(
+        U;
+        filename = filename,
+        verbose_level = params.verbose_level,
+        printvalues = params.printvalues
+    )
 end
 
 

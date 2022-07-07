@@ -10,7 +10,8 @@ import ..Parameter_structs:
     initialize_fermion_parameters,
     Measurement_parameters,
     initialize_measurement_parameters,
-    generate_printlist
+    generate_printlist,
+    transform_measurement_dictvec
 
 using TOML
 
@@ -182,7 +183,7 @@ function transform_to_toml(filename)
     measurement_dict = Dict()
     for (key, value) in measurement
         if key == "measurement_methods"
-            valuem = transform_measurement_dict(value)
+            valuem = transform_measurement_dictvec(value)
             measurement_dict[key] = valuem
         else
             hasvalue = construct_printable_parameters_fromdict!(
@@ -237,51 +238,6 @@ function transform_to_toml(filename)
 
 end
 
-function transform_measurement_dict(value)
-    #println(value)
-    nummeasure = length(value)
-    value_out = Vector{Measurement_parameters}(undef, nummeasure)
-    for i = 1:nummeasure
-        value_i = value[i]
-        @assert haskey(value_i, "methodname") "methodname should be set in measurement."
-        methodname = value_i["methodname"]
-        method = initialize_measurement_parameters(methodname)
-        method_dict = struct2dict(method)
-        if haskey(value_i, "fermiontype")
-            fermiontype = value_i["fermiontype"]
-        else
-            fermiontype = "nothing"
-
-        end
-        fermion_parameters = initialize_fermion_parameters(fermiontype)
-        fermion_parameters_dict = struct2dict(fermion_parameters)
-
-        for (key_ii, value_ii) in value_i
-            #println("$key_ii $value_ii")
-            if haskey(method_dict, key_ii)
-                keytype = typeof(getfield(method, Symbol(key_ii)))
-                setfield!(method, Symbol(key_ii), keytype(value_ii))
-            else
-                if haskey(fermion_parameters_dict, key_ii)
-                    #println("fermion $key_ii $value_ii")
-                    keytype = typeof(getfield(fermion_parameters, Symbol(key_ii)))
-                    setfield!(fermion_parameters, Symbol(key_ii), keytype(value_ii))
-                else
-                    @warn "$key_ii is not found!"
-                end
-            end
-        end
-
-        if haskey(method_dict, "fermion_parameters")
-            setfield!(method, Symbol("fermion_parameters"), fermion_parameters)
-        end
-        value_out[i] = deepcopy(method)
-    end
-
-    #println("--------------------")
-    #println(value_out)
-    return value_out
-end
 
 
 

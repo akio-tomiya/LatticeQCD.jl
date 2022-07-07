@@ -11,6 +11,11 @@ using LatticeDiracOperators
 import LatticeDiracOperators.Dirac_operators:
     clear_fermion!, AbstractFermionfields_4D, Z4_distribution_fermi!
 import Wilsonloop.make_cloverloops
+import ..Parameter_structs:Plaq_parameters,Poly_parameters,
+TopologicalCharge_parameters,
+ChiralCondensate_parameters,
+Pion_parameters,
+Energy_density_parameters
 
 abstract type AbstractMeasurement end
 
@@ -29,7 +34,7 @@ include("measure_energy_density.jl")
 include("measure_chiral_condensate.jl")
 include("measure_Pion_correlator.jl")
 
-
+include("measurement_parameters_set.jl")
 include("Measurement_set.jl")
 
 

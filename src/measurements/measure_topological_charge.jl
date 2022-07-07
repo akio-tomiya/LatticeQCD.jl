@@ -58,6 +58,20 @@ mutable struct Topological_charge_measurement{Dim,TG} <: AbstractMeasurement
 
 end
 
+function Topological_charge_measurement(
+    U::Vector{T},params::TopologicalCharge_parameters,filename
+) where {T}
+
+    return Topological_charge_measurement(
+    U,
+    filename = filename,
+    verbose_level = params.verbose_level,
+    printvalues = params.printvalues,
+    TC_methods = params.kinds_of_topological_charge #["plaquette"]
+    )
+
+end
+
 function measure(
     m::M,
     itrj,

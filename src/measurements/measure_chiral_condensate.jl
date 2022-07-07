@@ -134,6 +134,30 @@ mutable struct Chiral_condensate_measurement{Dim,TG,TD,TF,TF_vec} <: AbstractMea
 
 end
 
+function Chiral_condensate_measurement(
+    U::Vector{T},params::ChiralCondensate_parameters,filename
+) where {T}
+    if params.fermiontype == "Staggered"
+        method = Chiral_condensate_measurement(
+            U;
+            filename = filename,
+            verbose_level = params.verbose_level,
+            printvalues = params.printvalues,
+            fermiontype = params.fermiontype,
+            mass = params.mass,
+            Nf = params.Nf,
+            eps_CG = params.eps,
+            MaxCGstep = params.MaxCGstep,
+            Nr = params.Nr)
+    else
+        error("$(params.fermiontype) is not supported in Chiral_condensate_measurement")
+    end
+
+
+#途中
+    return method
+end
+
 function measure(
     m::M,
     itrj,

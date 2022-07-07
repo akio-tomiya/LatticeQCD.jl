@@ -18,8 +18,7 @@ struct Measurements_set
         nummeasurements = length(measurement_methods)
         measurements = Array{AbstractMeasurement,1}(undef, nummeasurements)
         methodnames = Array{String,1}(undef, nummeasurements)
-        baremesurement_indices = Int64[]
-        flowmeasurement_indices = Int64[]
+
 
         for i = 1:nummeasurements
             method = measurement_methods[i]
@@ -29,16 +28,11 @@ struct Measurements_set
                 measurements[i] =
                     Plaquette_measurement(U, filename = measurement_dir * "/Plaquette.txt")
 
-                baremeasure = set_parameter_default(method, "bare measure", true)
-                flowmeasure = set_parameter_default(method, "flow measure", true)
-
             elseif method["methodname"] == "Polyakov_loop"
                 measurements[i] = Polyakov_measurement(
                     U,
                     filename = measurement_dir * "/Polyakov_loop.txt.txt",
                 )
-                baremeasure = set_parameter_default(method, "bare measure", true)
-                flowmeasure = set_parameter_default(method, "flow measure", false)
             elseif method["methodname"] == "Topological_charge"
                 TC_methods =
                     set_parameter_default(method, "TC_methods", ["plaquette", "clover"])
@@ -47,16 +41,11 @@ struct Measurements_set
                     filename = measurement_dir * "/Topological_charge.txt",
                     TC_methods = TC_methods,
                 )
-                baremeasure = set_parameter_default(method, "bare measure", true)
-                flowmeasure = set_parameter_default(method, "flow measure", true)
-
             elseif method["methodname"] == "Energy_density"
                 measurements[i] = Energy_density_measurement(
                     U,
                     filename = measurement_dir * "/Energy_density.txt",
                 )
-                baremeasure = set_parameter_default(method, "bare measure", true)
-                flowmeasure = set_parameter_default(method, "flow measure", true)
 
             elseif method["methodname"] == "Chiral_condensate"
                 baremeasure = set_parameter_default(method, "bare measure", true)
@@ -139,13 +128,6 @@ struct Measurements_set
                 error("$(method["methodname"]) is not supported")
             end
 
-            if baremeasure
-                push!(baremesurement_indices, i)
-            end
-
-            if flowmeasure
-                push!(flowmeasurement_indices, i)
-            end
 
         end
 
@@ -154,9 +136,7 @@ struct Measurements_set
             nummeasurements,#::Int64
             measurements,#::Array{AbstractMeasurement,1}
             measurement_methods,#::Array{Dict,1}
-            methodnames,#::Array{String,1}
-            baremesurement_indices,#::Array{Int64,1}
-            flowmeasurement_indices,#::Array{Int64,1}
+            methodnames#::Array{String,1}
         )
     end
 

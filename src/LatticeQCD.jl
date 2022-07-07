@@ -75,7 +75,7 @@ include("./system/wizard.jl")
 include("./SLMC/SLMC.jl")
 
 
-
+include("./system/lqcd.jl")
 include("./system/mainrun.jl")
 include("./output/analyze.jl")
 
@@ -131,6 +131,7 @@ import .Analyze:
     get_plaquette_average,
     get_polyakov_average,
     get_trjs
+import .LQCD:run_LQCD_file
 
 
 #import .Fermionfields:make_WdagWmatrix
@@ -159,7 +160,7 @@ export run_wizard
 export analyze,
     get_plaquette, get_polyakov, get_plaquette_average, get_polyakov_average, get_trjs
 
-
+export run_LQCD_file
 
 
 
