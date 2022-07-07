@@ -41,7 +41,7 @@ end
 
 
 const important_parameters =
-    ["L", "β", "update_method", "MDsteps", "Δτ", "Dirac_operator", "fermion_parameters"]
+    ["L", "β", "update_method", "MDsteps", "Δτ", "Dirac_operator", "fermion_parameters","methodname","measurement_basedir"]
 
 function check_important_parameters(key)
     findornot = findfirst(x -> x == key, important_parameters)
@@ -80,7 +80,6 @@ Base.@kwdef mutable struct Print_Physical_parameters
     Nwing::Int64 = 1
 end
 
-const printlist_physical = generate_printlist(Print_Physical_parameters)
 
 # Physical setting(fermions)
 Base.@kwdef mutable struct Print_Fermions_parameters
@@ -101,8 +100,6 @@ Base.@kwdef mutable struct Print_Fermions_parameters
     stout_loops::Union{Nothing,Array{String,1}} = nothing
 end
 
-const printlist_fermions = generate_printlist(Print_Fermions_parameters)
-
 # System Control
 Base.@kwdef mutable struct Print_System_control_parameters
     log_dir::String = ""
@@ -121,7 +118,6 @@ Base.@kwdef mutable struct Print_System_control_parameters
     julian_random_number::Bool = false
 end
 
-const printlist_systemcontrol = generate_printlist(Print_System_control_parameters)
 
 # HMC related
 Base.@kwdef mutable struct Print_HMCrelated_parameters
@@ -132,9 +128,6 @@ Base.@kwdef mutable struct Print_HMCrelated_parameters
     eps::Float64 = 1e-19
     MaxCGstep::Int64 = 3000
 end
-
-# HMC related
-const printlist_HMCrelated = generate_printlist(Print_HMCrelated_parameters)
 
 
 # Action parameter for SLMC
@@ -147,13 +140,17 @@ struct Print_SLMC_parameters
     coupling_loops::Union{Nothing,Array{Array{Array{Tuple{Int,Int},1},1},1}}
 end
 
-const printlist_parameters_SLMC = generate_printlist(Print_SLMC_parameters)
 
 # Measurement set
 Base.@kwdef mutable struct Print_Measurement_parameters
     measurement_methods::Array{Dict,1} = Dict[]
 end
 
+const printlist_physical = generate_printlist(Print_Physical_parameters)
+const printlist_fermions = generate_printlist(Print_Fermions_parameters)
+const printlist_systemcontrol = generate_printlist(Print_System_control_parameters)
+const printlist_HMCrelated = generate_printlist(Print_HMCrelated_parameters)
+const printlist_parameters_SLMC = generate_printlist(Print_SLMC_parameters)
 const printlist_measurement = generate_printlist(Print_Measurement_parameters)
 
 
@@ -220,7 +217,7 @@ end
 function initialize_fermion_parameters(fermion_type)
     if fermion_type ==  "nothing"
         fermion_parameter = Quench_parameters()
-    elseif fermion_type ==  "Wilson" || "WilsonClover"
+    elseif fermion_type ==  "Wilson" || fermion_type == "WilsonClover"
         fermion_parameter =  Wilson_parameters()
     elseif fermion_type ==  "Staggered"
         fermion_parameter =  Staggered_parameters()
@@ -239,28 +236,23 @@ end
 
 abstract type Measurement_parameters end
 
-Base.@kwdef mutable struct Measurement_common_parameters
-    methodname::String = ""
-    measure_every::Int64 = 10
-    fermiontype::String = "nothing"
-end
 
 Base.@kwdef mutable struct Plaq_parameters <: Measurement_parameters
     #common::Measurement_common_parameters = Measurement_common_parameters()
-    methodname::String = ""
+    methodname::String = "Plaquette"
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
 end
 
 Base.@kwdef mutable struct Poly_parameters <: Measurement_parameters
-    methodname::String = ""
+    methodname::String = "Polyakov_loop"
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
     #common::Measurement_common_parameters = Measurement_common_parameters()
 end
 
 Base.@kwdef mutable struct TopologicalCharge_parameters <: Measurement_parameters
-    methodname::String = ""
+    methodname::String = "Topological_charge"
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
     #common::Measurement_common_parameters = Measurement_common_parameters()
@@ -271,7 +263,7 @@ end
 
 Base.@kwdef mutable struct ChiralCondensate_parameters <: Measurement_parameters
     #common::Measurement_common_parameters = Measurement_common_parameters()
-    methodname::String = ""
+    methodname::String = "Chiral_condensate"
     measure_every::Int64 = 10
     fermiontype::String = "Staggered"
     Nf::Int64 = 4
@@ -287,7 +279,7 @@ end
 
 Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
     #common::Measurement_common_parameters = Measurement_common_parameters()
-    methodname::String = ""
+    methodname::String = "Pion_correlator"
     measure_every::Int64 = 10
     fermiontype::String = "Wilson"
     eps::Float64 = 1e-19
@@ -300,6 +292,22 @@ Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
     fermion_parameters::Fermion_parameters = Wilson_parameters()
 end
 
+function initialize_measurement_parameters(methodname)
+    if methodname ==  "Plaquette"
+        method = Plaq_parameters()
+    elseif methodname ==  "Polyakov_loop" 
+        method =  Poly_parameters()
+    elseif methodname ==  "Topological_charge"
+        method =  TopologicalCharge_parameters()        
+    elseif methodname ==  "Chiral_condensate"
+        method =  ChiralCondensate_parameters()
+    elseif methodname ==  "Pion_correlator"
+        method = Pion_parameters()
+    else
+        @error "$methodname is not implemented in parameter_structs.jl"
+    end
+    return  method
+end
 
 
 Base.@kwdef mutable struct Measurement_parameterset
@@ -634,6 +642,8 @@ function Domainwall_wizard()
     return fermion_parameters, cg
 end
 
+
+
 function generate_printable_parameters(p::System)
     pnames = fieldnames(System)
     physical = Print_Physical_parameters()
@@ -701,6 +711,87 @@ function generate_printable_parameters(p::System)
     return physical, fermions, control, hmc#, measure
 end
 
+function construct_printable_parameters_fromdict!(key,value,physical,fermions,control,hmc)
+    if key == "L"
+        value = collect(value)
+    elseif key == "r"
+        value = Float64(value)
+    end
+
+    #println("$key $value")
+    hasvalue = false
+    pname_i = Symbol(key)
+    physical_index = findfirst(x -> x == key, printlist_physical)
+    if physical_index != nothing
+        setfield!(physical, pname_i, value)
+        hasvalue = true
+    end
+
+    fermions_index = findfirst(x -> x == key, printlist_fermions)
+    if fermions_index != nothing
+        setfield!(fermions, pname_i, value)
+        hasvalue = true
+    end
+
+    control_index = findfirst(x -> x == key, printlist_systemcontrol)
+    if control_index != nothing
+        setfield!(control, pname_i, value)
+        hasvalue = true
+    end
+
+    hmc_index = findfirst(x -> x == key, printlist_HMCrelated)
+    if hmc_index != nothing
+        setfield!(hmc, pname_i, value)
+        hasvalue = true
+    end
+
+    #if hasvalue == false
+    #    @warn "$(pname_i) is not set!"
+    #end
+
+    if hasvalue == false
+        @warn "$(key) is not used!"
+    end
+
+    return hasvalue
+end
+
+function construct_printable_parameters_fromdict!(x::Dict,physical,fermions,control,hmc)
+
+
+    for (key,value) in x
+        hasvalue = false
+        pname_i = Symbol(key)
+        physical_index = findfirst(x -> x == pname_i, names_physical)
+        if physical_index != nothing
+            setfield!(physical, pname_i, value)
+            hasvalue = true
+        end
+
+        fermions_index = findfirst(x -> x == pname_i, names_fermions)
+        if fermions_index != nothing
+            setfield!(fermions, pname_i, value)
+            hasvalue = true
+        end
+
+        control_index = findfirst(x -> x == pname_i, names_control)
+        if control_index != nothing
+            setfield!(control, pname_i, value)
+            hasvalue = true
+        end
+
+        hmc_index = findfirst(x -> x == pname_i, names_hmc)
+        if hmc_index != nothing
+            setfield!(hmc, pname_i, value)
+            hasvalue = true
+        end
+
+        if hasvalue == false
+            @warn "$(pname_i) is not set!"
+        end
+    end
+end
+
 
 function remove_default_values!(x::Dict, defaultsystem)
     for (key, value) in x
@@ -743,7 +834,7 @@ end
 function construct_dict_from_measurement!(x, value)
 
     measuredic = Dict()
-    println(value)
+    #println(value)
     for measure in value
         methoddic = struct2dict(measure)
         measure_struct_default = typeof(measure)()

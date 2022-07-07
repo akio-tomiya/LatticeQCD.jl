@@ -91,12 +91,35 @@ function construct_Params_from_TOML(filename)
     pos = findfirst(x -> String(x) == "load_fp", pnames)
     logfilename = parameters["System Control"]["logfile"]
     log_dir = parameters["System Control"]["log_dir"]
+    if isdir(log_dir) == false
+        mkdir(log_dir)
+    end
     logfile = pwd() * "/" * log_dir * "/" * logfilename
     load_fp = open(logfile, "a")
     value_Params[pos] = load_fp
 
-    measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
-    measurement_dir = parameters["Measurement set"]["measurement_dir"]
+
+
+    if haskey(parameters["Measurement set"],"measurement_basedir") && haskey(parameters["System Control"],"measurement_basedir") == false
+        measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
+        measurement_dir = parameters["Measurement set"]["measurement_dir"]
+    elseif haskey(parameters["Measurement set"],"measurement_basedir") == false && haskey(parameters["System Control"],"measurement_basedir") 
+        measurement_basedir = parameters["System Control"]["measurement_basedir"]
+        measurement_dir = parameters["System Control"]["measurement_dir"]
+    elseif haskey(parameters["Measurement set"],"measurement_basedir") && haskey(parameters["System Control"],"measurement_basedir") 
+        @error "both \"Measurement set\" and \"System Control\" have \"measurement_basedir\". remove one."
+    else
+        measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
+        measurement_dir = parameters["Measurement set"]["measurement_dir"]
+    end
+    if isdir(measurement_basedir) == false
+        mkdir(measurement_basedir)
+    end
+
+    if isdir(pwd() * "/" * measurement_basedir * "/" * measurement_dir) == false
+        mkdir(pwd() * "/" * measurement_basedir * "/" * measurement_dir)
+    end
+
     pos = findfirst(x -> String(x) == "measuredir", pnames)
     measuredir = pwd() * "/" * measurement_basedir * "/" * measurement_dir
     value_Params[pos] = measuredir
@@ -135,9 +158,56 @@ function construct_Params_from_TOML(filename)
 
     end
 
+    parameters = Params(value_Params...)
+
+    parameter_check(parameters)
+
+    return parameters
+end
+
+function parameter_check(p::Params)
+    if p.Dirac_operator != nothing
+        println("$(p.Dirac_operator) fermion is used")
+    end
+
+    if p.saveU_format ≠ nothing
+        if isdir(p.saveU_dir) == false
+            mkdir(p.saveU_dir)
+        end
+        println("$(p.saveU_dir) is used for saving configurations")
+    end
+
+    if p.update_method == "HMC"
+        println("HMC will be used")
+    elseif p.update_method == "Heatbath"
+        println("Heatbath will be used")
+    elseif p.update_method == "Fileloading"
+        println("No update will be used (read-measure mode)")
+        p.quench = true
+    elseif p.update_method == "SLHMC"
+        println("SLHMC will be used")
+        if p.quench == false
+            println("quench = true is set")
+            p.quench = true
+            #error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"update_method\"] != \"SLHMC\" or system[\"quench\"] = true")
+        end
+    else
+        error("""
+        update_method in [\"Physical setting\"] = $update_method is not supported.
+        Supported methods are 
+        HMC
+        Heatbath
+        Fileloading
+        """)
+    end
+
+    log_dir = p.log_dir
+    if isdir(log_dir) == false
+        mkdir(log_dir)
+    end
 
 
-    return Params(value_Params...)
+    
 end
 
 function construct_measurement_dir(x)
