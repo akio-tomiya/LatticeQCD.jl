@@ -94,7 +94,7 @@ struct Params
     verboselevel::Int8 # = 2
 
     #For measurement
-    measurement_methods::Array{Dict,1} # = defaultmeasures
+    measurement_methods::Vector{Dict} # = defaultmeasures
 
     saveU_format::Union{String,Nothing}
     saveU_every::Int64
@@ -138,6 +138,8 @@ struct Params
     eps_flow::Float64
     numflow::Int64
     Nflow::Int64
+    measurements_for_flow::Vector{Dict} #measurement in gradientflow
+
 
 end
 

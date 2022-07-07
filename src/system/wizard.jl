@@ -3,7 +3,7 @@ using REPL.TerminalMenus
 using TOML
 import ..System_parameters: Params
 import ..Parameter_structs:
-    System,
+    #System,
     Action,
     CG_params_interactive,
     Quench_parameters,
@@ -28,9 +28,15 @@ import ..Parameter_structs:
     Domainwall_wizard,
     Pion_parameters_interactive,
     Measurement_parameterset,
-    generate_printable_parameters,
+    #generate_printable_parameters,
     remove_default_values!,
-    struct2dict
+    struct2dict,
+    Print_Gradientflow_parameters,
+    Print_Physical_parameters,
+    Print_Fermions_parameters,
+    Print_System_control_parameters,
+    Print_HMCrelated_parameters
+
 import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 
 @enum Wizardmode simple = 1 expert = 2
@@ -108,8 +114,12 @@ end
 
 function run_wizard()
     print_wizard_logo(stdout)
+    physicalparams = Print_Physical_parameters()
+    controlparams = Print_System_control_parameters()
+    fermionparams = Print_Fermions_parameters()
+    hmcparams = Print_HMCrelated_parameters()
 
-    system = System()
+    #system = System()
     #action = Action()
     #println(system)
     #println(action)
@@ -127,21 +137,26 @@ function run_wizard()
         default = "my_parameters.toml",
     )
 
-    system.L = set_Lattice_size(isexpert)
-    system.NC = set_gaugegroup(isexpert)
-    system.β = set_β(system.NC)
+    physicalparams.L = set_Lattice_size(isexpert)
+    #system.L = set_Lattice_size(isexpert)
+    physicalparams.NC = set_gaugegroup(isexpert)
+    #system.NC = set_gaugegroup(isexpert)
+    physicalparams.β = set_β(physicalparams.NC)
+    #system.β = set_β(system.NC)
 
 
     if isexpert
-        system.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
-        system.verboselevel = set_verboselevel()
+        controlparams.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
+        controlparams.verboselevel = set_verboselevel()
+        #system.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
+        #system.verboselevel = set_verboselevel()
     end
 
 
     if check_isfileloading()
-        system.loadU_format, _ = set_loadU_format()
-        system.update_method = "Fileloading"
-        system.loadU_dir = String(Base.prompt("Loading directory", default = "./confs"))
+        controlparams.loadU_format, _ = set_loadU_format()
+        physicalparams.update_method = "Fileloading"
+        controlparams.loadU_dir = String(Base.prompt("Loading directory", default = "./confs"))
 
         filelist = request(
             "Which configurations do you use?",
@@ -152,19 +167,19 @@ function run_wizard()
         )
 
         if filelist == 1
-            system.loadU_fromfile = false
+            controlparams.loadU_fromfile = false
         else
-            system.loadU_fromfile = true
-            system.loadU_filename = String(
+            controlparams.loadU_fromfile = true
+            controlparams.loadU_filename = String(
                 Base.prompt(
-                    "name of the list in $(system.loadU_dir)",
+                    "name of the list in $(controlparams.loadU_dir)",
                     default = "filelist.txt",
                 ),
             )
         end
     else
 
-        if system.NC == 2
+        if physicalparams.NC == 2
             initialconf =
                 request(
                     "Choose initial configurations",
@@ -185,24 +200,24 @@ function run_wizard()
 
 
         if initialconf == coldstart
-            system.initial = "cold"
+            physicalparams.initial = "cold"
         elseif initialconf == hotstart
-            system.initial = "hot"
+            physicalparams.initial = "hot"
         elseif initialconf == filestart
             println("Initial configuration is loaded from a file")
-            system.loadU_format, filetype = set_loadU_format()
+            controlparams.loadU_format, filetype = set_loadU_format()
             extstring = get_filename_extension(filetype)
 
-            system.initial = String(
+            physicalparams.initial = String(
                 Base.prompt(
                     "Input the file name that you want to use",
                     default = "./confs/conf_00000001.$(extstring)",
                 ),
             )
-            system.initialtrj =
+            physicalparams.initialtrj =
                 parse(Int64, Base.prompt("Start trj number?", default = "1"))
         elseif initialconf == instantonstart
-            system.initial = "one instanton"
+            physicalparams.initial = "one instanton"
         end
 
         if isexpert
@@ -221,10 +236,10 @@ function run_wizard()
             if ftype == Nofermion
                 cg = ConjugateGradient()
                 fermion_parameters = Quench_parameters()
-                system.Dirac_operator = "nothing"
-                system.quench = true
+                fermionparams.Dirac_operator = "nothing"
+                fermionparams.quench = true
             elseif ftype == Wilsonfermion
-                system.quench = false
+                fermionparams.quench = false
                 wtype = request(
                     "Choose Wilson fermion type",
                     RadioMenu([
@@ -234,31 +249,31 @@ function run_wizard()
                 )
                 if wtype == 1
                     println("Standard Wilson fermion action will be used")
-                    system.Dirac_operator = "Wilson"
+                    fermionparams.Dirac_operator = "Wilson"
                 else
                     println("Wilson+Clover fermion action will be used")
-                    system.Dirac_operator = "WilsonClover"
+                    fermionparams.Dirac_operator = "WilsonClover"
                 end
                 fermion_parameters, cg = wilson_wizard()
             elseif ftype == Staggeredfermion
-                system.quench = false
-                system.Dirac_operator = "Staggered"
+                fermionparams.quench = false
+                fermionparams.Dirac_operator = "Staggered"
                 fermion_parameters, cg = staggered_wizard()
 
             elseif ftype == Domainwallfermion
-                system.quench = false
-                system.Dirac_operator = "Domainwall"
+                fermionparams.quench = false
+                fermionparams.Dirac_operator = "Domainwall"
                 fermion_parameters, cg = Domainwall_wizard()
             end
 
 
         else
-            system.Dirac_operator = "Wilson"
-            system.quench = false
+            fermionparams.Dirac_operator = "Wilson"
+            fermionparams.quench = false
             fermion_parameters, cg = wilson_wizard_simple()
         end
 
-        if system.quench == false
+        if fermionparams.quench == false
             smearingmethod =
                 request(
                     "Choose a configuration format for loading",
@@ -266,15 +281,15 @@ function run_wizard()
                 ) |> SmearingMethod
 
             if smearingmethod == Nosmearing
-                system.smearing_for_fermion = "nothing"
+                fermionparams.smearing_for_fermion = "nothing"
                 smearing = NoSmearing_parameters()
 
             elseif smearingmethod == STOUT
-                system.smearing_for_fermion = "stout"
+                fermionparams.smearing_for_fermion = "stout"
                 smearing = Stout_parameters_interactive()
-                system.stout_ρ = smearing.ρ
-                system.stout_loops = smearing.stout_loops
-                system.stout_numlayers = smearing.numlayers
+                fermionparams.stout_ρ = smearing.ρ
+                fermionparams.stout_loops = smearing.stout_loops
+                fermionparams.stout_numlayers = smearing.numlayers
             end
         else
             smearing = NoSmearing_parameters()
@@ -282,17 +297,17 @@ function run_wizard()
 
 
         if isexpert
-            if system.quench
+            if fermionparams.quench
                 methodtype = request(
                     "Choose an update method",
                     RadioMenu(["Heatbath", "Hybrid Monte Carlo"]),
                 )
                 if methodtype == 1
-                    system.update_method = "Heatbath"
+                    physicalparams.update_method = "Heatbath"
                     or = request("Use overrelazation method?", RadioMenu(["true", "false"]))
-                    system.useOR = ifelse(or == 1, true, false)
-                    if system.useOR
-                        system.numOR = parse(
+                    physicalparams.useOR = ifelse(or == 1, true, false)
+                    if physicalparams.useOR
+                        physicalparams.numOR = parse(
                             Int64,
                             Base.prompt(
                                 "How many times do you want to do the OR?",
@@ -302,7 +317,7 @@ function run_wizard()
                     end
                 else
                     methodtype == 2
-                    system.update_method = "HMC"
+                    physicalparams.update_method = "HMC"
                 end
             else
                 methodtype = request(
@@ -314,10 +329,13 @@ function run_wizard()
                 )
 
                 if methodtype == 1
-                    system.update_method = "HMC"
+                    physicalparams.update_method = "HMC"
                 else
                     methodtype == 2
-                    system.update_method = "SLHMC"
+                    physicalparams.update_method = "SLHMC"
+                    @warn "SLHMC is not well developed"
+
+                    #=
                     system.βeff = parse(
                         Float64,
                         Base.prompt("Input initial effective β", default = "$β"),
@@ -329,11 +347,12 @@ function run_wizard()
                             default = "10",
                         ),
                     )
+                    =#
                 end
 
             end
         else
-            system.update_method = "HMC"
+            physicalparams.update_method = "HMC"
         end
 
         if isexpert
@@ -349,25 +368,32 @@ function run_wizard()
                     "Invalid value for Nthermalization=$Nthermalization. This has to be positive/zero.",
                 )
             end
-            system.Nthermalization = Nthermalization
+            physicalparams.Nthermalization = Nthermalization
         end
 
         Nsteps = parse(
             Int64,
             Base.prompt(
                 "Input the number of total trajectories after the thermalization",
-                default = "$(100+system.initialtrj)",
+                default = "$(100+physicalparams.initialtrj)",
             ),
         )
         if Nsteps <= 0
             error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
         end
+        physicalparams.Nsteps = Nsteps 
 
         if isexpert
-            md = MD_interactive(Dirac_operator = system.Dirac_operator)
+            md = MD_interactive(Dirac_operator = fermionparams.Dirac_operator)
         else
             md = MD()
         end
+        hmcparams.MDsteps =  md.MDsteps
+        hmcparams.Δτ = md.Δτ
+        hmcparams.SextonWeingargten = md.SextonWeingargten
+        hmcparams.N_SextonWeingargten = md.N_SextonWeingargten
+        hmcparams.eps = cg.eps
+        hmcparams.MaxCGstep = cg.MaxCGstep
 
     end
 
@@ -406,23 +432,93 @@ function run_wizard()
     end
 
 
-    headername = make_headername(system, fermion_parameters)
+    headername = make_headername(physicalparams, fermionparams,fermion_parameters)
 
 
     if nummeasurements != 0
-        measurement.measurement_basedir = String(
+        controlparams.measurement_basedir = String(
             Base.prompt("base directory for measurements", default = "./measurements"),
         )
-        measurement.measurement_dir = String(
+        controlparams.measurement_dir = String(
             Base.prompt(
-                "directory for measurements in $(measurement.measurement_basedir)/",
+                "directory for measurements in $(controlparams.measurement_basedir)/",
                 default = headername,
             ),
         )
     end
 
-    system.log_dir = String(Base.prompt("log directory", default = "./logs"))
-    system.logfile = String(Base.prompt("logfile name", default = headername * ".txt"))
+
+    gradient_params = Print_Gradientflow_parameters()
+    if isexpert
+        methodtype = request(
+            "Use Gradient flow?",
+            RadioMenu([
+                "Yes",
+                "No",
+            ]),
+        )
+        if methodtype == 1
+            gradient_params.hasgradientflow = true
+        else
+            gradient_params.hasgradientflow = false
+        end
+
+        if gradient_params.hasgradientflow
+            println("---------------------------------------------")
+            println("---set measurements in gradient flow----------")
+
+
+
+            gradient_params.eps_flow = parse(Float64, Base.prompt("time step for gradient flow?", default = "$(gradient_params.eps_flow)"))
+            gradient_params.numflow = parse(
+                Int64,
+                Base.prompt(
+                    "How many times do you want to flow gauge fields?",
+                    default = "$(gradient_params.numflow)",
+                ),
+            )
+            #gradient_params.numflow = parse(Int64, Base.prompt("number of steps for gradient flow?", default = "$(gradient_params.numflow)"))    
+            
+            measurement_gradientflow = Measurement_parameterset()
+            measurementmenu = MultiSelectMenu(Options |> instances |> collect .|> string)
+            choices =
+            request("Select the measurement methods you want to do:", measurementmenu) |>
+            collect .|>
+            Options
+
+            nummeasurements = length(choices)
+            measurement_gradientflow.measurement_methods = Vector{Measurement_parameters}(undef, nummeasurements)
+
+            count = 0
+            for method in choices
+                count += 1
+                if method == Plaquette
+                    measurement_gradientflow.measurement_methods[count] = Plaq_parameters_interactive() #plaq_wizard()
+                elseif method == Polyakov_loop
+                    measurement_gradientflow.measurement_methods[count] = Poly_parameters_interactive()
+                elseif method == Topological_charge
+                    measurement_gradientflow.measurement_methods[count] =
+                        TopologicalCharge_parameters_interactive()
+                elseif method == Chiral_condensate
+                    measurement_gradientflow.measurement_methods[count] =
+                        ChiralCondensate_parameters_interactive()
+                elseif method == Pion_correlator
+                    measurement_gradientflow.measurement_methods[count] = Pion_parameters_interactive()
+                end
+
+
+            end
+
+                
+            println("---done for gradient flow----------")
+            println("---------------------------------------------")
+
+        end
+    end
+
+
+    controlparams.log_dir = String(Base.prompt("log directory", default = "./logs"))
+    controlparams.logfile = String(Base.prompt("logfile name", default = headername * ".txt"))
 
 
     if isexpert
@@ -433,18 +529,18 @@ function run_wizard()
             ) |> x -> x - 1 |> Fileformat
 
         if savetype == Nosave
-            system.saveU_format = "nothing"
+            controlparams.saveU_format = "nothing"
         elseif savetype == JLD
-            system.saveU_format = "JLD"
+            controlparams.saveU_format = "JLD"
         elseif savetype == ILDG
-            system.saveU_format = "ILDG"
+            controlparams.saveU_format = "ILDG"
         elseif savetype == BridgeText
-            system.saveU_format = "BridgeText"
+            controlparams.saveU_format = "BridgeText"
         end
 
-        if system.saveU_format .≠ "nothing"
+        if controlparams.saveU_format .≠ "nothing"
 
-            system.saveU_every = parse(
+            controlparams.saveU_every = parse(
                 Int64,
                 Base.prompt(
                     "How often do you save a configuration in file (Save every)?",
@@ -452,26 +548,29 @@ function run_wizard()
                 ),
             )
             #system["saveU_basedir"] = String(Base.prompt("base directory for saving configuration", default="./confs"))
-            system.saveU_dir =
+            controlparams.saveU_dir =
                 String(Base.prompt("Saving directory", default = "./confs_$(headername)"))
             #system["saveU_dir"] = system["saveU_basedir"]*"/"*system["saveU_dir"]
         end
     end
 
-    physical, fermions, control, hmc = generate_printable_parameters(system)
+    #physical, fermions, control, hmc = generate_printable_parameters(system)
 
     system_parameters_dict = Dict()
 
-    system_parameters_dict["Physical setting"] = struct2dict(physical)
+    system_parameters_dict["Physical setting"] = struct2dict(physicalparams)
     system_parameters_dict["Physical setting(fermions)"] =
-        merge(struct2dict(fermions), struct2dict(fermion_parameters))
-    system_parameters_dict["System Control"] = struct2dict(control)
-    system_parameters_dict["HMC related"] = merge(struct2dict(hmc), struct2dict(cg))
+        merge(struct2dict(fermionparams), struct2dict(fermion_parameters))
+    system_parameters_dict["System Control"] = struct2dict(controlparams)
+    system_parameters_dict["HMC related"] = struct2dict(hmcparams)
     system_parameters_dict["Measurement set"] = struct2dict(measurement)
-
+    system_parameters_dict["gradientflow_measurements"] = merge( struct2dict(gradient_params),struct2dict(measurement_gradientflow))
 
 
     remove_default_values!(system_parameters_dict)
+    system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =  deepcopy(system_parameters_dict["gradientflow_measurements"]["measurement_methods"])
+    delete!(system_parameters_dict["gradientflow_measurements"],"measurement_methods")
+
 
     open(filename, "w") do io
         TOML.print(io, system_parameters_dict)
@@ -632,44 +731,50 @@ function set_loadU_format()
 end
 
 
-function make_headername(system, fermion_parameters)
-    L = system.L
+function make_headername(physicalparams,fermionparams, fermion_parameters)
+    L = physicalparams.L
+    update_method = physicalparams.update_method
+    β = physicalparams.β
+    quench = fermionparams.quench
+    Dirac_operator = fermionparams.Dirac_operator
+
+    #L = system.L
     headername =
-        system.update_method *
+        update_method *
         "_L" *
         string(L[1], pad = 2) *
         string(L[2], pad = 2) *
         string(L[3], pad = 2) *
         string(L[4], pad = 2) *
         "_beta" *
-        string(system.β)
+        string(β)
 
-    if system.update_method == "HMC"
-        if system.quench == true
+    if update_method == "HMC"
+        if quench == true
             headername *= "_quenched"
         else
-            headername *= "_" * system.Dirac_operator
-            if system.Dirac_operator == "Staggered"
+            headername *= "_" * Dirac_operator
+            if Dirac_operator == "Staggered"
                 headername *=
-                    "_mass" * string(staggered.mass) * "_Nf" * string(staggered.Nf)
-            elseif system.Dirac_operator == "Wilson" ||
-                   system.Dirac_operator == "WilsonClover"
+                    "_mass" * string(fermion_parameters.mass) * "_Nf" * string(fermion_parameters.Nf)
+            elseif Dirac_operator == "Wilson" ||
+                   Dirac_operator == "WilsonClover"
                 headername *= "_kappa" * string(fermion_parameters.hop)
             end
         end
-    elseif system.update_method == "Heatbath"
+    elseif update_method == "Heatbath"
         headername *= "_quenched"
     else
-        if system.Dirac_operator != nothing
-            headername *= "_" * system.Dirac_operator
-            if system.Dirac_operator == "Staggered"
+        if Dirac_operator != nothing
+            headername *= "_" * Dirac_operator
+            if Dirac_operator == "Staggered"
                 headername *=
                     "_mass" *
                     string(fermion_parameters.mass) *
                     "_Nf" *
                     string(fermion_parameters.Nf)
-            elseif system.Dirac_operator == "Wilson" ||
-                   system.Dirac_operator == "WilsonClover"
+            elseif Dirac_operator == "Wilson" ||
+                   Dirac_operator == "WilsonClover"
                 headername *= "_kappa" * string(fermion_parameters.hop)
             end
         else

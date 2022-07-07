@@ -3,7 +3,7 @@ using REPL.TerminalMenus
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 
 
-
+#=
 Base.@kwdef mutable struct System
     BoundaryCondition::Vector{Int64} = [1, 1, 1, -1]
     Nwing::Int64 = 1
@@ -38,6 +38,7 @@ Base.@kwdef mutable struct System
     saveU_every::Int64 = 1
     isevenodd = true
 end
+=#
 
 
 
@@ -51,6 +52,8 @@ const important_parameters = [
     "fermion_parameters",
     "methodname",
     "measurement_basedir",
+    "hasgradientflow",
+    "measurement_dir"
 ]
 
 function check_important_parameters(key)
@@ -62,7 +65,7 @@ function check_important_parameters(key)
     end
 end
 
-struct2dict(x::T) where {T} = Dict(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
+struct2dict(x::T) where {T} = Dict{String,Any}(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
 
 
 function generate_printlist(x::Type)
@@ -146,13 +149,14 @@ end
 
 # Gradient Flow
 Base.@kwdef mutable struct Print_Gradientflow_parameters
-    Δτ::Float64 = 0.05
-    SextonWeingargten::Bool = false
-    N_SextonWeingargten::Int64 = 2
-    MDsteps::Int64 = 20
-    eps::Float64 = 1e-19
-    MaxCGstep::Int64 = 3000
+    hasgradientflow::Bool = false
+    eps_flow::Float64 = 0.01
+    numflow::Int64 = 100
+    Nflow::Int64 = 1
+    #gradientflow_measurements::Vector{Dict} = []
 end
+
+
 
 
 # Action parameter for SLMC
@@ -294,9 +298,9 @@ Base.@kwdef mutable struct TopologicalCharge_parameters <: Measurement_parameter
     measure_every::Int64 = 10
     fermiontype::String = "nothing"
     #common::Measurement_common_parameters = Measurement_common_parameters()
-    numflow::Int64 = 1 #number of flows
-    Nflowsteps::Int64 = 1
-    eps_flow::Float64 = 0.01
+    #numflow::Int64 = 1 #number of flows
+    #Nflowsteps::Int64 = 1
+    #eps_flow::Float64 = 0.01
     verbose_level::Int64 = 2
     printvalues::Bool = true
     kinds_of_topological_charge::Vector{String} = ["plaquette"]
@@ -360,8 +364,8 @@ end
 
 Base.@kwdef mutable struct Measurement_parameterset
     measurement_methods::Vector{Measurement_parameters} = []
-    measurement_basedir::String = ""
-    measurement_dir::String = ""
+    #measurement_basedir::String = ""
+    #measurement_dir::String = ""
 end
 
 function transform_measurement_dictvec(value)
@@ -450,6 +454,7 @@ function TopologicalCharge_parameters_interactive()
     method.measure_every =
         parse(Int64, Base.prompt("How often measure a topological charge?", default = "1"))
 
+        #=
     method.numflow = parse(
         Int64,
         Base.prompt(
@@ -457,15 +462,19 @@ function TopologicalCharge_parameters_interactive()
             default = "10",
         ),
     )
+    =#
 
+    #=
     Nflowsteps = 1#L[1]
     eps_flow = 0.01
 
     method.Nflowsteps = parse(Int64, Base.prompt("Nflowsteps?", default = "$Nflowsteps"))
     method.eps_flow = parse(Float64, Base.prompt("eps_flow?", default = "$eps_flow"))
+    =#
 
     return method
 end
+
 
 
 
@@ -742,7 +751,7 @@ function Domainwall_wizard()
 end
 
 
-
+#=
 function generate_printable_parameters(p::System)
     pnames = fieldnames(System)
     physical = Print_Physical_parameters()
@@ -809,6 +818,8 @@ function generate_printable_parameters(p::System)
 
     return physical, fermions, control, hmc#, measure
 end
+
+=#
 
 function construct_printable_parameters_fromdict!(
     key,
@@ -948,6 +959,8 @@ function construct_dict_from_measurement!(x, value)
         remove_default_values!(methoddic, measure_struct_default)
         measuredic[methoddic["methodname"]] = methoddic
     end
+    #println("x",x)
+    #println(measuredic)
     x["measurement_methods"] = measuredic
 end
 

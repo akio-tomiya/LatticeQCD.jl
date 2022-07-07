@@ -7,7 +7,8 @@ import ..Parameter_structs:
     Print_System_control_parameters,
     Print_HMCrelated_parameters,
     struct2dict,
-    initialize_fermion_parameters
+    initialize_fermion_parameters,
+    Print_Gradientflow_parameters
 
 
 function demo_TOML()
@@ -76,6 +77,9 @@ function construct_Params_from_TOML(filename)
     set_params_value!(value_Params, control)
     hmc = Print_HMCrelated_parameters()
     set_params_value!(value_Params, hmc)
+    gradientflow = Print_Gradientflow_parameters()
+    set_params_value!(value_Params, gradientflow)
+
 
     set_unused_parameters!(value_Params)
 
@@ -132,6 +136,9 @@ function construct_Params_from_TOML(filename)
                 #println("$pname_i $key ",value[String(pname_i)])
                 if String(pname_i) == "measurement_methods"
                     #println("$pname_i $key ",value[String(pname_i)])
+                    valuedir = construct_measurement_dir(value[String(pname_i)])
+                    value_Params[i] = valuedir
+                elseif  String(pname_i) == "measurements_for_flow"
                     valuedir = construct_measurement_dir(value[String(pname_i)])
                     value_Params[i] = valuedir
                 elseif String(pname_i) == "L"
