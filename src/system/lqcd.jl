@@ -3,7 +3,8 @@ import ..Universe_module: Univ
 import ..Transform_oldinputfile: transform_to_toml
 import ..Parameters_TOML: construct_Params_from_TOML
 import ..AbstractUpdate_module: Updatemethod, update!
-import Gaugefields: Gradientflow, println_verbose_level1, get_myrank,flow!
+import Gaugefields: Gradientflow, println_verbose_level1, get_myrank,flow!,
+save_binarydata,save_textdata,saveU
 import ..AbstractMeasurement_module:Measurement_methods,
 calc_measurement_values,measure
 
@@ -26,6 +27,8 @@ function run_LQCD_file(filenamein::String)
 
     updatemethod = Updatemethod(parameters,univ)
 
+    
+
     eps_flow = parameters.eps_flow 
     numflow = parameters.numflow
     Nflow = parameters.Nflow
@@ -37,11 +40,18 @@ function run_LQCD_file(filenamein::String)
 
 
     calc_measurement_values(measurements,0, univ.U)
+    savedata = Savedata(parameters.saveU_format,parameters.saveU_dir,
+    parameters.saveU_every,parameters.update_method,univ.U)
+
+
 
     for itrj = parameters.initialtrj:parameters.Nsteps
         println_verbose_level1(univ.U[1], "# itrj = $itrj")
         @time update!(updatemethod, univ.U)
+        save_gaugefield(savedata,univ.U,itrj)
+
         calc_measurement_values(measurements,itrj, univ.U)
+
 
         Usmr = deepcopy(univ.U)
         for istep = 1:numflow
@@ -59,6 +69,54 @@ function run_LQCD_file(filenamein::String)
 
 end
 
+
+mutable struct Savedata
+    issaved::Bool
+    saveU_format::Union{Nothing,String}
+    saveU_dir::String
+    saveU_every::Int64
+    itrjsavecount::Int64
+
+
+    function Savedata(saveU_format,saveU_dir,saveU_every,update_method,U)
+        itrjsavecount = 0
+
+        if saveU_format != nothing && update_method != "Fileloading"
+            itrj = 0
+            itrjstring = lpad(itrj, 8, "0")
+            println_verbose_level1(U[1], "save gaugefields U every $(saveU_every) trajectory")
+            #println("save gaugefields U every $(parameters.saveU_every) trajectory")   
+            issaved = true
+        else
+            issaved = false
+        end
+
+        return new(issaved,saveU_format,saveU_dir,saveU_every,itrjsavecount)
+    end
+end
+
+function save_gaugefield(savedata::Savedata,U,itrj)
+    if savedata.issaved == false
+        return
+    end
+
+    if itrj % savedata.saveU_every == 0
+        savedata.itrjsavecount += 1
+        itrjstring = lpad(itrj, 8, "0")
+        if savedata.saveU_format == "JLD"
+            filename = savedata.saveU_dir * "/conf_$(itrjstring).jld2"
+            saveU(filename, U)
+        elseif savedata.saveU_format == "ILDG"
+            filename = savedata.saveU_dir * "/conf_$(itrjstring).ildg"
+            save_binarydata(U, filename)
+        elseif savedata.saveU_format == "BridgeText"
+            filename = savedata.saveU_dir * "/conf_$(itrjstring).txt"
+            save_textdata(U, filename)
+        else
+            error("$(savedata.saveU_format) is not supported")
+        end
+    end
+end
 
 
 

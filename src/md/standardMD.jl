@@ -1,3 +1,5 @@
+using InteractiveUtils
+
 struct StandardMD{Dim,TG,TA,quench,T_FA,TF,TC} <: AbstractMD{Dim,TG}
     gauge_action::GaugeAction{Dim,TG}
     quench::Bool
@@ -77,10 +79,9 @@ end
 
 function initialize_MD!(
     U,
-    md::StandardMD{Dim,TG,TA,quench,T_FA,TC},
-) where {Dim,TG,TA,quench,T_FA,TC}
+    md::StandardMD{Dim,TG,TA,quench,T_FA,TF,TC},
+) where {Dim,TG,TA,quench,T_FA,TF,TC}
     gauss_distribution!(md.p) #initial momentum
-
 
 
     if quench == false

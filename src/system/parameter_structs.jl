@@ -398,10 +398,12 @@ function construct_Measurement_parameters_from_dict(value_i::Dict)
     #println("femriontype ",fermiontype)
 
     for (key_ii, value_ii) in value_i
-        #println("$key_ii $value_ii")
+        println("$key_ii $value_ii")
         if haskey(method_dict, key_ii)
-            keytype = typeof(getfield(method, Symbol(key_ii)))
-            setfield!(method, Symbol(key_ii), keytype(value_ii))
+            if typeof(value_ii) != Nothing
+                keytype = typeof(getfield(method, Symbol(key_ii)))
+                setfield!(method, Symbol(key_ii), keytype(value_ii))
+            end
         else
             if haskey(fermion_parameters_dict, key_ii)
                 #println("fermion $key_ii $value_ii")
@@ -580,6 +582,7 @@ function ChiralCondensate_parameters_interactive(; mass = 0.5)
     )
 
     method.Nf = 4
+    
     println(
         "Number of flavors (tastes) for the measurement of chiral condensates is $(method.Nf)",
     )
@@ -722,7 +725,7 @@ function staggered_wizard()
         Nf = 1
     end
 
-    staggerd.Nf = Nf
+    staggered.Nf = Nf
 
     cg = CG_params_interactive()
 

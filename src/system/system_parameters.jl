@@ -49,7 +49,7 @@ struct Params
     Dirac_operator::Union{Nothing,String} # = "Wilson"
     quench::Bool # = false
     initial::String # = "cold"
-    BoundaryCondition::Array{Int8,1} # =[1,1,1,-1]
+    BoundaryCondition::Array{Int64,1} # =[1,1,1,-1]
     Nwing::Int64  # = 1 
     randomseed::Int64 # = 111
 
@@ -88,10 +88,10 @@ struct Params
 
     #For Staggered
     mass::Float64 # = 0.5 # Mandatory
-    Nf::Int8 # = 4
+    Nf::Int64 # = 4
 
     #verbose
-    verboselevel::Int8 # = 2
+    verboselevel::Int64 # = 2
 
     #For measurement
     measurement_methods::Vector{Dict} # = defaultmeasures
