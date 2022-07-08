@@ -176,6 +176,10 @@ end
 function parameter_check(p::Params)
     if p.Dirac_operator != nothing
         println("$(p.Dirac_operator) fermion is used")
+
+        if p.smearing_for_fermion == "stout"
+            println("stout smearing is used for fermions")
+        end
     end
 
     if p.saveU_format ≠ nothing

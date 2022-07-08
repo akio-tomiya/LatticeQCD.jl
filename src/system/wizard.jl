@@ -449,6 +449,7 @@ function run_wizard()
 
 
     gradient_params = Print_Gradientflow_parameters()
+    measurement_gradientflow = Measurement_parameterset()
     if isexpert
         methodtype = request(
             "Use Gradient flow?",
@@ -479,7 +480,7 @@ function run_wizard()
             )
             #gradient_params.numflow = parse(Int64, Base.prompt("number of steps for gradient flow?", default = "$(gradient_params.numflow)"))    
             
-            measurement_gradientflow = Measurement_parameterset()
+            #measurement_gradientflow = Measurement_parameterset()
             measurementmenu = MultiSelectMenu(Options |> instances |> collect .|> string)
             choices =
             request("Select the measurement methods you want to do:", measurementmenu) |>

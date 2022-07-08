@@ -11,6 +11,7 @@ struct Univ{Dim,TG,T_FA}
     U::Vector{TG}
     quench::Bool
     fermi_action::T_FA
+    cov_neural_net::Union{Nothing,CovNeuralnet{Dim}}
     #Uold::Vector{TG}
 
 end
@@ -115,7 +116,19 @@ function Univ(p::Params)
     end
 
     T_FA = typeof(fermi_action)
-    return Univ{Dim,TG,T_FA}(L, NC, Nwing, gauge_action, U, p.quench, fermi_action)
+
+    if p.smearing_for_fermion == "nothing"
+        cov_neural_net = nothing
+    elseif p.smearing_for_fermion == "stout"
+        cov_neural_net = CovNeuralnet()
+        @assert p.stout_numlayers == 1 "stout_numlayers should be one. But now $(p.stout_numlayers)"
+        st = STOUT_Layer(p.stout_loops,p.stout_ρ,L)
+        push!(cov_neural_net ,st)
+    else
+        error("p.smearing_for_fermion = $(p.smearing_for_fermion) is not supported")
+    end
+
+    return Univ{Dim,TG,T_FA}(L, NC, Nwing, gauge_action, U, p.quench, fermi_action,cov_neural_net)
 
 end
 

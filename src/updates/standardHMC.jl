@@ -11,7 +11,8 @@ function StandardHMC(
     quench,
     Δτ,
     MDsteps,
-    fermi_action;
+    fermi_action,
+    cov_neural_net;
     SextonWeingargten = false,
 )
 
@@ -21,7 +22,8 @@ function StandardHMC(
         quench,
         Δτ,
         MDsteps,
-        fermi_action;
+        fermi_action,
+        cov_neural_net;
         SextonWeingargten = SextonWeingargten,
     )
     Tmd = typeof(md)
@@ -59,7 +61,15 @@ function update!(updatemethod::T, U) where {T<:StandardHMC}
     println_verbose_level3(U[1], "Sp_new = $Sp, Sg_new = $Sg")
     Snew = real(Sp + Sg)
     if md.quench == false
-        Sfnew = evaluate_FermiAction(md.fermi_action, U, md.η)
+
+        if md.cov_neural_net != Nothing
+            Uout,Uout_multi,_ = calc_smearedU(U,md.cov_neural_net)
+            Sfnew = evaluate_FermiAction(md.fermi_action, Uout, md.η)
+        else
+            Sfnew = evaluate_FermiAction(md.fermi_action, U, md.η)
+        end
+
+        
         println_verbose_level3(U[1], "Sfnew = $Sfnew")
         Snew += Sfnew
     end

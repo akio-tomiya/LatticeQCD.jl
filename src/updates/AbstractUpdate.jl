@@ -42,6 +42,7 @@ function Updatemethod(parameters::Params, univ::Univ)
         parameters.Δτ,
         parameters.MDsteps,
         fermi_action = univ.fermi_action,
+        cov_neural_net = univ.cov_neural_net,
         SextonWeingargten = parameters.SextonWeingargten,
         loadU_dir = parameters.loadU_dir,
         loadU_format = parameters.loadU_format,
@@ -62,6 +63,7 @@ function Updatemethod(
     Δτ = nothing,
     MDsteps = nothing;
     fermi_action = nothing,
+    cov_neural_net = nothing,
     SextonWeingargten = false,
     loadU_dir = nothing,
     loadU_format = nothing,
@@ -79,6 +81,7 @@ function Updatemethod(
             Δτ,
             MDsteps,
             fermi_action,
+            cov_neural_net,
             SextonWeingargten = SextonWeingargten,
         )
     elseif update_method == "Fileloading"

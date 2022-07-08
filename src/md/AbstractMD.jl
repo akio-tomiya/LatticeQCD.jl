@@ -15,7 +15,8 @@ function MD(
     quench,
     Δτ,
     MDsteps,
-    fermi_action = nothing;
+    fermi_action = nothing,
+    cov_neural_net = nothing;
     SextonWeingargten = false,
     Nsw = 2,
 )
@@ -35,9 +36,11 @@ function MD(
         Δτ,
         MDsteps,
         fermi_action,
+        cov_neural_net,
         SextonWeingargten = SextonWeingargten,
         Nsw = Nsw,
     )
+
 
     return md
 end
@@ -49,6 +52,7 @@ function MD(p::Params, univ::Univ)
         univ.U,
         gauge_action,
         quench,
+        p.cov_neural_net,
         p.Δτ,
         p.MDsteps,
         SextonWeingargten = p.SextonWeingargten,

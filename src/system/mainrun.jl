@@ -78,10 +78,11 @@ function run_LQCD(filenamein::String)
 
     parameters = construct_Params_from_TOML(filename)
 
+
     univ = Univ(parameters)
     plaq = run_LQCD_new!(univ, parameters)
 
-    error("$ext")
+   
 
     #=
 
