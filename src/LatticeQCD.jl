@@ -75,8 +75,9 @@ include("./system/wizard.jl")
 include("./SLMC/SLMC.jl")
 
 
+
+#include("./system/mainrun.jl")
 include("./system/lqcd.jl")
-include("./system/mainrun.jl")
 include("./output/analyze.jl")
 
 
@@ -120,7 +121,7 @@ import .Heatbath: heatbath!
 import .Wilsonloops: make_plaq
 import .IOmodule: saveU, loadU, loadU!
 import .Wizard: run_wizard
-import .Mainrun: run_LQCD
+#import .Mainrun: run_LQCD
 import .RationalApprox: calc_exactvalue, calc_Anϕ, calc_det
 #,run_LQCD!
 
@@ -131,7 +132,7 @@ import .Analyze:
     get_plaquette_average,
     get_polyakov_average,
     get_trjs
-import .LQCD:run_LQCD_file
+import .LQCD:run_LQCD_file,run_LQCD##
 
 
 #import .Fermionfields:make_WdagWmatrix

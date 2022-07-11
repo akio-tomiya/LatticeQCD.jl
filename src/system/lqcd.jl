@@ -6,8 +6,14 @@ import ..AbstractUpdate_module: Updatemethod, update!
 import Gaugefields: Gradientflow, println_verbose_level1, get_myrank,flow!,
 save_binarydata,save_textdata,saveU
 import ..AbstractMeasurement_module:Measurement_methods,
-calc_measurement_values,measure
+calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
+using Gaugefields
 
+
+function run_LQCD(filenamein::String)
+    plaq = run_LQCD_file(filenamein)
+    return plaq
+end
 
 function run_LQCD_file(filenamein::String)
     filename_head = splitext(filenamein)[1]
@@ -36,6 +42,17 @@ function run_LQCD_file(filenamein::String)
     gradientflow = Gradientflow(univ.U, Nflow = 1, eps = eps_flow)  
 
     measurements = Measurement_methods(univ.U, parameters.measuredir, parameters.measurement_methods)
+    i_plaq = 0
+    for i = 1:measurements.num_measurements
+        if typeof(measurements.measurements[i]) == Plaquette_measurement
+            i_plaq = i
+            plaq_m = measurements.measurements[i]
+        end
+    end
+    if i_plaq == 0
+        plaq_m = Plaquette_measurement(univ.U,printvalues=false)
+    end
+
     measurements_for_flow = Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow)
 
 
@@ -66,6 +83,10 @@ function run_LQCD_file(filenamein::String)
             end
         end
     end
+
+    temps = get_temporary_gaugefields(plaq_m)
+    plaq = real(calculate_Plaquette(univ.U, temps[1], temps[2]) * plaq_m.factor)
+    return plaq
 
 end
 

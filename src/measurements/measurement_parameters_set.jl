@@ -55,9 +55,11 @@ function Measurement_methods(U, measurement_dir, measurement_methods::T) where T
         
     end
 
+    #=
     for i=1:nummeasurements
         println(measurement_parameters_set[i] )
     end
+    =#
 
     return Measurement_methods(measurement_parameters_set,measurements,nummeasurements,intervals)
 end

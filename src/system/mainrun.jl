@@ -59,45 +59,14 @@ import ..Verbose_print: println_verbose1, println_verbose2, Verbose_1
 import ..System_parameters: system, actions, md, cg, wilson, staggered, measurement
 import ..Transform_oldinputfile: transform_to_toml
 import ..Parameters_TOML: construct_Params_from_TOML
+import ..LQCD:run_LQCD_file
 
 
 
 
 function run_LQCD(filenamein::String)
-
-    filename_head = splitext(filenamein)[1]
-    ext = splitext(filenamein)[end]
-    filename = filename_head * ".toml"
-    if ext == ".jl"
-        transform_to_toml(filenamein)
-        println("input file $filenamein is transformed to $filename")
-    elseif ext == ".toml"
-    else
-        @error "$filenamein is not supported. use a TOML format."
-    end
-
-    parameters = construct_Params_from_TOML(filename)
-
-
-    univ = Univ(parameters)
-    plaq = run_LQCD_new!(univ, parameters)
-
-   
-
-    #=
-
-    error("$ext")
-
-    #if isdemo
-    #    params_set = Params_set(Demo.system,Demo.actions,Demo.md,Demo.cg,Demo.wilson,Demo.staggered,Demo.measurement)
-    #else
-    filename = filenamein
-    include(abspath(filename))
-    params_set = Params_set(system, actions, md, cg, wilson, staggered, measurement)
-    #end
-
-    plaq = run_LQCD(params_set)
-    =#
+    plaq = run_LQCD_file(filenamein)
+    return plaq
 end
 
 

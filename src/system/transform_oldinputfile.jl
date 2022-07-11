@@ -11,7 +11,9 @@ import ..Parameter_structs:
     Measurement_parameters,
     initialize_measurement_parameters,
     generate_printlist,
-    transform_measurement_dictvec
+    transform_measurement_dictvec,
+    transform_topological_charge_measurement!,
+    Print_Gradientflow_parameters
 
 using TOML
 
@@ -181,9 +183,14 @@ function transform_to_toml(filename)
     end
 
     measurement_dict = Dict()
+
+    flow_dict = Dict()
+    flow_dict["measurements_for_flow"] = Dict()
+    hasgradientflow = false
+    
     for (key, value) in measurement
         if key == "measurement_methods"
-            valuem = transform_measurement_dictvec(value)
+            valuem,flow_dict,hasgradientflow = transform_measurement_dictvec(value)
             measurement_dict[key] = valuem
         else
             hasvalue = construct_printable_parameters_fromdict!(
@@ -217,6 +224,11 @@ function transform_to_toml(filename)
     system_parameters_dict["System Control"] = struct2dict(control)
     system_parameters_dict["HMC related"] = struct2dict(hmc)
     system_parameters_dict["Measurement set"] = measurement_dict
+    if hasgradientflow
+        system_parameters_dict["System Control"]["hasgradientflow"]  = true
+    end
+    system_parameters_dict["gradientflow_measurements"] =  flow_dict
+
     #system_parameters_dict["Measurement set"] = struct2dict(measurement)
 
     #=
@@ -231,6 +243,8 @@ function transform_to_toml(filename)
     #println(system_parameters_dict["System Control"])
 
     filename_toml = splitext(filename)[1] * ".toml"
+
+    #display(system_parameters_dict)
 
     open(filename_toml, "w") do io
         TOML.print(io, system_parameters_dict)

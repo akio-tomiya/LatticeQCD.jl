@@ -1,0 +1,28 @@
+["HMC related"]
+"Δτ" = 0.05
+MDsteps = 20
+
+["Physical setting(fermions)"]
+quench = false
+Dirac_operator = "Staggered"
+Nf = 3
+
+["Physical setting"]
+L = [4, 4, 4, 4]
+update_method = "HMC"
+Nsteps = 15
+"β" = 5.7
+
+["System Control"]
+logfile = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf3.txt"
+verboselevel = 2
+measurement_dir = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf3"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+
+["Measurement set".measurement_methods.Plaquette]
+measure_every = 1
+methodname = "Plaquette"
+
+[gradientflow_measurements]

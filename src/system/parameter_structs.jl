@@ -54,7 +54,8 @@ const important_parameters = [
     "measurement_basedir",
     "hasgradientflow",
     "measurement_dir",
-    "kinds_of_topological_charge"
+    "kinds_of_topological_charge",
+    "measurements_for_flow"
 ]
 
 function check_important_parameters(key)
@@ -371,12 +372,23 @@ end
 
 function transform_measurement_dictvec(value)
     #println(value)
+    flow_dict = Dict()
     nummeasure = length(value)
     value_out = Vector{Measurement_parameters}(undef, nummeasure)
+    hasgradientflow = false
     for i = 1:nummeasure
-        value_out[i] = construct_Measurement_parameters_from_dict(value[i])
+        if haskey(value[i],"methodname")
+            if value[i]["methodname"] == "Topological_charge"
+                hasgradientflow = true
+                value_out[i] = transform_topological_charge_measurement!(flow_dict,value[i])
+            else
+                value_out[i] = construct_Measurement_parameters_from_dict(value[i])
+            end
+        else
+            @error("method name in measurement should be set")
+        end
     end
-    return value_out
+    return value_out,flow_dict, hasgradientflow
 end
 
 
@@ -390,15 +402,23 @@ function construct_Measurement_parameters_from_dict(value_i::Dict)
     if haskey(value_i, "Dirac_operator")
         fermiontype = value_i["Dirac_operator"]
     else
-        fermiontype = "nothing"
-
+        if haskey(value_i, "fermiontype")
+            if value_i["fermiontype"] == nothing
+                fermiontype = "nothing"
+            else
+                fermiontype = value_i["fermiontype"]
+            end
+        else
+            fermiontype = "nothing"
+        end
     end
+    #println("fermiontype $fermiontype")
     fermion_parameters = initialize_fermion_parameters(fermiontype)
     fermion_parameters_dict = struct2dict(fermion_parameters)
     #println("femriontype ",fermiontype)
 
     for (key_ii, value_ii) in value_i
-        println("$key_ii $value_ii")
+        #println("$key_ii $value_ii")
         if haskey(method_dict, key_ii)
             if typeof(value_ii) != Nothing
                 keytype = typeof(getfield(method, Symbol(key_ii)))
@@ -410,7 +430,7 @@ function construct_Measurement_parameters_from_dict(value_i::Dict)
                 keytype = typeof(getfield(fermion_parameters, Symbol(key_ii)))
                 setfield!(fermion_parameters, Symbol(key_ii), keytype(value_ii))
             else
-                @warn "$key_ii is not found!"
+                @warn "$key_ii is not found! in $(typeof(method))"
             end
         end
     end
@@ -423,6 +443,36 @@ function construct_Measurement_parameters_from_dict(value_i::Dict)
     return value_out
 end
 
+function transform_topological_charge_measurement!(flow_dict,measurement)
+    @assert haskey(measurement,"methodname") "method name in measurement should be set $(measurement)"
+    @assert measurement["methodname"] == "Topological_charge" "this function is for topological charge measurement"
+    
+    measurement_revised = Dict()
+
+    for (key,value) in measurement
+        #println((key,value))
+        if key == "Nflowsteps"
+            flow_dict["Nflow"] = value
+        elseif key == "numflow"
+            flow_dict["numflow"] = value
+        elseif key == "eps_flow"
+            flow_dict["eps_flow"] = value
+        else
+            measurement_revised[key] = value
+        end
+    end
+    measurement_revised["fermiontype"] = "nothing"
+    #println(measurement_revised)
+
+    valuem = construct_Measurement_parameters_from_dict(measurement_revised)
+    flow_dict["measurements_for_flow"] = Dict()
+    flow_dict["measurements_for_flow"]["Topological_charge"] = measurement_revised
+    
+
+    return valuem
+
+
+end
 
 
 
