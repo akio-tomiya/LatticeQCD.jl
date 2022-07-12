@@ -49,7 +49,7 @@ function Measurement_methods(U, measurement_dir, measurement_methods::T) where T
         #println(measurement_parameters)
         intervals[i] = measurement_parameters.measure_every
         
-        filename = measurement_dir*measurement_parameters.methodname*".txt"
+        filename = measurement_dir*"/"*measurement_parameters.methodname*".txt"
         measurements[i] = prepare_measurement(U,measurement_parameters,filename)
         measurement_parameters_set[i] = deepcopy(measurement_parameters)
         

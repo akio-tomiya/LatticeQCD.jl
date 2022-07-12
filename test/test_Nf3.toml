@@ -25,4 +25,4 @@ hasgradientflow = false
 measure_every = 1
 methodname = "Plaquette"
 
-[gradientflow_measurements]
+[gradientflow_measurements.measurements_for_flow]

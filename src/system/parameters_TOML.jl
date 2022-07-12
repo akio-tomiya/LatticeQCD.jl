@@ -60,11 +60,31 @@ function set_unused_parameters!(value_Params)
     end
 end
 
+function show_parameters(parameters)
+    for (key,value) in parameters
+        
+        println("[$(key)]")
+        if key == "Measurement set"
+            for (key_i,value_i) in value
+                println("[$(key_i)]")
+                display(value_i)
+                println("\t")
+            end
+        else
+        
+            display(value)
+            println("\t")
+        end
+    end
+end
+
 
 function construct_Params_from_TOML(filename)
     parameters = TOML.parsefile(filename)
-    #display(parameters)
-    #println("\t")
+    show_parameters(parameters)
+    
+
+
     pnames = fieldnames(Params)
     numparams = length(pnames)
     value_Params = Vector{Any}(undef, numparams)
@@ -205,7 +225,7 @@ function parameter_check(p::Params)
         end
     else
         error("""
-        update_method in [\"Physical setting\"] = $update_method is not supported.
+        update_method in [\"Physical setting\"] = $(p.update_method) is not supported.
         Supported methods are 
         HMC
         Heatbath

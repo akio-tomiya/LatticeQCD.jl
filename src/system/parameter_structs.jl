@@ -55,7 +55,8 @@ const important_parameters = [
     "hasgradientflow",
     "measurement_dir",
     "kinds_of_topological_charge",
-    "measurements_for_flow"
+    "measurements_for_flow",
+    "gradientflow_measurements"
 ]
 
 function check_important_parameters(key)
@@ -92,7 +93,7 @@ Base.@kwdef mutable struct Print_Physical_parameters
     update_method::String = "HMC"
     useOR::Bool = false
     numOR::Int64 = 0
-    Nwing::Int64 = 1
+    Nwing::Int64 = 0
 end
 
 
@@ -632,7 +633,7 @@ function ChiralCondensate_parameters_interactive(; mass = 0.5)
     )
 
     method.Nf = 4
-    
+
     println(
         "Number of flavors (tastes) for the measurement of chiral condensates is $(method.Nf)",
     )

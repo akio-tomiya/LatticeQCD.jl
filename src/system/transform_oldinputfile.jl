@@ -185,7 +185,7 @@ function transform_to_toml(filename)
     measurement_dict = Dict()
 
     flow_dict = Dict()
-    flow_dict["measurements_for_flow"] = Dict()
+    
     hasgradientflow = false
     
     for (key, value) in measurement
@@ -226,6 +226,8 @@ function transform_to_toml(filename)
     system_parameters_dict["Measurement set"] = measurement_dict
     if hasgradientflow
         system_parameters_dict["System Control"]["hasgradientflow"]  = true
+    else
+        flow_dict["measurements_for_flow"] = Dict()
     end
     system_parameters_dict["gradientflow_measurements"] =  flow_dict
 
@@ -237,8 +239,9 @@ function transform_to_toml(filename)
     =#
 
     #println(system_parameters_dict["System Control"])
-
+    #println(system_parameters_dict)
     remove_default_values!(system_parameters_dict)
+    #println(system_parameters_dict)
 
     #println(system_parameters_dict["System Control"])
 

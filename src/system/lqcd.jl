@@ -8,6 +8,9 @@ save_binarydata,save_textdata,saveU
 import ..AbstractMeasurement_module:Measurement_methods,
 calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 using Gaugefields
+using InteractiveUtils
+using Dates
+using Random
 
 
 function run_LQCD(filenamein::String)
@@ -28,8 +31,26 @@ function run_LQCD_file(filenamein::String)
     end
 
     parameters = construct_Params_from_TOML(filename)
+    Random.seed!(parameters.randomseed)
 
     univ = Univ(parameters)
+
+    println_verbose_level1(
+        univ.U[1],
+        "# ", pwd()
+    )
+    println_verbose_level1(
+        univ.U[1],"# ", Dates.now()
+    )
+    io = IOBuffer()
+    InteractiveUtils.versioninfo(io)
+    versioninfo = String(take!(io))
+    println_verbose_level1(
+        univ.U[1],versioninfo
+    )
+
+
+
 
     updatemethod = Updatemethod(parameters,univ)
 
@@ -61,10 +82,13 @@ function run_LQCD_file(filenamein::String)
     parameters.saveU_every,parameters.update_method,univ.U)
 
 
-
+    numaccepts = 0
     for itrj = parameters.initialtrj:parameters.Nsteps
         println_verbose_level1(univ.U[1], "# itrj = $itrj")
-        @time update!(updatemethod, univ.U)
+        @time accepted = update!(updatemethod, univ.U)
+        if accepted
+            numaccepts +=1
+        end
         save_gaugefield(savedata,univ.U,itrj)
 
         calc_measurement_values(measurements,itrj, univ.U)
@@ -82,6 +106,11 @@ function run_LQCD_file(filenamein::String)
                 end
             end
         end
+
+        println_verbose_level1(
+        univ.U[1],"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+
+
     end
 
     temps = get_temporary_gaugefields(plaq_m)

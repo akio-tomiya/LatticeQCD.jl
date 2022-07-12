@@ -10,7 +10,7 @@ Dirac_operator = "Staggered"
 initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
-Nsteps = 2
+Nsteps = 200
 "β" = 5.7
 
 ["System Control"]

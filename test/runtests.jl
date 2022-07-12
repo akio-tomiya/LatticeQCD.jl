@@ -83,7 +83,7 @@ using Test
         end
     end
 
-            
+     #=       
     @testset "SLMC" begin
 
         @testset "Staggered SU(3)" begin
@@ -92,6 +92,7 @@ using Test
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
         end
     end
+    =#
 
     
     
