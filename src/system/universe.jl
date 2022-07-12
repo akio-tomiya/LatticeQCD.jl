@@ -25,7 +25,7 @@ function is_quenched(univ::Univ)
 end
 
 
-function Univ(p::Params)
+function Univ(p::Params;MPIparallel=false,PEs=nothing)
     Dim = length(p.L)
     L = Tuple(p.L)
     NC = p.NC

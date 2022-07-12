@@ -10,6 +10,7 @@ Dirac_operator = "Staggered"
 initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
+Nwing = 1
 Nsteps = 200
 "β" = 5.7
 

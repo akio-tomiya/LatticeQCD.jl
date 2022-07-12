@@ -302,7 +302,7 @@ function calc_loopset_μν_name(name, Dim)
                 if ν == μ
                     continue
                 end
-                loops_μν[μ, ν] = make_cloverloops(μ, ν, Dim = Dim)
+                loops_μν[μ, ν] = make_cloverloops_topo(μ, ν, Dim = Dim)
             end
         end
     elseif name == "rect"
@@ -341,7 +341,7 @@ function calc_loopset_μν_name(name, Dim)
 end
 
 
-function make_cloverloops(μ, ν; Dim = 4)
+function make_cloverloops_topo(μ, ν; Dim = 4)
     loops = Wilsonline{Dim}[]
     loop_righttop = Wilsonline([(μ, 1), (ν, 1), (μ, -1), (ν, -1)])
     loop_lefttop = Wilsonline([(ν, 1), (μ, -1), (ν, -1), (μ, 1)])

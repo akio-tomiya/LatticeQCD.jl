@@ -1,5 +1,6 @@
 module Parameter_structs
 using REPL.TerminalMenus
+import ..Simpleprint:println_rank0    
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 
 
@@ -481,7 +482,7 @@ end
 
 function Plaq_parameters_interactive()
     method = Plaq_parameters()
-    println("You measure Plaquette loops")
+    println_rank0("You measure Plaquette loops")
     method.methodname = "Plaquette"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Plaquette loops?", default = "1"))
@@ -492,7 +493,7 @@ end
 
 function Poly_parameters_interactive()
     method = Poly_parameters()
-    println("You measure Polyakov loops")
+    println_rank0("You measure Polyakov loops")
     method.methodname = "Polyakov_loop"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Polyakov loops?", default = "1"))
@@ -503,7 +504,7 @@ end
 
 function TopologicalCharge_parameters_interactive()
     method = TopologicalCharge_parameters()
-    println("You measure a topological charge")
+    println_rank0("You measure a topological charge")
     method.methodname = "Topological_charge"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure a topological charge?", default = "1"))
@@ -539,7 +540,7 @@ end
 
 function MD_interactive(; Dirac_operator = nothing)
     md = MD()
-    println("Choose parameters for MD")
+    println_rank0("Choose parameters for MD")
     MDsteps = parse(Int64, Base.prompt("Input MD steps", default = "20"))
     Δτ = parse(Float64, Base.prompt("Input Δτ", default = "$(1/MDsteps)"))
     md.MDsteps = MDsteps
@@ -620,7 +621,7 @@ end
 
 function ChiralCondensate_parameters_interactive(; mass = 0.5)
     method = ChiralCondensate_parameters()
-    println("You measure chiral condensates with the statteggred fermion")
+    println_rank0("You measure chiral condensates with the statteggred fermion")
     method.methodname = "Chiral_condensate"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure chiral condensates?", default = "1"))
@@ -634,7 +635,7 @@ function ChiralCondensate_parameters_interactive(; mass = 0.5)
 
     method.Nf = 4
 
-    println(
+    println_rank0(
         "Number of flavors (tastes) for the measurement of chiral condensates is $(method.Nf)",
     )
 
@@ -675,7 +676,7 @@ end
 
 function Pion_parameters_interactive()
     method = Pion_parameters()
-    println("You measure Pion_correlator")
+    println_rank0("You measure Pion_correlator")
     method.methodname = "Pion_correlator"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Pion_correlator?", default = "1"))
@@ -690,15 +691,15 @@ function Pion_parameters_interactive()
     )
 
     if wtype == 1
-        println("Standard Wilson fermion action will be used for the measurement")
+        println_rank0("Standard Wilson fermion action will be used for the measurement")
         method.fermiontype = "Wilson"
         fermion_parameters, cg = wilson_wizard()
     elseif wtype == 2
-        println("Wilson+Clover fermion action will be used for the measurement")
+        println_rank0("Wilson+Clover fermion action will be used for the measurement")
         method.fermiontype = "WilsonClover"
         fermion_parameters, cg = wilson_wizard()
     elseif wtype == 3
-        println("Staggered fermion action will be used for the measurement")
+        println_rank0("Staggered fermion action will be used for the measurement")
         method.fermiontype = "Staggered"
         fermion_parameters, cg = staggered_wizard()
     end
@@ -737,7 +738,7 @@ function wilson_wizard()
     if hop <= 0
         error("Invalid value for κ=$hop. This has to be strictly positive.")
     end
-    println("κ = $hop")
+    println_rank0("κ = $hop")
     fermion_parameters.hop = hop
 
     cg = CG_params_interactive()
@@ -789,11 +790,11 @@ function Domainwall_wizard()
     N5 =
         parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
     fermion_parameters.N5 = N5
-    println("Standard Domainwall fermion action is uded")
+    println_rank0("Standard Domainwall fermion action is uded")
 
     M = parse(Float64, Base.prompt("Input M", default = "-1"))
     while M >= 0
-        println("M should be M < 0. ")
+        println_rank0("M should be M < 0. ")
         M = parse(Float64, Base.prompt("Input M", default = "-1"))
     end
     fermion_parameters.M = M
@@ -822,34 +823,34 @@ function generate_printable_parameters(p::System)
 
     for pname_i in pnames
         value = getfield(p, pname_i)
-        #println(value)
+        #println_rank0(value)
         hasvalue = false
 
         physical_index = findfirst(x -> x == pname_i, names_physical)
         if physical_index != nothing
             setfield!(physical, pname_i, value)
-            #println(value, "\t", pname_i)
+            #println_rank0(value, "\t", pname_i)
             hasvalue = true
         end
 
         fermions_index = findfirst(x -> x == pname_i, names_fermions)
         if fermions_index != nothing
             setfield!(fermions, pname_i, value)
-            #println(value, "\t", pname_i)
+            #println_rank0(value, "\t", pname_i)
             hasvalue = true
         end
 
         control_index = findfirst(x -> x == pname_i, names_control)
         if control_index != nothing
             setfield!(control, pname_i, value)
-            #println(value, "\t", pname_i)
+            #println_rank0(value, "\t", pname_i)
             hasvalue = true
         end
 
         hmc_index = findfirst(x -> x == pname_i, names_hmc)
         if hmc_index != nothing
             setfield!(hmc, pname_i, value)
-            #println(value, "\t", pname_i)
+            #println_rank0(value, "\t", pname_i)
             hasvalue = true
         end
 
@@ -857,7 +858,7 @@ function generate_printable_parameters(p::System)
         measure_index = findfirst(x -> x == pname_i, names_measure)
         if measure_index != nothing
             setfield!(measure, pname_i, value)
-            #println(value, "\t", pname_i)
+            #println_rank0(value, "\t", pname_i)
             hasvalue = true
         end
         =#
@@ -890,7 +891,7 @@ function construct_printable_parameters_fromdict!(
         value = Float64(value)
     end
 
-    #println("$key $value")
+    #println_rank0("$key $value")
     hasvalue = false
     pname_i = Symbol(key)
     physical_index = findfirst(x -> x == key, printlist_physical)
@@ -969,7 +970,7 @@ function remove_default_values!(x::Dict, defaultsystem)
     for (key, value) in x
         if hasfield(typeof(defaultsystem), Symbol(key))
             default_value = getfield(defaultsystem, Symbol(key))
-            #println(key, "\t", value, "\t", default_value)
+            #println_rank0(key, "\t", value, "\t", default_value)
             if value == default_value || string(value) == string(default_value)
                 if check_important_parameters(key) == false
                     delete!(x, key)
@@ -996,7 +997,7 @@ end
 
 function construct_dict_from_fermion!(x, value)
     fermiondic = struct2dict(value)
-    #println("fermiondic",fermiondic)
+    #println_rank0("fermiondic",fermiondic)
     fermiondic_default = typeof(value)()
     remove_default_values!(fermiondic, fermiondic_default)
     x["fermion_parameters"] = fermiondic
@@ -1007,15 +1008,15 @@ end
 function construct_dict_from_measurement!(x, value)
 
     measuredic = Dict()
-    #println(value)
+    #println_rank0(value)
     for measure in value
         methoddic = struct2dict(measure)
         measure_struct_default = typeof(measure)()
         remove_default_values!(methoddic, measure_struct_default)
         measuredic[methoddic["methodname"]] = methoddic
     end
-    #println("x",x)
-    #println(measuredic)
+    #println_rank0("x",x)
+    #println_rank0(measuredic)
     x["measurement_methods"] = measuredic
 end
 
