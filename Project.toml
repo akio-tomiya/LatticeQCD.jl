@@ -1,7 +1,7 @@
 name = "LatticeQCD"
 uuid = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
 authors = ["Akio Tomiya", "Yuki Nagai"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
