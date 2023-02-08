@@ -1,5 +1,5 @@
 mutable struct Polyakov_measurement{Dim,TG} <: AbstractMeasurement
-    filename::String
+    filename::Union{Nothing,String}
     _temporary_gaugefields::Vector{TG}
     Dim::Int8
     #factor::Float64

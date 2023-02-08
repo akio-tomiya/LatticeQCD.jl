@@ -90,8 +90,8 @@ function __init__()
         import .Demo: demo
         export demo
 
-        import .Analyze: plot_plaquette, plot_polyakov, plot_plaq_and_poly
-        export plot_plaquette, plot_polyakov, plot_plaq_and_poly
+        #import .Analyze: plot_plaquette, plot_polyakov, plot_plaq_and_poly
+        #export plot_plaquette, plot_polyakov, plot_plaq_and_poly
     end
 
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin

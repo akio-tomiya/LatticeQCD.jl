@@ -78,9 +78,13 @@ function show_parameters(parameters)
     end
 end
 
-
-function construct_Params_from_TOML(filename)
+function construct_Params_from_TOML(filename::String)
     parameters = TOML.parsefile(filename)
+end
+
+
+function construct_Params_from_TOML(parameters)
+    
     show_parameters(parameters)
     
 
