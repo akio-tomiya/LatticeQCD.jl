@@ -11,20 +11,25 @@ using Gaugefields
 using InteractiveUtils
 using Dates
 using Random
+import ..Simpleprint:println_rank0
 
 
-function run_LQCD(filenamein::String)
-    plaq = run_LQCD_file(filenamein)
+function run_LQCD(filenamein::String;MPIparallel=false)
+    plaq = run_LQCD_file(filenamein,MPIparallel=MPIparallel)
     return plaq
 end
 
-function run_LQCD_file(filenamein::String)
+function run_LQCD_file(filenamein::String;MPIparallel=false)
+    if MPIparallel == true
+        println_rank0("test")
+    end
+
     filename_head = splitext(filenamein)[1]
     ext = splitext(filenamein)[end]
     filename = filename_head * ".toml"
     if ext == ".jl"
         transform_to_toml(filenamein)
-        println("input file $filenamein is transformed to $filename")
+        println_rank0("input file $filenamein is transformed to $filename")
     elseif ext == ".toml"
     else
         @error "$filenamein is not supported. use a TOML format."
@@ -33,6 +38,7 @@ function run_LQCD_file(filenamein::String)
     parameters = construct_Params_from_TOML(filename)
     Random.seed!(parameters.randomseed)
 
+    
     univ = Univ(parameters)
 
     println_verbose_level1(

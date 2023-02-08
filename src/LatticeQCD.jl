@@ -2,7 +2,7 @@ module LatticeQCD
 using Requires
 
 
-
+include("./mpi/simpleprint.jl")
 #include("./SLMC/logdet.jl")
 include("./system/parameter_structs.jl")
 
@@ -76,7 +76,7 @@ include("./system/wizard.jl")
 
 
 #include("./system/mainrun.jl")
-include("./system/lqcd.jl")
+
 #include("./output/analyze.jl")
 
 
@@ -93,9 +93,15 @@ function __init__()
         import .Analyze: plot_plaquette, plot_polyakov, plot_plaq_and_poly
         export plot_plaquette, plot_polyakov, plot_plaq_and_poly
     end
+
+    @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
+        include("./mpi/mpimodule.jl")
+        import .MPImodules:get_myrank,get_nprocs,println_rank0,set_PEs,get_PEs
+        export get_myrank,get_nprocs,println_rank0,set_PEs,get_PEs
+    end
 end
 
-
+include("./system/lqcd.jl")
 
 
 #import .LTK_universe:
