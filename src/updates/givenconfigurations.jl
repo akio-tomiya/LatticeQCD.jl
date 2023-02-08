@@ -59,4 +59,5 @@ function update!(updatemethod::T, U) where {T<:GivenConfigurations}
         filename = loadU_dir * "/" * filename_i
         load_BridgeText!(filename, U, L, NC)
     end
+    return true
 end

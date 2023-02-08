@@ -39,5 +39,6 @@ function update!(updatemethod::T, U) where {T<:Heatbathupdate}
             overrelaxation!(U, updatemethod.heatbath)
         end
     end
+    return true
     #error("updatemethod type $(updatemethod) is not supported!!")
 end
