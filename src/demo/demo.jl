@@ -412,9 +412,9 @@ function run_demo!(parameters, univ)
         #
         plt1 = histogram(hist_plaq, bins = bins, label = nothing) #plot1
         #plot!(plt1,title="SU(3), Quenched, L=6^4,")
-        plot!(plt1, title = "SU(3), Quenched, L=4^4,")
+        plot!(plt1, title = "SU(3), Quenched, ")
         xlabel!("Plaquette")
-        plot!(plt2, title = "Heatbath")
+        plot!(plt2, title = "L=4^4, Heatbath")
         plt3 = histogram(hist_poly, bins = bins, label = nothing) #plot3
         xlabel!("|Polyakov loop|")
         #
@@ -481,6 +481,10 @@ function run_demo!(parameters, univ)
             poly,
             itrj,
         )
+
+        println(itrj, "\t",plaq," # plaq")
+        println(itrj, "\t",real(poly),"\t",imag(poly)," # poly")
+        println("-----------------------------------")
 
         #println_verbose1(verbose, "-------------------------------------")
         #println("-------------------------------------")
