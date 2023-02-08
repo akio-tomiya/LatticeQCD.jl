@@ -12,6 +12,7 @@ Dirac_operator = "WilsonClover"
 initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
+Nwing = 1
 Nsteps = 2
 "β" = 5.7
 

@@ -8,6 +8,7 @@ Dirac_operator = "nothing"
 ["Physical setting"]
 L = [4, 4, 4, 4]
 update_method = "HMC"
+Nwing = 1
 Nsteps = 5
 "β" = 5.7
 

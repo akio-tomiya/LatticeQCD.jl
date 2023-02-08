@@ -10,6 +10,7 @@ Nf = 3
 ["Physical setting"]
 L = [4, 4, 4, 4]
 update_method = "HMC"
+Nwing = 1
 Nsteps = 15
 "β" = 5.7
 
