@@ -53,15 +53,17 @@ end
 function measure(m::M, itrj, U; additional_string = "") where {M<:Polyakov_measurement}
     temps = get_temporary_gaugefields(m)
     poly = calculate_Polyakov_loop(U, temps[1], temps[2])
+    measurestring=""
 
     if m.printvalues
         #println_verbose_level2(U[1],"-----------------")
+        measurestring = "$itrj $additional_string $(real(poly)) $(imag(poly)) # poly"
         println_verbose_level2(
             m.verbose_print,
-            "$itrj $additional_string $(real(poly)) $(imag(poly)) # poly",
+            measurestring,
         )
         #println_verbose_level2(U[1],"-----------------")
     end
 
-    return poly
+    return poly,measurestring
 end

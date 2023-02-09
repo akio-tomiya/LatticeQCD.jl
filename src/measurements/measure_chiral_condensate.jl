@@ -171,6 +171,7 @@ function measure(
     pbp = 0.0
     #Nr = 100
     Nr = m.Nr
+    measurestring=""
 
     for ir = 1:Nr
         clear_fermion!(p)
@@ -180,10 +181,12 @@ function measure(
 
         if m.printvalues
             #println_verbose_level2(U[1],"# $itrj $ir $(real(tmp)/U[1].NV) # itrj irand chiralcond")
+            measurestring_ir = "# $itrj $ir $additional_string $(real(tmp)/U[1].NV) # itrj irand chiralcond"
             println_verbose_level2(
                 m.verbose_print,
-                "# $itrj $ir $additional_string $(real(tmp)/U[1].NV) # itrj irand chiralcond",
+                measurestring_ir,
             )
+            measurestring *= measurestring_ir*"\n"
         end
         pbp += tmp
     end
@@ -191,11 +194,13 @@ function measure(
     pbp_value = real(pbp / Nr) / U[1].NV * m.factor
 
     if m.printvalues
-        println_verbose_level1(m.verbose_print, "$itrj $pbp_value # pbp Nr=$Nr")
+        measurestring_ir = "$itrj $pbp_value # pbp Nr=$Nr"
+        println_verbose_level1(m.verbose_print, measurestring_ir )
+        measurestring *= measurestring_ir*"\n"
         flush(stdout)
     end
 
-    return pbp_value
+    return pbp_value,measurestring
 end
 
 

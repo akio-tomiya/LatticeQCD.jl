@@ -195,11 +195,15 @@ function measure(
 ) where {M<:Pion_correlator_measurement,NC,Dim}
     S = m.S
     S .= 0
-    println_verbose_level2(U[1], "Hadron spectrum started")
+    measurestring = ""
+    st = "Hadron spectrum started"
+    measurestring *= st*"\n"
+    println_verbose_level2(U[1], st)
     Nspinor = m.Nspinor
     #D = m.D(U)
     # calculate quark propagators from a point source at he origin
-    propagators = calc_quark_propagators_point_source(m, U)
+    propagators,st = calc_quark_propagators_point_source(m, U)
+    measurestring *= st*"\n"
     #=
     #println(propagators)
     for ic=1:NC
@@ -254,8 +258,9 @@ function measure(
     #println(sum(S))
     #error("prop")
     # contruction end.
-
-    println_verbose_level2(U[1], "Hadron spectrum: Reconstruction")
+    st = "Hadron spectrum: Reconstruction"
+    measurestring *= st*"\n"
+    println_verbose_level2(U[1], st)
     #println("Hadron spectrum: Reconstruction")
     Cpi = zeros(NN[end])
     #Cpi = zeros( univ.NT )
@@ -290,7 +295,9 @@ function measure(
     end
 
     #println(typeof(verbose),"\t",verbose)
-    println_verbose_level2(U[1], "Hadron spectrum end")
+    st = "Hadron spectrum end"
+    measurestring *= st*"\n"
+    println_verbose_level2(U[1],st)
     #println("Hadron spectrum end")
 
 
@@ -305,13 +312,16 @@ function measure(
             stringcc *= "$cc "
         end
         #println_verbose_level1(U[1],stringcc)
+        measurestring *=  stringcc*"\n"
         println_verbose_level1(m.verbose_print, stringcc)
         #println_verbose_level1(U[1],"#pioncorrelator")
-        println_verbose_level1(m.verbose_print, "#pioncorrelator")
+        st = "#pioncorrelator"
+        measurestring *=  st*"\n"
+        println_verbose_level1(m.verbose_print, st)
     end
 
 
-    return Cpi
+    return Cpi, measurestring
 
 
 end
@@ -319,20 +329,26 @@ end
 
 function calc_quark_propagators_point_source(
     m,
-    U::Array{<:AbstractGaugefields{NC,Dim},1},
+    U::Array{<:AbstractGaugefields{NC,Dim},1}
 ) where {NC,Dim}
     # D^{-1} for each spin x color element
     D = m.D(U)
+    stvec = String[]
     propagators =
-        map(i -> calc_quark_propagators_point_source_each(m, U, D, i), 1:NC*m.Nspinor)
-    return propagators
+        map(i -> calc_quark_propagators_point_source_each(m, U, D, i,stvec), 1:NC*m.Nspinor)
+    st = ""
+    for i=1:NC*m.Nspinor
+        st *= stvec[i]*"\n"
+    end
+    return propagators,st
 end
 
-function calc_quark_propagators_point_source_each(m, U, D, i)
+function calc_quark_propagators_point_source_each(m, U, D, i,stvec)
     # calculate D^{-1} for a given source at the origin.
     # Nc*Ns (Ns: dim of spinor, Wilson=4, ks=1) elements has to be gathered.
     # staggered Pion correlator relies on https://itp.uni-frankfurt.de/~philipsen/theses/breitenfelder_ba.pdf (3.33)
     temps_fermi = get_temporary_fermionfields(m)
+    measurestring = ""
     b = temps_fermi[1]
     p = temps_fermi[2]
     #b = similar(meas._temporal_fermions[1]) # source is allocated
@@ -342,7 +358,9 @@ function calc_quark_propagators_point_source_each(m, U, D, i)
     Nspinor = m.Nspinor#ifelse( meas.fparam.Dirac_operator == "Staggered" ,1,4)
     is = ((i - 1) % Nspinor) + 1 # spin index   
     ic = ((i - is) ÷ Nspinor) + 1 # color index
-    println_verbose_level1(U[1], "$ic $is")
+    st =  "$ic $is"
+    measurestring *= st*"\n"
+    println_verbose_level1(U[1], st)
     v = 1
     clear_fermion!(b)
     clear_fermion!(p)
@@ -376,11 +394,14 @@ function calc_quark_propagators_point_source_each(m, U, D, i)
     @time solve_DinvX!(p, D, b)
     #error("dd")
     #println("norm p ",dot(p,p))
+    st =  "Hadron spectrum: Inversion $(i)/$(U[1].NC*m.Nspinor) is done"
+    measurestring *= st*"\n"
     println_verbose_level1(
         U[1],
-        "Hadron spectrum: Inversion $(i)/$(U[1].NC*m.Nspinor) is done",
+        st,
     )
 
     flush(stdout)
+    push!(stvec,measurestring)
     return deepcopy(p)
 end

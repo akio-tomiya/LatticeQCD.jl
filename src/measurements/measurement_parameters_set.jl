@@ -10,12 +10,15 @@ struct Measurement_methods
 end
 
 function calc_measurement_values(m::Measurement_methods,itrj,U;additional_string ="")
+    measurestrings = String[]
     for i =1:m.num_measurements
         interval = m.intervals[i]
         if itrj % interval == 0
-            measure(m.measurements[i], itrj, U, additional_string = additional_string)
+            _,measurestring = measure(m.measurements[i], itrj, U, additional_string = additional_string)
+            push!(measurestrings ,measurestring)
         end
     end
+    return measurestrings 
 end
 
 function prepare_measurement(U,measurement_parameters::T,filename) where T

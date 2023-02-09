@@ -24,6 +24,8 @@ mutable struct Plaquette_measurement{Dim,TG} <: AbstractMeasurement
         =#
         if printvalues
             verbose_print = Verbose_print(verbose_level, myid = myrank, filename = filename)
+            #println(verbose_print)
+            #error("v")
         else
             verbose_print = nothing
         end
@@ -73,12 +75,15 @@ end
 function measure(m::M, itrj, U; additional_string = "") where {M<:Plaquette_measurement}
     temps = get_temporary_gaugefields(m)
     plaq = real(calculate_Plaquette(U, temps[1], temps[2]) * m.factor)
+    measurestring=""
 
     if m.printvalues
+        #println("m.verbose_print ",m.verbose_print)
         #println_verbose_level2(U[1],"-----------------")
-        println_verbose_level2(m.verbose_print, "$itrj $additional_string $plaq # plaq")
+        measurestring= "$itrj $additional_string $plaq # plaq"
+        println_verbose_level2(m.verbose_print,measurestring)
         #println_verbose_level2(U[1],"-----------------")
     end
 
-    return plaq
+    return plaq,measurestring
 end

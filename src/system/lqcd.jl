@@ -36,24 +36,24 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
     end
 
     parameters = construct_Params_from_TOML(filename)
-    println(parameters)
     Random.seed!(parameters.randomseed)
 
     
     univ = Univ(parameters)
-
     println_verbose_level1(
-        univ.U[1],
+        univ,
         "# ", pwd()
     )
+
     println_verbose_level1(
-        univ.U[1],"# ", Dates.now()
+        univ,"# ", Dates.now()
     )
     io = IOBuffer()
+    
     InteractiveUtils.versioninfo(io)
     versioninfo = String(take!(io))
     println_verbose_level1(
-        univ.U[1],versioninfo
+        univ,versioninfo
     )
 
 
@@ -91,14 +91,17 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
 
     numaccepts = 0
     for itrj = parameters.initialtrj:parameters.Nsteps
-        println_verbose_level1(univ.U[1], "# itrj = $itrj")
+        println_verbose_level1(univ, "# itrj = $itrj")
         @time accepted = update!(updatemethod, univ.U)
         if accepted
             numaccepts +=1
         end
         save_gaugefield(savedata,univ.U,itrj)
 
-        calc_measurement_values(measurements,itrj, univ.U)
+        measurestrings = calc_measurement_values(measurements,itrj, univ.U)
+        for st in measurestrings
+            println(univ.verbose_print.fp,st)
+        end
 
 
         Usmr = deepcopy(univ.U)
@@ -115,7 +118,7 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
         end
 
         println_verbose_level1(
-        univ.U[1],"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+        univ,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
 
 
     end

@@ -72,17 +72,25 @@ function measure(
 ) where {M<:Energy_density_measurement,NC,Dim}
     temps = get_temporary_gaugefields(m)
     value = calculate_energy_density(U, m.temp_UμνTA, temps)
+    measurestring = ""
 
     if m.printvalues
-        println_verbose_level2(U[1], "-----------------")
+        
+        st = "-----------------"
+        measurestring *= st*"\n"
+        println_verbose_level2(U[1], st)
+        st = "$itrj $additional_string $value # energydensity"
+        measurestring *= st*"\n"
         println_verbose_level2(
             m.verbose_print,
-            "$itrj $additional_string $value # energydensity",
+            st,
         )
-        println_verbose_level2(U[1], "-----------------")
+        st = "-----------------"
+        measurestring *= st*"\n"
+        println_verbose_level2(U[1], st)
     end
 
-    return values
+    return values,measurestring
 end
 
 

@@ -2,6 +2,7 @@ module Universe_module
 import ..System_parameters: Params
 using Gaugefields
 using LatticeDiracOperators
+import Gaugefields
 
 struct Univ{Dim,TG,T_FA}
     L::NTuple{Dim,Int64}
@@ -13,6 +14,7 @@ struct Univ{Dim,TG,T_FA}
     fermi_action::T_FA
     cov_neural_net::Union{Nothing,CovNeuralnet{Dim}}
     #Uold::Vector{TG}
+    verbose_print::Verbose_print
 
 end
 
@@ -30,6 +32,8 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
     L = Tuple(p.L)
     NC = p.NC
     Nwing = p.Nwing
+
+    
 
     if p.initial == "cold" || p.initial == "hot" || p.initial == "one instanton"
         if Dim == 2
@@ -57,6 +61,9 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
             error("loadU_format should be ILDG or BridgeText. Now $(p.loadU_format)")
         end
     end
+
+    close(p.load_fp)
+    verbose_print = Verbose_print(p.verboselevel,myid = get_myrank(U[1]), filename = p.logfile)
 
 
     #Uold = similar(U)
@@ -132,8 +139,20 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
         error("p.smearing_for_fermion = $(p.smearing_for_fermion) is not supported")
     end
 
-    return Univ{Dim,TG,T_FA}(L, NC, Nwing, gauge_action, U, p.quench, fermi_action,cov_neural_net)
+    return Univ{Dim,TG,T_FA}(L, NC, Nwing, gauge_action, U, p.quench, fermi_action,cov_neural_net,verbose_print)
 
+end
+
+function Gaugefields.println_verbose_level1(univ::T, val...) where {T<:Univ}
+    println_verbose_level1(univ.verbose_print, val...)
+end
+
+function Gaugefields.println_verbose_level2(univ::T, val...) where {T<:Univ}
+    println_verbose_level2(univ.verbose_print, val...)
+end
+
+function Gaugefields.println_verbose_level3(univ::T, val...) where {T<:Univ}
+    println_verbose_level3(univ.verbose_print, val...)
 end
 
 end

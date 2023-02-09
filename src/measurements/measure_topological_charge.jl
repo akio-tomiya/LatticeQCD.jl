@@ -81,6 +81,7 @@ function measure(
     temps = get_temporary_gaugefields(m)
     temp1 = temps[1]
     temp2 = temps[2]
+    measurestring = ""
 
     nummethod = length(m.TC_methods)
     values = Float64[]
@@ -119,11 +120,12 @@ function measure(
 
     if m.printvalues
         #println_verbose_level2(U[1],"-----------------")
+        measurestring = printstring
         println_verbose_level2(m.verbose_print, printstring)
         #println_verbose_level2(U[1],"-----------------")
     end
 
-    return values
+    return values,measurestring
 end
 
 function calculate_topological_charge_plaq(U::Array{T,1}, temp_UμνTA, temps) where {T}
