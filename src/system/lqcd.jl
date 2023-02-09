@@ -36,6 +36,7 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
     end
 
     parameters = construct_Params_from_TOML(filename)
+    println(parameters)
     Random.seed!(parameters.randomseed)
 
     

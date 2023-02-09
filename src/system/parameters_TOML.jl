@@ -80,6 +80,7 @@ end
 
 function construct_Params_from_TOML(filename::String)
     parameters = TOML.parsefile(filename)
+    construct_Params_from_TOML(parameters)
 end
 
 
