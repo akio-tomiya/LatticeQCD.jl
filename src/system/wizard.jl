@@ -457,13 +457,13 @@ function run_wizard()
     measurement_gradientflow = Measurement_parameterset()
     if isexpert
         methodtype = request(
-            "Use Gradient flow?",
+            "Perform measurements with the gradient flow?",
             RadioMenu([
-                "Yes",
                 "No",
+                "Yes",
             ]),
         )
-        if methodtype == 1
+        if methodtype == 2 #Yes
             gradient_params.hasgradientflow = true
         else
             gradient_params.hasgradientflow = false

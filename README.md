@@ -122,6 +122,7 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
 To use following functions, please use v 0.1.2
 - Fermion integrated HMC with a general gauge action
 - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
+- RxT Wilson loop
 
 Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl)
 
