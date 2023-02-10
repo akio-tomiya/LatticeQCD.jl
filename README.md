@@ -128,7 +128,7 @@ Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/ak
 
 # Related packages
 
-![hierchy](xxx.png)
+<img src="LQCDjl_block.png" width=300>
 
 LatticeQCD.jl uses the following packages
 - [Wilsonloop](https://github.com/akio-tomiya/Wilsonloop.jl) :Wilsonloop.jl helps us to treat with the Wilson loops and generic Wilson lines in any Nc and dimensions.
