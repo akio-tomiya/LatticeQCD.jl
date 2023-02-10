@@ -4,7 +4,8 @@ system["L"] = (4, 4, 4, 4)
 system["β"] = 5.7
 system["NC"] = 3
 system["Nthermalization"] = 0
-system["Nsteps"] = 15
+system["Nsteps"] = 10
+
 system["initial"] = "cold"
 system["initialtrj"] = 1
 system["update_method"] = "HMC"
