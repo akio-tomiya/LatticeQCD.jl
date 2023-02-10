@@ -88,43 +88,53 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
     savedata = Savedata(parameters.saveU_format,parameters.saveU_dir,
     parameters.saveU_every,parameters.update_method,univ.U)
 
+    value, runtime_all = @timed begin
 
-    numaccepts = 0
-    for itrj = parameters.initialtrj:parameters.Nsteps
-        println_verbose_level1(univ, "# itrj = $itrj")
-        @time accepted = update!(updatemethod, univ.U)
-        if accepted
-            numaccepts +=1
-        end
-        save_gaugefield(savedata,univ.U,itrj)
+        numaccepts = 0
+        for itrj = parameters.initialtrj:parameters.Nsteps
+            println_verbose_level1(univ, "# itrj = $itrj")
+            accepted, runtime = @timed update!(updatemethod, univ.U)
 
-        measurestrings = calc_measurement_values(measurements,itrj, univ.U)
-        #println(measurestrings)
-        #println("$(univ.verbose_print.fp)")
-        for st in measurestrings
-            println(univ.verbose_print.fp,st)
-        end
-        
+            println_verbose_level1(
+                univ,"Update: Elapsed time $runtime [s]")
+            if accepted
+                numaccepts +=1
+            end
+            save_gaugefield(savedata,univ.U,itrj)
+
+            measurestrings = calc_measurement_values(measurements,itrj, univ.U)
+            #println(measurestrings)
+            #println("$(univ.verbose_print.fp)")
+            for st in measurestrings
+                println(univ.verbose_print.fp,st)
+            end
+            
 
 
-        Usmr = deepcopy(univ.U)
-        for istep = 1:numflow
-            τ = istep * dτ
-            flow!(Usmr, gradientflow)
-            additional_string = "$istep $τ "
-            for i =1:measurements_for_flow.num_measurements
-                interval = measurements_for_flow.intervals[i]
-                if istep % interval == 0
-                    measure(measurements_for_flow.measurements[i], itrj, Usmr, additional_string = additional_string)
+            Usmr = deepcopy(univ.U)
+            for istep = 1:numflow
+                τ = istep * dτ
+                flow!(Usmr, gradientflow)
+                additional_string = "$istep $τ "
+                for i =1:measurements_for_flow.num_measurements
+                    interval = measurements_for_flow.intervals[i]
+                    if istep % interval == 0
+                        measure(measurements_for_flow.measurements[i], itrj, Usmr, additional_string = additional_string)
+                    end
                 end
             end
+
+            println_verbose_level1(
+            univ,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+            flush(univ.verbose_print.fp)
+
         end
 
-        println_verbose_level1(
-        univ,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
-        flush(univ.verbose_print.fp)
-
     end
+
+    println_verbose_level1(
+            univ,"Total Elapsed time $(runtime_all) [s]")
+
 
     temps = get_temporary_gaugefields(plaq_m)
     plaq = real(calculate_Plaquette(univ.U, temps[1], temps[2]) * plaq_m.factor)
