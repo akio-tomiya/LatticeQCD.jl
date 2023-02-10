@@ -685,8 +685,8 @@ function Pion_parameters_interactive()
         "Choose fermion type for the measurement of Pion_correlator",
         RadioMenu([
             "Standard Wilson fermion action",
-            "Wilson+Clover fermion action",
             "Staggered fermion action",
+            #"Wilson+Clover fermion action",
         ]),
     )
 
@@ -694,11 +694,11 @@ function Pion_parameters_interactive()
         println_rank0("Standard Wilson fermion action will be used for the measurement")
         method.fermiontype = "Wilson"
         fermion_parameters, cg = wilson_wizard()
-    elseif wtype == 2
+    elseif wtype == 3
         println_rank0("Wilson+Clover fermion action will be used for the measurement")
         method.fermiontype = "WilsonClover"
         fermion_parameters, cg = wilson_wizard()
-    elseif wtype == 3
+    elseif wtype == 2
         println_rank0("Staggered fermion action will be used for the measurement")
         method.fermiontype = "Staggered"
         fermion_parameters, cg = staggered_wizard()

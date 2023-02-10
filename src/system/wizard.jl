@@ -228,7 +228,7 @@ function run_wizard()
                         "Nothing (quenched approximation)",
                         "Wilson Fermion (2-flavor)",
                         "Staggered Fermion",
-                        "Domain-wall Fermion (DO NOT USE IT! test mode.)",
+                        "Domain-wall Fermion (Experimental)",
                     ]),
                 ) |> Fermiontype
 
@@ -240,6 +240,10 @@ function run_wizard()
                 fermionparams.quench = true
             elseif ftype == Wilsonfermion
                 fermionparams.quench = false
+                println("Standard Wilson fermion action will be used")
+                fermionparams.Dirac_operator = "Wilson"
+
+                #=
                 wtype = request(
                     "Choose Wilson fermion type",
                     RadioMenu([
@@ -254,6 +258,7 @@ function run_wizard()
                     println("Wilson+Clover fermion action will be used")
                     fermionparams.Dirac_operator = "WilsonClover"
                 end
+                =#
                 fermion_parameters, cg = wilson_wizard()
             elseif ftype == Staggeredfermion
                 fermionparams.quench = false
