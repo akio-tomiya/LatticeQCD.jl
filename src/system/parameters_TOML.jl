@@ -61,6 +61,7 @@ function set_unused_parameters!(value_Params)
 end
 
 function show_parameters(parameters)
+    #println(parameters)
     for (key,value) in parameters
         
         println("[$(key)]")

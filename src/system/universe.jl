@@ -117,7 +117,7 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
             params["mass"] = mass
             params["L5"] = L5
             params["M"] = M
-            x = Initialize_pseudofermion_fields(U[1], "Domainwall", L5 = L5)
+            x = Initialize_pseudofermion_fields(U[1], "Domainwall", L5 = L5, nowing = true)
         else
             error("not supported")
         end

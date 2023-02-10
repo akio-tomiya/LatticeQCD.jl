@@ -132,10 +132,10 @@ function run_wizard()
         ) |> Wizardmode
     isexpert::Bool = (mode == expert)
 
-    filename = Base.prompt(
+    filename = String(Base.prompt(
         "put the name of the parameter file you make",
         default = "my_parameters.toml",
-    )
+    ))
 
     physicalparams.L = set_Lattice_size(isexpert)
     #system.L = set_Lattice_size(isexpert)
