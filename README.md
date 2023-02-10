@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 
-![LatticeQCD.jl](logo.png)
+<img src="logo.png" width=400>
 
 This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
@@ -11,8 +11,7 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compiler
 
-
-![demo](demo.gif)
+<img src="demo.gif" width=500>
 
 ## Tutorial
 
