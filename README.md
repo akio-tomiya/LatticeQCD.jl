@@ -131,9 +131,11 @@ Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/ak
 <img src="LQCDjl_block.png" width=300>
 
 LatticeQCD.jl uses the following packages
-- [Wilsonloop](https://github.com/akio-tomiya/Wilsonloop.jl) :Wilsonloop.jl helps us to treat with the Wilson loops and generic Wilson lines in any Nc and dimensions.
-- [Gaugefields](https://github.com/akio-tomiya/Gaugefields.jl): Gaugefields.jl is a package for lattice QCD codes. Treating gauge fields (links), gauge actions with MPI and autograd.
-- [LatticeDiracOperators](https://github.com/akio-tomiya/LatticeDiracOperators.jl): LatticeDiracOperators.jl is a package for lattice QCD codes. Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI.
+- [Wilsonloop.jl](https://github.com/akio-tomiya/Wilsonloop.jl) :Wilsonloop.jl helps us to treat with the Wilson loops and generic Wilson lines in any Nc and dimensions.
+- [Gaugefields.jl](https://github.com/akio-tomiya/Gaugefields.jl): Gaugefields.jl is a package for lattice QCD codes. Treating gauge fields (links), gauge actions with MPI and autograd.
+- [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl): LatticeDiracOperators.jl is a package for lattice QCD codes. Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI.
+
+
 
 # USAGE/User interface
 
