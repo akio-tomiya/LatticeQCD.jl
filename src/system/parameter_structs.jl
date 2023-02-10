@@ -242,9 +242,9 @@ end
 
 Base.@kwdef mutable struct Domainwall_parameters <: Fermion_parameters
     Dirac_operator::String = "Domainwall"
-    N5::Int64 = 4
-    M::Float64 = -1 #mass for Wilson operator which should be negative
-    m::Float64 = 0.1 #physical mass
+    Domainwall_L5::Int64 = 4
+    Domainwall_M::Float64 = -1 #mass for Wilson operator which should be negative
+    Domainwall_m::Float64 = 0.1 #physical mass
 end
 
 function initialize_fermion_parameters(fermion_type)
@@ -789,7 +789,7 @@ function Domainwall_wizard()
     fermion_parameters = Domainwall_parameters()
     N5 =
         parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
-    fermion_parameters.N5 = N5
+    fermion_parameters.Domainwall_L5 = N5
     println_rank0("Standard Domainwall fermion action is uded")
 
     M = parse(Float64, Base.prompt("Input M", default = "-1"))
@@ -797,10 +797,10 @@ function Domainwall_wizard()
         println_rank0("M should be M < 0. ")
         M = parse(Float64, Base.prompt("Input M", default = "-1"))
     end
-    fermion_parameters.M = M
+    fermion_parameters.Domainwall_M = M
 
     m = parse(Float64, Base.prompt("Input mass", default = "1"))
-    fermion_parameters.m = m
+    fermion_parameters.Domainwall_m = m
 
     cg = CG_params_interactive()
     return fermion_parameters, cg

@@ -111,6 +111,8 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
 
         elseif p.Dirac_operator == "Domainwall"
             L5 = p.Domainwall_L5
+            #println(L5)
+            #error("L5")
             M = p.Domainwall_M
             mass = p.Domainwall_m
             params["Dirac_operator"] = "Domainwall"
