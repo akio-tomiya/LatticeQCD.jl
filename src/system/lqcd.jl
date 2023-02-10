@@ -99,9 +99,12 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
         save_gaugefield(savedata,univ.U,itrj)
 
         measurestrings = calc_measurement_values(measurements,itrj, univ.U)
+        #println(measurestrings)
+        #println("$(univ.verbose_print.fp)")
         for st in measurestrings
             println(univ.verbose_print.fp,st)
         end
+        
 
 
         Usmr = deepcopy(univ.U)
@@ -119,7 +122,7 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
 
         println_verbose_level1(
         univ,"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
-
+        flush(univ.verbose_print.fp)
 
     end
 

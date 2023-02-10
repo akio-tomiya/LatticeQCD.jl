@@ -32,6 +32,7 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
     L = Tuple(p.L)
     NC = p.NC
     Nwing = p.Nwing
+    
 
     
 
@@ -48,8 +49,15 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
             U = Initialize_Gaugefields(NC, Nwing, L..., condition = "cold")
         end
 
-        println_verbose_level2(U[1], ".....  File start")
-        println_verbose_level1(U[1], "File name is $(p.initial)")
+    end
+    close(p.load_fp)
+    logfilename = pwd() * "/" * p.log_dir * "/" * p.logfile
+    verbose_print = Verbose_print(p.verboselevel,myid = get_myrank(U[1]), filename = logfilename)
+
+    if p.initial == "cold" || p.initial == "hot" || p.initial == "one instanton"
+    else
+        println_verbose_level2(verbose_print, ".....  File start")
+        println_verbose_level1(verbose_print, "File name is $(p.initial)")
         if p.loadU_format == "ILDG"
             ildg = ILDG(p.initial)
             i = 1
@@ -61,9 +69,9 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
             error("loadU_format should be ILDG or BridgeText. Now $(p.loadU_format)")
         end
     end
+    #println_verbose_level1(verbose_print, ".....  test mode")
 
-    close(p.load_fp)
-    verbose_print = Verbose_print(p.verboselevel,myid = get_myrank(U[1]), filename = p.logfile)
+
 
 
     #Uold = similar(U)

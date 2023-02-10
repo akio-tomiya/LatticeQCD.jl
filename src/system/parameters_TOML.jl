@@ -80,6 +80,7 @@ end
 
 function construct_Params_from_TOML(filename::String)
     parameters = TOML.parsefile(filename)
+    println("inputfile: ",pwd()*"/"*filename)
     construct_Params_from_TOML(parameters)
 end
 
@@ -122,7 +123,8 @@ function construct_Params_from_TOML(parameters)
         mkdir(log_dir)
     end
     logfile = pwd() * "/" * log_dir * "/" * logfilename
-    load_fp = open(logfile, "a")
+
+    load_fp = open(logfile, "w")
     value_Params[pos] = load_fp
 
 
