@@ -128,7 +128,7 @@ Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/ak
 
 # Related packages
 
-![hierchy](xxx.png)
+![package hierarchy](LQCDjl_block.png)
 
 # USAGE/User interface
 
