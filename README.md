@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 
-![LatticeQCD.jl](logo.png)
+<img src="logo.png" width=400>
 
 This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
@@ -11,8 +11,7 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compiler
 
-
-![demo](demo.gif)
+<img src="demo.gif" width=500>
 
 ## Tutorial
 
@@ -129,11 +128,6 @@ Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/ak
 # Related packages
 
 <img src="LQCDjl_block.png" width=300>
-
-LatticeQCD.jl uses the following packages
-- [Wilsonloop](https://github.com/akio-tomiya/Wilsonloop.jl) :Wilsonloop.jl helps us to treat with the Wilson loops and generic Wilson lines in any Nc and dimensions.
-- [Gaugefields](https://github.com/akio-tomiya/Gaugefields.jl): Gaugefields.jl is a package for lattice QCD codes. Treating gauge fields (links), gauge actions with MPI and autograd.
-- [LatticeDiracOperators](https://github.com/akio-tomiya/LatticeDiracOperators.jl): LatticeDiracOperators.jl is a package for lattice QCD codes. Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI.
 
 # USAGE/User interface
 
