@@ -439,7 +439,7 @@ function run_wizard()
         elseif method == Pion_correlator
             measurement.measurement_methods[count] = Pion_parameters_interactive()
         elseif method == Wilson_loop
-            measurement.measurement_methods[count] = Wilson_loop_parameters_interactive()
+            measurement.measurement_methods[count] = Wilson_loop_parameters_interactive(physicalparams.L)
         end
     end
 

@@ -23,7 +23,6 @@ log_dir = "./logs"
 hasgradientflow = false
 
 ["Measurement set".measurement_methods.Plaquette]
-measure_every = 1
 methodname = "Plaquette"
 
 [gradientflow_measurements.measurements_for_flow]
