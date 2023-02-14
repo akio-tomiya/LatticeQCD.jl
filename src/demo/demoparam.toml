@@ -1,0 +1,32 @@
+["HMC related"]
+"Δτ" = 0.05
+MDsteps = 20
+
+["Physical setting(fermions)"]
+Dirac_operator = "nothing"
+
+["Physical setting"]
+initial = "hot"
+L = [4, 4, 4, 4]
+Nthermalization = 10
+update_method = "Heatbath"
+Nwing = 1
+Nsteps = 10000
+"β" = 6.758506610326683
+
+["System Control"]
+logfile = "Heatbath_L06060606_beta8.0_quenched.txt"
+measurement_dir = "Heatbath_L06060606_beta8.0_quenched"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+
+["Measurement set".measurement_methods.Polyakov_loop]
+measure_every = 1
+methodname = "Polyakov_loop"
+
+["Measurement set".measurement_methods.Plaquette]
+measure_every = 1
+methodname = "Plaquette"
+
+[gradientflow_measurements.measurements_for_flow]

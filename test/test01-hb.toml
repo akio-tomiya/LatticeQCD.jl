@@ -1,0 +1,51 @@
+["HMC related"]
+"Δτ" = 0.06666666666666667
+MDsteps = 15
+
+["Physical setting(fermions)"]
+Dirac_operator = "nothing"
+
+["Physical setting"]
+L = [4, 4, 4, 4]
+update_method = "Heatbath"
+Nwing = 1
+Nsteps = 10
+"β" = 5.7
+
+["System Control"]
+logfile = "Heatbath_L04040404_beta5.7_quenched_su3.txt"
+verboselevel = 2
+measurement_dir = "Heatbath_L04040404_beta5.7_quenched_su3"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = true
+
+["Measurement set".measurement_methods.Pion_correlator]
+measure_every = 5
+methodname = "Pion_correlator"
+
+    ["Measurement set".measurement_methods.Pion_correlator.fermion_parameters]
+    Dirac_operator = "Wilson"
+
+["Measurement set".measurement_methods.Chiral_condensate]
+measure_every = 5
+methodname = "Chiral_condensate"
+
+["Measurement set".measurement_methods.Polyakov_loop]
+methodname = "Polyakov_loop"
+
+["Measurement set".measurement_methods.Topological_charge]
+kinds_of_topological_charge = ["plaquette", "clover"]
+methodname = "Topological_charge"
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+Nflow = 4
+numflow = 10
+
+    [gradientflow_measurements.measurements_for_flow.Topological_charge]
+    fermiontype = "nothing"
+    measure_every = 10
+    methodname = "Topological_charge"

@@ -3,7 +3,7 @@
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 
-![LatticeQCD.jl](logo.png)
+<img src="logo.png" width=400>
 
 This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
@@ -11,8 +11,7 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compiler
 
-
-![demo](demo.gif)
+<img src="demo.gif" width=500>
 
 ## Tutorial
 
@@ -26,7 +25,7 @@ You can start lattice QCD in 5 steps!
 
 
 1.Download a Julia binary from [Julialang.org](https://julialang.org/downloads/). Set a path to the binary of Julia. 
-
+Julia 1.6 (or higher) is supported.
 
 
 2.In Julia REPL, push "]" key to enter the package mode and type
@@ -62,7 +61,7 @@ Choose parameters as you want!
 5.Start simulation with created your parameter file!
 
 ```
- run_LQCD("my_parameters.jl")
+ run_LQCD("my_parameters.toml")
 ```
 
 You'll get results!
@@ -81,49 +80,63 @@ it takes time before showing up the window.
 
 # What is supported?
 
-We support 4 dimensional euclidean spacetime.
+We support lattice gauge theory in 4 dimensional euclidean spacetime.
 
-- Wizard for making parameters
-- Gauge field
+- Wizard for parameter files
+- Gauge fields
   - Optimized SU(2), SU(3)
   - General SU(N)
   - General gauge action = plaquette + rect + etc action
 - Fermions
-  - Wilson/Wilson-clover (2 flavors)
-  - Staggered fermion (1-8 tastes ~ flavors)
+  - Wilson (2 flavor)
+  - Staggered fermion (1-8 tastes ~ flavor)
+  - Standard Domain-wall (2 flavor, experimental)
 - Configuration generation algorithms
   - Cold/Hot start for SU(N). One instanton configuration for SU(2)
-  - Heatbath for SU(N) & overrelaxation for a general gauge action
+  - Heatbath for SU(N) & overelaxation for a general gauge action
+  - Even-odd heatbath for the plaquette action
   - Quenched HMC with SU(N) for a general gauge action
-  - HMC (2 flavor Wilson/Clover) with SU(N) with a general gauge action
+  - HMC (2 flavor Wilson) with SU(N) with a general gauge action
   - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
   - RHMC (any flavor staggered) with SU(N) for a general gauge action*
   - SU(N) stout smeared dynamical fermions (experimental)
-  - Fermion integrated HMC with a general gauge action
-  - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
-  - Self-learning HMC with plaquette action
+  - Self-learning HMC with the plaquette action
 - Measurements
   - Plaquette
   - Polyakov loop
-  - Chiral condensates (Wilson, Wilson-Clover, staggered)
-  - Momentum projected pion correlator (Wilson, Wilson-Clover fermion, staggered)
-  - Topological charge(plaquette and clover definition)
+  - Chiral condensates (Wilson, staggered)
+  - Momentum projected pion correlator (Wilson fermion, staggered)
+  - RxT Wilson loop
+  - Energy density
+  - Topological charge (plaquette, clover and O(a^2) improved definition)
   - Load & measurement mode (load and measure all configurations in a directory)
 - Smearing
-  - <s>APE, stout</s> (This will be public)
+  - Stout
   - Gradient flow for a generic action (experimental)
-- I/O for configurations
-  - ILDG format
-  - JLD format (default binary file for Julia, one of HDF5)
+- I/O for gauge configurations
+  - ILDG format (Binary)
+  - JLD format (Default binary file for Julia, one of HDF5)
+  - Text file for Bridge++ (Bridgetext)
 
 *If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
 
+To use following functions, please use v 0.1.2
+- Fermion integrated HMC with a general gauge action
+- Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
 
 
-Parallelazation have not supported yet.
+*Version below 1.0, it uses ``***.jl`` as a default parameter file, and now it uses ``***.toml``. Version 1.0 supports both parameter file formats.
 
+*Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl). See below.
 
+# Related packages
 
+<img src="LQCDjl_block.png" width=300>
+
+LatticeQCD.jl is basically a wrapper of the following packages
+- [Wilsonloop.jl](https://github.com/akio-tomiya/Wilsonloop.jl) :Wilsonloop.jl helps us to treat with the Wilson loops and generic Wilson lines in any Nc and dimensions. Wilson lines can be defined in symbolly.
+- [Gaugefields.jl](https://github.com/akio-tomiya/Gaugefields.jl): Gaugefields.jl is a package for lattice QCD codes. Treating gauge fields (links), gauge actions with MPI and autograd. This can generate quenched configurations.
+- [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl): LatticeDiracOperators.jl is a package for lattice QCD codes. Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI. This can generate configurations with dynamical fermions.
 
 # USAGE/User interface
 

@@ -1,0 +1,37 @@
+# /Users/yuki/LatticeQCD/v1/LatticeQCD.jl/run
+# 2023-02-14T12:56:57.026
+Julia Version 1.8.5
+Commit 17cfb8e65ea (2023-01-08 06:45 UTC)
+Platform Info:
+  OS: macOS (x86_64-apple-darwin21.4.0)
+  CPU: 16 × Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+  WORD_SIZE: 64
+  LIBM: libopenlibm
+  LLVM: libLLVM-13.0.1 (ORCJIT, skylake)
+  Threads: 1 on 16 virtual cores
+Environment:
+  LD_LIBRARY_PATH = /usr/local/Cellar/gcc/10.2.0/lib/gcc/10/:/usr/local/Cellar/gcc/10.2.0/lib/gcc/10/:
+  DYLD_LIBRARY_PATH = /opt/intel/compilers_and_libraries_2020.0.166/mac/tbb/lib:/opt/intel/compilers_and_libraries_2020.0.166/mac/compiler/lib:/opt/intel/compilers_and_libraries_2020.0.166/mac/mkl/lib:/opt/intel/compilers_and_libraries_2020.0.166/mac/tbb/lib:/opt/intel/compilers_and_libraries_2020.0.166/mac/compiler/lib:/opt/intel/compilers_and_libraries_2020.0.166/mac/mkl/lib:/usr/local/Cellar/gcc/10.2.0/lib/gcc/10
+  JULIA_SSL_NO_VERIFY_HOSTS = github.com
+
+# itrj = 1
+Update: Elapsed time 3.349671283 [s]
+ 1  4 4 0.5233966598951542 # Wilson_loops # T R W(T,R)
+1  0.8014067535620052 # plaq
+Acceptance 1/1 : 100.0 %
+# itrj = 2
+Update: Elapsed time 1.258336852 [s]
+ 2  4 4 0.34688605483977764 # Wilson_loops # T R W(T,R)
+2  0.7006467191783998 # plaq
+Acceptance 2/2 : 100.0 %
+# itrj = 3
+Update: Elapsed time 1.253372132 [s]
+ 3  4 4 0.27730186203589197 # Wilson_loops # T R W(T,R)
+3  0.649926677829896 # plaq
+Acceptance 3/3 : 100.0 %
+# itrj = 4
+Update: Elapsed time 1.235176737 [s]
+ 4  4 4 0.23089096267352152 # Wilson_loops # T R W(T,R)
+4  0.627845562939001 # plaq
+Acceptance 4/4 : 100.0 %
+# itrj = 5

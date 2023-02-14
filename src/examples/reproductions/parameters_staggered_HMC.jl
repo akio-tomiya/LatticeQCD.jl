@@ -1,8 +1,11 @@
 # https://inspirehep.net/literature/283285
 # Lattice setup
-system["L"] = (12,12,12,8)
+system["L"] = (12, 12, 12, 8)
 #system["β"] = 5.4;system["initial"] = "cold";md["MDsteps"] = 35; md["Δτ"] = 1/md["MDsteps"] 
-system["β"] = 5.3;system["initial"] = "cold";md["MDsteps"] = 35; md["Δτ"] = 1/md["MDsteps"] 
+system["β"] = 5.3;
+system["initial"] = "cold";
+md["MDsteps"] = 35;
+md["Δτ"] = 1 / md["MDsteps"];
 #system["β"] = 5.175;initial = "cold";MDsteps = 40; Δτ = 1/MDsteps
 #β = 5.1;initial = "hot";MDsteps = 80; Δτ = 0.5/MDsteps
 system["Dirac_operator"] = "Staggered"
@@ -25,8 +28,8 @@ system["saveU_dir"] = "./beta53_confs"
 
 
 # Measurements
-measurement["measurement_methods"] = Array{Dict,1}(undef,3)
-for i=1:length(measurement["measurement_methods"])
+measurement["measurement_methods"] = Array{Dict,1}(undef, 3)
+for i = 1:length(measurement["measurement_methods"])
     measurement["measurement_methods"][i] = Dict()
 end
 measurement["measurement_methods"][1]["methodname"] = "Plaquette"
@@ -37,7 +40,7 @@ measurement["measurement_methods"][2]["methodname"] = "Polyakov_loop"
 measurement["measurement_methods"][2]["measure_every"] = 1
 measurement["measurement_methods"][2]["fermiontype"] = nothing
 #
-measurement["measurement_methods"][3]["methodname"] = "Chiral_condensate" 
+measurement["measurement_methods"][3]["methodname"] = "Chiral_condensate"
 measurement["measurement_methods"][3]["fermiontype"] = "Staggered"
 measurement["measurement_methods"][3]["measure_every"] = staggered["mass"]
 measurement["measurement_methods"][3]["mass"] = 1

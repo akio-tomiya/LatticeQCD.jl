@@ -1,4 +1,4 @@
-system["L"] = (8,8,8,8)
+system["L"] = (8, 8, 8, 8)
 system["β"] = 5.7
 system["NC"] = 3
 system["quench"] = true
@@ -8,21 +8,21 @@ system["N_SextonWeingargten"] = 10
 
 
 md["MDsteps"] = 20
-md["Δτ"] = 1/md["MDsteps"]
+md["Δτ"] = 1 / md["MDsteps"]
 
 system["Dirac_operator"] = nothing
 
 
 md["Nthermalization"] = 10
 
-md["Nsteps"] = 100+md["Nthermalization"]
+md["Nsteps"] = 100 + md["Nthermalization"]
 
 system["update_method"] = "Fileloading"
 system["loadU_format"] = "JLD"
 system["loadU_dir"] = "confs"
 
-measurement["measurement_methods"] = Array{Dict,1}(undef,2)
-for i=1:length(measurement["measurement_methods"])
+measurement["measurement_methods"] = Array{Dict,1}(undef, 2)
+for i = 1:length(measurement["measurement_methods"])
     measurement["measurement_methods"][i] = Dict()
 end
 measurement["measurement_methods"][1]["methodname"] = "Plaquette"
