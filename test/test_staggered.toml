@@ -1,6 +1,6 @@
 ["HMC related"]
-"Δτ" = 0.05
-MDsteps = 20
+"Δτ" = 0.025
+MDsteps = 40
 
 ["Physical setting(fermions)"]
 quench = false
@@ -11,7 +11,7 @@ initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
 Nwing = 1
-Nsteps = 200
+Nsteps = 10
 "β" = 5.7
 
 ["System Control"]

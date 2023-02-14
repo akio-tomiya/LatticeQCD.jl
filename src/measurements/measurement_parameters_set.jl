@@ -1,6 +1,8 @@
 
-import ..Parameter_structs:construct_Measurement_parameters_from_dict,Measurement_parameters
-
+#import ..Parameter_structs:construct_Measurement_parameters_from_dict,Measurement_parameters
+import QCDMeasurements:construct_Measurement_parameters_from_dict,Measurement_parameters,AbstractMeasurement,prepare_measurement,get_string
+import QCDMeasurements: Plaquette_measurement,measure,get_value,Polyakov_measurement,Pion_correlator_measurement,Chiral_condensate_measurement,Energy_density_measurement,Topological_charge_measurement,Wilson_loop_measurement
+    
 
 struct Measurement_methods
     measurement_parameters_set::Vector{Measurement_parameters}
@@ -14,13 +16,14 @@ function calc_measurement_values(m::Measurement_methods,itrj,U;additional_string
     for i =1:m.num_measurements
         interval = m.intervals[i]
         if itrj % interval == 0
-            _,measurestring = measure(m.measurements[i], itrj, U, additional_string = additional_string)
-            push!(measurestrings ,measurestring)
+            outputvalue = measure(m.measurements[i], U, additional_string = "$itrj "*additional_string)
+            push!(measurestrings ,get_string(outputvalue))
         end
     end
     return measurestrings 
 end
 
+#=
 function prepare_measurement(U,measurement_parameters::T,filename) where T
     if T == Plaq_parameters
         measurement = Plaquette_measurement(U,measurement_parameters,filename)
@@ -39,6 +42,7 @@ function prepare_measurement(U,measurement_parameters::T,filename) where T
     end
     return measurement
 end
+=#
 
 function Measurement_methods(U, measurement_dir, measurement_methods::T) where T <: Vector{Dict}
     #println( measurement_methods)

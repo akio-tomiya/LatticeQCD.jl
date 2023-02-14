@@ -1,3 +1,5 @@
+import Gaugefields.Abstractsmearing
+
 function set_parameter_default(method, key, defaultvalue)
     if haskey(method, key)
         return method[key]
@@ -68,7 +70,7 @@ struct Measurements_set
 
                 measurements[i] = Chiral_condensate_measurement(
                     U,
-                    filename = filename = measurement_dir * "/Chiral_condensate.txt",
+                    filename = measurement_dir * "/Chiral_condensate.txt",
                     fermiontype = fermiontype,
                     mass = mass,
                     Nf = Nf,
@@ -108,7 +110,7 @@ struct Measurements_set
 
                 measurements[i] = Pion_correlator_measurement(
                     U,
-                    filename = filename = measurement_dir * "/Pion_correlator.txt",
+                    filename =  measurement_dir * "/Pion_correlator.txt",
                     fermiontype = fermiontype,
                     mass = mass,
                     Nf = Nf,
@@ -123,7 +125,19 @@ struct Measurements_set
                 )
 
                 #measurements[i] = Measure_Pion_correlator(measurement_dir*"/Pion_correlator.txt",univ.U,method)
+            elseif method["methodname"] == "Wilson_loop"
+                baremeasure = set_parameter_default(method, "bare measure", true)
+                flowmeasure = set_parameter_default(method, "flow measure", false)
+                Tmax = set_parameter_default(method, "Tmax", 4)
+                Rmax = set_parameter_default(method, "Rmax", 4)
 
+                measurements[i] = Pion_correlator_measurement(
+                    U,
+                    filename = measurement_dir * "/Pion_correlator.txt",
+                    Tmax = Tmax,
+                    Rmax = Rmax,
+                    verbose_level = verbose_level,
+                )
             else
                 error("$(method["methodname"]) is not supported")
             end
@@ -145,9 +159,9 @@ end
 
 
 function measure(m::Measurements_set, itrj, U)
-    additional_string = "0 0.0 "
+    additional_string = "$itrj 0 0.0 "
     for i in m.baremesurement_indices
-        measure(m.measurements[i], itrj, U, additional_string = additional_string)
+        measure(m.measurements[i], U, additional_string = additional_string)
     end
 end
 
@@ -163,9 +177,9 @@ function measure_withflow(
     for istep = 1:numstep
         τ = istep * dτ
         flow!(Usmr, smearing)
-        additional_string = "$istep $τ "
+        additional_string = "$itrj $istep $τ "
         for i in m.flowmeasurement_indices
-            measure(m.measurements[i], itrj, Usmr, additional_string = additional_string)
+            measure(m.measurements[i], Usmr, additional_string = additional_string)
         end
     end
 end

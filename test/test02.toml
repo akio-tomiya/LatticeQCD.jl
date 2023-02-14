@@ -10,7 +10,7 @@ L = [4, 4, 4, 4]
 update_method = "HMC"
 Nwing = 1
 NC = 2
-Nsteps = 5
+Nsteps = 10
 "β" = 1.9
 
 ["System Control"]

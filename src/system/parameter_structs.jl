@@ -346,6 +346,18 @@ Base.@kwdef mutable struct Pion_parameters <: Measurement_parameters
     printvalues::Bool = true
 end
 
+Base.@kwdef mutable struct Wilson_loop_parameters <: Measurement_parameters
+    #common::Measurement_common_parameters = Measurement_common_parameters()
+    methodname::String = "Wilson_loop"
+    measure_every::Int64 = 10
+    fermiontype::String = "nothing"
+    verbose_level::Int64 = 2
+    printvalues::Bool = true
+    Tmax::Int64 = 4
+    Rmax::Int64 = 4
+end
+
+
 function initialize_measurement_parameters(methodname)
     if methodname == "Plaquette"
         method = Plaq_parameters()
@@ -359,6 +371,8 @@ function initialize_measurement_parameters(methodname)
         method = Pion_parameters()
     elseif methodname == "Energy_density"
         method = Energy_density_parameters()
+    elseif methodname == "Wilson_loop"
+        method = Wilson_loop_parameters()
     else
         @error "$methodname is not implemented in parameter_structs.jl"
     end

@@ -10,7 +10,7 @@ L = [4, 4, 4, 4]
 update_method = "Heatbath"
 Nwing = 1
 NC = 2
-Nsteps = 4
+Nsteps = 10
 "β" = 1.9
 
 ["System Control"]

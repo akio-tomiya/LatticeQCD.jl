@@ -5,8 +5,13 @@ import ..Parameters_TOML: construct_Params_from_TOML
 import ..AbstractUpdate_module: Updatemethod, update!
 import Gaugefields: Gradientflow, println_verbose_level1, get_myrank,flow!,
 save_binarydata,save_textdata,saveU
-import ..AbstractMeasurement_module:Measurement_methods,
+#import ..AbstractMeasurement_module:Measurement_methods,
+#calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
+import QCDMeasurements:
 calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
+import ..LatticeQCD:Measurement_methods,calc_measurement_values
+
+
 using Gaugefields
 using InteractiveUtils
 using Dates
@@ -115,11 +120,11 @@ function run_LQCD_file(filenamein::String;MPIparallel=false)
             for istep = 1:numflow
                 τ = istep * dτ
                 flow!(Usmr, gradientflow)
-                additional_string = "$istep $τ "
+                additional_string = "$itrj $istep $τ "
                 for i =1:measurements_for_flow.num_measurements
                     interval = measurements_for_flow.intervals[i]
                     if istep % interval == 0
-                        measure(measurements_for_flow.measurements[i], itrj, Usmr, additional_string = additional_string)
+                        measure(measurements_for_flow.measurements[i], Usmr, additional_string = additional_string)
                     end
                 end
             end

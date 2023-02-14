@@ -23,7 +23,10 @@ include("./system/parameters_TOML.jl")
 include("./system/universe.jl")
 include("./md/AbstractMD.jl")
 include("./updates/AbstractUpdate.jl")
-include("./measurements/AbstractMeasurement.jl")
+
+include("./measurements/measurement_parameters_set.jl")
+include("./measurements/Measurement_set.jl")
+#include("./measurements/AbstractMeasurement.jl")
 
 #include("parallel.jl")
 #include("site.jl")

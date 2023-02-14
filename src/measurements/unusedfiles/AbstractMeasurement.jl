@@ -1,4 +1,7 @@
 module AbstractMeasurement_module
+    import QCDMeasurements: Plaquette_measurement,measure,get_value,Polyakov_measurement,Pion_correlator_measurement,Chiral_condensate_measurement,Energy_density_measurement,Topological_charge_measurement,Wilson_loop_measurement
+    
+#=
 using Wilsonloop
 using Gaugefields
 import Gaugefields.Verbose_print
@@ -42,6 +45,6 @@ function measure(measurement::M, itrj, U) where {M<:AbstractMeasurement}
     error("measure with a type $M is not supported")
 end
 
-
+=#
 
 end

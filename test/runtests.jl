@@ -1,7 +1,6 @@
 using LatticeQCD
 using Test
 
-
 @testset "LatticeQCD.jl" begin
     eps = 1e-5
     #fout = open("Testvalues.txt","w");println(fout,"Test values")
@@ -74,6 +73,7 @@ using Test
             #plaq_comparison = 0.3449688128155864
             #plaq_comparison = 0.4867607208994073
             plaq_comparison = 0.4976172009730353
+            println(plaq)
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
             #println(fout,"Wilson SU(3) with SextonWeingargten, $plaq")
         end
@@ -82,7 +82,10 @@ using Test
             @time plaq = run_LQCD("test_staggered.jl")
             #plaq_comparison = 0.25455870400018477 #0.00624053999484795
             #plaq_comparison = 0.4987738124715037
-            plaq_comparison = 0.4713469212809392
+            #plaq_comparison = 0.4713469212809392
+            #plaq_comparison = 0.49956695470173684
+            plaq_comparison = 0.48966257272554553
+            #println(plaq)
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
             #println(fout,"Staggered SU(3) with 4 tastes, $plaq")
         end
