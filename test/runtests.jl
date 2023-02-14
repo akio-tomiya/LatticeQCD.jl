@@ -8,7 +8,7 @@ using Test
     @testset "quenched HMC" begin
 
         @testset "SU(2)" begin
-            @time plaq = run_LQCD("test02.jl")
+            @time plaq = run_LQCD("test02.toml")
             #plaq_comparison = 0.5575491312570713
             plaq_comparison = 0.48785061558469406
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -16,7 +16,7 @@ using Test
         end
 
         @testset "SU(3)" begin
-            @time plaq = run_LQCD("test01.jl")
+            @time plaq = run_LQCD("test01.toml")
             #plaq_comparison = 0.6190393357419764
             plaq_comparison = 0.5753703885492326
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -25,7 +25,7 @@ using Test
 
 
         @testset "SU(4)" begin
-            @time plaq = run_LQCD("test03.jl")
+            @time plaq = run_LQCD("test03.toml")
             #plaq_comparison = 0.4966683811089479
             plaq_comparison = 0.3915274700011152
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -37,7 +37,7 @@ using Test
     
     @testset "Heatbath" begin
         @testset "SU(2)" begin
-            @time plaq = run_LQCD("test02-hb.jl")
+            @time plaq = run_LQCD("test02-hb.toml")
             #plaq_comparison = 0.5287735727118359
             plaq_comparison = 0.4855523668804699
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -45,7 +45,7 @@ using Test
         end
 
         @testset "SU(3)" begin
-            @time plaq = run_LQCD("test01-hb.jl")
+            @time plaq = run_LQCD("test01-hb.toml")
             #plaq_comparison = 0.5821680570717788
             plaq_comparison = 0.5502269475635925
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -54,7 +54,7 @@ using Test
 
 
         @testset "SU(4)" begin
-            @time plaq = run_LQCD("test03-hb.jl")
+            @time plaq = run_LQCD("test03-hb.toml")
             #plaq_comparison = 0.5467724338528576
             plaq_comparison = 0.4425954597477664
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -69,7 +69,7 @@ using Test
     @testset "HMC" begin
 
         @testset "Wilson SU(3) with SextonWeingargten" begin
-            @time plaq = run_LQCD("test_wilson.jl")
+            @time plaq = run_LQCD("test_wilson.toml")
             #plaq_comparison = 0.3449688128155864
             #plaq_comparison = 0.4867607208994073
             #plaq_comparison = 0.4976172009730353
@@ -80,7 +80,7 @@ using Test
         end
 
         @testset "Staggered SU(3) with 4 tastes" begin
-            @time plaq = run_LQCD("test_staggered.jl")
+            @time plaq = run_LQCD("test_staggered.toml")
             #plaq_comparison = 0.25455870400018477 #0.00624053999484795
             #plaq_comparison = 0.4987738124715037
             #plaq_comparison = 0.4713469212809392
@@ -92,7 +92,7 @@ using Test
         end
 
         @testset "Staggered SU(3) with 2 tastes" begin
-            @time plaq = run_LQCD("test_Nf2.jl")
+            @time plaq = run_LQCD("test_Nf2.toml")
             #plaq_comparison = 0.5630198767336069
             plaq_comparison = 0.5837848292310798
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
@@ -100,7 +100,7 @@ using Test
         end
 
         @testset "Staggered SU(3) with 3 tastes" begin
-            @time plaq = run_LQCD("test_Nf3.jl")
+            @time plaq = run_LQCD("test_Nf3.toml")
             #plaq_comparison = 0.565176584402352
             plaq_comparison = 0.5864438294310259
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
