@@ -564,6 +564,16 @@ function Wilson_loop_parameters_interactive(L)
 end
 
 
+function Energy_density_parameters_interactive()
+    method = Energy_density_parameters()
+    println_rank0("You measure Energy density")
+    method.methodname = "Energy_density"
+    method.measure_every =
+        parse(Int64, Base.prompt("How often measure Plaquette loops?", default = "1"))
+    return method
+end
+
+
 
 function TopologicalCharge_parameters_interactive()
     method = TopologicalCharge_parameters()
