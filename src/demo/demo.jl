@@ -22,20 +22,23 @@ import Gaugefields:
     save_binarydata,
     save_textdata,
     saveU
-import ..AbstractMeasurement_module:
-    Measurement_methods,
-    calc_measurement_values,
-    measure,
-    Plaquette_measurement,
-    get_temporary_gaugefields
+#import ..AbstractMeasurement_module:
+#    Measurement_methods,
+#    calc_measurement_values,
+#    measure,
+#    Plaquette_measurement,
+#    get_temporary_gaugefields
 using Gaugefields
 using InteractiveUtils
 using Dates
 using Random
 import ..Simpleprint: println_rank0
-import ..AbstractMeasurement_module: Plaquette_measurement, Polyakov_measurement
-
-
+#import ..AbstractMeasurement_module: Plaquette_measurement, Polyakov_measurement
+import ..LatticeQCD: Measurement_methods, calc_measurement_values
+import QCDMeasurements:measure,
+    Plaquette_measurement,
+    get_temporary_gaugefields,
+    Plaquette_measurement, Polyakov_measurement,get_value
 
 
 system = Dict()
@@ -469,14 +472,14 @@ function run_demo!(parameters, univ)
     numaccepts = 0
     #plaq, poly = measurements(0, univ.U, univ, meas; verbose = verbose) # check consistency of preparation.
 
-    plaq = measure(plaq_m, 0, univ.U; additional_string = "")
-    poly = measure(poly_m, 0, univ.U; additional_string = "")
+    plaq = get_value(measure(plaq_m, univ.U; additional_string = "0 "))
+    poly = get_value(measure(poly_m, univ.U; additional_string = "0 "))
 
     for itrj = 1:parameters.initialtrj:parameters.Nsteps
         #@time heatbath!(univ)
         @time update!(updatemethod, univ.U)
-        plaq = measure(plaq_m, itrj, univ.U; additional_string = "")
-        poly = measure(poly_m, itrj, univ.U; additional_string = "")
+        plaq = get_value(measure(plaq_m, univ.U; additional_string = "$itrj "))
+        poly = get_value(measure(poly_m, univ.U; additional_string = "$itrj "))
 
         #plaq, poly = measurements(itrj, univ.U, univ, meas; verbose = verbose)
         plot_refresh!(
