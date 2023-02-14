@@ -440,7 +440,8 @@ function run_wizard()
         elseif method == Pion_correlator
             measurement.measurement_methods[count] = Pion_parameters_interactive()
         elseif method == Wilson_loop
-            measurement.measurement_methods[count] = Wilson_loop_parameters_interactive(physicalparams.L)
+            measurement.measurement_methods[count] =
+                Wilson_loop_parameters_interactive(physicalparams.L)
         elseif method == Energy_density
             measurement.measurement_methods[count] = Energy_density_parameters_interactive()
         end

@@ -650,11 +650,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[QCDMeasurements]]
 deps = ["Gaugefields", "LatticeDiracOperators", "LinearAlgebra", "Wilsonloop"]
-git-tree-sha1 = "c9245547fc27f1a2216004eb61580492f93f0d23"
-repo-rev = "main"
-repo-url = "https://github.com/akio-tomiya/QCDMeasurements.jl.git"
+git-tree-sha1 = "e1b5a7914aecfe2ed3c80a8e305db36dd6025cd6"
 uuid = "15719ebc-80aa-4a1c-a78b-278b460177d7"
-version = "0.1.1"
+version = "0.1.3"
 
 [[Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]

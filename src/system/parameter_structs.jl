@@ -554,12 +554,14 @@ function Wilson_loop_parameters_interactive(L)
     method = Wilson_loop_parameters()
     println_rank0("You measure RxT Wilson loops")
     method.methodname = "Wilson_loop"
-    Rmax0 = min(L[1],L[2],L[3]) ÷ 2
+    Rmax0 = min(L[1], L[2], L[3]) ÷ 2
     Tmax0 = L[4] ÷ 2
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Wilson loops?", default = "1"))
-    method.Rmax = parse(Int64, Base.prompt("maximum R for RxT Wilson loop?", default = "$Rmax0"))
-    method.Tmax = parse(Int64, Base.prompt("maximum T for RxT Wilson loop??", default = "$Tmax0"))
+    method.Rmax =
+        parse(Int64, Base.prompt("maximum R for RxT Wilson loop?", default = "$Rmax0"))
+    method.Tmax =
+        parse(Int64, Base.prompt("maximum T for RxT Wilson loop??", default = "$Tmax0"))
     return method
 end
 
