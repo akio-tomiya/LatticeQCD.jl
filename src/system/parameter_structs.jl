@@ -3,6 +3,10 @@ using REPL.TerminalMenus
 import ..Simpleprint:println_rank0    
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 
+import QCDMeasurements:Fermion_parameters,Quench_parameters,Wilson_parameters,Staggered_parameters,Domainwall_parameters,initialize_fermion_parameters,
+Measurement_parameters,Plaq_parameters,Poly_parameters,Wilson_loop_parameters,Pion_parameters,ChiralCondensate_parameters,Energy_density_parameters,
+TopologicalCharge_parameters ,initialize_measurement_parameters,prepare_measurement_from_dict,construct_Measurement_parameters_from_dict
+
 
 #=
 Base.@kwdef mutable struct System
@@ -220,6 +224,8 @@ Base.@kwdef mutable struct Stout_parameters <: Smearing_parameters
     stout_loops::Union{Nothing,Array{String,1}} = nothing
 end
 
+
+#=
 abstract type Fermion_parameters end
 
 Base.@kwdef mutable struct Quench_parameters <: Fermion_parameters
@@ -262,11 +268,15 @@ function initialize_fermion_parameters(fermion_type)
     return fermion_parameter
 end
 
+=#
+
 Base.@kwdef mutable struct ConjugateGradient
     eps::Float64 = 1e-19
     MaxCGstep::Int64 = 3000
 end
 
+
+#=
 abstract type Measurement_parameters end
 
 
@@ -357,6 +367,10 @@ Base.@kwdef mutable struct Wilson_loop_parameters <: Measurement_parameters
     Rmax::Int64 = 4
 end
 
+=#
+
+#=
+
 
 function initialize_measurement_parameters(methodname)
     if methodname == "Plaquette"
@@ -378,6 +392,8 @@ function initialize_measurement_parameters(methodname)
     end
     return method
 end
+
+=#
 
 
 Base.@kwdef mutable struct Measurement_parameterset
@@ -407,6 +423,7 @@ function transform_measurement_dictvec(value)
     return value_out,flow_dict, hasgradientflow
 end
 
+#=
 
 function construct_Measurement_parameters_from_dict(value_i::Dict)
     #println(value)
@@ -458,6 +475,8 @@ function construct_Measurement_parameters_from_dict(value_i::Dict)
 
     return value_out
 end
+
+=#
 
 function transform_topological_charge_measurement!(flow_dict,measurement)
     @assert haskey(measurement,"methodname") "method name in measurement should be set $(measurement)"
@@ -511,6 +530,17 @@ function Poly_parameters_interactive()
     method.methodname = "Polyakov_loop"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Polyakov loops?", default = "1"))
+    return method
+end
+
+function Wilson_loop_parameters_interactive()
+    method = Wilson_loop_parameters()
+    println_rank0("You measure Wilson loops")
+    method.methodname = "Wilson_loop"
+    method.measure_every =
+        parse(Int64, Base.prompt("How often measure Wilson loops?", default = "1"))
+    method.Rmax = parse(Int64,Base.prompt("maximum R?", default = "4"))
+    method.Tmax = parse(Int64,Base.prompt("maximum T?", default = "4"))
     return method
 end
 

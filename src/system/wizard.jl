@@ -35,7 +35,8 @@ import ..Parameter_structs:
     Print_Physical_parameters,
     Print_Fermions_parameters,
     Print_System_control_parameters,
-    Print_HMCrelated_parameters
+    Print_HMCrelated_parameters,
+    Wilson_loop_parameters_interactive
 
 import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 
@@ -45,7 +46,7 @@ import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 @enum Fermiontype Nofermion = 1 Wilsonfermion = 2 Staggeredfermion = 3 Domainwallfermion = 4
 @enum Options Plaquette = 1 Polyakov_loop = 2 Topological_charge = 3 Chiral_condensate = 4 Pion_correlator =
-    5
+    5 Wilson_loop = 6
 
 
 
@@ -433,6 +434,8 @@ function run_wizard()
                 ChiralCondensate_parameters_interactive()
         elseif method == Pion_correlator
             measurement.measurement_methods[count] = Pion_parameters_interactive()
+        elseif method == Wilson_loop
+            measurement.measurement_methods[count] = Wilson_loop_parameters_interactive()
         end
     end
 
