@@ -106,6 +106,7 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - Polyakov loop
   - Chiral condensates (Wilson, staggered)
   - Momentum projected pion correlator (Wilson fermion, staggered)
+  - RxT Wilson loop
   - Energy density
   - Topological charge (plaquette, clover and O(a^2) improved definition)
   - Load & measurement mode (load and measure all configurations in a directory)
@@ -122,7 +123,6 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
 To use following functions, please use v 0.1.2
 - Fermion integrated HMC with a general gauge action
 - Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
-- RxT Wilson loop
 
 
 *Version below 1.0, it uses ``***.jl`` as a default parameter file, and now it uses ``***.toml``. Version 1.0 supports both parameter file formats.
