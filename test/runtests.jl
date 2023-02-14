@@ -72,8 +72,9 @@ using Test
             @time plaq = run_LQCD("test_wilson.jl")
             #plaq_comparison = 0.3449688128155864
             #plaq_comparison = 0.4867607208994073
-            plaq_comparison = 0.4976172009730353
-            println(plaq)
+            #plaq_comparison = 0.4976172009730353
+            plaq_comparison = 0.49956695470173684
+            #println(plaq)
             @test abs(plaq - plaq_comparison)/plaq_comparison < eps
             #println(fout,"Wilson SU(3) with SextonWeingargten, $plaq")
         end

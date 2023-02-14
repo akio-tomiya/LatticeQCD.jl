@@ -27,14 +27,14 @@ function is_quenched(univ::Univ)
 end
 
 
-function Univ(p::Params;MPIparallel=false,PEs=nothing)
+function Univ(p::Params; MPIparallel = false, PEs = nothing)
     Dim = length(p.L)
     L = Tuple(p.L)
     NC = p.NC
     Nwing = p.Nwing
-    
 
-    
+
+
 
     if p.initial == "cold" || p.initial == "hot" || p.initial == "one instanton"
         if Dim == 2
@@ -52,7 +52,8 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
     end
     close(p.load_fp)
     logfilename = pwd() * "/" * p.log_dir * "/" * p.logfile
-    verbose_print = Verbose_print(p.verboselevel,myid = get_myrank(U[1]), filename = logfilename)
+    verbose_print =
+        Verbose_print(p.verboselevel, myid = get_myrank(U[1]), filename = logfilename)
 
     if p.initial == "cold" || p.initial == "hot" || p.initial == "one instanton"
     else
@@ -132,8 +133,8 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
         fermi_action = FermiAction(D, parameters_action)
 
 
-    
-        
+
+
     end
 
     T_FA = typeof(fermi_action)
@@ -143,13 +144,23 @@ function Univ(p::Params;MPIparallel=false,PEs=nothing)
     elseif p.smearing_for_fermion == "stout"
         cov_neural_net = CovNeuralnet()
         @assert p.stout_numlayers == 1 "stout_numlayers should be one. But now $(p.stout_numlayers)"
-        st = STOUT_Layer(p.stout_loops,p.stout_ρ,L)
-        push!(cov_neural_net ,st)
+        st = STOUT_Layer(p.stout_loops, p.stout_ρ, L)
+        push!(cov_neural_net, st)
     else
         error("p.smearing_for_fermion = $(p.smearing_for_fermion) is not supported")
     end
 
-    return Univ{Dim,TG,T_FA}(L, NC, Nwing, gauge_action, U, p.quench, fermi_action,cov_neural_net,verbose_print)
+    return Univ{Dim,TG,T_FA}(
+        L,
+        NC,
+        Nwing,
+        gauge_action,
+        U,
+        p.quench,
+        fermi_action,
+        cov_neural_net,
+        verbose_print,
+    )
 
 end
 

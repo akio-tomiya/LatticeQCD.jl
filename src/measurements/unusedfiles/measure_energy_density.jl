@@ -51,15 +51,13 @@ mutable struct Energy_density_measurement{Dim,TG} <: AbstractMeasurement
 
 end
 
-function Energy_density_measurement(
-    U,params,filename
-) where {T}
+function Energy_density_measurement(U, params, filename) where {T}
 
     return Energy_density_measurement(
         U;
         filename = filename,
         verbose_level = params.verbose_level,
-        printvalues = params.printvalues
+        printvalues = params.printvalues,
     )
 end
 
@@ -75,22 +73,19 @@ function measure(
     measurestring = ""
 
     if m.printvalues
-        
+
         st = "-----------------"
-        measurestring *= st*"\n"
+        measurestring *= st * "\n"
         println_verbose_level2(U[1], st)
         st = "$itrj $additional_string $value # energydensity"
-        measurestring *= st*"\n"
-        println_verbose_level2(
-            m.verbose_print,
-            st,
-        )
+        measurestring *= st * "\n"
+        println_verbose_level2(m.verbose_print, st)
         st = "-----------------"
-        measurestring *= st*"\n"
+        measurestring *= st * "\n"
         println_verbose_level2(U[1], st)
     end
 
-    return values,measurestring
+    return values, measurestring
 end
 
 

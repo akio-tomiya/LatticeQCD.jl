@@ -62,17 +62,17 @@ end
 
 function show_parameters(parameters)
     #println(parameters)
-    for (key,value) in parameters
-        
+    for (key, value) in parameters
+
         println("[$(key)]")
         if key == "Measurement set"
-            for (key_i,value_i) in value
+            for (key_i, value_i) in value
                 println("[$(key_i)]")
                 display(value_i)
                 println("\t")
             end
         else
-        
+
             display(value)
             println("\t")
         end
@@ -81,15 +81,15 @@ end
 
 function construct_Params_from_TOML(filename::String)
     parameters = TOML.parsefile(filename)
-    println("inputfile: ",pwd()*"/"*filename)
+    println("inputfile: ", pwd() * "/" * filename)
     construct_Params_from_TOML(parameters)
 end
 
 
 function construct_Params_from_TOML(parameters)
-    
+
     show_parameters(parameters)
-    
+
 
 
     pnames = fieldnames(Params)
@@ -166,7 +166,7 @@ function construct_Params_from_TOML(parameters)
                     #println("$pname_i $key ",value[String(pname_i)])
                     valuedir = construct_measurement_dir(value[String(pname_i)])
                     value_Params[i] = valuedir
-                elseif  String(pname_i) == "measurements_for_flow"
+                elseif String(pname_i) == "measurements_for_flow"
                     valuedir = construct_measurement_dir(value[String(pname_i)])
                     value_Params[i] = valuedir
                 elseif String(pname_i) == "L"

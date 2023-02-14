@@ -33,7 +33,6 @@ measure_every = 5
 methodname = "Chiral_condensate"
 
 ["Measurement set".measurement_methods.Polyakov_loop]
-measure_every = 1
 methodname = "Polyakov_loop"
 
 ["Measurement set".measurement_methods.Topological_charge]
@@ -41,7 +40,6 @@ kinds_of_topological_charge = ["plaquette", "clover"]
 methodname = "Topological_charge"
 
 ["Measurement set".measurement_methods.Plaquette]
-measure_every = 1
 methodname = "Plaquette"
 
 [gradientflow_measurements]

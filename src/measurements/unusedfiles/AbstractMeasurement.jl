@@ -1,6 +1,15 @@
 module AbstractMeasurement_module
-    import QCDMeasurements: Plaquette_measurement,measure,get_value,Polyakov_measurement,Pion_correlator_measurement,Chiral_condensate_measurement,Energy_density_measurement,Topological_charge_measurement,Wilson_loop_measurement
-    
+import QCDMeasurements:
+    Plaquette_measurement,
+    measure,
+    get_value,
+    Polyakov_measurement,
+    Pion_correlator_measurement,
+    Chiral_condensate_measurement,
+    Energy_density_measurement,
+    Topological_charge_measurement,
+    Wilson_loop_measurement
+
 #=
 using Wilsonloop
 using Gaugefields

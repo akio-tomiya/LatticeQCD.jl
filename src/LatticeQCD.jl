@@ -99,8 +99,8 @@ function __init__()
 
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
         include("./mpi/mpimodule.jl")
-        import .MPImodules:get_myrank,get_nprocs,println_rank0,set_PEs,get_PEs
-        export get_myrank,get_nprocs,println_rank0,set_PEs,get_PEs
+        import .MPImodules: get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
+        export get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
     end
 end
 
@@ -117,7 +117,7 @@ include("./system/lqcd.jl")
 #    calc_polyakovloop,
 #    measure_chiral_cond,
 #    calc_topological_charge,
-    #measurements,
+#measurements,
 #    Measurement_set
 #import .MD:
 #    md_initialize!, MD_parameters_standard, md!, metropolis_update!, construct_MD_parameters
@@ -141,7 +141,7 @@ import .Wizard: run_wizard
 #    get_plaquette_average,
 #    get_polyakov_average,
 #    get_trjs
-import .LQCD:run_LQCD_file,run_LQCD##
+import .LQCD: run_LQCD_file, run_LQCD##
 
 
 #import .Fermionfields:make_WdagWmatrix

@@ -133,10 +133,12 @@ function run_wizard()
         ) |> Wizardmode
     isexpert::Bool = (mode == expert)
 
-    filename = String(Base.prompt(
-        "put the name of the parameter file you make",
-        default = "my_parameters.toml",
-    ))
+    filename = String(
+        Base.prompt(
+            "put the name of the parameter file you make",
+            default = "my_parameters.toml",
+        ),
+    )
 
     physicalparams.L = set_Lattice_size(isexpert)
     #system.L = set_Lattice_size(isexpert)
@@ -147,7 +149,8 @@ function run_wizard()
 
 
     if isexpert
-        controlparams.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
+        controlparams.randomseed =
+            parse(Int64, Base.prompt("Input random seed.", default = "111"))
         controlparams.verboselevel = set_verboselevel()
         #system.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
         #system.verboselevel = set_verboselevel()
@@ -157,7 +160,8 @@ function run_wizard()
     if check_isfileloading()
         controlparams.loadU_format, _ = set_loadU_format()
         physicalparams.update_method = "Fileloading"
-        controlparams.loadU_dir = String(Base.prompt("Loading directory", default = "./confs"))
+        controlparams.loadU_dir =
+            String(Base.prompt("Loading directory", default = "./confs"))
 
         filelist = request(
             "Which configurations do you use?",
@@ -387,14 +391,14 @@ function run_wizard()
         if Nsteps <= 0
             error("Invalid value for Nsteps=$Nsteps. This has to be strictly positive.")
         end
-        physicalparams.Nsteps = Nsteps 
+        physicalparams.Nsteps = Nsteps
 
         if isexpert
             md = MD_interactive(Dirac_operator = fermionparams.Dirac_operator)
         else
             md = MD()
         end
-        hmcparams.MDsteps =  md.MDsteps
+        hmcparams.MDsteps = md.MDsteps
         hmcparams.Δτ = md.Δτ
         hmcparams.SextonWeingargten = md.SextonWeingargten
         hmcparams.N_SextonWeingargten = md.N_SextonWeingargten
@@ -440,7 +444,7 @@ function run_wizard()
     end
 
 
-    headername = make_headername(physicalparams, fermionparams,fermion_parameters)
+    headername = make_headername(physicalparams, fermionparams, fermion_parameters)
 
 
     if nummeasurements != 0
@@ -461,10 +465,7 @@ function run_wizard()
     if isexpert
         methodtype = request(
             "Perform measurements with the gradient flow?",
-            RadioMenu([
-                "No",
-                "Yes",
-            ]),
+            RadioMenu(["No", "Yes"]),
         )
         if methodtype == 2 #Yes
             gradient_params.hasgradientflow = true
@@ -478,7 +479,13 @@ function run_wizard()
 
 
 
-            gradient_params.eps_flow = parse(Float64, Base.prompt("time step for gradient flow?", default = "$(gradient_params.eps_flow)"))
+            gradient_params.eps_flow = parse(
+                Float64,
+                Base.prompt(
+                    "time step for gradient flow?",
+                    default = "$(gradient_params.eps_flow)",
+                ),
+            )
             gradient_params.numflow = parse(
                 Int64,
                 Base.prompt(
@@ -487,24 +494,30 @@ function run_wizard()
                 ),
             )
             #gradient_params.numflow = parse(Int64, Base.prompt("number of steps for gradient flow?", default = "$(gradient_params.numflow)"))    
-            
+
             #measurement_gradientflow = Measurement_parameterset()
             measurementmenu = MultiSelectMenu(Options |> instances |> collect .|> string)
             choices =
-            request("Select the measurement methods you want to do:", measurementmenu) |>
-            collect .|>
-            Options
+                request(
+                    "Select the measurement methods you want to do:",
+                    measurementmenu,
+                ) |>
+                collect .|>
+                Options
 
             nummeasurements = length(choices)
-            measurement_gradientflow.measurement_methods = Vector{Measurement_parameters}(undef, nummeasurements)
+            measurement_gradientflow.measurement_methods =
+                Vector{Measurement_parameters}(undef, nummeasurements)
 
             count = 0
             for method in choices
                 count += 1
                 if method == Plaquette
-                    measurement_gradientflow.measurement_methods[count] = Plaq_parameters_interactive() #plaq_wizard()
+                    measurement_gradientflow.measurement_methods[count] =
+                        Plaq_parameters_interactive() #plaq_wizard()
                 elseif method == Polyakov_loop
-                    measurement_gradientflow.measurement_methods[count] = Poly_parameters_interactive()
+                    measurement_gradientflow.measurement_methods[count] =
+                        Poly_parameters_interactive()
                 elseif method == Topological_charge
                     measurement_gradientflow.measurement_methods[count] =
                         TopologicalCharge_parameters_interactive()
@@ -512,13 +525,14 @@ function run_wizard()
                     measurement_gradientflow.measurement_methods[count] =
                         ChiralCondensate_parameters_interactive()
                 elseif method == Pion_correlator
-                    measurement_gradientflow.measurement_methods[count] = Pion_parameters_interactive()
+                    measurement_gradientflow.measurement_methods[count] =
+                        Pion_parameters_interactive()
                 end
 
 
             end
 
-                
+
             println("---done for gradient flow----------")
             println("---------------------------------------------")
 
@@ -527,7 +541,8 @@ function run_wizard()
 
 
     controlparams.log_dir = String(Base.prompt("log directory", default = "./logs"))
-    controlparams.logfile = String(Base.prompt("logfile name", default = headername * ".txt"))
+    controlparams.logfile =
+        String(Base.prompt("logfile name", default = headername * ".txt"))
 
 
     if isexpert
@@ -573,12 +588,14 @@ function run_wizard()
     system_parameters_dict["System Control"] = struct2dict(controlparams)
     system_parameters_dict["HMC related"] = struct2dict(hmcparams)
     system_parameters_dict["Measurement set"] = struct2dict(measurement)
-    system_parameters_dict["gradientflow_measurements"] = merge( struct2dict(gradient_params),struct2dict(measurement_gradientflow))
+    system_parameters_dict["gradientflow_measurements"] =
+        merge(struct2dict(gradient_params), struct2dict(measurement_gradientflow))
 
 
     remove_default_values!(system_parameters_dict)
-    system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =  deepcopy(system_parameters_dict["gradientflow_measurements"]["measurement_methods"])
-    delete!(system_parameters_dict["gradientflow_measurements"],"measurement_methods")
+    system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =
+        deepcopy(system_parameters_dict["gradientflow_measurements"]["measurement_methods"])
+    delete!(system_parameters_dict["gradientflow_measurements"], "measurement_methods")
 
 
     open(filename, "w") do io
@@ -740,7 +757,7 @@ function set_loadU_format()
 end
 
 
-function make_headername(physicalparams,fermionparams, fermion_parameters)
+function make_headername(physicalparams, fermionparams, fermion_parameters)
     L = physicalparams.L
     update_method = physicalparams.update_method
     β = physicalparams.β
@@ -765,9 +782,11 @@ function make_headername(physicalparams,fermionparams, fermion_parameters)
             headername *= "_" * Dirac_operator
             if Dirac_operator == "Staggered"
                 headername *=
-                    "_mass" * string(fermion_parameters.mass) * "_Nf" * string(fermion_parameters.Nf)
-            elseif Dirac_operator == "Wilson" ||
-                   Dirac_operator == "WilsonClover"
+                    "_mass" *
+                    string(fermion_parameters.mass) *
+                    "_Nf" *
+                    string(fermion_parameters.Nf)
+            elseif Dirac_operator == "Wilson" || Dirac_operator == "WilsonClover"
                 headername *= "_kappa" * string(fermion_parameters.hop)
             end
         end
@@ -782,8 +801,7 @@ function make_headername(physicalparams,fermionparams, fermion_parameters)
                     string(fermion_parameters.mass) *
                     "_Nf" *
                     string(fermion_parameters.Nf)
-            elseif Dirac_operator == "Wilson" ||
-                   Dirac_operator == "WilsonClover"
+            elseif Dirac_operator == "Wilson" || Dirac_operator == "WilsonClover"
                 headername *= "_kappa" * string(fermion_parameters.hop)
             end
         else

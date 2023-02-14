@@ -135,7 +135,9 @@ mutable struct Chiral_condensate_measurement{Dim,TG,TD,TF,TF_vec} <: AbstractMea
 end
 
 function Chiral_condensate_measurement(
-    U::Vector{T},params::ChiralCondensate_parameters,filename
+    U::Vector{T},
+    params::ChiralCondensate_parameters,
+    filename,
 ) where {T}
     if params.fermiontype == "Staggered"
         method = Chiral_condensate_measurement(
@@ -148,13 +150,14 @@ function Chiral_condensate_measurement(
             Nf = params.Nf,
             eps_CG = params.eps,
             MaxCGstep = params.MaxCGstep,
-            Nr = params.Nr)
+            Nr = params.Nr,
+        )
     else
         error("$(params.fermiontype) is not supported in Chiral_condensate_measurement")
     end
 
 
-#途中
+    #途中
     return method
 end
 
@@ -171,7 +174,7 @@ function measure(
     pbp = 0.0
     #Nr = 100
     Nr = m.Nr
-    measurestring=""
+    measurestring = ""
 
     for ir = 1:Nr
         clear_fermion!(p)
@@ -182,11 +185,8 @@ function measure(
         if m.printvalues
             #println_verbose_level2(U[1],"# $itrj $ir $(real(tmp)/U[1].NV) # itrj irand chiralcond")
             measurestring_ir = "# $itrj $ir $additional_string $(real(tmp)/U[1].NV) # itrj irand chiralcond"
-            println_verbose_level2(
-                m.verbose_print,
-                measurestring_ir,
-            )
-            measurestring *= measurestring_ir*"\n"
+            println_verbose_level2(m.verbose_print, measurestring_ir)
+            measurestring *= measurestring_ir * "\n"
         end
         pbp += tmp
     end
@@ -195,12 +195,12 @@ function measure(
 
     if m.printvalues
         measurestring_ir = "$itrj $pbp_value # pbp Nr=$Nr"
-        println_verbose_level1(m.verbose_print, measurestring_ir )
-        measurestring *= measurestring_ir*"\n"
+        println_verbose_level1(m.verbose_print, measurestring_ir)
+        measurestring *= measurestring_ir * "\n"
         flush(stdout)
     end
 
-    return pbp_value,measurestring
+    return pbp_value, measurestring
 end
 
 

@@ -110,7 +110,7 @@ struct Measurements_set
 
                 measurements[i] = Pion_correlator_measurement(
                     U,
-                    filename =  measurement_dir * "/Pion_correlator.txt",
+                    filename = measurement_dir * "/Pion_correlator.txt",
                     fermiontype = fermiontype,
                     mass = mass,
                     Nf = Nf,
@@ -150,7 +150,7 @@ struct Measurements_set
             nummeasurements,#::Int64
             measurements,#::Array{AbstractMeasurement,1}
             measurement_methods,#::Array{Dict,1}
-            methodnames#::Array{String,1}
+            methodnames,#::Array{String,1}
         )
     end
 

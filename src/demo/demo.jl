@@ -14,16 +14,26 @@ import ..Universe_module: Univ
 import ..Transform_oldinputfile: transform_to_toml
 import ..Parameters_TOML: construct_Params_from_TOML
 import ..AbstractUpdate_module: Updatemethod, update!
-import Gaugefields: Gradientflow, println_verbose_level1, get_myrank,flow!,
-save_binarydata,save_textdata,saveU
-import ..AbstractMeasurement_module:Measurement_methods,
-calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
+import Gaugefields:
+    Gradientflow,
+    println_verbose_level1,
+    get_myrank,
+    flow!,
+    save_binarydata,
+    save_textdata,
+    saveU
+import ..AbstractMeasurement_module:
+    Measurement_methods,
+    calc_measurement_values,
+    measure,
+    Plaquette_measurement,
+    get_temporary_gaugefields
 using Gaugefields
 using InteractiveUtils
 using Dates
 using Random
-import ..Simpleprint:println_rank0
-import ..AbstractMeasurement_module:Plaquette_measurement,Polyakov_measurement
+import ..Simpleprint: println_rank0
+import ..AbstractMeasurement_module: Plaquette_measurement, Polyakov_measurement
 
 
 
@@ -137,7 +147,7 @@ function demo()
         #println_verbose_level1(univ.U[1], "# itrj = $itrj")
         @time accepted = update!(updatemethod, univ.U)
         if accepted
-            numaccepts +=1
+            numaccepts += 1
         end
         #save_gaugefield(savedata,univ.U,itrj)
         measure(plaq_m, itrj, univ.U; additional_string = "")
@@ -151,16 +161,23 @@ function demo()
             τ = istep * dτ
             flow!(Usmr, gradientflow)
             additional_string = "$istep $τ "
-            for i =1:measurements_for_flow.num_measurements
+            for i = 1:measurements_for_flow.num_measurements
                 interval = measurements_for_flow.intervals[i]
                 if istep % interval == 0
-                    measure(measurements_for_flow.measurements[i], itrj, Usmr, additional_string = additional_string)
+                    measure(
+                        measurements_for_flow.measurements[i],
+                        itrj,
+                        Usmr,
+                        additional_string = additional_string,
+                    )
                 end
             end
         end
 
         println_verbose_level1(
-        univ.U[1],"Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %")
+            univ.U[1],
+            "Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %",
+        )
 
 
     end
@@ -315,29 +332,23 @@ end
 
 function run_demo!(parameters, univ)
 
-    println_verbose_level1(
-        univ.U[1],
-        "# ", pwd()
-    )
-    println_verbose_level1(
-        univ.U[1],"# ", Dates.now()
-    )
+    println_verbose_level1(univ.U[1], "# ", pwd())
+    println_verbose_level1(univ.U[1], "# ", Dates.now())
     io = IOBuffer()
     InteractiveUtils.versioninfo(io)
     versioninfo = String(take!(io))
-    println_verbose_level1(
-        univ.U[1],versioninfo
-    )
+    println_verbose_level1(univ.U[1], versioninfo)
 
-    updatemethod = Updatemethod(parameters,univ)
+    updatemethod = Updatemethod(parameters, univ)
 
-    eps_flow = parameters.eps_flow 
+    eps_flow = parameters.eps_flow
     numflow = parameters.numflow
     Nflow = parameters.Nflow
     dτ = Nflow * eps_flow
-    gradientflow = Gradientflow(univ.U, Nflow = 1, eps = eps_flow)  
+    gradientflow = Gradientflow(univ.U, Nflow = 1, eps = eps_flow)
 
-    measurements = Measurement_methods(univ.U, parameters.measuredir, parameters.measurement_methods)
+    measurements =
+        Measurement_methods(univ.U, parameters.measuredir, parameters.measurement_methods)
     i_plaq = 0
     for i = 1:measurements.num_measurements
         if typeof(measurements.measurements[i]) == Plaquette_measurement
@@ -346,13 +357,14 @@ function run_demo!(parameters, univ)
         end
     end
     if i_plaq == 0
-        plaq_m = Plaquette_measurement(univ.U,printvalues=false)
+        plaq_m = Plaquette_measurement(univ.U, printvalues = false)
     end
 
-    plaq_m = Plaquette_measurement(univ.U,printvalues=false)
-    poly_m =  Polyakov_measurement(univ.U,printvalues=false)
+    plaq_m = Plaquette_measurement(univ.U, printvalues = false)
+    poly_m = Polyakov_measurement(univ.U, printvalues = false)
 
-    measurements_for_flow = Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow)
+    measurements_for_flow =
+        Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow)
 
 
     numaccepts = 0
@@ -465,7 +477,7 @@ function run_demo!(parameters, univ)
         @time update!(updatemethod, univ.U)
         plaq = measure(plaq_m, itrj, univ.U; additional_string = "")
         poly = measure(poly_m, itrj, univ.U; additional_string = "")
-        
+
         #plaq, poly = measurements(itrj, univ.U, univ, meas; verbose = verbose)
         plot_refresh!(
             plt1,
@@ -482,8 +494,8 @@ function run_demo!(parameters, univ)
             itrj,
         )
 
-        println(itrj, "\t",plaq," # plaq")
-        println(itrj, "\t",real(poly),"\t",imag(poly)," # poly")
+        println(itrj, "\t", plaq, " # plaq")
+        println(itrj, "\t", real(poly), "\t", imag(poly), " # poly")
         println("-----------------------------------")
 
         #println_verbose1(verbose, "-------------------------------------")

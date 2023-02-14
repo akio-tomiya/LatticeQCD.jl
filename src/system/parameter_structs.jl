@@ -1,11 +1,26 @@
 module Parameter_structs
 using REPL.TerminalMenus
-import ..Simpleprint:println_rank0    
+import ..Simpleprint: println_rank0
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 
-import QCDMeasurements:Fermion_parameters,Quench_parameters,Wilson_parameters,Staggered_parameters,Domainwall_parameters,initialize_fermion_parameters,
-Measurement_parameters,Plaq_parameters,Poly_parameters,Wilson_loop_parameters,Pion_parameters,ChiralCondensate_parameters,Energy_density_parameters,
-TopologicalCharge_parameters ,initialize_measurement_parameters,prepare_measurement_from_dict,construct_Measurement_parameters_from_dict
+import QCDMeasurements:
+    Fermion_parameters,
+    Quench_parameters,
+    Wilson_parameters,
+    Staggered_parameters,
+    Domainwall_parameters,
+    initialize_fermion_parameters,
+    Measurement_parameters,
+    Plaq_parameters,
+    Poly_parameters,
+    Wilson_loop_parameters,
+    Pion_parameters,
+    ChiralCondensate_parameters,
+    Energy_density_parameters,
+    TopologicalCharge_parameters,
+    initialize_measurement_parameters,
+    prepare_measurement_from_dict,
+    construct_Measurement_parameters_from_dict
 
 
 #=
@@ -61,7 +76,7 @@ const important_parameters = [
     "measurement_dir",
     "kinds_of_topological_charge",
     "measurements_for_flow",
-    "gradientflow_measurements"
+    "gradientflow_measurements",
 ]
 
 function check_important_parameters(key)
@@ -73,7 +88,8 @@ function check_important_parameters(key)
     end
 end
 
-struct2dict(x::T) where {T} = Dict{String,Any}(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
+struct2dict(x::T) where {T} =
+    Dict{String,Any}(string(fn) => getfield(x, fn) for fn ∈ fieldnames(T))
 
 
 function generate_printlist(x::Type)
@@ -409,10 +425,11 @@ function transform_measurement_dictvec(value)
     value_out = Vector{Measurement_parameters}(undef, nummeasure)
     hasgradientflow = false
     for i = 1:nummeasure
-        if haskey(value[i],"methodname")
+        if haskey(value[i], "methodname")
             if value[i]["methodname"] == "Topological_charge"
                 hasgradientflow = true
-                value_out[i] = transform_topological_charge_measurement!(flow_dict,value[i])
+                value_out[i] =
+                    transform_topological_charge_measurement!(flow_dict, value[i])
             else
                 value_out[i] = construct_Measurement_parameters_from_dict(value[i])
             end
@@ -420,7 +437,7 @@ function transform_measurement_dictvec(value)
             @error("method name in measurement should be set")
         end
     end
-    return value_out,flow_dict, hasgradientflow
+    return value_out, flow_dict, hasgradientflow
 end
 
 #=
@@ -478,13 +495,13 @@ end
 
 =#
 
-function transform_topological_charge_measurement!(flow_dict,measurement)
-    @assert haskey(measurement,"methodname") "method name in measurement should be set $(measurement)"
+function transform_topological_charge_measurement!(flow_dict, measurement)
+    @assert haskey(measurement, "methodname") "method name in measurement should be set $(measurement)"
     @assert measurement["methodname"] == "Topological_charge" "this function is for topological charge measurement"
-    
+
     measurement_revised = Dict()
 
-    for (key,value) in measurement
+    for (key, value) in measurement
         #println((key,value))
         if key == "Nflowsteps"
             flow_dict["Nflow"] = value
@@ -502,7 +519,7 @@ function transform_topological_charge_measurement!(flow_dict,measurement)
     valuem = construct_Measurement_parameters_from_dict(measurement_revised)
     flow_dict["measurements_for_flow"] = Dict()
     flow_dict["measurements_for_flow"]["Topological_charge"] = measurement_revised
-    
+
 
     return valuem
 
@@ -539,8 +556,8 @@ function Wilson_loop_parameters_interactive()
     method.methodname = "Wilson_loop"
     method.measure_every =
         parse(Int64, Base.prompt("How often measure Wilson loops?", default = "1"))
-    method.Rmax = parse(Int64,Base.prompt("maximum R?", default = "4"))
-    method.Tmax = parse(Int64,Base.prompt("maximum T?", default = "4"))
+    method.Rmax = parse(Int64, Base.prompt("maximum R?", default = "4"))
+    method.Tmax = parse(Int64, Base.prompt("maximum T?", default = "4"))
     return method
 end
 
@@ -553,13 +570,13 @@ function TopologicalCharge_parameters_interactive()
     method.measure_every =
         parse(Int64, Base.prompt("How often measure a topological charge?", default = "1"))
 
-        #=
+    #=
     method.numflow = parse(
-        Int64,
-        Base.prompt(
-            "How many times do you want to flow gauge fields to measure the topological charge?",
-            default = "10",
-        ),
+    Int64,
+    Base.prompt(
+        "How many times do you want to flow gauge fields to measure the topological charge?",
+        default = "10",
+    ),
     )
     =#
 

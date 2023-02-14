@@ -63,13 +63,13 @@ function update!(updatemethod::T, U) where {T<:StandardHMC}
     if md.quench == false
 
         if md.cov_neural_net != Nothing
-            Uout,Uout_multi,_ = calc_smearedU(U,md.cov_neural_net)
+            Uout, Uout_multi, _ = calc_smearedU(U, md.cov_neural_net)
             Sfnew = evaluate_FermiAction(md.fermi_action, Uout, md.η)
         else
             Sfnew = evaluate_FermiAction(md.fermi_action, U, md.η)
         end
 
-        
+
         println_verbose_level3(U[1], "Sfnew = $Sfnew")
         Snew += Sfnew
     end

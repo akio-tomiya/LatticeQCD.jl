@@ -186,12 +186,12 @@ function transform_to_toml(filename)
     measurement_dict = Dict()
 
     flow_dict = Dict()
-    
+
     hasgradientflow = false
-    
+
     for (key, value) in measurement
         if key == "measurement_methods"
-            valuem,flow_dict,hasgradientflow = transform_measurement_dictvec(value)
+            valuem, flow_dict, hasgradientflow = transform_measurement_dictvec(value)
             measurement_dict[key] = valuem
         else
             hasvalue = construct_printable_parameters_fromdict!(
@@ -226,11 +226,11 @@ function transform_to_toml(filename)
     system_parameters_dict["HMC related"] = struct2dict(hmc)
     system_parameters_dict["Measurement set"] = measurement_dict
     if hasgradientflow
-        system_parameters_dict["System Control"]["hasgradientflow"]  = true
+        system_parameters_dict["System Control"]["hasgradientflow"] = true
     else
         flow_dict["measurements_for_flow"] = Dict()
     end
-    system_parameters_dict["gradientflow_measurements"] =  flow_dict
+    system_parameters_dict["gradientflow_measurements"] = flow_dict
 
     #system_parameters_dict["Measurement set"] = struct2dict(measurement)
 
