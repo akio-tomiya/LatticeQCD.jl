@@ -389,9 +389,11 @@ version = "0.15.18"
 
 [[LatticeDiracOperators]]
 deps = ["AlgRemez_jll", "Gaugefields", "InteractiveUtils", "JLD2", "LinearAlgebra", "Random", "Requires", "SparseArrays", "Wilsonloop"]
-git-tree-sha1 = "3b95a0485d35ee424ae02c21f33c63610951c73b"
+git-tree-sha1 = "d6dac0c6d5aff1794f4ab505290422fe3f365971"
+repo-rev = "bugfix0.2.1"
+repo-url = "https://github.com/akio-tomiya/LatticeDiracOperators.jl.git"
 uuid = "019239df-b0e3-486e-8e4c-d1c29ee5d6b9"
-version = "0.2.0"
+version = "0.2.1"
 
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]

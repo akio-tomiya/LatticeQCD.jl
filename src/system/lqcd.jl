@@ -10,7 +10,7 @@ import Gaugefields:
     flow!,
     save_binarydata,
     save_textdata,
-    saveU
+    saveU,AbstractGaugefields_module.barrier
 #import ..AbstractMeasurement_module:Measurement_methods,
 #calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 import QCDMeasurements: measure, Plaquette_measurement, get_temporary_gaugefields
@@ -24,12 +24,12 @@ using Random
 import ..Simpleprint: println_rank0
 
 
-function run_LQCD(filenamein::String; MPIparallel = false)
-    plaq = run_LQCD_file(filenamein, MPIparallel = MPIparallel)
+function run_LQCD(filenamein::String; MPIparallel = false, PEs = nothing)
+    plaq = run_LQCD_file(filenamein, MPIparallel = MPIparallel,PEs =PEs )
     return plaq
 end
 
-function run_LQCD_file(filenamein::String; MPIparallel = false)
+function run_LQCD_file(filenamein::String; MPIparallel = false, PEs = nothing)
     if MPIparallel == true
         println_rank0("test")
     end
@@ -49,10 +49,12 @@ function run_LQCD_file(filenamein::String; MPIparallel = false)
     Random.seed!(parameters.randomseed)
 
 
-    univ = Univ(parameters)
+    univ = Univ(parameters,MPIparallel  = MPIparallel,PEs =PEs )
     println_verbose_level1(univ, "# ", pwd())
 
     println_verbose_level1(univ, "# ", Dates.now())
+
+
     io = IOBuffer()
 
     InteractiveUtils.versioninfo(io)
@@ -97,6 +99,7 @@ function run_LQCD_file(filenamein::String; MPIparallel = false)
         parameters.update_method,
         univ.U,
     )
+    Usmr = similar(univ.U)
 
     value, runtime_all = @timed begin
 
@@ -104,23 +107,30 @@ function run_LQCD_file(filenamein::String; MPIparallel = false)
         for itrj = parameters.initialtrj:parameters.Nsteps
             println_verbose_level1(univ, "# itrj = $itrj")
             accepted, runtime = @timed update!(updatemethod, univ.U)
+            barrier(univ.U[1])
+
 
             println_verbose_level1(univ, "Update: Elapsed time $runtime [s]")
             if accepted
                 numaccepts += 1
             end
-            save_gaugefield(savedata, univ.U, itrj)
+
+
+            if get_myrank(univ.U) == 0
+                save_gaugefield(savedata, univ.U, itrj)
+            end
 
             measurestrings = calc_measurement_values(measurements, itrj, univ.U)
             #println(measurestrings)
             #println("$(univ.verbose_print.fp)")
             for st in measurestrings
-                println(univ.verbose_print.fp, st)
+                if univ.verbose_print.fp != nothing
+                    println(univ.verbose_print.fp, st)
+                end
             end
 
-
-
-            Usmr = deepcopy(univ.U)
+            
+            substitute_U!(Usmr,univ.U)#deepcopy(univ.U)
             for istep = 1:numflow
                 τ = istep * dτ
                 flow!(Usmr, gradientflow)
@@ -137,11 +147,20 @@ function run_LQCD_file(filenamein::String; MPIparallel = false)
                 end
             end
 
+
+
             println_verbose_level1(
                 univ,
                 "Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %",
             )
-            flush(univ.verbose_print.fp)
+
+            #println("fp ",univ.verbose_print.fp)
+            if univ.verbose_print.fp != nothing
+            #if get_myrank(univ.U[1]) == 0
+                flush(univ.verbose_print.fp)
+            end
+
+
 
         end
 

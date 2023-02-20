@@ -98,9 +98,9 @@ function __init__()
     end
 
     @require MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195" begin
-        include("./mpi/mpimodule.jl")
-        import .MPImodules: get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
-        export get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
+        #include("./mpi/mpimodule.jl")
+        #import .MPImodules: get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
+        #export get_myrank, get_nprocs, println_rank0, set_PEs, get_PEs
     end
 end
 

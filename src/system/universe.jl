@@ -32,22 +32,38 @@ function Univ(p::Params; MPIparallel = false, PEs = nothing)
     L = Tuple(p.L)
     NC = p.NC
     Nwing = p.Nwing
+    mpi = MPIparallel
 
 
 
 
     if p.initial == "cold" || p.initial == "hot" || p.initial == "one instanton"
-        if Dim == 2
-            U = Initialize_Gaugefields(NC, Nwing, L..., condition = p.initial)
+        #if Dim == 2
+        #    U = Initialize_Gaugefields(NC, Nwing, L..., condition = p.initial)
+        #else
+        #    U = Initialize_Gaugefields(NC, Nwing, L..., condition = p.initial)
+        #end
+        @assert Nwing == 0 "Nwing should be 0 in MPI parallel code"
+        if mpi
+            #(1,1,1,2)
+            U = Initialize_Gaugefields(NC,Nwing,L...,condition = p.initial,mpi=true,PEs = PEs,mpiinit = false) 
         else
-            U = Initialize_Gaugefields(NC, Nwing, L..., condition = p.initial)
+            U = Initialize_Gaugefields(NC,Nwing,L...,condition = p.initial)
         end
     else
+        if mpi
+            #(1,1,1,2)
+            U = Initialize_Gaugefields(NC,Nwing,L...,condition = "cold",mpi=true,PEs = PEs,mpiinit = false) 
+        else
+            U = Initialize_Gaugefields(NC,Nwing,L...,condition = "cold")
+        end
+        #=
         if Dim == 2
             U = Initialize_Gaugefields(NC, Nwing, L..., condition = "cold")
         else
             U = Initialize_Gaugefields(NC, Nwing, L..., condition = "cold")
         end
+        =#
 
     end
     close(p.load_fp)
