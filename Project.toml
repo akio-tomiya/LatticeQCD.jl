@@ -1,7 +1,7 @@
 name = "LatticeQCD"
 uuid = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
 authors = ["Akio Tomiya", "Yuki Nagai"]
-version = "1.0.2"
+version = "1.0.3"
 
 [deps]
 AlgRemez_jll = "acb6dc63-88f0-54c7-a126-ccdc963b8b3f"
@@ -34,7 +34,7 @@ ArnoldiMethod = "0.2"
 Distributions = "0.25"
 EzXML = "1"
 FastGaussQuadrature = "0.4"
-GR = "0.62, 0.71"
+GR = "0.62, 0.71, 0.72"
 Gaugefields = "0.2"
 JLD2 = "0.4"
 KrylovKit = "0.5, 0.6"
