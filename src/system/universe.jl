@@ -125,7 +125,7 @@ function Univ(p::Params; MPIparallel = false, PEs = nothing)
             error("not supported")
         end
         params["eps_CG"] = p.eps
-        params["verbose_level"] = 2
+        params["verbose_level"] = p.verboselevel #2
         params["MaxCGstep"] = p.MaxCGstep
         params["boundarycondition"] = p.BoundaryCondition
 

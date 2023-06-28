@@ -13,6 +13,11 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 <img src="demo.gif" width=500>
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=akio-tomiya/LatticeQCD.jl&type=Date)](https://star-history.com/#akio-tomiya/LatticeQCD.jl&Date)
+
+
 ## Tutorial
 
 You can start it in [Google Colab](https://colab.research.google.com/drive/1xmUdDxq0aLuZdM3l4D_MkmI7-lbeQV9s?usp=sharing#scrollTo=voHnFRafPt8D)
