@@ -1,0 +1,34 @@
+["HMC related"]
+"Δτ" = 0.14285714285714285
+SextonWeingargten = true
+MDsteps = 7
+
+["Physical setting(fermions)"]
+quench = false
+Dirac_operator = "Staggered"
+Nf = 2
+
+["Physical setting"]
+L = [4, 4, 4, 4]
+update_method = "HMC"
+Nsteps = 101
+"β" = 5.7
+
+["System Control"]
+logfile = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf2.txt"
+verboselevel = 2
+measurement_dir = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf2"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+
+["Measurement set".measurement_methods.Polyakov_loop]
+methodname = "Polyakov_loop"
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]
