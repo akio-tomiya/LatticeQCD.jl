@@ -144,7 +144,13 @@ function run_LQCD_file(filenamein::String; MPIparallel = false)
             flush(univ.verbose_print.fp)
 
         end
-
+        #println(stdout,univ.verbose_print.fp)
+        #println("close file")
+        close(univ.verbose_print.fp)
+        for meas in measurements.measurements
+            close(meas.verbose_print.fp)
+        end
+        #println(stdout,univ.verbose_print.fp)
     end
 
     println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
