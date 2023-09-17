@@ -394,8 +394,9 @@ function run_wizard()
         end
         physicalparams.Nsteps = Nsteps
 
-        if isexpert
+        if isexpert && physicalparams.update_method != "Heatbath"
             md = MD_interactive(Dirac_operator = fermionparams.Dirac_operator)
+            
         else
             md = MD()
         end
