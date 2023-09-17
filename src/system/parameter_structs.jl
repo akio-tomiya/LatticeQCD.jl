@@ -135,6 +135,10 @@ Base.@kwdef mutable struct Print_Fermions_parameters
     stout_numlayers::Union{Nothing,Int64} = nothing
     stout_ρ::Union{Nothing,Array{Float64,1}} = nothing
     stout_loops::Union{Nothing,Array{String,1}} = nothing
+    # These three params should be revised.
+    M::Union{Nothing,Float64} = nothing
+    m::Union{Nothing,Float64} = nothing
+    N5::Union{Nothing,Int64} = nothing
 end
 
 # System Control
@@ -864,7 +868,8 @@ function Domainwall_wizard()
     fermion_parameters = Domainwall_parameters()
     N5 =
         parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
-    fermion_parameters.Domainwall_L5 = N5
+    #fermion_parameters.Domainwall_L5 = N5
+    fermion_parameters.N5 = N5
     println_rank0("Standard Domainwall fermion action is uded")
 
     M = parse(Float64, Base.prompt("Input M", default = "-1"))
@@ -872,10 +877,12 @@ function Domainwall_wizard()
         println_rank0("M should be M < 0. ")
         M = parse(Float64, Base.prompt("Input M", default = "-1"))
     end
-    fermion_parameters.Domainwall_M = M
+    #fermion_parameters.Domainwall_M = M
+    fermion_parameters.M = M
 
     m = parse(Float64, Base.prompt("Input mass", default = "1"))
-    fermion_parameters.Domainwall_m = m
+    #fermion_parameters.Domainwall_m = m
+    fermion_parameters.m = m
 
     cg = CG_params_interactive()
     return fermion_parameters, cg
