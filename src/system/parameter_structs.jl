@@ -870,7 +870,7 @@ function Domainwall_wizard()
         parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
     #fermion_parameters.Domainwall_L5 = N5
     fermion_parameters.N5 = N5
-    println_rank0("Standard Domainwall fermion action is uded")
+    println_rank0("Standard Domainwall fermion action is used")
 
     M = parse(Float64, Base.prompt("Input M", default = "-1"))
     while M >= 0
@@ -880,7 +880,7 @@ function Domainwall_wizard()
     #fermion_parameters.Domainwall_M = M
     fermion_parameters.M = M
 
-    m = parse(Float64, Base.prompt("Input mass", default = "1"))
+    m = parse(Float64, Base.prompt("Input mass", default = "0.25"))
     #fermion_parameters.Domainwall_m = m
     fermion_parameters.m = m
 
