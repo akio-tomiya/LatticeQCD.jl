@@ -532,6 +532,9 @@ function run_wizard()
                 elseif method == Pion_correlator
                     measurement_gradientflow.measurement_methods[count] =
                         Pion_parameters_interactive()
+                elseif method == Energy_density
+                    measurement_gradientflow.measurement_methods[count] = Energy_density_parameters_interactive()
+
                 end
 
 
