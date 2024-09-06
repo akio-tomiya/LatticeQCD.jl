@@ -218,3 +218,16 @@ We refer "Lattice Tool Kit" https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ written
 If you write a paper using this package, please refer this code.
 
 E.g. This work is in part based on LatticeQCD.jl (https://github.com/akio-tomiya/LatticeQCD.jl).
+
+BibTeX citation is following
+```
+@misc{nagai2024juliaqcdportablelatticeqcd,
+      title={JuliaQCD: Portable lattice QCD package in Julia language}, 
+      author={Yuki Nagai and Akio Tomiya},
+      year={2024},
+      eprint={2409.03030},
+      archivePrefix={arXiv},
+      primaryClass={hep-lat},
+      url={https://arxiv.org/abs/2409.03030}, 
+}
+```
