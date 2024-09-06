@@ -145,6 +145,8 @@ LatticeQCD.jl is basically a wrapper of the following packages
 - [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl): LatticeDiracOperators.jl is a package for Dirac operators and fermions on the lattice. Treating pseudo-femrion fields with various lattice Dirac operators, fermion actions with MPI. This can generate configurations with dynamical fermions.
 - [QCDMeasurements.jl](https://github.com/akio-tomiya/QCDMeasurements.jl): QCDMeasurements.jl is a package for measuring physical quantities. This has measurements for basic quantities like chiral condensates, plaquettes. Moreover, pion correlators and topological charge with several definitions. This also has the gradient flow with several actions.
 
+This package is a code in a project [JuliaQCD](https://github.com/JuliaQCD/).
+
 # USAGE/User interface
 
 We support following two user interfaces
