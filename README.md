@@ -223,14 +223,14 @@ E.g. This work is in part based on LatticeQCD.jl (https://github.com/akio-tomiya
 
 BibTeX citation is following
 ```
-@misc{nagai2024juliaqcdportablelatticeqcd,
-      title={JuliaQCD: Portable lattice QCD package in Julia language}, 
-      author={Yuki Nagai and Akio Tomiya},
-      year={2024},
-      eprint={2409.03030},
-      archivePrefix={arXiv},
-      primaryClass={hep-lat},
-      url={https://arxiv.org/abs/2409.03030}, 
+@article{Nagai:2024yaf,
+    author = "Nagai, Yuki and Tomiya, Akio",
+    title = "{JuliaQCD: Portable lattice QCD package in Julia language}",
+    eprint = "2409.03030",
+    archivePrefix = "arXiv",
+    primaryClass = "hep-lat",
+    month = "9",
+    year = "2024"
 }
 ```
 and the paper is [arXiv:2409.03030](https://arxiv.org/abs/2409.03030).
