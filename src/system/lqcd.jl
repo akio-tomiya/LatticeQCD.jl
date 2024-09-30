@@ -75,16 +75,17 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
 
     measurements =
         Measurement_methods(univ.U, parameters.measuredir, parameters.measurement_methods)
+    plaq_m = Plaquette_measurement(univ.U, printvalues=false)
     i_plaq = 0
     for i = 1:measurements.num_measurements
-        if typeof(measurements.measurements[i]) == Plaquette_measurement
+        if isa(measurements.measurements[i], Plaquette_measurement)
             i_plaq = i
             plaq_m = measurements.measurements[i]
         end
     end
-    if i_plaq == 0
-        plaq_m = Plaquette_measurement(univ.U, printvalues=false)
-    end
+    #if i_plaq == 0
+    #    plaq_m = Plaquette_measurement(univ.U, printvalues=false)
+    #end
 
     measurements_for_flow =
         Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow)
