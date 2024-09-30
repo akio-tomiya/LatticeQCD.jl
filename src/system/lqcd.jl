@@ -11,6 +11,7 @@ import Gaugefields:
     save_binarydata,
     save_textdata,
     saveU
+using QCDMeasurements
 #import ..AbstractMeasurement_module:Measurement_methods,
 #calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 import QCDMeasurements: measure, Plaquette_measurement#, get_temporary_gaugefields
@@ -156,7 +157,7 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
 
 
-    temps = get_temporary_gaugefields(plaq_m)
+    temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
     plaq = real(calculate_Plaquette(univ.U, temps[1], temps[2]) * plaq_m.factor)
     return plaq
 
