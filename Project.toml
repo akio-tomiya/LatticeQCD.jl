@@ -1,7 +1,7 @@
 name = "LatticeQCD"
 uuid = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
 authors = ["Akio Tomiya", "Yuki Nagai"]
-version = "1.1.0"
+version = "1.2.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -36,7 +36,7 @@ Requires = "1"
 SparseArrays = "1"
 TOML = "1"
 Wilsonloop = "0.1.5"
-julia = "1.6"
+julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

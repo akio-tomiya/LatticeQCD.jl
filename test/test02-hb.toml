@@ -12,6 +12,8 @@ Nwing = 1
 NC = 2
 Nsteps = 10
 "β" = 1.9
+initial = "./confs_Heatbath_L04040404_beta5.7_quenched_su2/conf_00000100.ildg"
+
 
 ["System Control"]
 logfile = "Heatbath_L04040404_beta5.7_quenched_su2.txt"
@@ -20,6 +22,8 @@ measurement_dir = "Heatbath_L04040404_beta5.7_quenched_su2"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
+loadU_format = "ILDG"
+
 
 ["Measurement set".measurement_methods.Pion_correlator]
 measure_every = 5

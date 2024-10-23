@@ -13,6 +13,8 @@ update_method = "HMC"
 Nwing = 1
 Nsteps = 10
 "β" = 5.7
+initial = "./confs_HMC_L04040404_beta5.7_Staggered_mass0.5_Nf3/conf_00000100.ildg"
+
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf3.txt"
@@ -21,6 +23,7 @@ measurement_dir = "HMC_L04040404_beta5.7_Staggered_mass0.5_Nf3"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = false
+loadU_format = "ILDG"
 
 ["Measurement set".measurement_methods.Plaquette]
 methodname = "Plaquette"
