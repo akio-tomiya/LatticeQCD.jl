@@ -539,7 +539,7 @@ function Plaq_parameters_interactive()
     println_rank0("You measure Plaquette loops")
     method.methodname = "Plaquette"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure Plaquette loops?", default = "1"))
+        parse(Int64, Base.prompt("How often measure Plaquette loops?", default="1"))
     return method
 end
 
@@ -550,7 +550,7 @@ function Poly_parameters_interactive()
     println_rank0("You measure Polyakov loops")
     method.methodname = "Polyakov_loop"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure Polyakov loops?", default = "1"))
+        parse(Int64, Base.prompt("How often measure Polyakov loops?", default="1"))
     return method
 end
 
@@ -561,11 +561,11 @@ function Wilson_loop_parameters_interactive(L)
     Rmax0 = min(L[1], L[2], L[3]) ÷ 2
     Tmax0 = L[4] ÷ 2
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure Wilson loops?", default = "1"))
+        parse(Int64, Base.prompt("How often measure Wilson loops?", default="1"))
     method.Rmax =
-        parse(Int64, Base.prompt("maximum R for RxT Wilson loop?", default = "$Rmax0"))
+        parse(Int64, Base.prompt("maximum R for RxT Wilson loop?", default="$Rmax0"))
     method.Tmax =
-        parse(Int64, Base.prompt("maximum T for RxT Wilson loop??", default = "$Tmax0"))
+        parse(Int64, Base.prompt("maximum T for RxT Wilson loop??", default="$Tmax0"))
     return method
 end
 
@@ -575,7 +575,7 @@ function Energy_density_parameters_interactive()
     println_rank0("You measure Energy density")
     method.methodname = "Energy_density"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure Plaquette loops?", default = "1"))
+        parse(Int64, Base.prompt("How often measure Plaquette loops?", default="1"))
     return method
 end
 
@@ -586,7 +586,7 @@ function TopologicalCharge_parameters_interactive()
     println_rank0("You measure a topological charge")
     method.methodname = "Topological_charge"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure a topological charge?", default = "1"))
+        parse(Int64, Base.prompt("How often measure a topological charge?", default="1"))
 
     #=
     method.numflow = parse(
@@ -617,11 +617,11 @@ end
 
 
 
-function MD_interactive(; Dirac_operator = nothing)
+function MD_interactive(; Dirac_operator=nothing)
     md = MD()
     println_rank0("Choose parameters for MD")
-    MDsteps = parse(Int64, Base.prompt("Input MD steps", default = "20"))
-    Δτ = parse(Float64, Base.prompt("Input Δτ", default = "$(1/MDsteps)"))
+    MDsteps = parse(Int64, Base.prompt("Input MD steps", default="20"))
+    Δτ = parse(Float64, Base.prompt("Input Δτ", default="$(1/MDsteps)"))
     md.MDsteps = MDsteps
     md.Δτ = Δτ
 
@@ -635,7 +635,7 @@ function MD_interactive(; Dirac_operator = nothing)
         if SextonWeingargten
             N_SextonWeingargten = parse(
                 Int64,
-                Base.prompt("Input number of SextonWeingargten steps", default = "2"),
+                Base.prompt("Input number of SextonWeingargten steps", default="2"),
             )
         else
             N_SextonWeingargten = 2
@@ -664,7 +664,7 @@ function Stout_parameters_interactive()
         count += 1
         ρ = parse(
             Float64,
-            Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default = "0.1"),
+            Base.prompt("coefficient ρ for $(kindsof_loops[i]) loop?", default="0.1"),
         )
         push!(ρs, ρ)
         push!(loops, kindsof_loops[i])
@@ -681,9 +681,9 @@ end
 
 function CG_params_interactive()
     cg = ConjugateGradient()
-    eps = parse(Float64, Base.prompt("relative error in CG loops", default = "1e-19"))
+    eps = parse(Float64, Base.prompt("relative error in CG loops", default="1e-19"))
     MaxCGstep =
-        parse(Int64, Base.prompt("Maximum iteration steps in CG loops", default = "3000"))
+        parse(Int64, Base.prompt("Maximum iteration steps in CG loops", default="3000"))
     if eps <= 0
         error("Invalid value for eps=$eps. This has to be strictly positive.")
     end
@@ -698,17 +698,17 @@ end
 
 
 
-function ChiralCondensate_parameters_interactive(; mass = 0.5)
+function ChiralCondensate_parameters_interactive(; mass=0.5)
     method = ChiralCondensate_parameters()
     println_rank0("You measure chiral condensates with the statteggred fermion")
     method.methodname = "Chiral_condensate"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure chiral condensates?", default = "1"))
+        parse(Int64, Base.prompt("How often measure chiral condensates?", default="1"))
     method.mass = parse(
         Float64,
         Base.prompt(
             "Input mass for the measurement of chiral condensates",
-            default = "$mass",
+            default="$mass",
         ),
     )
 
@@ -718,9 +718,9 @@ function ChiralCondensate_parameters_interactive(; mass = 0.5)
         "Number of flavors (tastes) for the measurement of chiral condensates is $(method.Nf)",
     )
 
-    eps = parse(Float64, Base.prompt("relative error in CG loops", default = "1e-19"))
+    eps = parse(Float64, Base.prompt("relative error in CG loops", default="1e-19"))
     MaxCGstep =
-        parse(Int64, Base.prompt("Maximum iteration steps in CG loops", default = "3000"))
+        parse(Int64, Base.prompt("Maximum iteration steps in CG loops", default="3000"))
     if eps <= 0
         error("Invalid value for eps=$eps. This has to be strictly positive.")
     end
@@ -758,7 +758,7 @@ function Pion_parameters_interactive()
     println_rank0("You measure Pion_correlator")
     method.methodname = "Pion_correlator"
     method.measure_every =
-        parse(Int64, Base.prompt("How often measure Pion_correlator?", default = "1"))
+        parse(Int64, Base.prompt("How often measure Pion_correlator?", default="1"))
 
     wtype = request(
         "Choose fermion type for the measurement of Pion_correlator",
@@ -812,7 +812,7 @@ end
 function wilson_wizard()
     fermion_parameters = Wilson_parameters()
 
-    hop = parse(Float64, Base.prompt("Input the hopping parameter κ", default = "0.141139"))
+    hop = parse(Float64, Base.prompt("Input the hopping parameter κ", default="0.141139"))
     #hop = parse(Float64,readline(stdin))
     if hop <= 0
         error("Invalid value for κ=$hop. This has to be strictly positive.")
@@ -827,7 +827,7 @@ end
 
 function staggered_wizard()
     staggered = Staggered_parameters()
-    mass = parse(Float64, Base.prompt("Input mass", default = "0.5"))
+    mass = parse(Float64, Base.prompt("Input mass", default="0.5"))
     if mass <= 0
         error("Invalid value for mass=$mass. This has to be strictly positive.")
     end
@@ -867,20 +867,20 @@ end
 function Domainwall_wizard()
     fermion_parameters = Domainwall_parameters()
     N5 =
-        parse(Int64, Base.prompt("Input the size of the extra dimension L5", default = "4"))
+        parse(Int64, Base.prompt("Input the size of the extra dimension L5", default="4"))
     #fermion_parameters.Domainwall_L5 = N5
     fermion_parameters.N5 = N5
     println_rank0("Standard Domainwall fermion action is used")
 
-    M = parse(Float64, Base.prompt("Input M", default = "-1"))
+    M = parse(Float64, Base.prompt("Input M", default="-1"))
     while M >= 0
         println_rank0("M should be M < 0. ")
-        M = parse(Float64, Base.prompt("Input M", default = "-1"))
+        M = parse(Float64, Base.prompt("Input M", default="-1"))
     end
     #fermion_parameters.Domainwall_M = M
     fermion_parameters.M = M
 
-    m = parse(Float64, Base.prompt("Input mass", default = "0.25"))
+    m = parse(Float64, Base.prompt("Input mass", default="0.25"))
     #fermion_parameters.Domainwall_m = m
     fermion_parameters.m = m
 
