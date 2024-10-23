@@ -7,12 +7,13 @@ quench = false
 Dirac_operator = "Staggered"
 
 ["Physical setting"]
-initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
 Nwing = 1
 Nsteps = 10
 "β" = 5.7
+initial = "./confs_HMC_L04040404_beta5.7_Staggered_mass0.5/conf_00000100.ildg"
+
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_Staggered_mass0.5.txt"
@@ -21,6 +22,7 @@ measurement_dir = "HMC_L04040404_beta5.7_Staggered_mass0.5"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
+loadU_format = "ILDG"
 
 ["Measurement set".measurement_methods.Pion_correlator]
 measure_every = 5

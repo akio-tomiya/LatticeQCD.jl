@@ -1,6 +1,7 @@
 module LatticeQCD
 using Requires
 
+const LatticeQCDversion = pkgversion(LatticeQCD)
 
 include("./mpi/simpleprint.jl")
 #include("./SLMC/logdet.jl")

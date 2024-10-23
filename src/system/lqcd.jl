@@ -15,10 +15,12 @@ using QCDMeasurements
 #import ..AbstractMeasurement_module:Measurement_methods,
 #calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 import QCDMeasurements: measure, Plaquette_measurement#, get_temporary_gaugefields
-import ..LatticeQCD: Measurement_methods, calc_measurement_values
+import ..LatticeQCD: Measurement_methods, calc_measurement_values, LatticeQCDversion
 
 
 using Gaugefields
+using LatticeDiracOperators
+using Wilsonloop
 using InteractiveUtils
 using Dates
 using Random
@@ -28,6 +30,13 @@ import ..Simpleprint: println_rank0
 function run_LQCD(filenamein::String; MPIparallel=false)
     plaq = run_LQCD_file(filenamein, MPIparallel=MPIparallel)
     return plaq
+end
+
+function printTOMLfile(univ, filename)
+    data = readlines(filename)
+    for d in data
+        println_verbose_level1(univ, d)
+    end
 end
 
 function run_LQCD_file(filenamein::String; MPIparallel=false)
@@ -51,6 +60,7 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
 
 
     univ = Univ(parameters)
+
     println_verbose_level1(univ, "# ", pwd())
 
     println_verbose_level1(univ, "# ", Dates.now())
@@ -60,7 +70,18 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     versioninfo = String(take!(io))
     println_verbose_level1(univ, versioninfo)
 
+    versionstring = """
+    LatticeQCD $(LatticeQCDversion)
+    LatticeDiracOperators $(pkgversion(LatticeDiracOperators))
+    Gaugefields $(pkgversion(Gaugefields))
+    Wilsonloop $(pkgversion(Wilsonloop))
+    """
+    println_verbose_level1(univ, versionstring)
 
+
+    println_verbose_level1(univ, "# Input TOML file------------------")
+    printTOMLfile(univ, filename)
+    println_verbose_level1(univ, "#----------------------------------")
 
 
     updatemethod = Updatemethod(parameters, univ)
