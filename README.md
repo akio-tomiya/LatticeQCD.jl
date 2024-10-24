@@ -31,7 +31,7 @@ You can start lattice QCD in 5 steps!
 
 1.Download a Julia binary from [Julialang.org](https://julialang.org/downloads/). Set a path to the binary of Julia. 
 Julia 1.6 (or higher) is supported. 
-Julia 1.9 (or higher) is supported in LatticeQCD.jl 1.0.4 (or higher). 
+Julia 1.10 (or higher) is supported in LatticeQCD.jl 1.2.0 (or higher). 
 
 
 2.In Julia REPL, push "]" key to enter the package mode and type
