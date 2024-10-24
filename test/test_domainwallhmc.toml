@@ -14,7 +14,7 @@ L = [4, 4, 2, 2]
 update_method = "HMC"
 Nsteps = 5
 "β" = 5.7
-initial = "./confs_HMC_L04040404_beta5.7_Domainwall/conf_00000100.ildg"
+initial = "./confs_HMC_L04040404_beta5.7_Domainwall/conf_00000100.ildg.txt"
 
 
 ["System Control"]
@@ -24,7 +24,8 @@ measurement_dir = "HMC_L04040404_beta5.7_Domainwall"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = false
-loadU_format = "ILDG"
+loadU_format = "BridgeText"
+
 
 
 

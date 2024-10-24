@@ -57,7 +57,7 @@ function get_filename_extension(loadtype::Fileformat)
         ext = ".jld"
     elseif loadtype == ILDG
         ext = ".ildg"
-    elseif v == BridgeText
+    elseif loadtype == BridgeText
         ext = ".txt"
     else
         error("error!")
@@ -760,7 +760,7 @@ function set_loadU_format()
         loadU_format = "JLD"
     elseif loadtype == ILDG
         loadU_format = "ILDG"
-    elseif v == BridgeText
+    elseif loadtype == BridgeText
         loadU_format = "BridgeText"
     end
 
