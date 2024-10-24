@@ -1,6 +1,5 @@
 ["HMC related"]
-"Δτ" = 0.06666666666666667
-MDsteps = 15
+
 
 ["Physical setting(fermions)"]
 Dirac_operator = "nothing"
@@ -12,7 +11,7 @@ Nwing = 1
 NC = 2
 Nsteps = 10
 "β" = 1.9
-initial = "./confs_Heatbath_L04040404_beta5.7_quenched_su2/conf_00000100.ildg"
+initial = "./confs_Heatbath_L04040404_beta5.7_quenched_su2/conf_00000100.ildg.txt"
 
 
 ["System Control"]
@@ -22,7 +21,7 @@ measurement_dir = "Heatbath_L04040404_beta5.7_quenched_su2"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
-loadU_format = "ILDG"
+loadU_format = "BridgeText"
 
 
 ["Measurement set".measurement_methods.Pion_correlator]

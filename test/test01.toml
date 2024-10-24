@@ -11,7 +11,7 @@ update_method = "HMC"
 Nwing = 1
 Nsteps = 10
 "β" = 5.7
-initial = "./confs_HMC_L04040404_beta5.7_quenched_su3/conf_00000100.ildg"
+initial = "./confs_HMC_L04040404_beta5.7_quenched_su3/conf_00000100.ildg.txt"
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_quenched_su3.txt"
@@ -20,7 +20,7 @@ measurement_dir = "HMC_L04040404_beta5.7_quenched_su3"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
-loadU_format = "ILDG"
+loadU_format = "BridgeText"
 
 ["Measurement set".measurement_methods.Pion_correlator]
 measure_every = 5
