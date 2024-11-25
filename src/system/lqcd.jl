@@ -16,7 +16,8 @@ using QCDMeasurements
 #calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 import QCDMeasurements: measure, Plaquette_measurement#, get_temporary_gaugefields
 import ..LatticeQCD: Measurement_methods, calc_measurement_values, LatticeQCDversion
-
+import Gaugefields.Temporalfields_module: Temporalfields,
+    get_temp, unused!, set_reusemode!
 
 using Gaugefields
 using LatticeDiracOperators
@@ -179,8 +180,13 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
 
 
-    temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
-    plaq = real(calculate_Plaquette(univ.U, temps[1], temps[2]) * plaq_m.factor)
+    #temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
+    temps = plaq_m._temporary_gaugefields
+    temp1, it_temp1 = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
+    plaq = real(calculate_Plaquette(univ.U, temp1, temp2) * plaq_m.factor)
+    unused!(temps, it_temp1)
+    unused!(temps, it_temp2)
     return plaq
 
 end
