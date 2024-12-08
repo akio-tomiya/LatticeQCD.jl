@@ -211,6 +211,7 @@ We compared results to following papers/codes
 - HMC for Wilson and Clover Wilson fermions "Lattice Tool Kit":  https://nio-mon.riise.hiroshima-u.ac.jp/LTK/ 
 - Pion correlator with the Wilson-Dirac operator https://inspirehep.net/literature/37901
 - Pion correlator with the staggered Dirac operator https://inspirehep.net/literature/21821
+- Domain-wall femrion https://inspirehep.net/literature/496758 fig4
 
 # Reference
 
