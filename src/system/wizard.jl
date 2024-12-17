@@ -54,11 +54,11 @@ import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 
 function get_filename_extension(loadtype::Fileformat)
     if loadtype == JLD
-        ext = ".jld"
+        ext = "jld2"
     elseif loadtype == ILDG
-        ext = ".ildg"
+        ext = "ildg"
     elseif loadtype == BridgeText
-        ext = ".txt"
+        ext = "txt"
     else
         error("error!")
     end
