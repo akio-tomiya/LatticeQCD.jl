@@ -69,8 +69,10 @@ function Univ(p::Params; MPIparallel=false, PEs=nothing)
         elseif p.loadU_format == "JLD"
             filename = p.initial
             U = loadU(filename)
+        elseif p.loadU_format == nothing
+            error("loadU_format is not specified. Please add loadU_format in System Control. loadU_format should be ILDG, BridgeText or JLD")
         else
-            error("loadU_format should be ILDG or BridgeText. Now $(p.loadU_format)")
+            error("loadU_format should be ILDG, BridgeText or JLD. Now $(p.loadU_format). Please check loadU_format in System Control")
         end
     end
     #println_verbose_level1(verbose_print, ".....  test mode")
