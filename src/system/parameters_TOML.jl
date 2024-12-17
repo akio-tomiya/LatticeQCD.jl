@@ -129,21 +129,21 @@ function construct_Params_from_TOML(parameters)
     load_fp = open(logfile, "w")
     value_Params[pos] = load_fp
 
-    if haskey(parameters["Physical setting(fermions)"],"Dirac_operator")
+    if haskey(parameters["Physical setting(fermions)"], "Dirac_operator")
         if parameters["Physical setting(fermions)"]["Dirac_operator"] == "Domainwall"
-            pairs = [("M","Domainwall_M"),("m","Domainwall_m"),("N5","Domainwall_L5")]
+            pairs = [("M", "Domainwall_M"), ("m", "Domainwall_m"), ("N5", "Domainwall_L5")]
             param = parameters["Physical setting(fermions)"]
             for pair in pairs
-                if haskey(param,pair[1])
-                    if haskey(param,pair[2]) == false
+                if haskey(param, pair[1])
+                    if haskey(param, pair[2]) == false
                         param[pair[2]] = param[pair[1]]
                     end
                     if param[pair[1]] == nothing
                         param[pair[2]] = param[pair[1]]
                     end
                 end
-                if haskey(param,pair[2])
-                    if haskey(param,pair[1]) == false
+                if haskey(param, pair[2])
+                    if haskey(param, pair[1]) == false
                         param[pair[1]] = param[pair[2]]
                     end
                     if param[pair[2]] == nothing
@@ -153,7 +153,7 @@ function construct_Params_from_TOML(parameters)
             end
         end
     end
-    
+
 
 
     if haskey(parameters["Measurement set"], "measurement_basedir") &&
