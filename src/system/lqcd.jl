@@ -60,6 +60,12 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     versioninfo = String(take!(io))
     println_verbose_level1(univ, versioninfo)
 
+    versionsstring = ```
+    LatticeQCD $(pkgversion(LatticeQCD))
+    LatticeDiracOperators $(pkgversion(LatticeDiracOperators))
+    Gaugefields $(pkgversion(Gaugefields))
+    Wilsonloop $(pkgversion(Wilsonloop))
+    ```
 
 
 
