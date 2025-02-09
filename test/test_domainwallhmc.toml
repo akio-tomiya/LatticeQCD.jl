@@ -10,11 +10,12 @@ Domainwall_L5 = 4
 Domainwall_m = 1.0
 
 ["Physical setting"]
-initial = "cold" # this is intended to be cold
 L = [4, 4, 2, 2]
 update_method = "HMC"
 Nsteps = 5
 "β" = 5.7
+initial = "./confs_HMC_L04040404_beta5.7_Domainwall/conf_00000100.ildg.txt"
+
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_Domainwall.txt"
@@ -23,6 +24,10 @@ measurement_dir = "HMC_L04040404_beta5.7_Domainwall"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = false
+loadU_format = "BridgeText"
+
+
+
 
 ["Measurement set".measurement_methods.Polyakov_loop]
 measure_every = 1

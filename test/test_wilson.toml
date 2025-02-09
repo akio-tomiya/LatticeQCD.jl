@@ -9,12 +9,13 @@ quench = false
 Dirac_operator = "Wilson"
 
 ["Physical setting"]
-initial = "hot"
 L = [4, 4, 4, 4]
 update_method = "HMC"
 Nwing = 1
 Nsteps = 10
 "β" = 5.7
+initial = "./confs_HMC_L04040404_beta5.7_Wilson_kappa0.141139/conf_00000100.ildg.txt"
+
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_Wilson_kappa0.141139.txt"
@@ -23,6 +24,7 @@ measurement_dir = "HMC_L04040404_beta5.7_Wilson_kappa0.141139"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
+loadU_format = "BridgeText"
 
 ["Measurement set".measurement_methods.Pion_correlator]
 measure_every = 5

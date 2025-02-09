@@ -54,11 +54,11 @@ import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
 
 function get_filename_extension(loadtype::Fileformat)
     if loadtype == JLD
-        ext = ".jld"
+        ext = "jld2"
     elseif loadtype == ILDG
-        ext = ".ildg"
-    elseif v == BridgeText
-        ext = ".txt"
+        ext = "ildg"
+    elseif loadtype == BridgeText
+        ext = "txt"
     else
         error("error!")
     end
@@ -137,7 +137,7 @@ function run_wizard()
     filename = String(
         Base.prompt(
             "put the name of the parameter file you make",
-            default = "my_parameters.toml",
+            default="my_parameters.toml",
         ),
     )
 
@@ -151,7 +151,7 @@ function run_wizard()
 
     if isexpert
         controlparams.randomseed =
-            parse(Int64, Base.prompt("Input random seed.", default = "111"))
+            parse(Int64, Base.prompt("Input random seed.", default="111"))
         controlparams.verboselevel = set_verboselevel()
         #system.randomseed = parse(Int64, Base.prompt("Input random seed.", default = "111"))
         #system.verboselevel = set_verboselevel()
@@ -162,7 +162,7 @@ function run_wizard()
         controlparams.loadU_format, _ = set_loadU_format()
         physicalparams.update_method = "Fileloading"
         controlparams.loadU_dir =
-            String(Base.prompt("Loading directory", default = "./confs"))
+            String(Base.prompt("Loading directory", default="./confs"))
 
         filelist = request(
             "Which configurations do you use?",
@@ -179,7 +179,7 @@ function run_wizard()
             controlparams.loadU_filename = String(
                 Base.prompt(
                     "name of the list in $(controlparams.loadU_dir)",
-                    default = "filelist.txt",
+                    default="filelist.txt",
                 ),
             )
         end
@@ -217,11 +217,11 @@ function run_wizard()
             physicalparams.initial = String(
                 Base.prompt(
                     "Input the file name that you want to use",
-                    default = "./confs/conf_00000001.$(extstring)",
+                    default="./confs/conf_00000001.$(extstring)",
                 ),
             )
             physicalparams.initialtrj =
-                parse(Int64, Base.prompt("Start trj number?", default = "1"))
+                parse(Int64, Base.prompt("Start trj number?", default="1"))
         elseif initialconf == instantonstart
             physicalparams.initial = "one instanton"
         end
@@ -322,7 +322,7 @@ function run_wizard()
                             Int64,
                             Base.prompt(
                                 "How many times do you want to do the OR?",
-                                default = "3",
+                                default="3",
                             ),
                         )
                     end
@@ -371,7 +371,7 @@ function run_wizard()
                 Int64,
                 Base.prompt(
                     "Input the number of thermalization steps (no mearurement)",
-                    default = "0",
+                    default="0",
                 ),
             )
             if Nthermalization < 0
@@ -386,7 +386,7 @@ function run_wizard()
             Int64,
             Base.prompt(
                 "Input the number of total trajectories after the thermalization",
-                default = "$(100+physicalparams.initialtrj)",
+                default="$(100+physicalparams.initialtrj)",
             ),
         )
         if Nsteps <= 0
@@ -395,8 +395,7 @@ function run_wizard()
         physicalparams.Nsteps = Nsteps
 
         if isexpert && physicalparams.update_method != "Heatbath"
-            md = MD_interactive(Dirac_operator = fermionparams.Dirac_operator)
-            
+            md = MD_interactive(Dirac_operator=fermionparams.Dirac_operator)
         else
             md = MD()
         end
@@ -454,12 +453,12 @@ function run_wizard()
 
     if nummeasurements != 0
         controlparams.measurement_basedir = String(
-            Base.prompt("base directory for measurements", default = "./measurements"),
+            Base.prompt("base directory for measurements", default="./measurements"),
         )
         controlparams.measurement_dir = String(
             Base.prompt(
                 "directory for measurements in $(controlparams.measurement_basedir)/",
-                default = headername,
+                default=headername,
             ),
         )
     end
@@ -488,14 +487,14 @@ function run_wizard()
                 Float64,
                 Base.prompt(
                     "time step for gradient flow?",
-                    default = "$(gradient_params.eps_flow)",
+                    default="$(gradient_params.eps_flow)",
                 ),
             )
             gradient_params.numflow = parse(
                 Int64,
                 Base.prompt(
                     "How many times do you want to flow gauge fields?",
-                    default = "$(gradient_params.numflow)",
+                    default="$(gradient_params.numflow)",
                 ),
             )
             #gradient_params.numflow = parse(Int64, Base.prompt("number of steps for gradient flow?", default = "$(gradient_params.numflow)"))    
@@ -548,9 +547,9 @@ function run_wizard()
     end
 
 
-    controlparams.log_dir = String(Base.prompt("log directory", default = "./logs"))
+    controlparams.log_dir = String(Base.prompt("log directory", default="./logs"))
     controlparams.logfile =
-        String(Base.prompt("logfile name", default = headername * ".txt"))
+        String(Base.prompt("logfile name", default=headername * ".txt"))
 
 
     if isexpert
@@ -576,12 +575,12 @@ function run_wizard()
                 Int64,
                 Base.prompt(
                     "How often do you save a configuration in file (Save every)?",
-                    default = "10",
+                    default="10",
                 ),
             )
             #system["saveU_basedir"] = String(Base.prompt("base directory for saving configuration", default="./confs"))
             controlparams.saveU_dir =
-                String(Base.prompt("Saving directory", default = "./confs_$(headername)"))
+                String(Base.prompt("Saving directory", default="./confs_$(headername)"))
             #system["saveU_dir"] = system["saveU_basedir"]*"/"*system["saveU_dir"]
         end
     end
@@ -600,6 +599,10 @@ function run_wizard()
         merge(struct2dict(gradient_params), struct2dict(measurement_gradientflow))
 
 
+    if physicalparams.update_method == "Heatbath"
+        delete!(system_parameters_dict["HMC related"], "Δτ")
+        delete!(system_parameters_dict["HMC related"], "MDsteps")
+    end
     remove_default_values!(system_parameters_dict)
     system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =
         deepcopy(system_parameters_dict["gradientflow_measurements"]["measurement_methods"])
@@ -643,7 +646,7 @@ end
 function wilson_wizard_simple()
     wtype = 1
     println("Standard Wilson fermion action will be used")
-    hop = parse(Float64, Base.prompt("Input the hopping parameter κ", default = "0.141139"))
+    hop = parse(Float64, Base.prompt("Input the hopping parameter κ", default="0.141139"))
     if hop <= 0
         error("Invalid value for κ=$hop. This has to be strictly positive.")
     end
@@ -658,7 +661,7 @@ end
 
 
 function set_verboselevel!(system)
-    verboselevel = parse(Int64, Base.prompt("verbose level ?", default = "2"))
+    verboselevel = parse(Int64, Base.prompt("verbose level ?", default="2"))
 
     if 1 ≤ verboselevel ≤ 3
         println("verbose level = ", verboselevel)
@@ -670,7 +673,7 @@ function set_verboselevel!(system)
 end
 
 function set_verboselevel()
-    verboselevel = parse(Int64, Base.prompt("verbose level ?", default = "2"))
+    verboselevel = parse(Int64, Base.prompt("verbose level ?", default="2"))
 
     if 1 ≤ verboselevel ≤ 3
         println("verbose level = ", verboselevel)
@@ -685,10 +688,10 @@ end
 function set_Lattice_size(isexpert)
     if isexpert
         println("Input Lattice size, L=(Nx,Ny,Nz,Nt)")
-        NX = parse(Int64, Base.prompt("Nx ?", default = "4"))
-        NY = parse(Int64, Base.prompt("Ny ?", default = "4"))
-        NZ = parse(Int64, Base.prompt("Nz ?", default = "4"))
-        NT = parse(Int64, Base.prompt("Nt ?", default = "4"))
+        NX = parse(Int64, Base.prompt("Nx ?", default="4"))
+        NY = parse(Int64, Base.prompt("Ny ?", default="4"))
+        NZ = parse(Int64, Base.prompt("Nz ?", default="4"))
+        NT = parse(Int64, Base.prompt("Nt ?", default="4"))
         #NT = parse(Int64,readline(stdin))
         L = [NX, NY, NZ, NT]
         #L = (NX, NY, NZ, NT)
@@ -697,8 +700,8 @@ function set_Lattice_size(isexpert)
             error("Invalid parameter L=$L, elements must be positive integers")
         end
     else
-        NX = parse(Int64, Base.prompt("Input spatial lattice size ", default = "4"))
-        NT = parse(Int64, Base.prompt("Input temporal lattice size ", default = "4"))
+        NX = parse(Int64, Base.prompt("Input spatial lattice size ", default="4"))
+        NT = parse(Int64, Base.prompt("Input temporal lattice size ", default="4"))
         #L = (NX, NX, NX, NT)
         L = [NX, NX, NX, NT]
         #system["L"] = L
@@ -724,9 +727,9 @@ end
 
 function set_β(NC)
     if NC == 3
-        β = parse(Float64, Base.prompt("β ?", default = "5.7"))
+        β = parse(Float64, Base.prompt("β ?", default="5.7"))
     elseif NC == 2
-        β = parse(Float64, Base.prompt("β ?", default = "2.7"))
+        β = parse(Float64, Base.prompt("β ?", default="2.7"))
     end
     @assert β > 0 "Invalid value for β=$β. This has to be positive or zero"
     return β
@@ -757,7 +760,7 @@ function set_loadU_format()
         loadU_format = "JLD"
     elseif loadtype == ILDG
         loadU_format = "ILDG"
-    elseif v == BridgeText
+    elseif loadtype == BridgeText
         loadU_format = "BridgeText"
     end
 
@@ -776,10 +779,10 @@ function make_headername(physicalparams, fermionparams, fermion_parameters)
     headername =
         update_method *
         "_L" *
-        string(L[1], pad = 2) *
-        string(L[2], pad = 2) *
-        string(L[3], pad = 2) *
-        string(L[4], pad = 2) *
+        string(L[1], pad=2) *
+        string(L[2], pad=2) *
+        string(L[3], pad=2) *
+        string(L[4], pad=2) *
         "_beta" *
         string(β)
 

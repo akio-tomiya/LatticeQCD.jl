@@ -15,10 +15,13 @@ using QCDMeasurements
 #import ..AbstractMeasurement_module:Measurement_methods,
 #calc_measurement_values,measure,Plaquette_measurement,get_temporary_gaugefields
 import QCDMeasurements: measure, Plaquette_measurement#, get_temporary_gaugefields
-import ..LatticeQCD: Measurement_methods, calc_measurement_values
-
+import ..LatticeQCD: Measurement_methods, calc_measurement_values, LatticeQCDversion
+import Gaugefields.Temporalfields_module: Temporalfields,
+    get_temp, unused!, set_reusemode!
 
 using Gaugefields
+using LatticeDiracOperators
+using Wilsonloop
 using InteractiveUtils
 using Dates
 using Random
@@ -28,6 +31,13 @@ import ..Simpleprint: println_rank0
 function run_LQCD(filenamein::String; MPIparallel=false)
     plaq = run_LQCD_file(filenamein, MPIparallel=MPIparallel)
     return plaq
+end
+
+function printTOMLfile(univ, filename)
+    data = readlines(filename)
+    for d in data
+        println_verbose_level1(univ, d)
+    end
 end
 
 function run_LQCD_file(filenamein::String; MPIparallel=false)
@@ -46,11 +56,15 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
         @error "$filenamein is not supported. use a TOML format."
     end
 
+
     parameters = construct_Params_from_TOML(filename)
     Random.seed!(parameters.randomseed)
 
 
     univ = Univ(parameters)
+
+
+
     println_verbose_level1(univ, "# ", pwd())
 
     println_verbose_level1(univ, "# ", Dates.now())
@@ -60,13 +74,18 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     versioninfo = String(take!(io))
     println_verbose_level1(univ, versioninfo)
 
-    versionsstring = ```
-    LatticeQCD $(pkgversion(LatticeQCD))
+    versionstring = """
+    LatticeQCD $(LatticeQCDversion)
     LatticeDiracOperators $(pkgversion(LatticeDiracOperators))
     Gaugefields $(pkgversion(Gaugefields))
     Wilsonloop $(pkgversion(Wilsonloop))
-    ```
+    """
+    println_verbose_level1(univ, versionstring)
 
+
+    println_verbose_level1(univ, "# Input TOML file------------------")
+    printTOMLfile(univ, filename)
+    println_verbose_level1(univ, "#----------------------------------")
 
 
     updatemethod = Updatemethod(parameters, univ)
@@ -164,8 +183,13 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
 
 
-    temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
-    plaq = real(calculate_Plaquette(univ.U, temps[1], temps[2]) * plaq_m.factor)
+    #temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
+    temps = plaq_m._temporary_gaugefields
+    temp1, it_temp1 = get_temp(temps)
+    temp2, it_temp2 = get_temp(temps)
+    plaq = real(calculate_Plaquette(univ.U, temp1, temp2) * plaq_m.factor)
+    unused!(temps, it_temp1)
+    unused!(temps, it_temp2)
     return plaq
 
 end

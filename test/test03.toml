@@ -12,6 +12,8 @@ Nwing = 1
 NC = 4
 Nsteps = 10
 "β" = 9.0
+initial = "./confs_HMC_L04040404_beta5.7_quenched_su4/conf_00000100.ildg.txt"
+
 
 ["System Control"]
 logfile = "HMC_L04040404_beta5.7_quenched_su4.txt"
@@ -20,6 +22,8 @@ measurement_dir = "HMC_L04040404_beta5.7_quenched_su4"
 measurement_basedir = "./measurements"
 log_dir = "./logs"
 hasgradientflow = true
+loadU_format = "BridgeText"
+
 
 ["Measurement set".measurement_methods.Pion_correlator]
 measure_every = 5
