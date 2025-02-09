@@ -183,6 +183,7 @@ function run_wizard()
                 ),
             )
         end
+        fermion_parameters = Quench_parameters()
     else
 
         if physicalparams.NC == 2
