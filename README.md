@@ -13,6 +13,11 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 
 <img src="demo.gif" width=500>
 
+# Q&A/Issues
+If you have questions and comments. Please use the issues section of this repository or use [Discussions in JuliaQCD](https://github.com/orgs/JuliaQCD/discussions/2).
+
+[In Japanese] 質問やコメントを日本語でしたい方は[JuliaQCDのディスカッションボード](https://github.com/orgs/JuliaQCD/discussions/1)に書き込みをしてください。
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=akio-tomiya/LatticeQCD.jl&type=Date)](https://star-history.com/#akio-tomiya/LatticeQCD.jl&Date)
