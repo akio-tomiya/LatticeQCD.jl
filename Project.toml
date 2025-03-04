@@ -17,8 +17,7 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
-LatticeDiracOperators = "0.3,0.4"
-QCDMeasurements = "0.1,0.2"
+
 
 [compat]
 Dates = "1"
@@ -33,6 +32,8 @@ SparseArrays = "1"
 TOML = "1"
 Wilsonloop = "0.1.5"
 julia = "1.10"
+LatticeDiracOperators = "0.3,0.4"
+QCDMeasurements = "0.1,0.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
