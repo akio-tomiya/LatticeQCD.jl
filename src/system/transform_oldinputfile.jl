@@ -50,6 +50,7 @@ function default_md()
     md["Δτ"] = 0.05
     md["MDsteps"] = 20
     md["SextonWeingargten"] = false
+    md["QPQ"] = true
 
     return md
 end

@@ -147,10 +147,31 @@ function Univ(p::Params; MPIparallel=false, PEs=nothing)
     if p.smearing_for_fermion == "nothing"
         cov_neural_net = nothing
     elseif p.smearing_for_fermion == "stout"
-        cov_neural_net = CovNeuralnet()
-        @assert p.stout_numlayers == 1 "stout_numlayers should be one. But now $(p.stout_numlayers)"
-        st = STOUT_Layer(p.stout_loops, p.stout_ρ, L)
-        push!(cov_neural_net, st)
+        cov_neural_net = CovNeuralnet(U)
+        if p.stout_numlayers == 1
+            #st = STOUT_Layer(p.stout_loops, p.stout_ρ, L)
+            st = STOUT_Layer(p.stout_loops, p.stout_ρ, U)
+            push!(cov_neural_net, st)
+        else
+            if length(p.stout_ρ) == 1
+                @warn "num. of stout layer is $(p.stout_numlayers) but there is only one rho. rho values are all same."
+                for ilayer = 1:length(p.stout_ρ)
+                    #println(p.stout_ρ)
+                    #st = STOUT_Layer(p.stout_loops, p.stout_ρ, L)
+                    st = STOUT_Layer(p.stout_loops, p.stout_ρ, U)
+                    push!(cov_neural_net, st)
+                end
+            else
+                for ilayer = 1:length(p.stout_ρ)
+                    #st = STOUT_Layer(p.stout_loops, p.stout_ρ[ilayer], L)
+                    st = STOUT_Layer(p.stout_loops, p.stout_ρ[ilayer], U)
+                    push!(cov_neural_net, st)
+                end
+            end
+        end
+        #@assert p.stout_numlayers == 1 "stout_numlayers should be one. But now $(p.stout_numlayers)"
+        #st = STOUT_Layer(p.stout_loops, p.stout_ρ, L)
+
     else
         error("p.smearing_for_fermion = $(p.smearing_for_fermion) is not supported")
     end

@@ -1,7 +1,7 @@
 name = "LatticeQCD"
 uuid = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
 authors = ["Akio Tomiya", "Yuki Nagai"]
-version = "1.3.4"
+version = "1.3.5"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -21,8 +21,6 @@ Wilsonloop = "f3c8d4fe-2f22-401d-8228-e6a01d7a1d02"
 [compat]
 Dates = "1"
 Gaugefields = "0.4,0.5"
-LatticeDiracOperators = "0.3,0.4"
-QCDMeasurements = "0.1,0.2"
 InteractiveUtils = "1"
 JLD2 = "0.4, 0.5"
 LinearAlgebra = "1"

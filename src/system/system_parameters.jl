@@ -139,7 +139,7 @@ mutable struct Params
     const numflow::Int64
     const Nflow::Int64
     const measurements_for_flow::Vector{Dict} #measurement in gradientflow
-
+    const QPQ::Bool
 
 end
 

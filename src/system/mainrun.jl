@@ -114,24 +114,23 @@ function run_LQCD_new!(univ::Univ, parameters::Params)
         quench,
         parameters.Δτ,
         parameters.MDsteps,
-        fermi_action = univ.fermi_action,
-        SextonWeingargten = parameters.SextonWeingargten,
-        loadU_dir = parameters.loadU_dir,
-        loadU_format = parameters.loadU_format,
-        isevenodd = parameters.isevenodd,
-        β = parameters.β,
-        ITERATION_MAX = parameters.ITERATION_MAX,
-        numOR = parameters.numOR,
-        useOR = parameters.useOR,
+        fermi_action=univ.fermi_action,
+        SextonWeingargten=parameters.SextonWeingargten,
+        loadU_dir=parameters.loadU_dir,
+        loadU_format=parameters.loadU_format,
+        isevenodd=parameters.isevenodd,
+        β=parameters.β,
+        ITERATION_MAX=parameters.ITERATION_MAX,
+        numOR=parameters.numOR,
+        useOR=parameters.useOR,
     )
     #runMD!(univ.U,md)
     eps_flow = 0.01
     numflow = 500
     Nflow = 1
 
-
     meas = Measurements_set(univ.U, parameters.measuredir, parameters.measurement_methods)
-    gradientflow = Gradientflow(univ.U, Nflow = 1, eps = eps_flow)
+    gradientflow = Gradientflow(univ.U, Nflow=1, eps=eps_flow)
     #=
     plaq_m = Plaquette_measurement(univ.U,filename="plaq.txt")
     poly_m = Polyakov_measurement(univ.U,filename="poly.txt")
@@ -187,7 +186,7 @@ function run_LQCD!(univ::Universe, parameters::Params)
     measset = Measurement_set(
         univ,
         parameters.measuredir,
-        measurement_methods = parameters.measurement_methods,
+        measurement_methods=parameters.measurement_methods,
     )
 
     #if isdemo
@@ -401,7 +400,7 @@ function run_core!(parameters, univ, mdparams, meas)
     if (parameters.Nthermalization ≤ 0 && parameters.initialtrj == 1) ||
        parameters.update_method == "Fileloading"
         plaq, poly =
-            measurements(0, univ.U, univ, meas; verbose = univ.kind_of_verboselevel) # check consistency of preparation.
+            measurements(0, univ.U, univ, meas; verbose=univ.kind_of_verboselevel) # check consistency of preparation.
     end
 
     if parameters.integratedFermionAction
@@ -624,7 +623,7 @@ function run_core!(parameters, univ, mdparams, meas)
 
         if (itrj ≥ parameters.Nthermalization) || parameters.update_method == "Fileloading"
             plaq, poly =
-                measurements(itrj, univ.U, univ, meas; verbose = univ.kind_of_verboselevel)
+                measurements(itrj, univ.U, univ, meas; verbose=univ.kind_of_verboselevel)
         end
 
 

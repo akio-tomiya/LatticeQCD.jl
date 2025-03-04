@@ -1,4 +1,6 @@
 using InteractiveUtils
+import Gaugefields.Temporalfields_module: Temporalfields, get_temp, unused!
+
 
 struct StandardMD{Dim,TG,TA,quench,T_FA,TF,TC} <: AbstractMD{Dim,TG}
     gauge_action::GaugeAction{Dim,TG}
@@ -22,11 +24,11 @@ struct StandardMD{Dim,TG,TA,quench,T_FA,TF,TC} <: AbstractMD{Dim,TG}
         quench,
         Δτ,
         MDsteps,
-        fermi_action = nothing,
-        cov_neural_net = nothing;
-        QPQ = true,
-        SextonWeingargten = false,
-        Nsw = 2,
+        fermi_action=nothing,
+        cov_neural_net=nothing;
+        QPQ=true,
+        SextonWeingargten=false,
+        Nsw=2,
     ) where {Dim,TG}
         p = initialize_TA_Gaugefields(U) #This is a traceless-antihermitian gauge fields. This has NC^2-1 real coefficients. 
         TA = eltype(p)
@@ -194,8 +196,12 @@ function P_update_fermion!(
     md::StandardMD{Dim,TG,TA,quench,T_FA,TF,TC},
 ) where {Dim,TG,TA,quench,T_FA,TF,TC<:CovNeuralnet{Dim}}  # p -> p +factor*U*dSdUμ
     #NC = U[1].NC
+
     temps = get_temporary_gaugefields(md.gauge_action)
-    UdSfdUμ = temps[1:Dim]
+
+    UdSfdUμ, its_UdSfdUμ = get_temp(temps, Dim)
+
+    #UdSfdUμ = temps[1:Dim]
     factor = -ϵ * md.Δτ
 
     Uout, Uout_multi, _ = calc_smearedU(U, md.cov_neural_net)
@@ -204,13 +210,18 @@ function P_update_fermion!(
         calc_UdSfdU!(UdSfdUμ, md.fermi_action, Uout, md.η)
         mul!(md.dSdU[μ], Uout[μ]', UdSfdUμ[μ])
     end
+    unused!(temps, its_UdSfdUμ)
     #calc_UdSfdU!(UdSfdUμ, md.fermi_action, U, md.η)
 
     dSdUbare = back_prop(md.dSdU, md.cov_neural_net, Uout_multi, U)
 
+    temp1, it_temp1 = get_temp(temps)
+
     for μ = 1:Dim
         #Traceless_antihermitian_add!(p[μ], factor, UdSfdUμ[μ])
-        mul!(temps[1], U[μ], dSdUbare[μ]) # U*dSdUμ
-        Traceless_antihermitian_add!(p[μ], factor, temps[1])
+        mul!(temp1, U[μ], dSdUbare[μ]) # U*dSdUμ
+        Traceless_antihermitian_add!(p[μ], factor, temp1)
     end
+
+    unused!(temps, it_temp1)
 end

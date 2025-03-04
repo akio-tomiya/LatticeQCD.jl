@@ -173,6 +173,7 @@ Base.@kwdef mutable struct Print_HMCrelated_parameters
     MDsteps::Int64 = 20
     eps::Float64 = 1e-19
     MaxCGstep::Int64 = 3000
+    QPQ::Bool = true
 end
 
 # Gradient Flow

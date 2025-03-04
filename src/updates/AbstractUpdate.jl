@@ -41,16 +41,17 @@ function Updatemethod(parameters::Params, univ::Univ)
         quench,
         parameters.Δτ,
         parameters.MDsteps,
-        fermi_action = univ.fermi_action,
-        cov_neural_net = univ.cov_neural_net,
-        SextonWeingargten = parameters.SextonWeingargten,
-        loadU_dir = parameters.loadU_dir,
-        loadU_format = parameters.loadU_format,
-        isevenodd = parameters.isevenodd,
-        β = parameters.β,
-        ITERATION_MAX = parameters.ITERATION_MAX,
-        numOR = parameters.numOR,
-        useOR = parameters.useOR,
+        fermi_action=univ.fermi_action,
+        cov_neural_net=univ.cov_neural_net,
+        SextonWeingargten=parameters.SextonWeingargten,
+        loadU_dir=parameters.loadU_dir,
+        loadU_format=parameters.loadU_format,
+        isevenodd=parameters.isevenodd,
+        β=parameters.β,
+        ITERATION_MAX=parameters.ITERATION_MAX,
+        numOR=parameters.numOR,
+        useOR=parameters.useOR,
+        QPQ=parameters.QPQ
     )
     return updatemethod
 end
@@ -60,18 +61,19 @@ function Updatemethod(
     gauge_action,
     update_method,
     quench,
-    Δτ = nothing,
-    MDsteps = nothing;
-    fermi_action = nothing,
-    cov_neural_net = nothing,
-    SextonWeingargten = false,
-    loadU_dir = nothing,
-    loadU_format = nothing,
-    isevenodd = true,
-    β = 5.7,
-    ITERATION_MAX = 10^5,
-    numOR = 3,
-    useOR = false,
+    Δτ=nothing,
+    MDsteps=nothing;
+    fermi_action=nothing,
+    cov_neural_net=nothing,
+    SextonWeingargten=false,
+    loadU_dir=nothing,
+    loadU_format=nothing,
+    isevenodd=true,
+    β=5.7,
+    ITERATION_MAX=10^5,
+    numOR=3,
+    useOR=false,
+    QPQ=true,
 )
     if update_method == "HMC"
         updatemethod = StandardHMC(
@@ -82,7 +84,8 @@ function Updatemethod(
             MDsteps,
             fermi_action,
             cov_neural_net,
-            SextonWeingargten = SextonWeingargten,
+            SextonWeingargten=SextonWeingargten,
+            QPQ=QPQ,
         )
     elseif update_method == "Fileloading"
         updatemethod = GivenConfigurations(U, loadU_dir, loadU_format)
@@ -91,11 +94,11 @@ function Updatemethod(
             U,
             gauge_action,
             quench,
-            isevenodd = isevenodd,
-            β = β,
-            ITERATION_MAX = ITERATION_MAX,
-            numOR = numOR,
-            useOR = useOR,
+            isevenodd=isevenodd,
+            β=β,
+            ITERATION_MAX=ITERATION_MAX,
+            numOR=numOR,
+            useOR=useOR,
         )
     else
         error("update method $(update_method) is not supported!")

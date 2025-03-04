@@ -13,7 +13,8 @@ function StandardHMC(
     MDsteps,
     fermi_action,
     cov_neural_net;
-    SextonWeingargten = false,
+    SextonWeingargten=false,
+    QPQ=true,
 )
 
     md = MD(
@@ -24,7 +25,8 @@ function StandardHMC(
         MDsteps,
         fermi_action,
         cov_neural_net;
-        SextonWeingargten = SextonWeingargten,
+        SextonWeingargten=SextonWeingargten,
+        QPQ=QPQ,
     )
     Tmd = typeof(md)
     Uold = similar(U)
