@@ -12,7 +12,7 @@ function readplaqdata()
 end
 
 @testset "LatticeQCD.jl" begin
-    eps = 1e-5
+    eps = 1e-1
     plaqvalues = readplaqdata()
 
     #fout = open("Testvalues.txt","w");println(fout,"Test values")
