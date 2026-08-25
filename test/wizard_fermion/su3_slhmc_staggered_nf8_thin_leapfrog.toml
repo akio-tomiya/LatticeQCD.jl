@@ -1,0 +1,37 @@
+["HMC related"]
+eps = 1.0e-10
+"Δτ" = 0.001
+MaxCGstep = 2000
+MDsteps = 1
+
+["Physical setting(fermions)"]
+Nf = 8
+quench = false
+Dirac_operator = "Staggered"
+
+["Physical setting"]
+initial = "hot"
+L = [2, 2, 2, 2]
+update_method = "SLHMC"
+Nwing = 1
+Nsteps = 2
+"β" = 5.7
+
+["SLHMC related"]
+"βeff" = 5.2
+
+["System Control"]
+logfile = "wizard-fermion.log"
+verboselevel = 0
+measurement_dir = "wizard-fermion"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]

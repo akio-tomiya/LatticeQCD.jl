@@ -1,0 +1,33 @@
+["HMC related"]
+"Δτ" = 0.05
+SextonWeingargten = true
+MDsteps = 20
+
+["Physical setting(fermions)"]
+Dirac_operator = "nothing"
+
+["Physical setting"]
+initial = "embedded instanton"
+L = [4, 4, 4, 4]
+update_method = "HMC"
+Nsteps = 101
+"β" = 5.7
+
+["System Control"]
+logfile = "HMC_L04040404_beta5.7_quenched.txt"
+saveU_dir = "./confs_HMC_L04040404_beta5.7_quenched"
+verboselevel = 2
+measurement_dir = "HMC_L04040404_beta5.7_quenched"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+saveU_every = 10
+saveU_format = "BridgeText"
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]

@@ -1,0 +1,36 @@
+["HMC related"]
+eps = 1.0e-10
+"Δτ" = 0.001
+MaxCGstep = 2000
+MDsteps = 1
+
+["Physical setting(fermions)"]
+hasclover = false
+quench = false
+Dirac_operator = "Wilson"
+
+["Physical setting"]
+initial = "./confs/wizard_fermion_source.jld2"
+L = [2, 2, 2, 2]
+update_method = "HMC"
+Nwing = 1
+NC = 2
+Nsteps = 1
+"β" = 2.7
+
+["System Control"]
+logfile = "wizard-fermion-io.log"
+verboselevel = 0
+measurement_dir = "wizard-fermion-io"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+loadU_format = "JLD"
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]

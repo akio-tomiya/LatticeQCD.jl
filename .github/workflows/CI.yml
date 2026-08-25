@@ -64,3 +64,17 @@ jobs:
       # - uses: codecov/codecov-action@v1
       #  with:
       #    file: lcov.info
+  mpi:
+    name: MPI (1 and 2 ranks) - Julia 1.11 - Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: "1.11"
+          arch: x64
+      - uses: julia-actions/cache@v2
+      - name: Instantiate with optional MPI
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add(Pkg.PackageSpec(name="MPI", version="0.20"))'
+      - name: Run MPI integration tests
+        run: julia --startup-file=no --project=. test/runtests_mpi.jl

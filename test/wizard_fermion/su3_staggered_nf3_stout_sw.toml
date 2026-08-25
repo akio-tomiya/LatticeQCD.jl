@@ -1,0 +1,39 @@
+["HMC related"]
+eps = 1.0e-10
+"Δτ" = 0.001
+SextonWeingargten = true
+MaxCGstep = 2000
+MDsteps = 1
+
+["Physical setting(fermions)"]
+stout_loops = ["plaquette"]
+stout_numlayers = 1
+smearing_for_fermion = "stout"
+Nf = 3
+quench = false
+Dirac_operator = "Staggered"
+"stout_ρ" = [0.1]
+
+["Physical setting"]
+initial = "hot"
+L = [2, 2, 2, 2]
+update_method = "HMC"
+Nwing = 1
+Nsteps = 2
+"β" = 5.7
+
+["System Control"]
+logfile = "wizard-fermion.log"
+verboselevel = 0
+measurement_dir = "wizard-fermion"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]
