@@ -130,7 +130,8 @@ function construct_Params_from_TOML(parameters)
     value_Params[pos] = load_fp
 
     if haskey(parameters["Physical setting(fermions)"], "Dirac_operator")
-        if parameters["Physical setting(fermions)"]["Dirac_operator"] == "Domainwall"
+        if parameters["Physical setting(fermions)"]["Dirac_operator"] in
+           ("Domainwall", "MobiusDomainwall")
             pairs = [("M", "Domainwall_M"), ("m", "Domainwall_m"), ("N5", "Domainwall_L5")]
             param = parameters["Physical setting(fermions)"]
             for pair in pairs
@@ -250,18 +251,14 @@ function parameter_check(p::Params)
     elseif p.update_method == "Fileloading"
         println("No update will be used (read-measure mode)")
         p.quench = true
-    elseif p.update_method == "SLHMC"
+    elseif p.update_method == "SLHMC" || p.update_method == "SLMC"
         println("SLHMC will be used")
-        if p.quench == false
-            println("quench = true is set")
-            p.quench = true
-            #error("system[\"quench\"] = false. The SLHMC needs the quench update. Put the other system[\"update_method\"] != \"SLHMC\" or system[\"quench\"] = true")
-        end
     else
         error("""
         update_method in [\"Physical setting\"] = $(p.update_method) is not supported.
         Supported methods are 
         HMC
+        SLHMC (SLMC is accepted as a legacy alias)
         Heatbath
         Fileloading
         """)

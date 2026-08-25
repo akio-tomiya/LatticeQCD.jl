@@ -1,7 +1,6 @@
 using MPI
-include("./LatticeQCD.jl")
-using .LatticeQCD
-#using LatticeQCD
+MPI.Init()
+using LatticeQCD
 
 function main()
 

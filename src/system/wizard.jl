@@ -10,6 +10,8 @@ import ..Parameter_structs:
     Fermion_parameters,
     Wilson_parameters,
     Staggered_parameters,
+    HISQ_parameters,
+    MobiusDomainwall_parameters,
     Stout_parameters,
     kindsof_loops,
     Stout_parameters_interactive,
@@ -40,9 +42,16 @@ import ..Parameter_structs:
     Energy_density_parameters_interactive
 
 import ..Parameters_TOML: demo_TOML, construct_Params_from_TOML
+import ..SimulationInput_module: simulation_spec_from_legacy_toml
 
 @enum Wizardmode simple = 1 expert = 2
-@enum Initialconf coldstart = 1 hotstart = 2 filestart = 3 instantonstart = 4
+@enum Initialconf begin
+    coldstart = 1
+    hotstart = 2
+    filestart = 3
+    instantonstart = 4
+    embeddedinstantonstart = 5
+end
 @enum Fileformat JLD = 1 ILDG = 2 BridgeText = 3 Nosave = 0
 @enum SmearingMethod Nosmearing = 1 STOUT = 2
 @enum Fermiontype Nofermion = 1 Wilsonfermion = 2 Staggeredfermion = 3 Domainwallfermion = 4
@@ -113,13 +122,141 @@ run_wizard
     println("To exit, press Ctrl + c.")
 end
 
+"""
+    wizard_parameter_dictionary(
+        physicalparams,
+        fermionparams,
+        fermion_parameters,
+        controlparams,
+        hmcparams,
+        measurement,
+        gradient_params,
+        measurement_gradientflow,
+    )
 
-function run_wizard()
+Build the TOML-ready parameter dictionary shared by both Wizard interfaces.
+Keeping this conversion in one place guarantees that `run_wizard_legacy` and
+the typed `run_wizard` produce the same parameter-file schema.
+"""
+function wizard_parameter_dictionary(
+    physicalparams,
+    fermionparams,
+    fermion_parameters,
+    controlparams,
+    hmcparams,
+    measurement,
+    gradient_params,
+    measurement_gradientflow,
+    ;
+    slhmc_beta=nothing,
+)
+    system_parameters_dict = Dict()
+
+    system_parameters_dict["Physical setting"] = struct2dict(physicalparams)
+    system_parameters_dict["Physical setting(fermions)"] =
+        merge(struct2dict(fermionparams), struct2dict(fermion_parameters))
+    system_parameters_dict["System Control"] = struct2dict(controlparams)
+    system_parameters_dict["HMC related"] = struct2dict(hmcparams)
+    system_parameters_dict["Measurement set"] = struct2dict(measurement)
+    system_parameters_dict["gradientflow_measurements"] =
+        merge(struct2dict(gradient_params), struct2dict(measurement_gradientflow))
+    if physicalparams.update_method == "SLHMC"
+        effective_beta = isnothing(slhmc_beta) ? physicalparams.β : slhmc_beta
+        system_parameters_dict["SLHMC related"] = Dict(
+            "βeff" => Float64(effective_beta),
+        )
+    end
+
+    # LDO pseudofermion fields require at least one halo layer.  The legacy
+    # Print_Physical_parameters default is zero because it is also used for
+    # gauge-only input, so make the runnable dynamical-fermion requirement
+    # explicit in Wizard output.
+    if !fermionparams.quench
+        minimum_halo = fermionparams.Dirac_operator == "HISQ" ? 3 : 1
+        system_parameters_dict["Physical setting"]["Nwing"] =
+            max(minimum_halo, physicalparams.Nwing)
+    end
+
+    if physicalparams.update_method == "Heatbath"
+        delete!(system_parameters_dict["HMC related"], "Δτ")
+        delete!(system_parameters_dict["HMC related"], "MDsteps")
+    end
+    remove_default_values!(system_parameters_dict)
+    # cSW depends on the chosen action, coupling, flavor content, and
+    # improvement prescription.  Keep it explicit for Wilson--clover input
+    # even when it equals the historical LTK-compatible default.
+    if fermionparams.Dirac_operator == "WilsonClover"
+        system_parameters_dict["Physical setting(fermions)"][
+            "Clover_coefficient"
+        ] = fermion_parameters.Clover_coefficient
+    elseif fermionparams.Dirac_operator == "HISQ"
+        # The Naik correction is species dependent. Keep it visible even
+        # when it equals the zero default used for a light HISQ species.
+        system_parameters_dict["Physical setting(fermions)"][
+            "naik_epsilon"
+        ] = fermion_parameters.naik_epsilon
+    elseif fermionparams.Dirac_operator == "MobiusDomainwall"
+        # These coefficients define the Möbius kernel convention and should
+        # remain visible even when they equal LDO's scaled-Shamir defaults.
+        system_parameters_dict["Physical setting(fermions)"]["b"] =
+            fermion_parameters.b
+        system_parameters_dict["Physical setting(fermions)"]["c"] =
+            fermion_parameters.c
+    end
+    system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =
+        deepcopy(
+            system_parameters_dict["gradientflow_measurements"]["measurement_methods"],
+        )
+    delete!(
+        system_parameters_dict["gradientflow_measurements"],
+        "measurement_methods",
+    )
+    return system_parameters_dict
+end
+
+function write_wizard_parameter_file(
+    filename,
+    physicalparams,
+    fermionparams,
+    fermion_parameters,
+    controlparams,
+    hmcparams,
+    measurement,
+    gradient_params,
+    measurement_gradientflow,
+    ;
+    slhmc_beta=nothing,
+)
+    parameters = wizard_parameter_dictionary(
+        physicalparams,
+        fermionparams,
+        fermion_parameters,
+        controlparams,
+        hmcparams,
+        measurement,
+        gradient_params,
+        measurement_gradientflow,
+        slhmc_beta=slhmc_beta,
+    )
+    open(filename, "w") do io
+        TOML.print(io, parameters)
+    end
+    return parameters
+end
+
+"""
+Run the original interactive Wizard and return its historical `Params` value.
+
+This compatibility entry point intentionally retains the legacy logfile and
+directory side effects. Use `run_wizard()` for the typed, Param-free Wizard.
+"""
+function run_wizard_legacy()
     print_wizard_logo(stdout)
     physicalparams = Print_Physical_parameters()
     controlparams = Print_System_control_parameters()
     fermionparams = Print_Fermions_parameters()
     hmcparams = Print_HMCrelated_parameters()
+    slhmc_beta = nothing
 
     #system = System()
     #action = Action()
@@ -183,6 +320,8 @@ function run_wizard()
                 ),
             )
         end
+        fermionparams.Dirac_operator = "nothing"
+        fermionparams.quench = true
         fermion_parameters = Quench_parameters()
         smearing = NoSmearing_parameters()
     else
@@ -196,14 +335,22 @@ function run_wizard()
                         "hot start",
                         "start from a file",
                         "start from one instanton (Radius is half of Nx)",
+                        "start from an SU(2) embedded instanton",
                     ]),
                 ) |> Initialconf
         else
             initialconf =
                 request(
                     "Choose initial configurations",
-                    RadioMenu(["cold start", "hot start", "start from a file"]),
+                    RadioMenu([
+                        "cold start",
+                        "hot start",
+                        "start from a file",
+                        "start from an SU(2) embedded instanton",
+                    ]),
                 ) |> Initialconf
+            initialconf == instantonstart &&
+                (initialconf = embeddedinstantonstart)
         end
 
 
@@ -226,6 +373,8 @@ function run_wizard()
                 parse(Int64, Base.prompt("Start trj number?", default="1"))
         elseif initialconf == instantonstart
             physicalparams.initial = "one instanton"
+        elseif initialconf == embeddedinstantonstart
+            physicalparams.initial = "embedded instanton"
         end
 
         if isexpert
@@ -346,21 +495,13 @@ function run_wizard()
                 else
                     methodtype == 2
                     physicalparams.update_method = "SLHMC"
-                    @warn "SLHMC is not well developed"
-
-                    #=
-                    system.βeff = parse(
+                    slhmc_beta = parse(
                         Float64,
-                        Base.prompt("Input initial effective β", default = "$β"),
-                    )
-                    system.firstlearn = parse(
-                        Int64,
                         Base.prompt(
-                            "When do you want to start updating the effective action?",
-                            default = "10",
+                            "Input the effective β used by the MD action",
+                            default=string(physicalparams.β),
                         ),
                     )
-                    =#
                 end
 
             end
@@ -463,6 +604,12 @@ function run_wizard()
                 default=headername,
             ),
         )
+    else
+        # `construct_Params_from_TOML` still needs concrete directories even
+        # when the measurement set is empty. Use the same values offered as
+        # Wizard defaults without adding unnecessary prompts.
+        controlparams.measurement_basedir = "./measurements"
+        controlparams.measurement_dir = headername
     end
 
 
@@ -533,6 +680,9 @@ function run_wizard()
                 elseif method == Pion_correlator
                     measurement_gradientflow.measurement_methods[count] =
                         Pion_parameters_interactive()
+                elseif method == Wilson_loop
+                    measurement_gradientflow.measurement_methods[count] =
+                        Wilson_loop_parameters_interactive(physicalparams.L)
                 elseif method == Energy_density
                     measurement_gradientflow.measurement_methods[count] = Energy_density_parameters_interactive()
 
@@ -554,7 +704,7 @@ function run_wizard()
         String(Base.prompt("logfile name", default=headername * ".txt"))
 
 
-    if isexpert
+    if isexpert && physicalparams.update_method != "Fileloading"
         savetype =
             request(
                 "Choose a configuration format for saving",
@@ -585,35 +735,26 @@ function run_wizard()
                 String(Base.prompt("Saving directory", default="./confs_$(headername)"))
             #system["saveU_dir"] = system["saveU_basedir"]*"/"*system["saveU_dir"]
         end
+    elseif physicalparams.update_method == "Fileloading"
+        controlparams.saveU_format = nothing
+        controlparams.saveU_every = 1
+        controlparams.saveU_dir = ""
     end
 
     #physical, fermions, control, hmc = generate_printable_parameters(system)
 
-    system_parameters_dict = Dict()
-
-    system_parameters_dict["Physical setting"] = struct2dict(physicalparams)
-    system_parameters_dict["Physical setting(fermions)"] =
-        merge(struct2dict(fermionparams), struct2dict(fermion_parameters))
-    system_parameters_dict["System Control"] = struct2dict(controlparams)
-    system_parameters_dict["HMC related"] = struct2dict(hmcparams)
-    system_parameters_dict["Measurement set"] = struct2dict(measurement)
-    system_parameters_dict["gradientflow_measurements"] =
-        merge(struct2dict(gradient_params), struct2dict(measurement_gradientflow))
-
-
-    if physicalparams.update_method == "Heatbath"
-        delete!(system_parameters_dict["HMC related"], "Δτ")
-        delete!(system_parameters_dict["HMC related"], "MDsteps")
-    end
-    remove_default_values!(system_parameters_dict)
-    system_parameters_dict["gradientflow_measurements"]["measurements_for_flow"] =
-        deepcopy(system_parameters_dict["gradientflow_measurements"]["measurement_methods"])
-    delete!(system_parameters_dict["gradientflow_measurements"], "measurement_methods")
-
-
-    open(filename, "w") do io
-        TOML.print(io, system_parameters_dict)
-    end
+    write_wizard_parameter_file(
+        filename,
+        physicalparams,
+        fermionparams,
+        fermion_parameters,
+        controlparams,
+        hmcparams,
+        measurement,
+        gradient_params,
+        measurement_gradientflow,
+        slhmc_beta=slhmc_beta,
+    )
 
     #system_parameters_dict["Measurement set"]
 
@@ -623,9 +764,9 @@ function run_wizard()
 
     println("""
     --------------------------------------------------------------------------------  
-    run_wizard is done. 
+    run_wizard_legacy is done.
     
-    The returned value in this run_wizard() is params_set.
+    The returned value in run_wizard_legacy() is params_set.
     If you want to run a simulation in REPL or other Julia codes,  just do
 
     run_LQCD(params_set)
@@ -823,7 +964,9 @@ function make_headername(physicalparams, fermionparams, fermion_parameters)
     return headername
 end
 
+include("wizard_v2.jl")
+
 end
 
 #using .Wizard
-#Wizard.run_wizard()
+#Wizard.run_wizard_legacy()

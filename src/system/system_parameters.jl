@@ -89,6 +89,11 @@ mutable struct Params
     #For Staggered
     const mass::Float64 # = 0.5 # Mandatory
     const Nf::Int64 # = 4
+    #For HISQ
+    const naik_epsilon::Float64 # = 0.0
+    #For Mobius domain-wall
+    const b::Float64 # = 2.0
+    const c::Float64 # = 1.0
 
     #verbose
     const verboselevel::Int64 # = 2
@@ -126,8 +131,6 @@ mutable struct Params
     const Domainwall_M::Union{Nothing,Float64}
     const Domainwall_m::Union{Nothing,Float64}
     const Domainwall_L5::Union{Nothing,Int64}
-    #Domainwall_b::Union{Nothing,Float64}
-    ##Domainwall_c::Union{Nothing,Float64}
     #Domainwall_ωs::Union{Nothing,Array{Float64,1}}
     #Domainwall_r::Union{Nothing,Float64}
 

@@ -127,6 +127,9 @@ Base.@kwdef mutable struct Print_Fermions_parameters
     hop::Float64 = 0.141139
     Nf::Int64 = 4
     mass::Float64 = 0.5
+    naik_epsilon::Float64 = 0.0
+    b::Float64 = 2.0
+    c::Float64 = 1.0
     Domainwall_M::Union{Nothing,Float64} = nothing
     Domainwall_m::Union{Nothing,Float64} = nothing
     Domainwall_L5::Union{Nothing,Int64} = nothing
@@ -290,6 +293,24 @@ function initialize_fermion_parameters(fermion_type)
 end
 
 =#
+
+"""Wizard-only HISQ parameters not present in the legacy QCDMeasurements set."""
+Base.@kwdef mutable struct HISQ_parameters <: Fermion_parameters
+    Dirac_operator::String = "HISQ"
+    mass::Float64 = 0.5
+    Nf::Int64 = 4
+    naik_epsilon::Float64 = 0.0
+end
+
+"""Wizard-only scalar Möbius domain-wall parameters."""
+Base.@kwdef mutable struct MobiusDomainwall_parameters <: Fermion_parameters
+    Dirac_operator::String = "MobiusDomainwall"
+    N5::Int64 = 4
+    M::Float64 = -1.0
+    m::Float64 = 0.1
+    b::Float64 = 2.0
+    c::Float64 = 1.0
+end
 
 Base.@kwdef mutable struct ConjugateGradient
     eps::Float64 = 1e-19
