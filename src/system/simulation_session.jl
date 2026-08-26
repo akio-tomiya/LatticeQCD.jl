@@ -573,6 +573,69 @@ build_simulation(
     sink=NoSimulationEventSink(),
 ) = build_simulation_session(spec, environment; sink)
 
+function session_status(session::SimulationSession)
+    is_running(session) && return :running
+    is_finished(session) && return :finished
+    session.state.stop_requested[] && return :stop_requested
+    return :ready
+end
+
+function Base.show(io::IO, session::SimulationSession)
+    print(io, "SimulationSession(")
+    show(io, session.simulation)
+    print(
+        io,
+        ", thermalization=",
+        session.state.thermalization_completed,
+        "/",
+        session.schedule.thermalization_steps,
+        ", production=",
+        session.state.production_completed,
+        "/",
+        session.schedule.production_steps,
+        ", status=",
+        session_status(session),
+        ")",
+    )
+end
+
+function show_config(io::IO, session::SimulationSession)
+    println(io, "SimulationSession")
+    print(io, "  simulation: ")
+    show(io, session.simulation)
+    println(io)
+    println(
+        io,
+        "  thermalization: ",
+        session.state.thermalization_completed,
+        " / ",
+        session.schedule.thermalization_steps,
+    )
+    println(
+        io,
+        "  production: ",
+        session.state.production_completed,
+        " / ",
+        session.schedule.production_steps,
+    )
+    println(
+        io,
+        "  saved configurations: ",
+        session.state.saved_configurations,
+    )
+    println(io, "  status: ", session_status(session))
+    print(io, "  measurements: ")
+    show(io, session.schedule.measurements)
+    println(io)
+    print(io, "  output: ")
+    show(io, session.output)
+    println(io)
+    return nothing
+end
+
+Base.show(io::IO, ::MIME"text/plain", session::SimulationSession) =
+    show_config(io, session)
+
 function is_session_root(session::SimulationSession)
     gauge = session.simulation.configuration.gauge
     communicator = Gaugefields.gauge_communicator(gauge)

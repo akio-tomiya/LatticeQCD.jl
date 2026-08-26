@@ -210,6 +210,20 @@ end
         @test !is_finished(session)
         @test !is_running(session)
 
+        compact_display = sprint(show, session)
+        @test startswith(compact_display, "SimulationSession(Simulation(")
+        @test occursin("thermalization=0/1", compact_display)
+        @test occursin("production=0/3", compact_display)
+        @test occursin("status=ready", compact_display)
+        @test ncodeunits(compact_display) < 500
+
+        plain_display = sprint(show, MIME"text/plain"(), session)
+        @test startswith(plain_display, "SimulationSession\n")
+        @test occursin("  thermalization: 0 / 1", plain_display)
+        @test occursin("  production: 0 / 3", plain_display)
+        @test occursin("  status: ready", plain_display)
+        @test ncodeunits(plain_display) < 1_000
+
         thermalization = step!(session)
         @test thermalization.phase === :thermalization
         @test isempty(thermalization.measurements)
