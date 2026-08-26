@@ -214,19 +214,19 @@ passed 464 assertions.
 ## LatticeQCD configuration and runtime conditions
 
 HISQ is represented independently from one-link staggered fermions by
-`HISQDiracConfig(mass, naik_epsilon)`. The implementation enforces the
+`HISQDiracConfig(mass, naik_epsilon)`. The implementation follows the
 requirements of the LatticeMatrices/LatticeDiracOperators HISQ path:
 
 | Item | Requirement used in the tests |
 |---|---|
-| Gauge group | SU(3) |
+| Gauge group | SU(N), N >= 2 |
 | Gauge halo width | at least 3 |
 | Fermion field family | staggered |
 | Fermion mass | positive |
 | Naik correction | finite and written explicitly by the Wizard |
 | Fermion boundary conditions | (+1, +1, +1, -1) |
 
-The HISQ operator itself constructs the level-1 Fat7 links, U(3) projection,
+The HISQ operator itself constructs the level-1 Fat7 links, U(N) projection,
 level-2 Fat7/Lepage links, and Naik links. The Wizard therefore does not add
 an independent outer stout-smearing layer to HISQ.
 
@@ -340,14 +340,14 @@ assertions.
 
 ## Wizard and input coverage
 
-The HISQ Wizard matrix has 20 parameter files:
+The finite HISQ Wizard regression matrix has 40 parameter files:
 
 ```text
-SU(3)
+SU(2) or SU(3)
 x Nf = 1, 2, 3, 4, or 8
 x HMC or SLHMC
 x leapfrog or Sexton-Weingarten selection
-= 20 cases
+= 40 cases
 ```
 
 For gauge-only dynamics the existing Sexton-Weingarten selection is ignored,
@@ -357,18 +357,15 @@ halo width 3, and is checked through both direct simulation construction and
 the GUI-neutral `SimulationSession` route.
 
 After adding these files, the complete dynamical-fermion Wizard matrix
-contains 148 TOML files. The Param-free TOML input suite contains all 428
-current gauge-only and dynamical Wizard files plus canonical round trips and
-passed 488/488 assertions.
+contains 184 TOML files. General SU(N) selection is additionally covered by
+an SU(4) scripted-Wizard and runtime test; an infinite set of N values is not
+materialized as TOML fixtures.
 
-The 20 HISQ runtime cases were executed in four five-case shards. The shard
-results were 208/208, 223/223, 208/208, and 223/223 assertions, respectively
-(862/862 combined; the three static matrix/file-enumeration checks are
-repeated in every shard). Every shard compared the direct simulation and
+The HISQ runtime matrix compares the direct simulation and
 `SimulationSession` trajectory Hamiltonians, acceptance result, final Bridge
 configuration bytes, plaquette measurement, and emitted events. The default
-test invocation remains exhaustive; the optional shard variables only split
-the same matrix for practical local and CI execution.
+test invocation remains exhaustive; optional shard variables split the same
+matrix for practical local and CI execution.
 
 # Möbius domain-wall
 
@@ -465,10 +462,10 @@ All 16 runtime cases passed in four shards: 159/159, 171/171, 159/159, and
 `SimulationSession` Hamiltonians, acceptance decision, final Bridge bytes,
 plaquette, and emitted events.
 
-The complete dynamical-fermion Wizard matrix now contains 164 TOML files.
-Together with the gauge-only and fermion-I/O matrices there are 444 current
+The complete dynamical-fermion Wizard matrix now contains 184 TOML files.
+Together with the gauge-only and fermion-I/O matrices there are 464 current
 Wizard inputs. The Param-free TOML and canonical round-trip suite, including
-all of them, passed 508/508 assertions.
+all of them, passed 528/528 assertions.
 
 # Official v2 dependency and H100 smoke test
 

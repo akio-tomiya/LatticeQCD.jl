@@ -12,7 +12,7 @@ The part of the codes is translated from the LTK.
 What LatticeQCD.jl can do includes:
 
 - Hybrid Monte Carlo with Wilson and Wilson–clover fermions.
-- HMC/RHMC with one-link staggered fermions and SU(3) HISQ fermions.
+- HMC/RHMC with one-link staggered and SU(N) HISQ fermions.
 - Standard and Möbius domain-wall fermions (experimental).
 - Quenched HMC and heatbath updates for general gauge actions.
 
@@ -27,6 +27,14 @@ using LatticeQCD
 spec = run_wizard()
 session = build_simulation(spec, GaugefieldsEnvironment())
 summary = run!(session)
+```
+
+By default `run!` prints rank-zero trajectory progress, HMC acceptance
+diagnostics, measurements, configuration saves, and a final summary. A GUI
+can use its own event sink without terminal output:
+
+```julia
+summary = run!(session; verbose=false)
 ```
 
 The Wizard also writes the selected TOML file. The conventional file runner

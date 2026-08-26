@@ -24,7 +24,7 @@ const WIZARD_FERMION_VARIANTS = (
 function expected_wizard_fermion_cases()
     cases = NamedTuple[]
     for variant in WIZARD_FERMION_VARIANTS
-        colors_values = variant.operator == "HISQ" ? (3,) : (2, 3)
+        colors_values = (2, 3)
         stout_values = variant.operator == "HISQ" ? (false,) : (false, true)
         for colors in colors_values
             for stout in stout_values
@@ -129,7 +129,7 @@ end
         filename -> endswith(filename, ".toml"),
         readdir(WIZARD_FERMION_DIRECTORY),
     ))
-    @test length(cases) == 164
+    @test length(cases) == 184
     @test existing == sort(getproperty.(cases, :filename))
 
     # The complete HISQ trajectories are substantially more expensive than
@@ -202,7 +202,6 @@ end
                 end
                 if case.variant.operator == "HISQ"
                     @test parameters.naik_epsilon == -0.083
-                    @test case.colors == 3
                     @test !case.stout
                 end
                 if case.variant.operator == "MobiusDomainwall"

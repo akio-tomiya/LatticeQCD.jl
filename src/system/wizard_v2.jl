@@ -429,12 +429,31 @@ function edit_wizard_v2_lattice!(ui, draft)
         @wizard_v2_answer color_index wizard_v2_choice(
             ui,
             "Choose a gauge group",
-            ["SU(3)", "SU(2)"];
-            default=previous_colors == 2 ? 2 : 1,
+            ["SU(3)", "SU(2)", "Other SU(N)"];
+            default=previous_colors == 3 ? 1 :
+                    previous_colors == 2 ? 2 : 3,
         )
-        physical.NC = color_index == 1 ? 3 : 2
+        if color_index == 1
+            physical.NC = 3
+        elseif color_index == 2
+            physical.NC = 2
+        else
+            @wizard_v2_answer colors wizard_v2_value(
+                ui,
+                Int64,
+                "Number of colors N";
+                default=max(previous_colors, 2),
+                valid=value -> value >= 2,
+                validation_message="The number of colors must be at least 2.",
+            )
+            physical.NC = colors
+        end
         if physical.NC != previous_colors
-            physical.β = physical.NC == 3 ? 5.7 : 2.7
+            if physical.NC == 3
+                physical.β = 5.7
+            elseif physical.NC == 2
+                physical.β = 2.7
+            end
         end
 
         @wizard_v2_answer randomseed wizard_v2_value(
@@ -974,42 +993,24 @@ function edit_wizard_v2_fermion!(ui, draft)
         )
         working.fermion_parameters.hop = hop
     else
-        fermion_kinds = working.physicalparams.NC == 3 ?
-            (
-                WizardV2Quenched,
-                WizardV2Wilson,
-                WizardV2WilsonClover,
-                WizardV2Staggered,
-                WizardV2HISQ,
-                WizardV2Domainwall,
-                WizardV2MobiusDomainwall,
-            ) :
-            (
-                WizardV2Quenched,
-                WizardV2Wilson,
-                WizardV2WilsonClover,
-                WizardV2Staggered,
-                WizardV2Domainwall,
-                WizardV2MobiusDomainwall,
-            )
-        labels = working.physicalparams.NC == 3 ?
-            [
-                "Nothing (quenched approximation)",
-                "Wilson fermion (2-flavor)",
-                "Wilson--clover fermion (2-flavor)",
-                "Staggered fermion",
-                "HISQ fermion (SU(3))",
-                "Domain-wall fermion (experimental)",
-                "Möbius domain-wall fermion (experimental)",
-            ] :
-            [
-                "Nothing (quenched approximation)",
-                "Wilson fermion (2-flavor)",
-                "Wilson--clover fermion (2-flavor)",
-                "Staggered fermion",
-                "Domain-wall fermion (experimental)",
-                "Möbius domain-wall fermion (experimental)",
-            ]
+        fermion_kinds = (
+            WizardV2Quenched,
+            WizardV2Wilson,
+            WizardV2WilsonClover,
+            WizardV2Staggered,
+            WizardV2HISQ,
+            WizardV2Domainwall,
+            WizardV2MobiusDomainwall,
+        )
+        labels = [
+            "Nothing (quenched approximation)",
+            "Wilson fermion (2-flavor)",
+            "Wilson--clover fermion (2-flavor)",
+            "Staggered fermion",
+            "HISQ fermion",
+            "Domain-wall fermion (experimental)",
+            "Möbius domain-wall fermion (experimental)",
+        ]
         current_kind = if working.fermionparams.quench
             WizardV2Quenched
         elseif working.fermionparams.Dirac_operator == "Wilson"
@@ -1129,7 +1130,7 @@ function edit_wizard_v2_fermion!(ui, draft)
     end
 
     if working.fermionparams.Dirac_operator == "HISQ"
-        # HISQ already contains its two-level Fat7/U(3)/Lepage/Naik link
+        # HISQ already contains its two-level Fat7/U(N)/Lepage/Naik link
         # construction. The Wizard does not add a second, outer stout layer.
         working.fermionparams.smearing_for_fermion = "nothing"
         working.fermionparams.stout_numlayers = nothing
@@ -1808,6 +1809,11 @@ function print_wizard_v2_completion(::TerminalWizardV2UI, draft)
 
         session = build_simulation(spec, GaugefieldsEnvironment())
         run!(session)
+
+    `run!` prints trajectory progress and measurements on rank zero. For a
+    GUI or another event-driven frontend, suppress console output with
+
+        run!(session; verbose=false)
 
     The legacy file runner also remains available:
 

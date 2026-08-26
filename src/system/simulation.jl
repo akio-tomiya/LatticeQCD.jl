@@ -1288,9 +1288,6 @@ function validate_runtime_input(config::LQCDConfig)
     end
     for fermion in config.fermions
         if fermion.operator isa HISQDiracConfig
-            config.gauge.NC == 3 || throw(ArgumentError(
-                "HISQ requires NC=3; got NC=$(config.gauge.NC)",
-            ))
             config.gauge.halo >= 3 || throw(ArgumentError(
                 "HISQ requires a gauge-field halo width of at least 3; " *
                 "got $(config.gauge.halo)",

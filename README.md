@@ -64,10 +64,17 @@ using LatticeQCD
 
 ```
 spec = run_wizard()
+session = build_simulation(spec, GaugefieldsEnvironment())
+summary = run!(session)
 ```
 
 The original Params-returning interface is available as
 `run_wizard_legacy()` for compatibility and debugging.
+
+`run!` prints rank-zero trajectory progress, HMC acceptance diagnostics,
+measurements, configuration saves, and a final summary. GUI and batch callers
+can retain event delivery while suppressing console output with
+`run!(session; verbose=false)`.
 
 Choose parameters as you want!
 
@@ -105,7 +112,7 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
 - Fermions
   - Wilson and Wilson–clover (2 flavor)
   - Staggered fermion (1-8 tastes ~ flavor)
-  - HISQ fermion for SU(3) (1-8 tastes ~ flavor)
+  - HISQ fermion for SU(N) (1-8 tastes ~ flavor)
   - Standard and Möbius domain-wall (2 flavor, experimental)
 - Configuration generation algorithms
   - Cold/Hot start for SU(N), one instanton for SU(2), and SU(2)-embedded instantons for SU(N)
@@ -115,7 +122,7 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - HMC (2 flavor Wilson) with SU(N) with a general gauge action
   - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
   - RHMC (any flavor staggered) with SU(N) for a general gauge action*
-  - HMC/RHMC with HISQ fermions for SU(3)
+  - HMC/RHMC with HISQ fermions for SU(N)
   - SU(N) stout smeared dynamical fermions (experimental)
   - Self-learning HMC with the plaquette action
 - Measurements

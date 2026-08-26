@@ -14,6 +14,9 @@ import ..Simulation_module:
     ConfigurationSequenceUpdateResult,
     ConfigurationSequenceState,
     GaugefieldsEnvironment,
+    HeatbathUpdateResult,
+    HMCUpdateResult,
+    SLHMCUpdateResult,
     Simulation,
     build_simulation,
     current_configuration_path,
@@ -264,13 +267,6 @@ function validate(spec::SimulationSpec)
     issues = ValidationIssue{Vector{String},Symbol,String}[]
     for (index, fermion) in enumerate(spec.config.fermions)
         if fermion.operator isa HISQDiracConfig
-            if spec.config.gauge.NC != 3
-                push!(issues, validation_issue(
-                    ("config", "gauge", "NC"),
-                    :must_equal_three,
-                    "HISQ requires an SU(3) gauge field",
-                ))
-            end
             if spec.config.gauge.halo < 3
                 push!(issues, validation_issue(
                     ("config", "gauge", "halo"),
@@ -452,6 +448,13 @@ end
 
 struct NoSimulationEventSink end
 
+"""Print rank-zero simulation progress in a terminal or notebook."""
+struct ConsoleSimulationEventSink{I<:IO}
+    io::I
+end
+
+ConsoleSimulationEventSink() = ConsoleSimulationEventSink(stdout)
+
 struct FunctionSimulationEventSink{F}
     callback::F
 end
@@ -469,6 +472,124 @@ end
 CompositeSimulationEventSink(sinks...) = CompositeSimulationEventSink(sinks)
 
 deliver_event!(::NoSimulationEventSink, event) = event
+
+function print_update_summary(io::IO, update::HMCUpdateResult)
+    print(
+        io,
+        "accepted=", update.accepted,
+        " H_initial=", update.initial_hamiltonian,
+        " H_final=", update.final_hamiltonian,
+        " delta_H=", update.delta_hamiltonian,
+    )
+end
+
+function print_update_summary(io::IO, update::SLHMCUpdateResult)
+    print(
+        io,
+        "accepted=", update.accepted,
+        " target_H_initial=", update.initial_hamiltonian,
+        " target_H_final=", update.final_hamiltonian,
+        " target_delta_H=", update.delta_hamiltonian,
+        " md_delta_H=", update.md_delta_hamiltonian,
+    )
+end
+
+function print_update_summary(io::IO, update::HeatbathUpdateResult)
+    print(
+        io,
+        "heatbath_sweep=", update.heatbath_sweep,
+        " overrelaxation_sweep=", update.overrelaxation_sweep,
+    )
+end
+
+function print_update_summary(
+    io::IO,
+    update::ConfigurationSequenceUpdateResult,
+)
+    print(
+        io,
+        "configuration=", update.current_index,
+        " path=", repr(update.path),
+    )
+end
+
+print_update_summary(io::IO, update) = print(io, nameof(typeof(update)))
+
+function print_simulation_event(io::IO, event::RunStarted)
+    println(
+        io,
+        "# run started: trajectory=", event.trajectory,
+        " thermalization=", event.schedule.thermalization_steps,
+        " production=", event.schedule.production_steps,
+    )
+end
+
+function print_simulation_event(io::IO, event::ThermalizationStepFinished)
+    print(
+        io,
+        "# thermalization step=", event.step,
+        " trajectory=", event.trajectory,
+        " ",
+    )
+    print_update_summary(io, event.update)
+    println(io)
+end
+
+function print_simulation_event(io::IO, event::TrajectoryFinished)
+    print(io, "# trajectory=", event.trajectory, " step=", event.step, " ")
+    print_update_summary(io, event.update)
+    println(io)
+end
+
+function print_simulation_event(io::IO, event::MeasurementFinished)
+    record = event.record
+    print(io, "# measurement: trajectory=", record.point.trajectory)
+    record.point.flow_time === nothing ||
+        print(io, " flow_time=", record.point.flow_time)
+    print(io, " ", record.name, " = ")
+    show(IOContext(io, :compact => true, :limit => true), record.value)
+    println(io)
+end
+
+function print_simulation_event(io::IO, event::ConfigurationSaved)
+    println(
+        io,
+        "# configuration saved: trajectory=", event.trajectory,
+        " format=", event.format,
+        " path=", repr(event.path),
+    )
+end
+
+function print_simulation_event(io::IO, event::ConfigurationLoaded)
+    println(
+        io,
+        "# configuration loaded: trajectory=", event.trajectory,
+        " index=", event.current_index,
+        " path=", repr(event.path),
+    )
+end
+
+function print_simulation_event(io::IO, event::RunStopped)
+    println(io, "# run stopped: ", event.summary)
+end
+
+function print_simulation_event(io::IO, event::RunFinished)
+    println(io, "# run finished: ", event.summary)
+end
+
+function print_simulation_event(io::IO, event::RunFailed)
+    println(
+        io,
+        "# run failed: trajectory=", event.trajectory,
+        " error=", event.message,
+    )
+end
+
+function deliver_event!(sink::ConsoleSimulationEventSink, event)
+    print_simulation_event(sink.io, event)
+    flush(sink.io)
+    return event
+end
 
 function deliver_event!(sink::FunctionSimulationEventSink, event)
     sink.callback(event)
@@ -863,42 +984,99 @@ Run until the schedule is complete or a cooperative stop is requested.
 Stop requests are checked only between complete trajectories, after HMC
 accept/reject and rollback and after any due measurement/checkpoint.
 """
-function run!(session::SimulationSession)
+function session_with_sink(session::SimulationSession, sink)
+    return SimulationSession(
+        session.simulation,
+        session.schedule,
+        session.measurements,
+        session.output,
+        sink,
+        session.state,
+    )
+end
+
+"""
+Run a complete simulation schedule.
+
+Progress is printed on rank zero by default. Pass `verbose=false` for GUI,
+batch, or library use; events are still delivered to the session's own sink.
+"""
+function run!(
+    session::SimulationSession;
+    verbose::Bool=true,
+    io::IO=stdout,
+)
+    active_session = if verbose
+        session_with_sink(
+            session,
+            CompositeSimulationEventSink(
+                session.sink,
+                ConsoleSimulationEventSink(io),
+            ),
+        )
+    else
+        session
+    end
     was_running = Base.Threads.atomic_cas!(
-        session.state.running,
+        active_session.state.running,
         false,
         true,
     )
     was_running == false || throw(ArgumentError(
         "this SimulationSession is already running",
     ))
-    session.state.stop_requested[] = false
+    active_session.state.stop_requested[] = false
     try
-        emit_event!(session, RunStarted(
-            session.schedule,
-            session.simulation.state.trajectory,
+        emit_event!(active_session, RunStarted(
+            active_session.schedule,
+            active_session.simulation.state.trajectory,
         ))
-        while !is_finished(session) && !session.state.stop_requested[]
-            advance_session_step!(session)
+        while !is_finished(active_session) &&
+              !active_session.state.stop_requested[]
+            advance_session_step!(active_session)
         end
-        stopped = session.state.stop_requested[] && !is_finished(session)
-        summary = run_summary(session; stopped)
+        stopped = active_session.state.stop_requested[] &&
+                  !is_finished(active_session)
+        summary = run_summary(active_session; stopped)
         if stopped
-            emit_event!(session, RunStopped(summary))
+            emit_event!(active_session, RunStopped(summary))
         else
-            emit_event!(session, RunFinished(summary))
+            emit_event!(active_session, RunFinished(summary))
         end
         return summary
     catch exception
         message = sprint(showerror, exception)
-        emit_event!(session, RunFailed(
-            session.simulation.state.trajectory,
+        emit_event!(active_session, RunFailed(
+            active_session.simulation.state.trajectory,
             message,
         ))
         rethrow()
     finally
-        session.state.running[] = false
+        active_session.state.running[] = false
     end
+end
+
+function Base.show(io::IO, summary::SimulationRunSummary)
+    print(
+        io,
+        "SimulationRunSummary(initial=", summary.initial_trajectory,
+        ", final=", summary.final_trajectory,
+        ", thermalization=", summary.thermalization_completed,
+        ", production=", summary.production_completed,
+        ", saved=", summary.saved_configurations,
+        ", stopped=", summary.stopped,
+        ")",
+    )
+end
+
+function Base.show(io::IO, ::MIME"text/plain", summary::SimulationRunSummary)
+    println(io, "SimulationRunSummary")
+    println(io, "  initial trajectory: ", summary.initial_trajectory)
+    println(io, "  final trajectory: ", summary.final_trajectory)
+    println(io, "  thermalization completed: ", summary.thermalization_completed)
+    println(io, "  production completed: ", summary.production_completed)
+    println(io, "  saved configurations: ", summary.saved_configurations)
+    print(io, "  stopped: ", summary.stopped)
 end
 
 function show_config(io::IO, schedule::SimulationSchedule)
@@ -1003,6 +1181,7 @@ export SimulationSchedule,
     RunFinished,
     RunFailed,
     NoSimulationEventSink,
+    ConsoleSimulationEventSink,
     FunctionSimulationEventSink,
     RecordingSimulationEventSink,
     CompositeSimulationEventSink,

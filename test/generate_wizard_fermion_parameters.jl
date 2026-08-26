@@ -219,7 +219,7 @@ function main()
     mkpath(OUTPUT_DIRECTORY)
     filenames = String[]
     for variant in FERMION_VARIANTS
-        colors_values = variant.operator == "HISQ" ? (3,) : (2, 3)
+        colors_values = (2, 3)
         stout_values = variant.operator == "HISQ" ? (false,) : (false, true)
         for colors in colors_values
             for stout in stout_values
@@ -256,8 +256,8 @@ function main()
         end
     end
 
-    length(filenames) == 164 || error(
-        "expected 164 Wizard fermion cases, generated $(length(filenames))",
+    length(filenames) == 184 || error(
+        "expected 184 Wizard fermion cases, generated $(length(filenames))",
     )
     existing = sort(filter(
         filename -> endswith(filename, ".toml"),

@@ -119,7 +119,7 @@ end
 
     @testset "all current Wizard files match Params" begin
         files = wizard_input_files()
-        @test length(files) == 444
+        @test length(files) == 464
         mktempdir(pwd()) do directory
             for (index, filename) in enumerate(files)
                 document = TOML.parsefile(filename)

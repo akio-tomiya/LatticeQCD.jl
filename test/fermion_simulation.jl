@@ -109,7 +109,6 @@ function dynamical_test_input(
     smearing=NoFermionSmearingConfig(),
 )
     uses_hisq = operator isa HISQDiracConfig
-    colors = uses_hisq ? 3 : colors
     lattice = LatticeConfig(uses_hisq ? (4, 4, 4, 4) : (2, 2, 2, 2))
     gauge = GaugeConfig(colors, uses_hisq ? 3 : 1, "cold", nothing, 0x1234)
     gauge_action = GaugeActionConfig(
@@ -197,7 +196,19 @@ end
         (
             HISQDiracConfig(0.5, -0.083),
             4,
+            2,
+            NoFermionSmearingConfig(),
+        ),
+        (
+            HISQDiracConfig(0.5, -0.083),
+            4,
             3,
+            NoFermionSmearingConfig(),
+        ),
+        (
+            HISQDiracConfig(0.5, -0.083),
+            4,
+            4,
             NoFermionSmearingConfig(),
         ),
         (
@@ -265,16 +276,11 @@ end
         @test simulation.state.trajectory == 1
     end
 
-    valid_hisq = dynamical_test_input(HISQDiracConfig(0.5, -0.083);
-        flavors=4)
-    bad_color_hisq = LQCDConfig(
-        valid_hisq.lattice,
-        GaugeConfig(2, 3, "cold", nothing, 0x1234),
-        valid_hisq.gauge_action,
-        valid_hisq.fermions,
-        valid_hisq.update,
+    valid_hisq = dynamical_test_input(
+        HISQDiracConfig(0.5, -0.083);
+        colors=4,
+        flavors=4,
     )
-    @test_throws ArgumentError build_simulation(bad_color_hisq, environment)
     bad_halo_hisq = LQCDConfig(
         valid_hisq.lattice,
         GaugeConfig(3, 2, "cold", nothing, 0x1234),
@@ -284,11 +290,6 @@ end
     )
     @test_throws ArgumentError build_simulation(bad_halo_hisq, environment)
 
-    hisq_issues = validate(SimulationSpec(
-        bad_color_hisq,
-        SimulationSchedule(0, 1),
-    ))
-    @test getproperty.(hisq_issues, :code) == [:must_equal_three]
     hisq_issues = validate(SimulationSpec(
         bad_halo_hisq,
         SimulationSchedule(0, 1),

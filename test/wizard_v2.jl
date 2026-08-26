@@ -76,6 +76,26 @@ const WizardV2 = LatticeQCD.Wizard
         @test draft.controlparams.loadU_format === nothing
     end
 
+    @testset "Expert mode accepts general SU(N)" begin
+        draft = WizardV2.WizardV2Draft()
+        draft.mode = WizardV2.expert
+        ui = WizardV2.ScriptedWizardV2UI(Any[
+            4, 4, 4, 4,
+            3,      # Other SU(N)
+            4,      # SU(4)
+            111,
+            2,
+            7.2,
+        ])
+
+        result = WizardV2.edit_wizard_v2_lattice!(ui, draft)
+
+        @test result.action == WizardV2.WizardV2Next
+        @test isempty(ui.answers)
+        @test draft.physicalparams.NC == 4
+        @test draft.physicalparams.β == 7.2
+    end
+
     @testset "Expert fermion and stout branches" begin
         clover = WizardV2.WizardV2Draft()
         clover.mode = WizardV2.expert
@@ -130,6 +150,32 @@ const WizardV2 = LatticeQCD.Wizard
         @test hisq_dictionary["Physical setting(fermions)"][
             "naik_epsilon"
         ] == -0.083
+
+        for colors in (2, 4)
+            generic_hisq = WizardV2.WizardV2Draft()
+            generic_hisq.mode = WizardV2.expert
+            generic_hisq.physicalparams.NC = colors
+            generic_hisq_ui = WizardV2.ScriptedWizardV2UI(Any[
+                5,          # HISQ for any SU(N)
+                0.2,
+                -0.083,
+                3,          # Nf=4
+                1e-10,
+                2_000,
+            ])
+
+            result = WizardV2.edit_wizard_v2_fermion!(
+                generic_hisq_ui,
+                generic_hisq,
+            )
+
+            @test result.action == WizardV2.WizardV2Next
+            @test isempty(generic_hisq_ui.answers)
+            @test generic_hisq.fermionparams.Dirac_operator == "HISQ"
+            @test WizardV2.wizard_v2_parameter_dictionary(generic_hisq)[
+                "Physical setting"
+            ]["NC"] == colors
+        end
 
         staggered = WizardV2.WizardV2Draft()
         staggered.mode = WizardV2.expert

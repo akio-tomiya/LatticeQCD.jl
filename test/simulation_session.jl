@@ -232,7 +232,15 @@ end
         @test session.state.production_completed == 0
         @test count(event -> event isa ThermalizationStepFinished, sink.events) == 1
 
-        summary = run!(session)
+        console = IOBuffer()
+        summary = run!(session; io=console)
+        console_output = String(take!(console))
+        @test occursin("# run started:", console_output)
+        @test occursin("# trajectory=2", console_output)
+        @test occursin("accepted=", console_output)
+        @test occursin("# measurement: trajectory=2 plaquette =", console_output)
+        @test occursin("# configuration saved: trajectory=2", console_output)
+        @test occursin("# run finished:", console_output)
         @test summary == run_summary(session)
         @test summary.initial_trajectory == 0
         @test summary.final_trajectory == 4
@@ -240,6 +248,11 @@ end
         @test summary.production_completed == 3
         @test summary.saved_configurations == 2
         @test !summary.stopped
+        @test occursin("production=3", sprint(show, summary))
+        @test occursin(
+            "production completed: 3",
+            sprint(show, MIME"text/plain"(), summary),
+        )
         @test is_finished(session)
         @test !is_running(session)
         @test_throws EOFError step!(session)
@@ -310,13 +323,15 @@ end
     )
     session_slot[] = session
 
-    stopped = run!(session)
+    silent_output = IOBuffer()
+    stopped = run!(session; verbose=false, io=silent_output)
+    @test isempty(take!(silent_output))
     @test stopped.stopped
     @test stopped.production_completed == 1
     @test !is_finished(session)
     @test count(event -> event isa RunStopped, events) == 1
 
-    finished = run!(session)
+    finished = run!(session; verbose=false)
     @test !finished.stopped
     @test finished.production_completed == 4
     @test is_finished(session)

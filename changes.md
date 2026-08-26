@@ -9,7 +9,8 @@
 - Added `Simulation`, `SimulationSpec`, and `SimulationSession` APIs suitable
   for scripts, Jupyter notebooks, MPI/GPU applications, and future GUIs.
   Sessions expose typed events and cooperative step, run, stop, and resume
-  operations.
+  operations. `run!` prints rank-zero progress and results by default, with
+  `verbose=false` for event-driven GUI or library use.
 - Added a Param-free TOML reader and a versioned canonical TOML schema.
   Existing Wizard TOML files remain readable, while the original `Params`
   conversion remains available as a compatibility and debugging oracle.
@@ -22,9 +23,9 @@
   SLHMC keeps the exact target action separate from the action used for the
   MD proposal. Gauge-only Sexton-Weingarten input is warned about and ignored;
   gauge/fermion force splitting remains supported.
-- Added Wilson, Wilson-clover, staggered, HISQ, standard domain-wall, and
-  Möbius domain-wall fermion configurations, including stout-smeared actions,
-  through the LatticeDiracOperators MD-action interface.
+- Added Wilson, Wilson-clover, staggered, SU(N) HISQ, standard domain-wall,
+  and Möbius domain-wall fermion configurations, including stout-smeared
+  actions, through the LatticeDiracOperators MD-action interface.
 - Added typed measurement plans, multiple measurements, and gradient-flow
   measurements. Fermionic observables remain implemented by
   QCDMeasurements.
@@ -38,7 +39,7 @@
 - Updated the supported package stack to Gaugefields 1.1.1,
   LatticeDiracOperators 1.1, LatticeMatrices 1.2.1 (through Gaugefields), and
   QCDMeasurements 1.
-- Added generated regression matrices for all 444 current Wizard inputs and
+- Added generated regression matrices for all 464 current Wizard inputs and
   independent Wilson-clover, HISQ, and Möbius comparisons. Serial CPU, MPI
   one/two-rank, and NVIDIA H100 CUDA paths are covered.
 
