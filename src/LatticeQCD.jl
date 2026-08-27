@@ -515,12 +515,10 @@ export legacy_simulation_values,
 #export calc_Action
 #export calc_topological_charge
 #export saveU, loadU, loadU!
-export run_LQCD, run_LQCD!
+export run_LQCD
 
 #export write_config
 export run_wizard, run_wizardv2, run_wizard_legacy
-export analyze,
-    get_plaquette, get_polyakov, get_plaquette_average, get_polyakov_average, get_trjs
 
 export run_LQCD_file
 

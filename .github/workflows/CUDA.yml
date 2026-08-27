@@ -1,0 +1,42 @@
+name: CUDA qualification
+
+on:
+  workflow_dispatch:
+    inputs:
+      cuda_cases:
+        description: Comma-separated GPU smoke cases
+        required: true
+        default: gauge,staggered,hisq
+      restart_case:
+        description: Fermion case used for exact restart
+        required: true
+        default: staggered
+      cuda_device:
+        description: CUDA device number in PCI bus order
+        required: true
+        default: "0"
+
+jobs:
+  h100:
+    name: NVIDIA CUDA hardware smoke and restart
+    runs-on: [self-hosted, linux, x64, cuda]
+    timeout-minutes: 90
+    env:
+      LQCD_CUDA_CASES: ${{ inputs.cuda_cases }}
+      LQCD_CUDA_RESTART_CASE: ${{ inputs.restart_case }}
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_TEST_DEVICE: ${{ inputs.cuda_device }}
+      JULIA_NUM_THREADS: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+          arch: x64
+      - uses: julia-actions/cache@v2
+      - name: Build isolated CUDA test environment
+        run: julia --startup-file=no -e 'using Pkg; Pkg.activate(".gpu-test-env"); Pkg.develop(path="."); Pkg.add(["CUDA", "JACC"]); Pkg.instantiate()'
+      - name: Select JACC CUDA backend
+        run: julia --startup-file=no --project=.gpu-test-env -e 'using JACC; JACC.set_backend("cuda")'
+      - name: Run real-device qualification
+        run: julia --startup-file=no --project=.gpu-test-env test/gpu_smoke.jl

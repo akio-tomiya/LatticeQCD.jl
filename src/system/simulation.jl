@@ -3,7 +3,6 @@ module Simulation_module
 import Random
 import Gaugefields
 import Gaugefields: load_configuration!, save_configuration
-import Gaugefields.Temporalfields_module: get_temp, unused!
 import LatticeDiracOperators
 
 import ..LQCDCommunication: broadcast!, comm_rank, is_distributed
@@ -930,6 +929,7 @@ mutable struct SLHMCUpdater{
     T<:Real,
     S<:Integer,
     R<:Tuple,
+    Q<:Tuple,
 }
     md_driver::D
     target_driver::E
@@ -938,6 +938,7 @@ mutable struct SLHMCUpdater{
     momentum_sigma::T
     momentum_seed::S
     pseudofermion_refreshes::R
+    md_trajectory_state_providers::Q
 end
 
 """Mutable, checkpointable state of an HMC chain."""
@@ -1130,6 +1131,11 @@ function build_slhmc_updater(
     target_driver = build_md_driver(config.md, gauge, target_action)
     momentum = Gaugefields.gauge_momenta(gauge)
     backup = GaugeConfiguration([similar(link) for link in gauge])
+    md_trajectory_state_providers = md_action isa Gaugefields.MDActionSet ?
+        Tuple(
+            provider for (name, provider) in pairs(md_action.terms)
+            if name !== :gauge
+        ) : ()
     return SLHMCUpdater(
         md_driver,
         target_driver,
@@ -1138,6 +1144,7 @@ function build_slhmc_updater(
         config.momentum.sigma,
         random_stream_seed(config.momentum.random),
         refreshes,
+        md_trajectory_state_providers,
     )
 end
 
@@ -1488,18 +1495,6 @@ function refresh_pseudofermions!(refreshes::Tuple, gauge, trajectory::Integer)
     return nothing
 end
 
-function clear_fermion_temporary_pool!(pool)
-    fields, tokens = get_temp(pool, length(pool))
-    try
-        for field in fields
-            LatticeDiracOperators.clear_fermion!(field)
-        end
-    finally
-        unused!(pool, tokens)
-    end
-    return nothing
-end
-
 """
 Discard chronological solver guesses before each pseudofermion trajectory.
 
@@ -1509,11 +1504,14 @@ continuous run and a newly constructed session follow the same solver path.
 """
 function reset_pseudofermion_solver_state!(refreshes::Tuple)
     for refresh in refreshes
-        action = refresh.provider.action
-        hasproperty(action, :_temporary_fermionfields) || continue
-        clear_fermion_temporary_pool!(
-            getproperty(action, :_temporary_fermionfields),
-        )
+        LatticeDiracOperators.reset_trajectory_state!(refresh.provider)
+    end
+    return nothing
+end
+
+function reset_md_trajectory_state!(providers::Tuple)
+    for provider in providers
+        LatticeDiracOperators.reset_trajectory_state!(provider)
     end
     return nothing
 end
@@ -1581,6 +1579,7 @@ function update!(
     gauge = gauge_links(configuration)
     trajectory = state.trajectory
     reset_pseudofermion_solver_state!(updater.pseudofermion_refreshes)
+    reset_md_trajectory_state!(updater.md_trajectory_state_providers)
     refresh_pseudofermions!(
         updater.pseudofermion_refreshes,
         gauge,

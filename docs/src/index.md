@@ -2,7 +2,7 @@
 This is the lattice QCD package purely written in Julia language.
 Lattice QCD is a well-established non-perturbative approach to solving the quantum chromodynamics (QCD) theory of quarks and gluons.
 
-We confirmed that it works in Julia 1.5 or later. 
+LatticeQCD.jl v2 supports Julia 1.11 and 1.12.
 
 This code is inspired by the Lattice Tool Kit (LTK) written in [Fortran](https://nio-mon.riise.hiroshima-u.ac.jp/LTK/).
 With the use of a modern programing language, it is easy to understand how the code works. 
@@ -154,12 +154,38 @@ load_checkpoint!(session, "restart/restart_00000010.jld2")
 summary = run!(session)
 ```
 
+Each checkpoint stores a SHA-256 fingerprint of the complete typed physical
+input and numeric element type, plus the Julia and package versions. A
+different lattice, gauge/fermion action, solver, MD integrator, random stream,
+or numeric type is rejected before gauge links are loaded. Version differences
+warn by default and can be made fatal:
+
+```julia
+load_checkpoint!(session, path; strict_versions=true)
+```
+
+For a deliberate non-bitwise continuation only,
+`allow_config_mismatch=true` changes the input mismatch to a warning. Backend,
+communicator, and MPI process grid are excluded from the physical fingerprint,
+so the same global JLD2 checkpoint remains portable between serial CPU,
+single GPU, and MPI decompositions when the selected field implementation can
+represent the same configuration.
+
 Every MPI rank must call the save/load operation. Momentum and pseudofermion
 workspaces are regenerated for the next trajectory and therefore are not
 serialized. Dynamical-fermion HMC clears chronological Krylov solution
 guesses before each trajectory, so a continuous run and a restarted run begin
 the next fermion solve from the same state. Mid-integrator-substep restart is
 deliberately unsupported.
+
+Exact two-trajectory restart regressions cover Wilson, Wilson-clover,
+staggered RHMC, HISQ RHMC, standard and Möbius domain-wall, stout Wilson, and
+fermionic SLHMC. Measurement replay is intentionally not part of bitwise HMC
+state equivalence.
+
+See [Backend support and qualification](backends.md) and the [v1 to v2
+migration guide](migration-v2.md) for release boundaries and compatibility
+details.
 
 ## Typed TOML input without `Params`
 
@@ -380,11 +406,12 @@ since the random number generation is based on the original Fortran code and ran
 
 
 
-```@autodocs
-Modules = [LatticeQCD.LTK_universe]
-```
+## Current API
 
-```@docs
-Setup_Gauge_action
-Setup_Fermi_action
-```
+The v2 entry points are `run_wizard`, `load_simulation_spec`,
+`build_simulation`, `step!`, and `run!`. Configuration, update, measurement,
+and output choices are represented by the concrete typed objects described
+above. The former `LTK_universe`, `Setup_Gauge_action`, and
+`Setup_Fermi_action` names are legacy implementation details and are not part
+of the v2 public API. See [Migrating to v2](migration-v2.md) for the mapping
+from the historical workflow.

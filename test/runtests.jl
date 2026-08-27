@@ -1,6 +1,7 @@
 using LatticeQCD
 using Test
 
+include("public_api.jl")
 include("mpi_optional.jl")
 include("lqcd_config.jl")
 include("simulation.jl")
@@ -10,6 +11,7 @@ include("fermion_simulation.jl")
 include("slhmc.jl")
 include("fermion_legacy_equivalence.jl")
 include("simulation_session.jl")
+include("restart_matrix.jl")
 include("simulation_input.jl")
 include("configuration_sequence.jl")
 include("wizard_gauge_only.jl")

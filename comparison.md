@@ -469,9 +469,9 @@ all of them, passed 528/528 assertions.
 
 # Official v2 dependency and H100 smoke test
 
-The typed LatticeQCD path was finally resolved from General with
-Gaugefields 1.1.1, LatticeDiracOperators 1.1.0, LatticeMatrices 1.2.1, and
-QCDMeasurements 1.0.0. The optional `test/gpu_smoke.jl` driver was run with
+The typed LatticeQCD path was finally tested with Gaugefields 1.1.2,
+LatticeDiracOperators 1.1.2, LatticeMatrices 1.2.1, and QCDMeasurements
+1.0.0. The optional `test/gpu_smoke.jl` driver was run with
 Julia 1.11.8, CUDA.jl 6.3.0, JACC's `cuda` backend, a serial communicator,
 and one NVIDIA H100 NVL. Each case used one QPQ leapfrog step with
 `delta_tau=0.001` and deterministic random streams.
@@ -485,12 +485,17 @@ and one NVIDIA H100 NVL. Each case used one QPQ leapfrog step with
 All Hamiltonians and plaquettes were finite, the backing arrays were CUDA
 `CuArray`s, and every resulting configuration was saved as portable JLD2,
 loaded into a fresh GPU configuration, and reproduced the plaquette. The
-test passed 21/21 assertions. Repeating the same seeded driver produced the
-same three plaquettes and Hamiltonian differences.
+test also saved a staggered RHMC checkpoint after one trajectory, rebuilt a
+new session, restored it on the GPU, and reproduced the two-trajectory
+continuous run exactly. It passed 27/27 assertions. Repeating the same seeded
+driver on an RTX PRO 6000 produced the same three plaquettes and Hamiltonian
+differences.
 
 The serial typed suites, including every current Wizard input, were also run
 with this official dependency set. The gauge-only matrix passed 2830/2830
 runtime assertions, the fermion configuration-I/O matrix passed 507/507,
 and the 164 dynamical-fermion cases passed four shards of 1572, 1695, 1572,
-and 1695 assertions. Optional-MPI tests passed the lifecycle checks and all
-worker checks with one and two ranks.
+and 1695 assertions. Optional-MPI tests passed the lifecycle checks (8/8),
+the one-rank worker (30/30), and both two-rank workers (30/30 per rank). The
+worker covers exact JLD2 checkpoint restart for both gauge-only and
+Wilson-fermion HMC.

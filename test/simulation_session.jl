@@ -510,6 +510,88 @@ end
         first = step!(interrupted)
         @test first.checkpoint_path == checkpoint_output_path(checkpoints, 1)
 
+        checkpoint_metadata =
+            LatticeQCD.SimulationSession_module.read_checkpoint_metadata(
+                first.checkpoint_path,
+            )
+        @test checkpoint_metadata.input_signature_version == 1
+        @test length(checkpoint_metadata.input_fingerprint) == 64
+        @test checkpoint_metadata.package_versions.latticeqcd ==
+              string(pkgversion(LatticeQCD))
+        @test checkpoint_metadata.package_versions.gaugefields ==
+              string(pkgversion(Gaugefields))
+        independently_built = build_simulation(spec, environment)
+        @test LatticeQCD.SimulationSession_module.checkpoint_input_fingerprint(
+            LatticeQCD.SimulationSession_module.checkpoint_input_snapshot(
+                independently_built,
+            ),
+        ) == checkpoint_metadata.input_fingerprint
+
+        mismatched_gauge_action = GaugeActionConfig(
+            GaugeActionTermConfig(:gauge_plaquette, "plaquette", 2.1),
+        )
+        mismatched_beta_config = LQCDConfig(
+            config.lattice,
+            config.gauge,
+            mismatched_gauge_action,
+            config.fermions,
+            config.update,
+        )
+        mismatched_beta = build_simulation(
+            SimulationSpec(mismatched_beta_config, schedule),
+            environment,
+        )
+        @test_throws ArgumentError load_checkpoint!(
+            mismatched_beta,
+            first.checkpoint_path,
+        )
+
+        original_fermion = only(config.fermions)
+        mismatched_fermion = FermionActionConfig(
+            original_fermion.name,
+            WilsonDiracConfig(0.06, 1.0),
+            original_fermion.flavors,
+            original_fermion.solver,
+            original_fermion.smearing,
+        )
+        mismatched_kappa_config = LQCDConfig(
+            config.lattice,
+            config.gauge,
+            config.gauge_action,
+            (mismatched_fermion,),
+            config.update,
+        )
+        mismatched_kappa = build_simulation(
+            SimulationSpec(mismatched_kappa_config, schedule),
+            environment,
+        )
+        @test_throws ArgumentError load_checkpoint!(
+            mismatched_kappa,
+            first.checkpoint_path,
+        )
+
+        fake_versions = merge(
+            checkpoint_metadata.package_versions,
+            (latticeqcd="0.0.0",),
+        )
+        version_mismatch = merge(
+            checkpoint_metadata,
+            (package_versions=fake_versions,),
+        )
+        @test_logs (:warn, r"package versions") (
+            LatticeQCD.SimulationSession_module.validate_checkpoint_metadata(
+                independently_built,
+                version_mismatch,
+            )
+        )
+        @test_throws ArgumentError (
+            LatticeQCD.SimulationSession_module.validate_checkpoint_metadata(
+                independently_built,
+                version_mismatch;
+                strict_versions=true,
+            )
+        )
+
         restored_events = Any[]
         restored = build_simulation(
             spec,

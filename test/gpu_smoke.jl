@@ -1,6 +1,8 @@
 # Optional direct-CUDA regression. Run this file from an environment that
 # contains LatticeQCD, JACC, CUDA, and has the JACC backend set to "cuda".
 using CUDA
+CUDA.device!(parse(Int, get(ENV, "CUDA_TEST_DEVICE", "0")))
+
 import JACC
 
 JACC.@init_backend
@@ -10,7 +12,6 @@ using Test
 import Gaugefields
 import LatticeDiracOperators
 
-CUDA.device!(parse(Int, get(ENV, "CUDA_TEST_DEVICE", "0")))
 CUDA.functional() || error("CUDA is not functional")
 JACC.backend == "cuda" || error("JACC CUDA backend is not active")
 
@@ -122,7 +123,17 @@ environment = GaugefieldsEnvironment(
         )
     end
 
-    restart_name, restart_operator = first(cases)
+    requested_restart = Symbol(get(
+        ENV,
+        "LQCD_CUDA_RESTART_CASE",
+        "staggered",
+    ))
+    restart_matches = filter(case -> first(case) === requested_restart, cases)
+    isempty(restart_matches) && error(
+        "LQCD_CUDA_RESTART_CASE=$requested_restart is not selected by " *
+        "LQCD_CUDA_CASES",
+    )
+    restart_name, restart_operator = only(restart_matches)
     @testset "$(restart_name) restart checkpoint remains on CUDA" begin
         config = gpu_hmc_input(restart_operator)
         schedule = SimulationSchedule(0, 2)

@@ -5,6 +5,21 @@ import ..System_parameters: Params
 """Geometry of a lattice, independent of fields and halo storage."""
 struct LatticeConfig{Dim,T<:Integer}
     L::NTuple{Dim,T}
+    function LatticeConfig{Dim,T}(
+        L::NTuple{Dim,T},
+    ) where {Dim,T<:Integer}
+        return new{Dim,T}(L)
+    end
+end
+
+function LatticeConfig(L::Tuple)
+    isempty(L) && throw(ArgumentError("a lattice needs at least one extent"))
+    all(extent -> extent isa Integer, L) || throw(ArgumentError(
+        "lattice extents must be integers; got $L",
+    ))
+    extent_type = promote_type(map(typeof, L)...)
+    extents = ntuple(index -> convert(extent_type, L[index]), length(L))
+    return LatticeConfig{length(extents),extent_type}(extents)
 end
 
 """Common supertype for typed gauge-field initialization settings."""

@@ -48,15 +48,24 @@
   interval in both simple and expert HMC modes. Dynamical-fermion trajectories
   clear chronological Krylov guesses at each boundary, so pseudofermions can
   be regenerated from their seed and trajectory after a portable restart.
+  Checkpoints include a SHA-256 fingerprint of the typed physical input and
+  numeric type plus Julia/package versions. Incompatible physics is rejected
+  before loading; dependency differences warn or can be made strict.
 - Made MPI an optional weak dependency loaded through `LatticeQCDMPIExt`.
   Serial and one-GPU notebook runs can explicitly use
   `Gaugefields.SerialCommunicator()` without initializing MPI.
-- Updated the supported package stack to Gaugefields 1.1.1,
-  LatticeDiracOperators 1.1, LatticeMatrices 1.2.1 (through Gaugefields), and
+- Updated the supported package stack to Gaugefields 1.1.2,
+  LatticeDiracOperators 1.1.2, LatticeMatrices 1.2.1 (through Gaugefields), and
   QCDMeasurements 1.
 - Added generated regression matrices for all 464 current Wizard inputs and
   independent Wilson-clover, HISQ, and Möbius comparisons. Serial CPU, MPI
   one/two-rank, and NVIDIA H100 CUDA paths are covered.
+- Added bitwise restart regressions for Wilson, Wilson-clover, staggered RHMC,
+  HISQ RHMC, standard/Möbius domain-wall, stout Wilson, and fermionic SLHMC.
+- Added public-API and Aqua quality gates. Removed legacy names that were
+  exported without loaded implementations, and fixed unbound type parameters
+  in the lattice and legacy heatbath constructors.
+- Documented the v2 backend qualification matrix and v1 migration path.
 
 Large, streaming JLD2 writes that avoid assembling a global configuration on
 rank zero are intentionally deferred; v2.0 retains the portable rank-zero

@@ -142,16 +142,11 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - Gradient flow for a generic action (experimental)
 - I/O for gauge configurations
   - ILDG format (Binary)
-  - JLD format (Default binary file for Julia, one of HDF5)
+  - Portable JLD2 format (default typed-API output; one global configuration)
   - Text file for Bridge++ (Bridgetext)
   - Atomic, periodic JLD2 restart checkpoints at completed HMC trajectories
 
 *If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
-
-To use following functions, please use v 0.1.2
-- Fermion integrated HMC with a general gauge action
-- Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
-
 
 *Version below 1.0, it uses ``***.jl`` as a default parameter file, and now it uses ``***.toml``. Version 1.0 supports both parameter file formats.
 
@@ -171,6 +166,13 @@ environment = GaugefieldsEnvironment(
     process_grid=(1, 1, 1, 1),
 )
 ```
+
+The v2.0 release qualification covers serial CPU, one/two-rank CPU MPI, and a
+single NVIDIA H100 using CUDA. MPI+CUDA multi-GPU, AMDGPU, and oneAPI use the
+same backend-neutral JACC/LatticeMatrices path but are not yet release-tested;
+they are experimental rather than claimed supported configurations. See the
+[backend support matrix](docs/src/backends.md) for the tested fermions, I/O,
+restart coverage, and the optional GPU command.
 
 For a distributed run, install and load MPI explicitly, initialize it, and
 pass its communicator:

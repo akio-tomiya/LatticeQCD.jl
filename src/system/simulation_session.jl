@@ -2,6 +2,9 @@ module SimulationSession_module
 
 import Gaugefields
 import JLD2
+import LatticeDiracOperators
+import QCDMeasurements
+import SHA
 import Serialization
 
 import ..LQCDCommunication: broadcast!, comm_rank, is_root
@@ -966,7 +969,8 @@ end
 
 const RESTART_CHECKPOINT_FORMAT =
     "LatticeQCD.jl trajectory-boundary restart checkpoint"
-const RESTART_CHECKPOINT_VERSION = 1
+const RESTART_CHECKPOINT_VERSION = 2
+const RESTART_INPUT_SIGNATURE_VERSION = 1
 
 checkpoint_output_path(
     output::JLD2CheckpointOutput,
@@ -1001,11 +1005,41 @@ function root_operation(operation, communicator, description::AbstractString)
     return nothing
 end
 
+function checkpoint_input_snapshot(session::SimulationSession)
+    buffer = IOBuffer()
+    Serialization.serialize(
+        buffer,
+        (
+            input=session.simulation.input,
+            element_type=session.simulation.environment.element_type,
+        ),
+    )
+    return take!(buffer)
+end
+
+checkpoint_input_fingerprint(snapshot::AbstractVector{UInt8}) =
+    bytes2hex(SHA.sha256(snapshot))
+
+function checkpoint_package_versions()
+    latticeqcd = parentmodule(@__MODULE__)
+    return (
+        julia=string(VERSION),
+        latticeqcd=string(pkgversion(latticeqcd)),
+        gaugefields=string(pkgversion(Gaugefields)),
+        lattice_dirac_operators=string(pkgversion(LatticeDiracOperators)),
+        lattice_matrices=string(pkgversion(
+            LatticeDiracOperators.LatticeMatrices,
+        )),
+        qcd_measurements=string(pkgversion(QCDMeasurements)),
+    )
+end
+
 function checkpoint_metadata(session::SimulationSession)
     simulation_state = session.simulation.state
     simulation_state isa HMCState || throw(ArgumentError(
         "restart checkpoints currently require HMC or SLHMC state",
     ))
+    input_snapshot = checkpoint_input_snapshot(session)
     return (
         trajectory=simulation_state.trajectory,
         accepted=simulation_state.accepted,
@@ -1017,6 +1051,10 @@ function checkpoint_metadata(session::SimulationSession)
         production_completed=session.state.production_completed,
         saved_configurations=session.state.saved_configurations,
         saved_checkpoints=session.state.saved_checkpoints,
+        input_signature_version=RESTART_INPUT_SIGNATURE_VERSION,
+        input_snapshot=input_snapshot,
+        input_fingerprint=checkpoint_input_fingerprint(input_snapshot),
+        package_versions=checkpoint_package_versions(),
     )
 end
 
@@ -1038,6 +1076,11 @@ function append_checkpoint_metadata!(path::AbstractString, metadata)
         file["latticeqcd_saved_configurations"] =
             metadata.saved_configurations
         file["latticeqcd_saved_checkpoints"] = metadata.saved_checkpoints
+        file["latticeqcd_input_signature_version"] =
+            metadata.input_signature_version
+        file["latticeqcd_input_snapshot"] = metadata.input_snapshot
+        file["latticeqcd_input_fingerprint"] = metadata.input_fingerprint
+        file["latticeqcd_package_versions"] = metadata.package_versions
     end
     return path
 end
@@ -1071,6 +1114,12 @@ function read_checkpoint_metadata(path::AbstractString)
                 file["latticeqcd_saved_configurations"],
             ),
             saved_checkpoints=Int(file["latticeqcd_saved_checkpoints"]),
+            input_signature_version=Int(
+                file["latticeqcd_input_signature_version"],
+            ),
+            input_snapshot=Vector{UInt8}(file["latticeqcd_input_snapshot"]),
+            input_fingerprint=String(file["latticeqcd_input_fingerprint"]),
+            package_versions=file["latticeqcd_package_versions"],
         )
     end
 end
@@ -1104,6 +1153,9 @@ end
 function validate_checkpoint_metadata(
     session::SimulationSession,
     metadata,
+    ;
+    allow_config_mismatch::Bool=false,
+    strict_versions::Bool=false,
 )
     session.simulation.state isa HMCState || throw(ArgumentError(
         "restart checkpoints currently require HMC or SLHMC state",
@@ -1155,6 +1207,41 @@ function validate_checkpoint_metadata(
             "$(typeof(metadata.metropolis_rng)) does not match session type " *
             "$(typeof(session.simulation.state.metropolis_rng))",
         ))
+    metadata.input_signature_version == RESTART_INPUT_SIGNATURE_VERSION ||
+        throw(ArgumentError(
+            "checkpoint input-signature version " *
+            "$(metadata.input_signature_version) is unsupported; expected " *
+            "$RESTART_INPUT_SIGNATURE_VERSION",
+        ))
+    checkpoint_input_fingerprint(metadata.input_snapshot) ==
+        metadata.input_fingerprint || throw(ArgumentError(
+        "checkpoint input snapshot failed its SHA-256 integrity check",
+    ))
+    current_snapshot = checkpoint_input_snapshot(session)
+    current_fingerprint = checkpoint_input_fingerprint(current_snapshot)
+    if metadata.input_fingerprint != current_fingerprint
+        message = "checkpoint simulation fingerprint " *
+            "$(metadata.input_fingerprint) does not match the requested " *
+            "simulation fingerprint $current_fingerprint; lattice, action, " *
+            "fermion, solver, MD, random-stream, or numeric-type settings " *
+            "differ"
+        if allow_config_mismatch
+            @warn message
+        else
+            throw(ArgumentError(message))
+        end
+    end
+    current_versions = checkpoint_package_versions()
+    if metadata.package_versions != current_versions
+        message = "checkpoint package versions " *
+            "$(metadata.package_versions) differ from the current runtime " *
+            "$current_versions; bitwise replay is not guaranteed"
+        if strict_versions
+            throw(ArgumentError(message))
+        else
+            @warn message
+        end
+    end
     return nothing
 end
 
@@ -1194,14 +1281,23 @@ function save_checkpoint(path::AbstractString, session::SimulationSession)
 end
 
 """
-    load_checkpoint!(session, path)
+    load_checkpoint!(session, path; allow_config_mismatch=false,
+                     strict_versions=false)
 
 Restore gauge links, HMC counters, the Metropolis RNG, and session progress.
-The session must be built from a compatible specification on every rank.
+The session must be built from a compatible specification on every rank. By
+default a SHA-256 mismatch in the lattice, actions, fermions, solver, MD,
+random streams, or numeric type is rejected. Package-version differences
+warn; set `strict_versions=true` to reject them as well. The explicit
+`allow_config_mismatch=true` escape hatch warns and continues, and should only
+be used for a deliberate non-bitwise continuation.
 """
 function load_checkpoint!(
     session::SimulationSession,
     path::AbstractString,
+    ;
+    allow_config_mismatch::Bool=false,
+    strict_versions::Bool=false,
 )
     is_running(session) && throw(ArgumentError(
         "cannot restore a checkpoint while the session is running",
@@ -1212,7 +1308,12 @@ function load_checkpoint!(
         communicator,
         "checkpoint metadata read",
     )
-    validate_checkpoint_metadata(session, metadata)
+    validate_checkpoint_metadata(
+        session,
+        metadata;
+        allow_config_mismatch,
+        strict_versions,
+    )
     load_configuration!(session.simulation.configuration, path; format=:jld2)
 
     simulation_state = session.simulation.state
