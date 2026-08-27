@@ -46,6 +46,10 @@ struct WizardV2Quit <: AbstractWizardV2PromptResult end
 abstract type AbstractWizardV2UI end
 struct TerminalWizardV2UI <: AbstractWizardV2UI end
 
+const WIZARD_V2_BACK_OPTION =
+    "← Back to previous section (discard edits in this section)"
+const WIZARD_V2_QUIT_OPTION = "Quit wizard without saving"
+
 """A small non-interactive UI used to exercise Wizard v2 in tests."""
 mutable struct ScriptedWizardV2UI <: AbstractWizardV2UI
     answers::Vector{Any}
@@ -73,10 +77,10 @@ function wizard_v2_choice(
     displayed = copy(options)
     back_index = 0
     if allow_back
-        push!(displayed, "← Back")
+        push!(displayed, WIZARD_V2_BACK_OPTION)
         back_index = length(displayed)
     end
-    push!(displayed, "Quit wizard")
+    push!(displayed, WIZARD_V2_QUIT_OPTION)
     quit_index = length(displayed)
 
     println(prompt)
@@ -114,12 +118,16 @@ function wizard_v2_multiselect(
     selected=Set{Int}(),
 )
     displayed = copy(options)
-    push!(displayed, "← Back")
+    push!(displayed, WIZARD_V2_BACK_OPTION)
     back_index = length(displayed)
-    push!(displayed, "Quit wizard")
+    push!(displayed, WIZARD_V2_QUIT_OPTION)
     quit_index = length(displayed)
 
     println(prompt)
+    println(
+        "  Use Up/Down to move, Space to select, and Enter to confirm. ",
+        "Select Back by itself to leave this section.",
+    )
     choices = request(MultiSelectMenu(
         displayed;
         charset=:unicode,
@@ -145,6 +153,13 @@ function wizard_v2_multiselect(
     return WizardV2Answer(choices)
 end
 
+function wizard_v2_navigation_command(raw::AbstractString)
+    command = lowercase(strip(raw))
+    command in ("back", ":back") && return WizardV2Back()
+    command in ("quit", ":quit") && return WizardV2Quit()
+    return nothing
+end
+
 function wizard_v2_value(
     ::TerminalWizardV2UI,
     ::Type{T},
@@ -155,12 +170,11 @@ function wizard_v2_value(
 ) where {T}
     while true
         raw = String(Base.prompt(
-            "$prompt  [:back / :quit]",
+            "$prompt  [Enter: keep default | back: leave section | quit: exit]",
             default=string(default),
         ))
-        command = lowercase(strip(raw))
-        command == ":back" && return WizardV2Back()
-        command == ":quit" && return WizardV2Quit()
+        navigation = wizard_v2_navigation_command(raw)
+        navigation === nothing || return navigation
 
         value = if T === String
             raw
@@ -374,16 +388,46 @@ end
 wizard_v2_choice_index(value, values; default=1) =
     something(findfirst(==(value), values), default)
 
+function wizard_v2_simple_mode_description()
+    defaults = MD()
+    return """
+Simple mode is a guided two-flavor Wilson-fermion HMC setup:
+  - gauge theory: SU(3), Wilson plaquette action; lattice size and beta are asked
+  - fermions: two degenerate Wilson flavors; kappa and optional stout smearing are asked
+  - update: HMC with a QPQ leapfrog integrator, $(defaults.MDsteps) MD steps, delta tau=$(defaults.Δτ)
+  - measurements: plaquette, Polyakov loop, and pion correlator; gradient flow is disabled
+  - output: logs plus an optional periodic portable-JLD2 restart checkpoint
+Use expert mode to choose another fermion, quenched heatbath, SLHMC, or detailed solver/MD settings.
+"""
+end
+
+function print_wizard_v2_mode_description(
+    ::TerminalWizardV2UI,
+    mode::Wizardmode,
+)
+    mode == simple && println('\n', wizard_v2_simple_mode_description())
+    return nothing
+end
+
+print_wizard_v2_mode_description(
+    ::ScriptedWizardV2UI,
+    ::Wizardmode,
+) = nothing
+
 function edit_wizard_v2_mode!(ui, draft)
     working = deepcopy(draft)
     @wizard_v2_answer mode_index wizard_v2_choice(
         ui,
         "Choose Wizard mode",
-        ["simple", "expert"];
+        [
+            "simple (guided two-flavor Wilson HMC)",
+            "expert (choose fermions and algorithms)",
+        ];
         default=Int(working.mode),
         allow_back=false,
     )
     selected_mode = Wizardmode(mode_index)
+    print_wizard_v2_mode_description(ui, selected_mode)
 
     @wizard_v2_answer filename wizard_v2_value(
         ui,
@@ -986,7 +1030,7 @@ function edit_wizard_v2_fermion!(ui, draft)
         @wizard_v2_answer hop wizard_v2_value(
             ui,
             Float64,
-            "Hopping parameter kappa";
+            "Hopping parameter kappa for the two-flavor Wilson fermion";
             default=working.fermion_parameters.hop,
             valid=value -> value > 0,
             validation_message="Kappa must be positive.",
@@ -1578,6 +1622,10 @@ function refresh_wizard_v2_automatic_names!(draft)
     if isempty(control.saveU_dir) || control.saveU_dir == "./confs_$previous"
         control.saveU_dir = "./confs_$header"
     end
+    if isempty(control.checkpoint_dir) ||
+       control.checkpoint_dir == "./restart_$previous"
+        control.checkpoint_dir = "./restart_$header"
+    end
     draft.last_header = header
     return header
 end
@@ -1675,6 +1723,43 @@ function edit_wizard_v2_output!(ui, draft)
         control.saveU_dir = ""
     end
 
+    if !working.isfileloading &&
+       working.physicalparams.update_method in ("HMC", "SLHMC", "SLMC")
+        @wizard_v2_answer checkpoint_index wizard_v2_choice(
+            ui,
+            "Write periodic restart checkpoints?",
+            ["No", "Yes (portable JLD2)"];
+            default=control.checkpoint_every > 0 ? 2 : 1,
+        )
+        if checkpoint_index == 2
+            @wizard_v2_answer checkpoint_every wizard_v2_value(
+                ui,
+                Int64,
+                "Save a restart checkpoint every";
+                default=control.checkpoint_every > 0 ?
+                        control.checkpoint_every : 10,
+                valid=value -> value > 0,
+                validation_message="The checkpoint interval must be positive.",
+            )
+            @wizard_v2_answer checkpoint_dir wizard_v2_value(
+                ui,
+                String,
+                "Restart checkpoint directory";
+                default=control.checkpoint_dir,
+                valid=value -> !isempty(strip(value)),
+                validation_message="The checkpoint directory must not be empty.",
+            )
+            control.checkpoint_every = checkpoint_every
+            control.checkpoint_dir = checkpoint_dir
+        else
+            control.checkpoint_every = 0
+            control.checkpoint_dir = ""
+        end
+    else
+        control.checkpoint_every = 0
+        control.checkpoint_dir = ""
+    end
+
     copy_wizard_v2_draft!(draft, working)
     return WizardV2PageResult(WizardV2Next)
 end
@@ -1719,9 +1804,45 @@ function print_wizard_v2_page_header(::TerminalWizardV2UI, page, draft)
         WIZARD_V2_PAGE_LABELS[page],
         " ---",
     )
+    if page == WizardV2ModePage
+        println(
+            "Navigation: choose an item with Up/Down and Enter. ",
+            "At a text or number prompt, type `back` to restart this section.",
+        )
+    else
+        println(
+            "Navigation: Back returns to the previous section and discards ",
+            "edits made in this section. At a text or number prompt, type `back`.",
+        )
+    end
 end
 
 print_wizard_v2_page_header(::ScriptedWizardV2UI, page, draft) = nothing
+
+function wizard_v2_back_message(from::WizardV2Page, to::WizardV2Page)
+    from_label = WIZARD_V2_PAGE_LABELS[from]
+    to_label = WIZARD_V2_PAGE_LABELS[to]
+    if from == to
+        return "Restarting '$from_label'; edits made in this section were discarded."
+    end
+    return "Returning from '$from_label' to '$to_label'; edits made in " *
+           "'$from_label' were discarded."
+end
+
+function print_wizard_v2_back_transition(
+    ::TerminalWizardV2UI,
+    from::WizardV2Page,
+    to::WizardV2Page,
+)
+    println(wizard_v2_back_message(from, to))
+    return nothing
+end
+
+print_wizard_v2_back_transition(
+    ::ScriptedWizardV2UI,
+    ::WizardV2Page,
+    ::WizardV2Page,
+) = nothing
 
 function wizard_v2_parameter_dictionary(draft::WizardV2Draft)
     return wizard_parameter_dictionary(
@@ -1737,7 +1858,97 @@ function wizard_v2_parameter_dictionary(draft::WizardV2Draft)
     )
 end
 
+function wizard_v2_fermion_description(draft::WizardV2Draft)
+    parameters = draft.fermion_parameters
+    operator = draft.fermionparams.Dirac_operator
+    draft.fermionparams.quench && return "none (quenched approximation)"
+    if parameters isa Wilson_parameters
+        name = operator == "WilsonClover" ? "two-flavor Wilson--clover" :
+               "two-flavor Wilson"
+        details = "kappa=$(parameters.hop), r=$(parameters.r)"
+        parameters.hasclover && (details *=
+            ", cSW=$(parameters.Clover_coefficient)")
+        return "$name ($details)"
+    elseif parameters isa Staggered_parameters
+        return "staggered (Nf=$(parameters.Nf), mass=$(parameters.mass))"
+    elseif parameters isa HISQ_parameters
+        return "HISQ (Nf=$(parameters.Nf), mass=$(parameters.mass), " *
+               "Naik epsilon=$(parameters.naik_epsilon))"
+    elseif parameters isa Domainwall_parameters
+        return "domain-wall (L5=$(parameters.Domainwall_L5), " *
+               "M=$(parameters.Domainwall_M), mass=$(parameters.Domainwall_m))"
+    elseif parameters isa MobiusDomainwall_parameters
+        return "Mobius domain-wall (L5=$(parameters.N5), " *
+               "M=$(parameters.M), mass=$(parameters.m), " *
+               "b=$(parameters.b), c=$(parameters.c))"
+    end
+    return string(operator)
+end
+
+function wizard_v2_smearing_description(draft::WizardV2Draft)
+    fermions = draft.fermionparams
+    fermions.quench && return "not applicable"
+    fermions.smearing_for_fermion == "stout" || return "none"
+    return "stout ($(something(fermions.stout_numlayers, 1)) layer(s))"
+end
+
+function wizard_v2_update_description(draft::WizardV2Draft)
+    physical = draft.physicalparams
+    physical.update_method == "Heatbath" && return physical.useOR ?
+        "heatbath with $(physical.numOR) overrelaxation update(s)" :
+        "heatbath without overrelaxation"
+    hmc = draft.hmcparams
+    integrator = hmc.SextonWeingargten ?
+        "Sexton--Weingarten ($(hmc.N_SextonWeingargten) fast steps)" :
+        (hmc.QPQ ? "QPQ leapfrog" : "PQP leapfrog")
+    return "$(physical.update_method), $integrator, " *
+           "MD steps=$(hmc.MDsteps), delta tau=$(hmc.Δτ)"
+end
+
+function wizard_v2_review_summary(draft::WizardV2Draft)
+    physical = draft.physicalparams
+    control = draft.controlparams
+    measurement_names = getproperty.(
+        draft.measurement.measurement_methods,
+        :methodname,
+    )
+    checkpoint = control.checkpoint_every > 0 ?
+        "portable JLD2 every $(control.checkpoint_every) trajectory/trajectories " *
+        "in $(repr(control.checkpoint_dir))" : "disabled"
+    io = IOBuffer()
+    println(io, "Selected simulation")
+    println(io, "  mode: ", draft.mode == simple ? "simple" : "expert")
+    println(
+        io,
+        "  lattice: ",
+        join(physical.L, 'x'),
+        ", gauge group SU(",
+        physical.NC,
+        "), Wilson plaquette beta=",
+        physical.β,
+    )
+    println(io, "  initial configuration: ", physical.initial)
+    println(io, "  fermions: ", wizard_v2_fermion_description(draft))
+    println(io, "  fermion smearing: ", wizard_v2_smearing_description(draft))
+    println(io, "  update: ", wizard_v2_update_description(draft))
+    println(io, "  thermalization steps: ", physical.Nthermalization)
+    println(io, "  final trajectory setting: ", physical.Nsteps)
+    println(
+        io,
+        "  measurements: ",
+        isempty(measurement_names) ? "none" : join(measurement_names, ", "),
+    )
+    println(
+        io,
+        "  gradient flow: ",
+        draft.gradient_params.hasgradientflow ? "enabled" : "disabled",
+    )
+    print(io, "  restart checkpoints: ", checkpoint)
+    return String(take!(io))
+end
+
 function print_wizard_v2_review(::TerminalWizardV2UI, draft)
+    println('\n', wizard_v2_review_summary(draft))
     println("\nReview generated TOML")
     println("---------------------")
     io = IOBuffer()
@@ -1827,7 +2038,7 @@ end
 print_wizard_v2_completion(::ScriptedWizardV2UI, draft) = nothing
 
 function run_wizard(ui::AbstractWizardV2UI)
-    ui isa TerminalWizardV2UI && print_wizard_logo(stdout)
+    ui isa TerminalWizardV2UI && print_wizard_logo(stdout; navigation=:v2)
     draft = WizardV2Draft()
     history = WizardV2Page[]
     page = WizardV2ModePage
@@ -1840,7 +2051,9 @@ function run_wizard(ui::AbstractWizardV2UI)
             push!(history, page)
             page = wizard_v2_next_page(draft, page)
         elseif result.action == WizardV2BackAction
-            isempty(history) || (page = pop!(history))
+            previous_page = isempty(history) ? page : pop!(history)
+            print_wizard_v2_back_transition(ui, page, previous_page)
+            page = previous_page
         elseif result.action == WizardV2Jump
             route = wizard_v2_route(draft)
             target_index = findfirst(==(result.target), route)

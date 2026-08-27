@@ -16,7 +16,14 @@
   conversion remains available as a compatibility and debugging oracle.
 - Made `run_wizard()` the new Param-free typed Wizard. The historical Wizard
   is available as `run_wizard_legacy()`; `run_wizardv2` remains an alias of
-  `run_wizard`.
+  `run_wizard`. Simple mode now identifies its two-flavor Wilson HMC preset
+  when selected and prints a human-readable summary of the actual fermion,
+  smearing, update, measurement, and output choices before writing TOML.
+  Back navigation now says that it returns to the previous section and
+  discards that section's unfinished edits; text and number prompts accept
+  the plain command `back` and report the destination after navigation. The
+  opening v2 banner now explains both `back` and the clean `quit` action where
+  the old Ctrl+C-only exit message appeared.
 - Added gauge-only cold, hot, file, one-instanton, and embedded-instanton
   initialization through the Gaugefields v1 API.
 - Added typed HMC, heatbath, file-loading, and self-learning HMC execution.
@@ -29,10 +36,18 @@
 - Added typed measurement plans, multiple measurements, and gradient-flow
   measurements. Fermionic observables remain implemented by
   QCDMeasurements.
-- Added portable JLD2 configuration checkpoints. Rank zero assembles and
+- Added portable JLD2 configuration output. Rank zero assembles and
   writes one global gauge configuration, and pseudofermion workspaces are not
   serialized. Bridge text and ILDG remain supported; ILDG tests are skipped
   on Windows because the current c-lime binary is unavailable there.
+- Added safe periodic HMC/SLHMC restart checkpoints. A checkpoint is written
+  to a `.pending` JLD2 file and only renamed after both the global gauge
+  configuration and trajectory-boundary state are complete. The interval is
+  independent of ordinary configuration output, and restoring preserves the
+  Metropolis RNG, counters, and session progress. The Wizard offers the
+  interval in both simple and expert HMC modes. Dynamical-fermion trajectories
+  clear chronological Krylov guesses at each boundary, so pseudofermions can
+  be regenerated from their seed and trajectory after a portable restart.
 - Made MPI an optional weak dependency loaded through `LatticeQCDMPIExt`.
   Serial and one-GPU notebook runs can explicitly use
   `Gaugefields.SerialCommunicator()` without initializing MPI.

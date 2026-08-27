@@ -1,14 +1,18 @@
 module SimulationSession_module
 
 import Gaugefields
+import JLD2
+import Serialization
 
-import ..LQCDCommunication: is_root
+import ..LQCDCommunication: broadcast!, comm_rank, is_root
 
 import ..System_parameters: Params
 import ..LQCDConfig_module:
     ConfigurationSequenceConfig,
+    HMCConfig,
     HISQDiracConfig,
     LQCDConfig,
+    SLHMCConfig,
     show_config
 import ..Simulation_module:
     ConfigurationSequenceUpdateResult,
@@ -16,10 +20,12 @@ import ..Simulation_module:
     GaugefieldsEnvironment,
     HeatbathUpdateResult,
     HMCUpdateResult,
+    HMCState,
     SLHMCUpdateResult,
     Simulation,
     build_simulation,
     current_configuration_path,
+    load_configuration!,
     save_configuration,
     update!
 import ..MeasurementPlan_module:
@@ -137,6 +143,54 @@ JLD2ConfigurationOutput(
     width::Integer=8,
 ) = JLD2ConfigurationOutput(directory, prefix, every, width)
 
+"""Do not write restart checkpoints."""
+struct NoCheckpointOutput end
+
+"""
+Portable HMC restart checkpoints written at completed trajectory boundaries.
+
+Each checkpoint is first assembled in a `.pending` file.  Rank zero appends
+the HMC/session state and atomically renames the completed file, so a failed
+write never replaces the last complete checkpoint.
+"""
+struct JLD2CheckpointOutput{
+    D<:AbstractString,
+    P<:AbstractString,
+}
+    directory::D
+    prefix::P
+    every::Int
+    width::Int
+
+    function JLD2CheckpointOutput(
+        directory::D,
+        prefix::P,
+        every::Integer,
+        width::Integer,
+    ) where {D<:AbstractString,P<:AbstractString}
+        isempty(strip(directory)) && throw(ArgumentError(
+            "the checkpoint directory must not be empty",
+        ))
+        isempty(strip(prefix)) && throw(ArgumentError(
+            "the checkpoint filename prefix must not be empty",
+        ))
+        every > 0 || throw(ArgumentError(
+            "the checkpoint interval must be positive; got $every",
+        ))
+        width > 0 || throw(ArgumentError(
+            "the checkpoint trajectory width must be positive; got $width",
+        ))
+        return new{D,P}(directory, prefix, Int(every), Int(width))
+    end
+end
+
+JLD2CheckpointOutput(
+    directory::AbstractString;
+    prefix::AbstractString="restart_",
+    every::Integer=10,
+    width::Integer=8,
+) = JLD2CheckpointOutput(directory, prefix, every, width)
+
 """Legacy Bridge-text configuration checkpoints."""
 struct BridgeTextConfigurationOutput{
     D<:AbstractString,
@@ -216,22 +270,35 @@ ILDGConfigurationOutput(
 ) = ILDGConfigurationOutput(directory, prefix, every, width)
 
 """All side-effect settings, kept separate from the physics config."""
-struct OutputConfig{C}
+struct OutputConfig{C,K}
     configurations::C
+    checkpoints::K
 
-    function OutputConfig(configurations::C) where {
+    function OutputConfig(configurations::C, checkpoints::K) where {
         C<:Union{
             NoConfigurationOutput,
             JLD2ConfigurationOutput,
             BridgeTextConfigurationOutput,
             ILDGConfigurationOutput,
         },
+        K<:Union{
+            NoCheckpointOutput,
+            JLD2CheckpointOutput,
+        },
     }
-        return new{C}(configurations)
+        return new{C,K}(configurations, checkpoints)
     end
 end
 
-OutputConfig() = OutputConfig(NoConfigurationOutput())
+OutputConfig(configurations) = OutputConfig(
+    configurations,
+    NoCheckpointOutput(),
+)
+
+OutputConfig(;
+    configurations=NoConfigurationOutput(),
+    checkpoints=NoCheckpointOutput(),
+) = OutputConfig(configurations, checkpoints)
 
 """Serializable, GUI-neutral specification for one simulation run."""
 struct SimulationSpec{
@@ -300,6 +367,14 @@ function validate(spec::SimulationSpec)
             ))
         end
     end
+    if !(spec.output.checkpoints isa NoCheckpointOutput) &&
+       !(spec.config.update isa Union{HMCConfig,SLHMCConfig})
+        push!(issues, validation_issue(
+            ("output", "checkpoints"),
+            :not_supported,
+            "restart checkpoints currently require HMC or SLHMC",
+        ))
+    end
     return issues
 end
 
@@ -348,34 +423,49 @@ simulation_schedule(parameters::Params) = legacy_simulation_schedule(parameters)
 function legacy_output_config(parameters)
     # The legacy Fileloading runner deliberately ignores saveU_* settings.
     parameters.update_method == "Fileloading" && return OutputConfig()
-    isnothing(parameters.saveU_format) && return OutputConfig()
-    format = lowercase(replace(
-        strip(String(parameters.saveU_format)),
-        "_" => "",
-        "-" => "",
-    ))
-    output = if format in ("jld", "jld2")
-        JLD2ConfigurationOutput(
-            parameters.saveU_dir;
-            every=parameters.saveU_every,
-        )
-    elseif format in ("bridgetext", "bridge", "text")
-        BridgeTextConfigurationOutput(
-            parameters.saveU_dir;
-            every=parameters.saveU_every,
-        )
-    elseif format == "ildg"
-        ILDGConfigurationOutput(
-            parameters.saveU_dir;
-            every=parameters.saveU_every,
-        )
+    configurations = if isnothing(parameters.saveU_format)
+        NoConfigurationOutput()
     else
-        throw(ArgumentError(
-            "unsupported saveU_format=$(repr(parameters.saveU_format)); " *
-            "expected JLD, ILDG, or BridgeText",
+        format = lowercase(replace(
+            strip(String(parameters.saveU_format)),
+            "_" => "",
+            "-" => "",
         ))
+        if format in ("jld", "jld2")
+            JLD2ConfigurationOutput(
+                parameters.saveU_dir;
+                every=parameters.saveU_every,
+            )
+        elseif format in ("bridgetext", "bridge", "text")
+            BridgeTextConfigurationOutput(
+                parameters.saveU_dir;
+                every=parameters.saveU_every,
+            )
+        elseif format == "ildg"
+            ILDGConfigurationOutput(
+                parameters.saveU_dir;
+                every=parameters.saveU_every,
+            )
+        else
+            throw(ArgumentError(
+                "unsupported saveU_format=$(repr(parameters.saveU_format)); " *
+                "expected JLD, ILDG, or BridgeText",
+            ))
+        end
     end
-    return OutputConfig(output)
+
+    checkpoint_every = hasproperty(parameters, :checkpoint_every) ?
+        Int(parameters.checkpoint_every) : 0
+    checkpoint_every >= 0 || throw(ArgumentError(
+        "checkpoint_every must be nonnegative; got $checkpoint_every",
+    ))
+    checkpoints = if iszero(checkpoint_every)
+        NoCheckpointOutput()
+    else
+        checkpoint_dir = String(parameters.checkpoint_dir)
+        JLD2CheckpointOutput(checkpoint_dir; every=checkpoint_every)
+    end
+    return OutputConfig(configurations, checkpoints)
 end
 
 
@@ -417,6 +507,18 @@ struct ConfigurationSaved{P<:AbstractString} <: AbstractSimulationEvent
     format::Symbol
 end
 
+"""A complete restart checkpoint became visible at a trajectory boundary."""
+struct CheckpointSaved{P<:AbstractString} <: AbstractSimulationEvent
+    trajectory::Int
+    path::P
+end
+
+"""A session was restored from a restart checkpoint."""
+struct CheckpointLoaded{P<:AbstractString} <: AbstractSimulationEvent
+    trajectory::Int
+    path::P
+end
+
 """A configuration from a finite Fileloading input sequence became current."""
 struct ConfigurationLoaded{P<:AbstractString} <: AbstractSimulationEvent
     trajectory::Int
@@ -430,6 +532,7 @@ struct SimulationRunSummary
     thermalization_completed::Int
     production_completed::Int
     saved_configurations::Int
+    saved_checkpoints::Int
     stopped::Bool
 end
 
@@ -560,6 +663,22 @@ function print_simulation_event(io::IO, event::ConfigurationSaved)
     )
 end
 
+function print_simulation_event(io::IO, event::CheckpointSaved)
+    println(
+        io,
+        "# restart checkpoint saved: trajectory=", event.trajectory,
+        " path=", repr(event.path),
+    )
+end
+
+function print_simulation_event(io::IO, event::CheckpointLoaded)
+    println(
+        io,
+        "# restart checkpoint loaded: trajectory=", event.trajectory,
+        " path=", repr(event.path),
+    )
+end
+
 function print_simulation_event(io::IO, event::ConfigurationLoaded)
     println(
         io,
@@ -611,12 +730,14 @@ mutable struct SimulationSessionState
     thermalization_completed::Int
     production_completed::Int
     saved_configurations::Int
+    saved_checkpoints::Int
     sequence_initial_pending::Bool
     stop_requested::Base.Threads.Atomic{Bool}
     running::Base.Threads.Atomic{Bool}
 end
 
 SimulationSessionState(sequence_initial_pending::Bool=false) = SimulationSessionState(
+    0,
     0,
     0,
     0,
@@ -744,6 +865,11 @@ function show_config(io::IO, session::SimulationSession)
         "  saved configurations: ",
         session.state.saved_configurations,
     )
+    println(
+        io,
+        "  saved restart checkpoints: ",
+        session.state.saved_checkpoints,
+    )
     println(io, "  status: ", session_status(session))
     print(io, "  measurements: ")
     show(io, session.schedule.measurements)
@@ -838,12 +964,318 @@ function save_configuration_if_due!(
     )
 end
 
-struct SessionStepResult{P<:Symbol,U,M,S}
+const RESTART_CHECKPOINT_FORMAT =
+    "LatticeQCD.jl trajectory-boundary restart checkpoint"
+const RESTART_CHECKPOINT_VERSION = 1
+
+checkpoint_output_path(
+    output::JLD2CheckpointOutput,
+    trajectory::Integer,
+) = joinpath(
+    output.directory,
+    "$(output.prefix)$(lpad(string(trajectory), output.width, '0')).jld2",
+)
+
+function checkpoint_communicator(session::SimulationSession)
+    return Gaugefields.gauge_communicator(
+        session.simulation.configuration.gauge,
+    )
+end
+
+function root_operation(operation, communicator, description::AbstractString)
+    success = Ref(true)
+    message = ""
+    if comm_rank(communicator) == 0
+        try
+            operation()
+        catch exception
+            success[] = false
+            message = sprint(showerror, exception, catch_backtrace())
+        end
+    end
+    broadcast!(success, 0, communicator)
+    success[] || error(
+        comm_rank(communicator) == 0 ? message :
+        "$description failed on rank zero",
+    )
+    return nothing
+end
+
+function checkpoint_metadata(session::SimulationSession)
+    simulation_state = session.simulation.state
+    simulation_state isa HMCState || throw(ArgumentError(
+        "restart checkpoints currently require HMC or SLHMC state",
+    ))
+    return (
+        trajectory=simulation_state.trajectory,
+        accepted=simulation_state.accepted,
+        metropolis_rng=deepcopy(simulation_state.metropolis_rng),
+        initial_trajectory=session.schedule.initial_trajectory,
+        thermalization_steps=session.schedule.thermalization_steps,
+        production_steps=session.schedule.production_steps,
+        thermalization_completed=session.state.thermalization_completed,
+        production_completed=session.state.production_completed,
+        saved_configurations=session.state.saved_configurations,
+        saved_checkpoints=session.state.saved_checkpoints,
+    )
+end
+
+function append_checkpoint_metadata!(path::AbstractString, metadata)
+    JLD2.jldopen(path, "a+") do file
+        file["latticeqcd_checkpoint_format"] = RESTART_CHECKPOINT_FORMAT
+        file["latticeqcd_checkpoint_version"] = RESTART_CHECKPOINT_VERSION
+        file["latticeqcd_trajectory"] = metadata.trajectory
+        file["latticeqcd_accepted"] = metadata.accepted
+        file["latticeqcd_metropolis_rng"] = metadata.metropolis_rng
+        file["latticeqcd_initial_trajectory"] = metadata.initial_trajectory
+        file["latticeqcd_thermalization_steps"] =
+            metadata.thermalization_steps
+        file["latticeqcd_production_steps"] = metadata.production_steps
+        file["latticeqcd_thermalization_completed"] =
+            metadata.thermalization_completed
+        file["latticeqcd_production_completed"] =
+            metadata.production_completed
+        file["latticeqcd_saved_configurations"] =
+            metadata.saved_configurations
+        file["latticeqcd_saved_checkpoints"] = metadata.saved_checkpoints
+    end
+    return path
+end
+
+function read_checkpoint_metadata(path::AbstractString)
+    return JLD2.jldopen(path, "r") do file
+        get(file, "latticeqcd_checkpoint_format", nothing) ==
+            RESTART_CHECKPOINT_FORMAT || throw(ArgumentError(
+            "$path is not a LatticeQCD restart checkpoint",
+        ))
+        version = Int(file["latticeqcd_checkpoint_version"])
+        version == RESTART_CHECKPOINT_VERSION || throw(ArgumentError(
+            "unsupported restart checkpoint version $version in $path",
+        ))
+        return (
+            trajectory=Int(file["latticeqcd_trajectory"]),
+            accepted=Int(file["latticeqcd_accepted"]),
+            metropolis_rng=file["latticeqcd_metropolis_rng"],
+            initial_trajectory=Int(file["latticeqcd_initial_trajectory"]),
+            thermalization_steps=Int(
+                file["latticeqcd_thermalization_steps"],
+            ),
+            production_steps=Int(file["latticeqcd_production_steps"]),
+            thermalization_completed=Int(
+                file["latticeqcd_thermalization_completed"],
+            ),
+            production_completed=Int(
+                file["latticeqcd_production_completed"],
+            ),
+            saved_configurations=Int(
+                file["latticeqcd_saved_configurations"],
+            ),
+            saved_checkpoints=Int(file["latticeqcd_saved_checkpoints"]),
+        )
+    end
+end
+
+function serialized_root_value(operation, communicator, description)
+    success = Ref(true)
+    bytes = UInt8[]
+    message = ""
+    if comm_rank(communicator) == 0
+        try
+            buffer = IOBuffer()
+            Serialization.serialize(buffer, operation())
+            bytes = take!(buffer)
+        catch exception
+            success[] = false
+            message = sprint(showerror, exception, catch_backtrace())
+        end
+    end
+    broadcast!(success, 0, communicator)
+    success[] || error(
+        comm_rank(communicator) == 0 ? message :
+        "$description failed on rank zero",
+    )
+    length_buffer = Ref(length(bytes))
+    broadcast!(length_buffer, 0, communicator)
+    comm_rank(communicator) == 0 || resize!(bytes, length_buffer[])
+    broadcast!(bytes, 0, communicator)
+    return Serialization.deserialize(IOBuffer(bytes))
+end
+
+function validate_checkpoint_metadata(
+    session::SimulationSession,
+    metadata,
+)
+    session.simulation.state isa HMCState || throw(ArgumentError(
+        "restart checkpoints currently require HMC or SLHMC state",
+    ))
+    metadata.initial_trajectory == session.schedule.initial_trajectory ||
+        throw(ArgumentError(
+            "checkpoint initial trajectory $(metadata.initial_trajectory) " *
+            "does not match session initial trajectory " *
+            "$(session.schedule.initial_trajectory)",
+        ))
+    metadata.thermalization_steps == session.schedule.thermalization_steps ||
+        throw(ArgumentError(
+            "checkpoint thermalization length " *
+            "$(metadata.thermalization_steps) does not match session " *
+            "length $(session.schedule.thermalization_steps)",
+        ))
+    metadata.production_steps == session.schedule.production_steps ||
+        throw(ArgumentError(
+            "checkpoint production length $(metadata.production_steps) " *
+            "does not match session length " *
+            "$(session.schedule.production_steps)",
+        ))
+    0 <= metadata.thermalization_completed <=
+          session.schedule.thermalization_steps || throw(ArgumentError(
+        "checkpoint thermalization progress is outside the session schedule",
+    ))
+    metadata.production_completed >= 0 || throw(ArgumentError(
+        "checkpoint production progress must be nonnegative",
+    ))
+    metadata.production_completed <= session.schedule.production_steps ||
+        throw(ArgumentError(
+            "checkpoint has completed $(metadata.production_completed) " *
+            "production steps, but the session only schedules " *
+            "$(session.schedule.production_steps)",
+        ))
+    expected_trajectory = metadata.initial_trajectory +
+        metadata.thermalization_completed + metadata.production_completed
+    metadata.trajectory == expected_trajectory || throw(ArgumentError(
+        "checkpoint trajectory $(metadata.trajectory) is inconsistent with " *
+        "its completed-step counters (expected $expected_trajectory)",
+    ))
+    metadata.accepted >= 0 || throw(ArgumentError(
+        "checkpoint accepted count must be nonnegative",
+    ))
+    typeof(metadata.metropolis_rng) ==
+        typeof(session.simulation.state.metropolis_rng) ||
+        throw(ArgumentError(
+            "checkpoint Metropolis RNG type " *
+            "$(typeof(metadata.metropolis_rng)) does not match session type " *
+            "$(typeof(session.simulation.state.metropolis_rng))",
+        ))
+    return nothing
+end
+
+function _save_checkpoint(path::AbstractString, session::SimulationSession)
+    metadata = checkpoint_metadata(session)
+    validate_checkpoint_metadata(session, metadata)
+    communicator = checkpoint_communicator(session)
+    pending_path = path * ".pending"
+    root_operation(communicator, "checkpoint preparation") do
+        mkpath(dirname(path))
+        rm(pending_path; force=true)
+    end
+    save_configuration(
+        pending_path,
+        session.simulation.configuration;
+        format=:jld2,
+    )
+    root_operation(communicator, "checkpoint finalization") do
+        append_checkpoint_metadata!(pending_path, metadata)
+        Base.Filesystem.rename(pending_path, path)
+    end
+    return path
+end
+
+"""
+    save_checkpoint(path, session)
+
+Safely save a complete HMC/SLHMC restart checkpoint.  Call this only between
+trajectories; a running session is rejected.  Scheduled checkpoint output uses
+the same implementation internally at completed trajectory boundaries.
+"""
+function save_checkpoint(path::AbstractString, session::SimulationSession)
+    is_running(session) && throw(ArgumentError(
+        "cannot save a restart checkpoint while a trajectory is running",
+    ))
+    return _save_checkpoint(path, session)
+end
+
+"""
+    load_checkpoint!(session, path)
+
+Restore gauge links, HMC counters, the Metropolis RNG, and session progress.
+The session must be built from a compatible specification on every rank.
+"""
+function load_checkpoint!(
+    session::SimulationSession,
+    path::AbstractString,
+)
+    is_running(session) && throw(ArgumentError(
+        "cannot restore a checkpoint while the session is running",
+    ))
+    communicator = checkpoint_communicator(session)
+    metadata = serialized_root_value(
+        () -> read_checkpoint_metadata(path),
+        communicator,
+        "checkpoint metadata read",
+    )
+    validate_checkpoint_metadata(session, metadata)
+    load_configuration!(session.simulation.configuration, path; format=:jld2)
+
+    simulation_state = session.simulation.state
+    simulation_state.trajectory = metadata.trajectory
+    simulation_state.accepted = metadata.accepted
+    simulation_state.metropolis_rng = metadata.metropolis_rng
+    progress = session.state
+    progress.thermalization_completed = metadata.thermalization_completed
+    progress.production_completed = metadata.production_completed
+    progress.saved_configurations = metadata.saved_configurations
+    progress.saved_checkpoints = metadata.saved_checkpoints
+    progress.sequence_initial_pending = false
+    progress.stop_requested[] = false
+    emit_event!(session, CheckpointLoaded(metadata.trajectory, path))
+    return session
+end
+
+save_checkpoint_if_due!(
+    ::NoCheckpointOutput,
+    ::SimulationSession,
+    ::Integer,
+) = nothing
+
+function save_checkpoint_if_due!(
+    output::JLD2CheckpointOutput,
+    session::SimulationSession,
+    trajectory::Integer,
+)
+    mod(trajectory, output.every) == 0 || return nothing
+    path = checkpoint_output_path(output, trajectory)
+    session.state.saved_checkpoints += 1
+    try
+        _save_checkpoint(path, session)
+    catch
+        session.state.saved_checkpoints -= 1
+        rethrow()
+    end
+    emit_event!(session, CheckpointSaved(Int(trajectory), path))
+    return path
+end
+
+function save_checkpoint_if_due!(
+    output::OutputConfig,
+    session::SimulationSession,
+    trajectory::Integer,
+)
+    return save_checkpoint_if_due!(
+        output.checkpoints,
+        session,
+        trajectory,
+    )
+end
+
+struct SessionStepResult{P<:Symbol,U,M,S,C}
     phase::P
     update::U
     measurements::M
     saved_path::S
+    checkpoint_path::C
 end
+
+SessionStepResult(phase, update, measurements, saved_path) =
+    SessionStepResult(phase, update, measurements, saved_path, nothing)
 
 function emit_measurement_events!(session::SimulationSession, records)
     foreach(records) do record
@@ -865,7 +1297,18 @@ function measure_and_save_production!(
     )
     emit_measurement_events!(session, records)
     path = save_configuration_if_due!(session.output, session, trajectory)
-    return SessionStepResult(:production, update_result, records, path)
+    checkpoint_path = save_checkpoint_if_due!(
+        session.output,
+        session,
+        trajectory,
+    )
+    return SessionStepResult(
+        :production,
+        update_result,
+        records,
+        path,
+        checkpoint_path,
+    )
 end
 
 function advance_session_step!(session::SimulationSession)
@@ -896,11 +1339,17 @@ function advance_session_step!(session::SimulationSession)
             progress.thermalization_completed,
             update_result,
         ))
+        checkpoint_path = save_checkpoint_if_due!(
+            session.output,
+            session,
+            trajectory,
+        )
         return SessionStepResult(
             :thermalization,
             update_result,
             (),
             nothing,
+            checkpoint_path,
         )
     end
 
@@ -974,6 +1423,7 @@ function run_summary(session::SimulationSession; stopped::Bool=false)
         session.state.thermalization_completed,
         session.state.production_completed,
         session.state.saved_configurations,
+        session.state.saved_checkpoints,
         stopped,
     )
 end
@@ -1064,6 +1514,7 @@ function Base.show(io::IO, summary::SimulationRunSummary)
         ", thermalization=", summary.thermalization_completed,
         ", production=", summary.production_completed,
         ", saved=", summary.saved_configurations,
+        ", checkpoints=", summary.saved_checkpoints,
         ", stopped=", summary.stopped,
         ")",
     )
@@ -1076,6 +1527,7 @@ function Base.show(io::IO, ::MIME"text/plain", summary::SimulationRunSummary)
     println(io, "  thermalization completed: ", summary.thermalization_completed)
     println(io, "  production completed: ", summary.production_completed)
     println(io, "  saved configurations: ", summary.saved_configurations)
+    println(io, "  saved restart checkpoints: ", summary.saved_checkpoints)
     print(io, "  stopped: ", summary.stopped)
 end
 
@@ -1111,6 +1563,15 @@ function show_config(io::IO, output::OutputConfig)
         println(io, "  every: ", config.every)
         println(io, "  prefix: ", repr(config.prefix))
     end
+    if output.checkpoints isa NoCheckpointOutput
+        println(io, "  restart checkpoints: disabled")
+    else
+        checkpoint = output.checkpoints
+        println(io, "  restart checkpoints: portable JLD2")
+        println(io, "  checkpoint directory: ", repr(checkpoint.directory))
+        println(io, "  checkpoint every: ", checkpoint.every)
+        println(io, "  checkpoint prefix: ", repr(checkpoint.prefix))
+    end
     return nothing
 end
 
@@ -1141,6 +1602,8 @@ Base.show(io::IO, ::MIME"text/plain", schedule::SimulationSchedule) =
 function Base.show(io::IO, output::OutputConfig)
     print(io, "OutputConfig(configurations=")
     print(io, nameof(typeof(output.configurations)))
+    print(io, ", checkpoints=")
+    print(io, nameof(typeof(output.checkpoints)))
     print(io, ")")
 end
 
@@ -1163,6 +1626,8 @@ export SimulationSchedule,
     JLD2ConfigurationOutput,
     BridgeTextConfigurationOutput,
     ILDGConfigurationOutput,
+    NoCheckpointOutput,
+    JLD2CheckpointOutput,
     OutputConfig,
     SimulationSpec,
     ValidationIssue,
@@ -1175,6 +1640,8 @@ export SimulationSchedule,
     TrajectoryFinished,
     MeasurementFinished,
     ConfigurationSaved,
+    CheckpointSaved,
+    CheckpointLoaded,
     ConfigurationLoaded,
     SimulationRunSummary,
     RunStopped,
@@ -1191,6 +1658,9 @@ export SimulationSchedule,
     build_simulation_session,
     emit_event!,
     configuration_output_path,
+    checkpoint_output_path,
+    save_checkpoint,
+    load_checkpoint!,
     step!,
     is_finished,
     is_running,

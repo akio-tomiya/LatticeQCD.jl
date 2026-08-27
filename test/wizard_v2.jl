@@ -7,6 +7,51 @@ const WizardV2 = LatticeQCD.Wizard
     @test LatticeQCD.run_wizardv2 === LatticeQCD.run_wizard
     @test WizardV2.run_wizardv2 === WizardV2.run_wizard
     @test LatticeQCD.run_wizard_legacy === WizardV2.run_wizard_legacy
+    @test occursin(
+        "two-flavor Wilson-fermion HMC",
+        WizardV2.wizard_v2_simple_mode_description(),
+    )
+    @test occursin(
+        "plaquette, Polyakov loop, and pion correlator",
+        WizardV2.wizard_v2_simple_mode_description(),
+    )
+    @test occursin("previous section", WizardV2.WIZARD_V2_BACK_OPTION)
+    @test occursin("discard edits", WizardV2.WIZARD_V2_BACK_OPTION)
+    @test WizardV2.wizard_v2_navigation_command("back") isa
+          WizardV2.WizardV2Back
+    @test WizardV2.wizard_v2_navigation_command(" :BACK ") isa
+          WizardV2.WizardV2Back
+    @test WizardV2.wizard_v2_navigation_command("quit") isa
+          WizardV2.WizardV2Quit
+    @test WizardV2.wizard_v2_navigation_command("configuration.jld2") ===
+          nothing
+    @test occursin(
+        "Lattice and gauge settings' to 'Mode and filename",
+        WizardV2.wizard_v2_back_message(
+            WizardV2.WizardV2LatticePage,
+            WizardV2.WizardV2ModePage,
+        ),
+    )
+    @test occursin(
+        "Restarting 'Mode and filename'",
+        WizardV2.wizard_v2_back_message(
+            WizardV2.WizardV2ModePage,
+            WizardV2.WizardV2ModePage,
+        ),
+    )
+    v2_welcome_io = IOBuffer()
+    WizardV2.print_wizard_logo(v2_welcome_io; navigation=:v2)
+    v2_welcome = String(take!(v2_welcome_io))
+    @test occursin("Back to previous section", v2_welcome)
+    @test occursin("type `back`", v2_welcome)
+    @test occursin("Quit wizard without saving", v2_welcome)
+    @test occursin("type `quit`", v2_welcome)
+
+    legacy_welcome_io = IOBuffer()
+    WizardV2.print_wizard_logo(legacy_welcome_io)
+    legacy_welcome = String(take!(legacy_welcome_io))
+    @test occursin("To exit, press Ctrl + c.", legacy_welcome)
+    @test !occursin("Back to previous section", legacy_welcome)
     @test all(
         isconcretetype,
         fieldtypes(typeof(WizardV2.WizardV2Draft())),
@@ -42,6 +87,8 @@ const WizardV2 = LatticeQCD.Wizard
         draft.controlparams.saveU_format = "ILDG"
         draft.controlparams.saveU_dir = "./stale-output"
         draft.controlparams.saveU_every = 17
+        draft.controlparams.checkpoint_dir = "./stale-restart"
+        draft.controlparams.checkpoint_every = 19
         ui = WizardV2.ScriptedWizardV2UI(Any[
             "./logs",
             "fileloading.log",
@@ -58,6 +105,39 @@ const WizardV2 = LatticeQCD.Wizard
         @test draft.controlparams.saveU_format === nothing
         @test isempty(draft.controlparams.saveU_dir)
         @test draft.controlparams.saveU_every == 1
+        @test isempty(draft.controlparams.checkpoint_dir)
+        @test draft.controlparams.checkpoint_every == 0
+        @test !any(
+            prompt -> occursin("restart checkpoint", lowercase(prompt)),
+            ui.prompts,
+        )
+    end
+
+    @testset "Expert HMC configures an independent checkpoint interval" begin
+        draft = WizardV2.WizardV2Draft()
+        draft.mode = WizardV2.expert
+        draft.physicalparams.update_method = "HMC"
+        ui = WizardV2.ScriptedWizardV2UI(Any[
+            "./logs",
+            "hmc.log",
+            1,              # no ordinary configuration output
+            2,              # portable JLD2 restart checkpoints
+            17,
+            "./restart",
+        ])
+
+        result = WizardV2.edit_wizard_v2_output!(ui, draft)
+
+        @test result.action == WizardV2.WizardV2Next
+        @test isempty(ui.answers)
+        @test draft.controlparams.saveU_format == "nothing"
+        @test draft.controlparams.checkpoint_every == 17
+        @test draft.controlparams.checkpoint_dir == "./restart"
+        document = WizardV2.wizard_v2_parameter_dictionary(draft)
+        spec = simulation_spec_from_legacy_toml(document)
+        @test spec.output.configurations isa NoConfigurationOutput
+        @test spec.output.checkpoints isa JLD2CheckpointOutput
+        @test spec.output.checkpoints.every == 17
     end
 
     @testset "Embedded instanton is an initialization choice" begin
@@ -362,6 +442,7 @@ end
                 1, 1, 0.141139, 1e-19, 3000, 1, # pion measurement
                 "./measurements", header,
                 "./logs", "$header.txt",
+                2, 17, "./restart",            # restart checkpoints
                 1,                              # save at review
             ])
 
@@ -385,6 +466,8 @@ end
                 logfile="$header.txt",
                 measurement_basedir="./measurements",
                 measurement_dir=header,
+                checkpoint_dir="./restart",
+                checkpoint_every=17,
             )
             hmc = WizardV2.Print_HMCrelated_parameters()
             plaquette = WizardV2.Plaq_parameters(measure_every=1)
@@ -414,9 +497,28 @@ end
             @test spec.schedule.production_steps == 101
             @test spec.config.fermions[1].operator isa WilsonDiracConfig
             @test spec.config.gauge.halo == 1
+            @test spec.output.checkpoints isa JLD2CheckpointOutput
+            @test spec.output.checkpoints.every == 17
             @test length(spec.schedule.measurements.direct.measurements) == 3
             # Two fermion-page visits plus the pion-measurement prompt.
-            @test count(==("Hopping parameter kappa"), ui.prompts) == 3
+            @test count(
+                ==("Hopping parameter kappa for the two-flavor Wilson fermion"),
+                ui.prompts,
+            ) == 2
+            @test count(==("Hopping parameter kappa"), ui.prompts) == 1
+            summary = WizardV2.wizard_v2_review_summary(
+                let draft = WizardV2.WizardV2Draft()
+                    draft.fermionparams.quench = false
+                    draft.fermionparams.Dirac_operator = "Wilson"
+                    draft.fermion_parameters =
+                        WizardV2.Wilson_parameters(hop=0.141139)
+                    draft.controlparams.checkpoint_dir = "./restart"
+                    draft.controlparams.checkpoint_every = 17
+                    draft
+                end,
+            )
+            @test occursin("two-flavor Wilson", summary)
+            @test occursin("portable JLD2 every 17", summary)
         end
     end
 end
@@ -488,6 +590,10 @@ end
             @test generated["System Control"]["loadU_format"] == "JLD"
             @test generated["System Control"]["loadU_dir"] == "./confs"
             @test count(==("Hopping parameter kappa"), ui.prompts) == 1
+            @test !any(
+                prompt -> occursin("restart checkpoint", lowercase(prompt)),
+                ui.prompts,
+            )
             @test !isdir("./logs")
             @test !isdir("./measurements")
         end

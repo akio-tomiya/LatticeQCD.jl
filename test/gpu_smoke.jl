@@ -76,11 +76,20 @@ environment = GaugefieldsEnvironment(
 )
 
 @testset "LatticeQCD typed CUDA smoke" begin
-    for (name, operator) in (
-        (:gauge, nothing),
-        (:staggered, StaggeredDiracConfig(0.5)),
-        (:hisq, HISQDiracConfig(0.5, -0.083)),
+    requested_cases = Set(Symbol.(split(
+        get(ENV, "LQCD_CUDA_CASES", "gauge,staggered,hisq"),
+        ',',
+    )))
+    cases = filter(
+        case -> first(case) in requested_cases,
+        (
+            (:gauge, nothing),
+            (:staggered, StaggeredDiracConfig(0.5)),
+            (:hisq, HISQDiracConfig(0.5, -0.083)),
+        ),
     )
+    isempty(cases) && error("LQCD_CUDA_CASES selected no GPU smoke cases")
+    for (name, operator) in cases
         config = gpu_hmc_input(operator)
         simulation = build_simulation(config, environment)
         @test simulation.configuration.gauge[1].U.A isa CUDA.CuArray
@@ -111,6 +120,45 @@ environment = GaugefieldsEnvironment(
             " plaquette=", plaquette,
             " delta_hamiltonian=", result.delta_hamiltonian,
         )
+    end
+
+    restart_name, restart_operator = first(cases)
+    @testset "$(restart_name) restart checkpoint remains on CUDA" begin
+        config = gpu_hmc_input(restart_operator)
+        schedule = SimulationSchedule(0, 2)
+        reference = build_simulation(
+            SimulationSpec(config, schedule),
+            environment,
+        )
+        run!(reference; verbose=false)
+
+        mktempdir() do directory
+            checkpoints = JLD2CheckpointOutput(directory; every=1)
+            spec = SimulationSpec(
+                config,
+                schedule,
+                OutputConfig(; checkpoints),
+            )
+            interrupted = build_simulation(spec, environment)
+            checkpoint = step!(interrupted).checkpoint_path
+            restored = build_simulation(spec, environment)
+            load_checkpoint!(restored, checkpoint)
+            @test restored.simulation.configuration.gauge[1].U.A isa
+                  CUDA.CuArray
+            run!(restored; verbose=false)
+            CUDA.synchronize()
+            @test restored.simulation.state.accepted ==
+                  reference.simulation.state.accepted
+            for direction in eachindex(
+                reference.simulation.configuration.gauge,
+            )
+                @test Array(
+                    restored.simulation.configuration.gauge[direction].U.A,
+                ) == Array(
+                    reference.simulation.configuration.gauge[direction].U.A,
+                )
+            end
+        end
     end
 end
 

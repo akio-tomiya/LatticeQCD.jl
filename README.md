@@ -72,9 +72,12 @@ The original Params-returning interface is available as
 `run_wizard_legacy()` for compatibility and debugging.
 
 `run!` prints rank-zero trajectory progress, HMC acceptance diagnostics,
-measurements, configuration saves, and a final summary. GUI and batch callers
-can retain event delivery while suppressing console output with
-`run!(session; verbose=false)`.
+measurements, configuration/checkpoint saves, and a final summary. Safe
+restart checkpoints can be requested independently with
+`JLD2CheckpointOutput("restart"; every=10)`; the Wizard asks for this interval
+for HMC runs and explains that simple mode uses two-flavor Wilson fermions.
+GUI and batch callers can retain event delivery while suppressing console
+output with `run!(session; verbose=false)`.
 
 Choose parameters as you want!
 
@@ -141,6 +144,7 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - ILDG format (Binary)
   - JLD format (Default binary file for Julia, one of HDF5)
   - Text file for Bridge++ (Bridgetext)
+  - Atomic, periodic JLD2 restart checkpoints at completed HMC trajectories
 
 *If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
 

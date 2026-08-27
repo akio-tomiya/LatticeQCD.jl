@@ -29,6 +29,56 @@ function session_hmc_input()
     )
 end
 
+function session_wilson_hmc_input()
+    lattice = LatticeConfig((2, 2, 2, 2))
+    gauge = GaugeConfig(2, 1, "cold", nothing, 0x1234)
+    gauge_action = GaugeActionConfig(
+        GaugeActionTermConfig(:gauge_plaquette, "plaquette", 1.9),
+    )
+    solver = FermionSolverConfig(
+        1e-10,
+        2_000,
+        0,
+        (1, 1, 1, -1),
+    )
+    fermions = (
+        FermionActionConfig(
+            :fermion_1,
+            WilsonDiracConfig(0.05, 1.0),
+            2,
+            solver,
+        ),
+    )
+    integrator = LeapfrogConfig(
+        QPQConfig(),
+        ForceGroupConfig(:gauge, :fermion_1),
+    )
+    update = HMCConfig(
+        MDConfig(0.001, 1, integrator),
+        GaussianMomentumConfig(
+            1.0,
+            RandomStreamConfig(0x5678, :momentum),
+        ),
+        RankZeroMetropolisConfig(
+            RandomStreamConfig(0x9abc, :metropolis),
+        ),
+        (
+            PseudofermionRefreshConfig(
+                :fermion_1,
+                RandomStreamConfig(0xdef0, :pseudofermion),
+                1,
+            ),
+        ),
+    )
+    return LQCDConfig(
+        lattice,
+        gauge,
+        gauge_action,
+        fermions,
+        update,
+    )
+end
+
 function session_measurement_program()
     measurement = ScheduledMeasurementConfig(
         PlaquetteObservableConfig(),
@@ -337,4 +387,161 @@ end
     @test is_finished(session)
     @test count(event -> event isa RunStarted, events) == 2
     @test count(event -> event isa RunFinished, events) == 1
+end
+
+@testset "Safe periodic HMC restart checkpoints" begin
+    environment = GaugefieldsEnvironment(
+        process_grid=(1, 1, 1, 1),
+        element_type=ComplexF64,
+        verbose=0,
+    )
+    schedule = SimulationSchedule(1, 4)
+
+    reference_events = Any[]
+    reference = build_simulation(
+        SimulationSpec(session_hmc_input(), schedule),
+        environment;
+        sink=FunctionSimulationEventSink(event -> push!(reference_events, event)),
+    )
+    run!(reference; verbose=false)
+
+    mktempdir() do directory
+        checkpoints = JLD2CheckpointOutput(
+            directory;
+            every=2,
+            prefix="restart_",
+        )
+        output = OutputConfig(; checkpoints)
+        spec = SimulationSpec(session_hmc_input(), schedule, output)
+        interrupted = build_simulation(spec, environment)
+
+        first = step!(interrupted)
+        second = step!(interrupted)
+        checkpoint_path = checkpoint_output_path(checkpoints, 2)
+        @test first.checkpoint_path === nothing
+        @test second.checkpoint_path == checkpoint_path
+        @test isfile(checkpoint_path)
+        @test !ispath(checkpoint_path * ".pending")
+        @test interrupted.state.saved_checkpoints == 1
+
+        restored_events = Any[]
+        restored = build_simulation(
+            spec,
+            environment;
+            sink=FunctionSimulationEventSink(
+                event -> push!(restored_events, event),
+            ),
+        )
+        load_checkpoint!(restored, checkpoint_path)
+        @test restored.simulation.state.trajectory == 2
+        @test restored.simulation.state.accepted ==
+              interrupted.simulation.state.accepted
+        @test restored.state.thermalization_completed == 1
+        @test restored.state.production_completed == 1
+        @test restored.state.saved_checkpoints == 1
+        @test count(event -> event isa CheckpointLoaded, restored_events) == 1
+
+        summary = run!(restored; verbose=false)
+        @test !summary.stopped
+        @test is_finished(restored)
+        @test restored.state.saved_checkpoints == 2
+        @test summary.saved_checkpoints == 2
+        @test isfile(checkpoint_output_path(checkpoints, 4))
+        @test !ispath(checkpoint_output_path(checkpoints, 4) * ".pending")
+
+        for direction in eachindex(reference.simulation.configuration.gauge)
+            reference_values = Array(
+                reference.simulation.configuration.gauge[direction].U.A,
+            )
+            restored_values = Array(
+                restored.simulation.configuration.gauge[direction].U.A,
+            )
+            @test restored_values == reference_values
+        end
+        @test restored.simulation.state.accepted ==
+              reference.simulation.state.accepted
+
+        reference_updates = [
+            event.update for event in reference_events
+            if event isa TrajectoryFinished
+        ]
+        restored_updates = [
+            event.update for event in restored_events
+            if event isa TrajectoryFinished
+        ]
+        @test getproperty.(restored_updates, :accepted) ==
+              getproperty.(reference_updates[2:4], :accepted)
+        @test getproperty.(restored_updates, :delta_hamiltonian) ==
+              getproperty.(reference_updates[2:4], :delta_hamiltonian)
+    end
+
+    @test_throws ArgumentError JLD2CheckpointOutput("")
+    @test_throws ArgumentError JLD2CheckpointOutput("restart"; every=0)
+end
+
+@testset "Dynamical Wilson HMC restart is exact" begin
+    environment = GaugefieldsEnvironment(
+        process_grid=(1, 1, 1, 1),
+        communicator=Gaugefields.SerialCommunicator(),
+        element_type=ComplexF64,
+        verbose=0,
+    )
+    config = session_wilson_hmc_input()
+    schedule = SimulationSchedule(0, 3)
+
+    reference_events = Any[]
+    reference = build_simulation(
+        SimulationSpec(config, schedule),
+        environment;
+        sink=FunctionSimulationEventSink(
+            event -> push!(reference_events, event),
+        ),
+    )
+    run!(reference; verbose=false)
+
+    mktempdir() do directory
+        checkpoints = JLD2CheckpointOutput(directory; every=1)
+        spec = SimulationSpec(
+            config,
+            schedule,
+            OutputConfig(; checkpoints),
+        )
+        interrupted = build_simulation(spec, environment)
+        first = step!(interrupted)
+        @test first.checkpoint_path == checkpoint_output_path(checkpoints, 1)
+
+        restored_events = Any[]
+        restored = build_simulation(
+            spec,
+            environment;
+            sink=FunctionSimulationEventSink(
+                event -> push!(restored_events, event),
+            ),
+        )
+        load_checkpoint!(restored, first.checkpoint_path)
+        @test restored.simulation.configuration isa GaugeFermionConfiguration
+        run!(restored; verbose=false)
+
+        @test restored.simulation.state.accepted ==
+              reference.simulation.state.accepted
+        for direction in eachindex(reference.simulation.configuration.gauge)
+            difference = restored.simulation.configuration.gauge[
+                direction
+            ].U.A .- reference.simulation.configuration.gauge[direction].U.A
+            @test maximum(abs, difference) == 0
+        end
+
+        reference_updates = [
+            event.update for event in reference_events
+            if event isa TrajectoryFinished
+        ]
+        restored_updates = [
+            event.update for event in restored_events
+            if event isa TrajectoryFinished
+        ]
+        @test getproperty.(restored_updates, :accepted) ==
+              getproperty.(reference_updates[2:3], :accepted)
+        @test getproperty.(restored_updates, :delta_hamiltonian) ==
+              getproperty.(reference_updates[2:3], :delta_hamiltonian)
+    end
 end

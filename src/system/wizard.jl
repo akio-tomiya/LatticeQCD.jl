@@ -76,7 +76,10 @@ function get_filename_extension(loadtype::Fileformat)
 end
 
 
-function print_wizard_logo(outs)
+function print_wizard_logo(outs; navigation::Symbol=:legacy)
+    navigation in (:legacy, :v2) || throw(ArgumentError(
+        "unsupported Wizard navigation style $(repr(navigation))",
+    ))
     blue = "\033[34m"
     red = "\033[31m"
     green = "\033[32m"
@@ -116,10 +119,24 @@ run_wizard
         "We'll get you set up simulation parameters in no time.",
     )
     println(
+        outs,
         "--------------------------------------------------------------------------------",
     )
-    println("If you leave the prompt empty, a default value will be used.")
-    println("To exit, press Ctrl + c.")
+    println(outs, "If you leave the prompt empty, a default value will be used.")
+    if navigation == :v2
+        println(
+            outs,
+            "To go back, choose 'Back to previous section' in a menu, ",
+            "or type `back` at a text or number prompt.",
+        )
+        println(
+            outs,
+            "To exit without saving, choose 'Quit wizard without saving', ",
+            "or type `quit` (Ctrl+C also interrupts the Wizard).",
+        )
+    else
+        println(outs, "To exit, press Ctrl + c.")
+    end
 end
 
 """

@@ -294,6 +294,17 @@ function legacy_simulation_values(document::AbstractDict)
             "saveU_every",
             control_defaults.saveU_every,
         )),
+        checkpoint_dir=String(legacy_value(
+            control,
+            "checkpoint_dir",
+            control_defaults.checkpoint_dir,
+            preserve_nothing_string=true,
+        )),
+        checkpoint_every=Int(legacy_value(
+            control,
+            "checkpoint_every",
+            control_defaults.checkpoint_every,
+        )),
         verboselevel=Int(legacy_value(
             control,
             "verboselevel",
@@ -925,28 +936,66 @@ function configuration_output_dictionary(config)
     )
 end
 
+checkpoint_output_dictionary(
+    ::SimulationSession_module.NoCheckpointOutput,
+) = Dict{String,Any}("format" => "none")
+
+function checkpoint_output_dictionary(
+    config::SimulationSession_module.JLD2CheckpointOutput,
+)
+    return Dict{String,Any}(
+        "format" => "jld2",
+        "directory" => config.directory,
+        "prefix" => config.prefix,
+        "every" => config.every,
+        "width" => config.width,
+    )
+end
+
 function parse_output(values::AbstractDict)
     configurations = get(values, "configurations", Dict("format" => "none"))
     format = lowercase(String(get(configurations, "format", "none")))
-    format in ("none", "nothing") && return (
-        SimulationSession_module.OutputConfig()
-    )
-    constructor = if format == "jld2"
-        SimulationSession_module.JLD2ConfigurationOutput
-    elseif format in ("bridge", "bridge_text")
-        SimulationSession_module.BridgeTextConfigurationOutput
-    elseif format == "ildg"
-        SimulationSession_module.ILDGConfigurationOutput
+    config = if format in ("none", "nothing")
+        SimulationSession_module.NoConfigurationOutput()
     else
-        throw(ArgumentError("unsupported output format=$(repr(format))"))
+        constructor = if format == "jld2"
+            SimulationSession_module.JLD2ConfigurationOutput
+        elseif format in ("bridge", "bridge_text")
+            SimulationSession_module.BridgeTextConfigurationOutput
+        elseif format == "ildg"
+            SimulationSession_module.ILDGConfigurationOutput
+        else
+            throw(ArgumentError("unsupported output format=$(repr(format))"))
+        end
+        constructor(
+            String(required(configurations, "directory")),
+            String(get(configurations, "prefix", "conf_")),
+            Int(get(configurations, "every", 1)),
+            Int(get(configurations, "width", 8)),
+        )
     end
-    config = constructor(
-        String(required(configurations, "directory")),
-        String(get(configurations, "prefix", "conf_")),
-        Int(get(configurations, "every", 1)),
-        Int(get(configurations, "width", 8)),
-    )
-    return SimulationSession_module.OutputConfig(config)
+
+    checkpoint_values = get(values, "checkpoints", Dict("format" => "none"))
+    checkpoint_format = lowercase(String(get(
+        checkpoint_values,
+        "format",
+        "none",
+    )))
+    checkpoint = if checkpoint_format in ("none", "nothing")
+        SimulationSession_module.NoCheckpointOutput()
+    elseif checkpoint_format == "jld2"
+        SimulationSession_module.JLD2CheckpointOutput(
+            String(required(checkpoint_values, "directory")),
+            String(get(checkpoint_values, "prefix", "restart_")),
+            Int(get(checkpoint_values, "every", 10)),
+            Int(get(checkpoint_values, "width", 8)),
+        )
+    else
+        throw(ArgumentError(
+            "unsupported checkpoint format=$(repr(checkpoint_format))",
+        ))
+    end
+    return SimulationSession_module.OutputConfig(config, checkpoint)
 end
 
 """Convert a typed specification to the canonical, versioned TOML tree."""
@@ -977,6 +1026,9 @@ function simulation_spec_dictionary(spec::SimulationSpec)
         "output" => Dict{String,Any}(
             "configurations" => configuration_output_dictionary(
                 spec.output.configurations,
+            ),
+            "checkpoints" => checkpoint_output_dictionary(
+                spec.output.checkpoints,
             ),
         ),
     )

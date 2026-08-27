@@ -155,6 +155,8 @@ Base.@kwdef mutable struct Print_System_control_parameters
     saveU_dir::String = ""
     saveU_format::Union{String,Nothing} = nothing
     saveU_every::Int64 = 1
+    checkpoint_dir::String = ""
+    checkpoint_every::Int64 = 0
     verboselevel::Int64 = 1
     randomseed::Int64 = 111
     measurement_basedir::String = ""

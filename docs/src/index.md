@@ -43,6 +43,22 @@ debug comparisons, `run_wizard_legacy()` runs the original Wizard and returns
 the historical `Params` object. `run_wizardv2` is retained as an alias of the
 new `run_wizard` and is also Param-free.
 
+Simple mode is a guided SU(3), two-degenerate-flavor Wilson-fermion HMC
+setup. It asks for the lattice dimensions, beta, Wilson hopping parameter,
+optional stout smearing, trajectory count, measurement intervals, and restart
+checkpoint interval. It uses the Wilson plaquette gauge action and a QPQ
+leapfrog integrator, selects plaquette, Polyakov-loop, and pion-correlator
+measurements, and disables gradient flow. These choices are printed when
+simple mode is selected and summarized in plain language on the review page;
+expert mode exposes the other fermions and algorithms.
+
+`Back` is section-based, rather than question-based. Selecting **Back to
+previous section** leaves the current section and discards edits made since
+entering it. At text and number prompts, type `back` (the older `:back` spelling
+also works). The Wizard prints the destination section after moving back. The
+same instructions appear in the opening banner, together with the clean
+`quit` action; Ctrl+C remains available as an interrupt.
+
 The typed `Simulation` interface assembles the same HMC update from explicit
 configuration objects and runs it through the Gaugefields MD driver.  This is
 the preferred interface for notebooks, MPI/GPU applications, and future GUIs:
@@ -111,6 +127,40 @@ load_configuration!(
 )
 ```
 
+For a restartable HMC/SLHMC run, configure a separate checkpoint interval:
+
+```julia
+checkpoint_output = JLD2CheckpointOutput(
+    "restart";
+    prefix="restart_",
+    every=10,
+)
+output = OutputConfig(; checkpoints=checkpoint_output)
+spec = SimulationSpec(input, SimulationSchedule(10, 100), output)
+session = build_simulation(spec, environment)
+run!(session)
+```
+
+Checkpoints are made only after a complete trajectory, including Metropolis
+accept/reject and any rollback. Each file is first written as `.pending`; the
+completed JLD2 file becomes visible only after the global gauge configuration,
+trajectory counters, session progress, and Metropolis RNG have all been
+stored. To continue in a new Julia process, rebuild the same specification and
+restore before calling `run!`:
+
+```julia
+session = build_simulation(spec, environment)
+load_checkpoint!(session, "restart/restart_00000010.jld2")
+summary = run!(session)
+```
+
+Every MPI rank must call the save/load operation. Momentum and pseudofermion
+workspaces are regenerated for the next trajectory and therefore are not
+serialized. Dynamical-fermion HMC clears chronological Krylov solution
+guesses before each trajectory, so a continuous run and a restarted run begin
+the next fermion solve from the same state. Mid-integrator-substep restart is
+deliberately unsupported.
+
 ## Typed TOML input without `Params`
 
 Existing Wizard TOML files can be read directly into a `SimulationSpec`.
@@ -147,6 +197,13 @@ are explicit:
 ```toml
 format = "LatticeQCD.SimulationSpec"
 schema_version = 1
+
+[output.checkpoints]
+format = "jld2"
+directory = "restart"
+prefix = "restart_"
+every = 10
+width = 8
 ```
 
 The original `Params` route remains available as a compatibility and debugging

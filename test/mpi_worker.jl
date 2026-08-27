@@ -28,6 +28,50 @@ function mpi_hmc_input()
     return LQCDConfig(lattice, gauge, action, update)
 end
 
+function mpi_wilson_hmc_input()
+    lattice = LatticeConfig((4, 2, 2, 2))
+    gauge = GaugeConfig(2, 1, "cold", nothing, 0x1234)
+    action = GaugeActionConfig(
+        GaugeActionTermConfig(:gauge_plaquette, "plaquette", 1.9),
+    )
+    solver = FermionSolverConfig(
+        1e-10,
+        2_000,
+        0,
+        (1, 1, 1, -1),
+    )
+    fermions = (
+        FermionActionConfig(
+            :fermion_1,
+            WilsonDiracConfig(0.05, 1.0),
+            2,
+            solver,
+        ),
+    )
+    integrator = LeapfrogConfig(
+        QPQConfig(),
+        ForceGroupConfig(:gauge, :fermion_1),
+    )
+    update = HMCConfig(
+        MDConfig(0.001, 1, integrator),
+        GaussianMomentumConfig(
+            1.0,
+            RandomStreamConfig(0x5678, :momentum),
+        ),
+        RankZeroMetropolisConfig(
+            RandomStreamConfig(0x9abc, :metropolis),
+        ),
+        (
+            PseudofermionRefreshConfig(
+                :fermion_1,
+                RandomStreamConfig(0xdef0, :pseudofermion),
+                1,
+            ),
+        ),
+    )
+    return LQCDConfig(lattice, gauge, action, fermions, update)
+end
+
 @testset "LatticeQCD MPI extension worker" begin
     communicator = MPI.COMM_WORLD
     rank = MPI.Comm_rank(communicator)
@@ -86,4 +130,73 @@ end
 
     root_accepted = MPI.bcast(result.accepted, 0, communicator)
     @test result.accepted == root_accepted
+
+    schedule = SimulationSchedule(0, 3)
+    reference = build_simulation(
+        SimulationSpec(mpi_hmc_input(), schedule),
+        environment,
+    )
+    run!(reference; verbose=false)
+
+    checkpoint_directory = MPI.bcast(
+        rank == 0 ? mktempdir() : "",
+        0,
+        communicator,
+    )
+    checkpoints = JLD2CheckpointOutput(
+        checkpoint_directory;
+        every=1,
+    )
+    checkpoint_spec = SimulationSpec(
+        mpi_hmc_input(),
+        schedule,
+        OutputConfig(; checkpoints),
+    )
+    interrupted = build_simulation(checkpoint_spec, environment)
+    step_result = step!(interrupted)
+    @test step_result.checkpoint_path ==
+          checkpoint_output_path(checkpoints, 1)
+
+    restored = build_simulation(checkpoint_spec, environment)
+    load_checkpoint!(restored, step_result.checkpoint_path)
+    run!(restored; verbose=false)
+    @test restored.simulation.state.accepted ==
+          reference.simulation.state.accepted
+    for direction in eachindex(reference.simulation.configuration.gauge)
+        @test restored.simulation.configuration.gauge[direction].U.A ==
+              reference.simulation.configuration.gauge[direction].U.A
+    end
+
+    fermion_schedule = SimulationSchedule(0, 2)
+    fermion_reference = build_simulation(
+        SimulationSpec(mpi_wilson_hmc_input(), fermion_schedule),
+        environment,
+    )
+    run!(fermion_reference; verbose=false)
+    fermion_checkpoints = JLD2CheckpointOutput(
+        checkpoint_directory;
+        prefix="fermion_",
+        every=1,
+    )
+    fermion_spec = SimulationSpec(
+        mpi_wilson_hmc_input(),
+        fermion_schedule,
+        OutputConfig(; checkpoints=fermion_checkpoints),
+    )
+    fermion_interrupted = build_simulation(fermion_spec, environment)
+    fermion_checkpoint = step!(fermion_interrupted).checkpoint_path
+    fermion_restored = build_simulation(fermion_spec, environment)
+    load_checkpoint!(fermion_restored, fermion_checkpoint)
+    run!(fermion_restored; verbose=false)
+    @test fermion_restored.simulation.state.accepted ==
+          fermion_reference.simulation.state.accepted
+    for direction in eachindex(
+        fermion_reference.simulation.configuration.gauge,
+    )
+        @test fermion_restored.simulation.configuration.gauge[direction].U.A ==
+              fermion_reference.simulation.configuration.gauge[direction].U.A
+    end
+
+    MPI.Barrier(communicator)
+    rank == 0 && rm(checkpoint_directory; recursive=true)
 end

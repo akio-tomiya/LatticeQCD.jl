@@ -213,6 +213,33 @@ end
                 restored = load_simulation_spec(output)
                 @test simulation_input_structurally_equal(spec, restored)
             end
+
+            base = load_simulation_spec(first(representatives))
+            checkpoint_spec = SimulationSpec(
+                base.config,
+                base.schedule,
+                OutputConfig(
+                    base.output.configurations,
+                    JLD2CheckpointOutput(
+                        "restart";
+                        prefix="checkpoint_",
+                        every=17,
+                        width=6,
+                    ),
+                ),
+            )
+            checkpoint_toml = joinpath(directory, "checkpoint_spec.toml")
+            write_simulation_spec(checkpoint_toml, checkpoint_spec)
+            checkpoint_document = TOML.parsefile(checkpoint_toml)
+            checkpoint_values = checkpoint_document["output"]["checkpoints"]
+            @test checkpoint_values["format"] == "jld2"
+            @test checkpoint_values["every"] == 17
+            @test checkpoint_values["prefix"] == "checkpoint_"
+            restored_checkpoint_spec = load_simulation_spec(checkpoint_toml)
+            @test simulation_input_structurally_equal(
+                checkpoint_spec,
+                restored_checkpoint_spec,
+            )
         end
     end
 

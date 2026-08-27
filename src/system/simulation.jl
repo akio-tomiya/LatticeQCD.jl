@@ -3,6 +3,7 @@ module Simulation_module
 import Random
 import Gaugefields
 import Gaugefields: load_configuration!, save_configuration
+import Gaugefields.Temporalfields_module: get_temp, unused!
 import LatticeDiracOperators
 
 import ..LQCDCommunication: broadcast!, comm_rank, is_distributed
@@ -1487,6 +1488,36 @@ function refresh_pseudofermions!(refreshes::Tuple, gauge, trajectory::Integer)
     return nothing
 end
 
+function clear_fermion_temporary_pool!(pool)
+    fields, tokens = get_temp(pool, length(pool))
+    try
+        for field in fields
+            LatticeDiracOperators.clear_fermion!(field)
+        end
+    finally
+        unused!(pool, tokens)
+    end
+    return nothing
+end
+
+"""
+Discard chronological solver guesses before each pseudofermion trajectory.
+
+LDO action workspaces are intentionally not part of a portable checkpoint.
+Starting every trajectory from cleared Krylov solution buffers makes a
+continuous run and a newly constructed session follow the same solver path.
+"""
+function reset_pseudofermion_solver_state!(refreshes::Tuple)
+    for refresh in refreshes
+        action = refresh.provider.action
+        hasproperty(action, :_temporary_fermionfields) || continue
+        clear_fermion_temporary_pool!(
+            getproperty(action, :_temporary_fermionfields),
+        )
+    end
+    return nothing
+end
+
 """Run one gauge or dynamical-fermion HMC trajectory."""
 function update!(
     updater::HMCUpdater,
@@ -1496,6 +1527,7 @@ function update!(
 )
     gauge = gauge_links(configuration)
     trajectory = state.trajectory
+    reset_pseudofermion_solver_state!(updater.pseudofermion_refreshes)
     refresh_pseudofermions!(
         updater.pseudofermion_refreshes,
         gauge,
@@ -1548,6 +1580,7 @@ function update!(
 )
     gauge = gauge_links(configuration)
     trajectory = state.trajectory
+    reset_pseudofermion_solver_state!(updater.pseudofermion_refreshes)
     refresh_pseudofermions!(
         updater.pseudofermion_refreshes,
         gauge,
