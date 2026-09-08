@@ -7,7 +7,8 @@
 
 This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
-LatticeQCD.jl v2 adds the typed, Param-free simulation workflow; see [changes.md](changes.md) for details.
+LatticeQCD.jl v2 introduces a typed simulation workflow while retaining the
+existing parameter files and legacy entry points.
 
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
@@ -28,6 +29,23 @@ If you have questions and comments. Please use the issues section of this reposi
 ## Tutorial
 
 You can start it in [Google Colab](https://colab.research.google.com/drive/1dMD7Uo-Z5SjK_LLHq9HkunQajXTXCE-L?usp=sharing)
+
+## What is new in v2?
+
+- A typed, Param-free `SimulationSpec` and `SimulationSession` workflow for
+  scripts, Jupyter notebooks, MPI/GPU runs, and future GUIs.
+- A new `run_wizard()` with clearer simple/expert choices, review and back
+  navigation. Existing TOML files, `run_LQCD`, and `run_wizard_legacy()` remain
+  available.
+- Unified typed execution for heatbath, HMC/RHMC, stout-smeared fermions,
+  SLHMC, measurements, and gradient flow.
+- Portable JLD2 configuration output and safe periodic restart checkpoints,
+  including dynamical-fermion HMC state.
+- Optional MPI loading and backend-neutral CPU/GPU setup; serial notebooks do
+  not need to initialize MPI.
+
+See [changes.md](changes.md) for the complete v2 changes, compatibility notes,
+and validation coverage.
 
 
 # Quick start

@@ -2,6 +2,8 @@
 
 ## 2.0.0
 
+### Simulation architecture
+
 - Added concrete, fully typed configuration objects for lattices, gauge
   fields, gauge actions, fermion actions, solvers, integrators, updates,
   measurements, schedules, and configuration I/O. Abstract field types are
@@ -11,6 +13,13 @@
   Sessions expose typed events and cooperative step, run, stop, and resume
   operations. `run!` prints rank-zero progress and results by default, with
   `verbose=false` for event-driven GUI or library use.
+- Added concise `text/plain` displays for typed specifications, simulations,
+  sessions, schedules, output settings, and run summaries. Assigning a built
+  session in a REPL or Jupyter cell therefore no longer dumps the underlying
+  gauge-field storage.
+
+### Parameter files and Wizard
+
 - Added a Param-free TOML reader and a versioned canonical TOML schema.
   Existing Wizard TOML files remain readable, while the original `Params`
   conversion remains available as a compatibility and debugging oracle.
@@ -24,6 +33,9 @@
   the plain command `back` and report the destination after navigation. The
   opening v2 banner now explains both `back` and the clean `quit` action where
   the old Ctrl+C-only exit message appeared.
+
+### Configurations, updates, and fermions
+
 - Added gauge-only cold, hot, file, one-instanton, and embedded-instanton
   initialization through the Gaugefields v1 API.
 - Added typed HMC, heatbath, file-loading, and self-learning HMC execution.
@@ -33,9 +45,15 @@
 - Added Wilson, Wilson-clover, staggered, SU(N) HISQ, standard domain-wall,
   and Möbius domain-wall fermion configurations, including stout-smeared
   actions, through the LatticeDiracOperators MD-action interface.
+
+### Measurements and gradient flow
+
 - Added typed measurement plans, multiple measurements, and gradient-flow
   measurements. Fermionic observables remain implemented by
   QCDMeasurements.
+
+### Configuration I/O and restart
+
 - Added portable JLD2 configuration output. Rank zero assembles and
   writes one global gauge configuration, and pseudofermion workspaces are not
   serialized. Bridge text and ILDG remain supported; ILDG tests are skipped
@@ -51,12 +69,22 @@
   Checkpoints include a SHA-256 fingerprint of the typed physical input and
   numeric type plus Julia/package versions. Incompatible physics is rejected
   before loading; dependency differences warn or can be made strict.
+
+Large, streaming JLD2 writes that avoid assembling a global configuration on
+rank zero are intentionally deferred; v2.0 retains the portable rank-zero
+checkpoint design.
+
+### MPI, GPU, and package versions
+
 - Made MPI an optional weak dependency loaded through `LatticeQCDMPIExt`.
   Serial and one-GPU notebook runs can explicitly use
   `Gaugefields.SerialCommunicator()` without initializing MPI.
-- Updated the supported package stack to Gaugefields 1.1.2,
-  LatticeDiracOperators 1.1.2, LatticeMatrices 1.2.1 (through Gaugefields), and
-  QCDMeasurements 1.
+- Updated the minimum supported package stack to Gaugefields 1.1.2,
+  LatticeDiracOperators 1.1.2, and QCDMeasurements 1. LatticeMatrices is used
+  through Gaugefields.
+
+### Regression and release qualification
+
 - Added generated regression matrices for all 464 current Wizard inputs and
   independent Wilson-clover, HISQ, and Möbius comparisons. Serial CPU, MPI
   one/two-rank, and NVIDIA H100 CUDA paths are covered.
@@ -66,7 +94,6 @@
   exported without loaded implementations, and fixed unbound type parameters
   in the lattice and legacy heatbath constructors.
 - Documented the v2 backend qualification matrix and v1 migration path.
-
-Large, streaming JLD2 writes that avoid assembling a global configuration on
-rank zero are intentionally deferred; v2.0 retains the portable rank-zero
-checkpoint design.
+- Verified the notebook workflow through an actual IJulia kernel on Julia
+  1.11, including gauge-only heatbath, an existing Wilson-plus-stout TOML
+  input, visible `run!` progress, and quiet `run!(...; verbose=false)` use.
