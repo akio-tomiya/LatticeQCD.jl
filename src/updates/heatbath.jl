@@ -1,5 +1,5 @@
-struct Heatbathupdate{Dim,T} <: AbstractUpdate
-    heatbath::Union{Heatbath_update{Dim,T},Heatbath{T}}
+struct Heatbathupdate{H<:Union{Heatbath_update,Heatbath}} <: AbstractUpdate
+    heatbath::H
     isevenodd::Bool
     numOR::Int64
     useOR::Bool
@@ -28,7 +28,7 @@ function Heatbathupdate(
         hb = Heatbath_update(U, gauge_action, ITERATION_MAX = ITERATION_MAX)
     end
 
-    return Heatbathupdate{Dim,T}(hb, isevenodd, numOR, useOR)
+    return Heatbathupdate(hb, isevenodd, numOR, useOR)
     #error("in StandardHMC!!")
 end
 

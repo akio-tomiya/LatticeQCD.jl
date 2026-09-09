@@ -1,0 +1,33 @@
+["HMC related"]
+"Δτ" = 0.05
+MDsteps = 20
+
+["Physical setting(fermions)"]
+Dirac_operator = "nothing"
+
+["Physical setting"]
+L = [4, 4, 4, 4]
+update_method = "Fileloading"
+NC = 2
+"β" = 2.7
+
+["System Control"]
+logfile = "Fileloading_L04040404_beta2.7_nothing.txt"
+saveU_dir = "./confs_Fileloading_L04040404_beta2.7_nothing"
+verboselevel = 2
+measurement_dir = "Fileloading_L04040404_beta2.7_nothing"
+measurement_basedir = "./measurements"
+log_dir = "./logs"
+hasgradientflow = false
+saveU_every = 10
+loadU_dir = "./confs"
+saveU_format = "ILDG"
+loadU_format = "ILDG"
+
+["Measurement set".measurement_methods.Plaquette]
+methodname = "Plaquette"
+
+[gradientflow_measurements]
+hasgradientflow = false
+
+    [gradientflow_measurements.measurements_for_flow]

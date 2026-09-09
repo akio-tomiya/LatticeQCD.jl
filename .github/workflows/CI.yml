@@ -10,6 +10,20 @@ on:
       - '**.md'
   pull_request:
 jobs:
+  docs:
+    name: Documentation - Julia 1.11 - Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+          arch: x64
+      - uses: julia-actions/cache@v2
+      - name: Instantiate documentation environment
+        run: julia --project=docs -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+      - name: Build documentation
+        run: julia --project=docs docs/make.jl
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
@@ -39,12 +53,12 @@ jobs:
           #  version: 1.5
           #  arch: x64
     steps:
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         env:
           cache-name: cache-artifacts
         with:
@@ -64,3 +78,17 @@ jobs:
       # - uses: codecov/codecov-action@v1
       #  with:
       #    file: lcov.info
+  mpi:
+    name: MPI (1 and 2 ranks) - Julia 1.11 - Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.11"
+          arch: x64
+      - uses: julia-actions/cache@v2
+      - name: Instantiate with optional MPI
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.add(Pkg.PackageSpec(name="MPI", version="0.20"))'
+      - name: Run MPI integration tests
+        run: julia --startup-file=no --project=. test/runtests_mpi.jl

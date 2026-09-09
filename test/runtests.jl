@@ -1,6 +1,23 @@
 using LatticeQCD
 using Test
 
+include("public_api.jl")
+include("mpi_optional.jl")
+include("lqcd_config.jl")
+include("simulation.jl")
+include("wizard_fermion.jl")
+include("wizard_fermion_io.jl")
+include("fermion_simulation.jl")
+include("slhmc.jl")
+include("fermion_legacy_equivalence.jl")
+include("simulation_session.jl")
+include("restart_matrix.jl")
+include("simulation_input.jl")
+include("configuration_sequence.jl")
+include("wizard_gauge_only.jl")
+include("measurement_plan.jl")
+include("wizard_v2.jl")
+
 function readplaqdata()
     data = readlines("debugplaqdata.txt")
     num = length(data)
@@ -11,6 +28,7 @@ function readplaqdata()
     return plaqvalues
 end
 
+cd(@__DIR__)
 @testset "LatticeQCD.jl" begin
     eps = 1e-1
     plaqvalues = readplaqdata()
@@ -162,4 +180,3 @@ end
 
 
 end
-

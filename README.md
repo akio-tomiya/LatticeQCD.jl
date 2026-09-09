@@ -7,6 +7,9 @@
 
 This code enabales you to perform lattice QCD calculations! A native Julia code for Lattice QCD.
 
+LatticeQCD.jl v2 introduces a typed simulation workflow while retaining the
+existing parameter files and legacy entry points.
+
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compiler
@@ -27,6 +30,25 @@ If you have questions and comments. Please use the issues section of this reposi
 
 You can start it in [Google Colab](https://colab.research.google.com/drive/1dMD7Uo-Z5SjK_LLHq9HkunQajXTXCE-L?usp=sharing)
 
+## What is new in v2?
+
+- A typed, Param-free `SimulationSpec` and `SimulationSession` workflow for
+  scripts, Jupyter notebooks, MPI/GPU runs, and future GUIs.
+- A new `run_wizard()` with clearer simple/expert choices, review and back
+  navigation. Existing TOML files, `run_LQCD`, and `run_wizard_legacy()` remain
+  available.
+- Unified typed execution for heatbath, HMC/RHMC, stout-smeared fermions,
+  SLHMC, measurements, and gradient flow.
+- Grid/Bridge++-compatible momentum and MD-time normalization for typed v2
+  HMC, while the legacy entry points retain the historical LTK convention.
+- Portable JLD2 configuration output and safe periodic restart checkpoints,
+  including dynamical-fermion HMC state.
+- Optional MPI loading and backend-neutral CPU/GPU setup; serial notebooks do
+  not need to initialize MPI.
+
+See [changes.md](changes.md) for the complete v2 changes, compatibility notes,
+and validation coverage.
+
 
 # Quick start
 
@@ -35,8 +57,7 @@ You can start lattice QCD in 5 steps!
 
 
 1.Download a Julia binary from [Julialang.org](https://julialang.org/downloads/). Set a path to the binary of Julia. 
-Julia 1.6 (or higher) is supported. 
-Julia 1.10 (or higher) is supported in LatticeQCD.jl 1.2.0 (or higher). 
+LatticeQCD.jl v2 supports Julia 1.11 and 1.12.
 
 
 2.In Julia REPL, push "]" key to enter the package mode and type
@@ -59,11 +80,24 @@ using LatticeQCD
 
 
 
-4.Make a parameter file with wizard,
+4.Make a parameter file and a typed `SimulationSpec` with the Param-free wizard,
 
 ```
-run_wizard()
+spec = run_wizard()
+session = build_simulation(spec, GaugefieldsEnvironment())
+summary = run!(session)
 ```
+
+The original Params-returning interface is available as
+`run_wizard_legacy()` for compatibility and debugging.
+
+`run!` prints rank-zero trajectory progress, HMC acceptance diagnostics,
+measurements, configuration/checkpoint saves, and a final summary. Safe
+restart checkpoints can be requested independently with
+`JLD2CheckpointOutput("restart"; every=10)`; the Wizard asks for this interval
+for HMC runs and explains that simple mode uses two-flavor Wilson fermions.
+GUI and batch callers can retain event delivery while suppressing console
+output with `run!(session; verbose=false)`.
 
 Choose parameters as you want!
 
@@ -99,17 +133,19 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - General SU(N)
   - General gauge action = plaquette + rect + etc action
 - Fermions
-  - Wilson (2 flavor)
+  - Wilson and Wilson–clover (2 flavor)
   - Staggered fermion (1-8 tastes ~ flavor)
-  - Standard Domain-wall (2 flavor, experimental)
+  - HISQ fermion for SU(N) (1-8 tastes ~ flavor)
+  - Standard and Möbius domain-wall (2 flavor, experimental)
 - Configuration generation algorithms
-  - Cold/Hot start for SU(N). One instanton configuration for SU(2)
+  - Cold/Hot start for SU(N), one instanton for SU(2), and SU(2)-embedded instantons for SU(N)
   - Heatbath for SU(N) & overelaxation for a general gauge action
   - Even-odd heatbath for the plaquette action
   - Quenched HMC with SU(N) for a general gauge action
   - HMC (2 flavor Wilson) with SU(N) with a general gauge action
   - HMC (4 taste staggered fermions) with SU(N) with a general gauge action
   - RHMC (any flavor staggered) with SU(N) for a general gauge action*
+  - HMC/RHMC with HISQ fermions for SU(N)
   - SU(N) stout smeared dynamical fermions (experimental)
   - Self-learning HMC with the plaquette action
 - Measurements
@@ -126,19 +162,82 @@ We support lattice gauge theory in 4 dimensional euclidean spacetime.
   - Gradient flow for a generic action (experimental)
 - I/O for gauge configurations
   - ILDG format (Binary)
-  - JLD format (Default binary file for Julia, one of HDF5)
+  - Portable JLD2 format (default typed-API output; one global configuration)
   - Text file for Bridge++ (Bridgetext)
+  - Atomic, periodic JLD2 restart checkpoints at completed HMC trajectories
 
 *If you specified other than Nf=4, 8 with the staggered fermion HMC, RHMC is automatically used. For a machine with the apple silicon, Nf=1-8 is avalable.
-
-To use following functions, please use v 0.1.2
-- Fermion integrated HMC with a general gauge action
-- Self-learning Monte-Carlo with a general action (ref. [this paper](https://arxiv.org/abs/2010.11900) )
-
 
 *Version below 1.0, it uses ``***.jl`` as a default parameter file, and now it uses ``***.toml``. Version 1.0 supports both parameter file formats.
 
 *Parallelazation is supported by [LatticeDiracOperators.jl](https://github.com/akio-tomiya/LatticeDiracOperators.jl). See below.
+
+## Optional MPI
+
+MPI is an optional dependency in the new `Simulation` API. A serial notebook,
+including a one-GPU run, can explicitly avoid MPI initialization:
+
+```julia
+using LatticeQCD
+import Gaugefields
+
+environment = GaugefieldsEnvironment(
+    communicator=Gaugefields.SerialCommunicator(),
+    process_grid=(1, 1, 1, 1),
+)
+```
+
+The v2.0 release qualification covers serial CPU, one/two-rank CPU MPI, and a
+single NVIDIA H100 using CUDA. MPI+CUDA multi-GPU, AMDGPU, and oneAPI use the
+same backend-neutral JACC/LatticeMatrices path but are not yet release-tested;
+they are experimental rather than claimed supported configurations. See the
+[backend support matrix](docs/src/backends.md) for the tested fermions, I/O,
+restart coverage, and the optional GPU command.
+
+For a distributed run, install and load MPI explicitly, initialize it, and
+pass its communicator:
+
+```julia
+using LatticeQCD
+using MPI
+MPI.Init()
+
+environment = GaugefieldsEnvironment(
+    communicator=MPI.COMM_WORLD,
+    process_grid=(2, 2, 1, 1),
+)
+```
+
+## Optional GPU backend
+
+GPU selection remains an application-level choice, so importing LatticeQCD
+does not initialize CUDA, AMDGPU, or oneAPI. Install JACC and the desired
+backend package, select it once, and restart Julia. For CUDA:
+
+```julia
+using Pkg
+Pkg.add(["JACC", "CUDA"])
+
+using JACC
+JACC.set_backend("cuda")
+```
+
+At the start of the restarted process or notebook, initialize the selected
+backend before loading LatticeQCD:
+
+```julia
+using CUDA
+import JACC
+JACC.@init_backend
+
+using LatticeQCD
+import Gaugefields
+
+environment = GaugefieldsEnvironment(
+    communicator=Gaugefields.SerialCommunicator(),
+    process_grid=(1, 1, 1, 1),
+)
+```
 
 # Related packages
 
@@ -172,7 +271,7 @@ The "PARAMETER_FILE" can be created through the wizard. To use the wizard on the
 
 ```julia:wizard.jl
 using LatticeQCD
-run_wizard()
+spec = run_wizard()
 ```
 
 Then, you can run the wizard:

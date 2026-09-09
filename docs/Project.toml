@@ -1,0 +1,7 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+LatticeQCD = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
+
+[compat]
+Documenter = "1"
+julia = "1.11, 1.12"
