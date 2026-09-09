@@ -38,6 +38,14 @@
 
 - Added gauge-only cold, hot, file, one-instanton, and embedded-instanton
   initialization through the Gaugefields v1 API.
+- Use the Grid/Bridge++ momentum normalization in HMC configurations converted
+  for the typed v2 workflow: Gaussian Lie-algebra coefficients have width
+  `sqrt(2)`, the kinetic term is `p*p/4`, and momentum kicks carry a factor of
+  two. An explicitly constructed `GaussianMomentumConfig(1.0, ...)` retains
+  the historical LTK normalization, and the legacy `Params` execution path is
+  unchanged. To compare the same trajectory with v1, convert the MD step size
+  as `delta_tau_v2 = delta_tau_v1 / sqrt(2)`.
+- Require Gaugefields v1.1.4 for its normalization-aware MD driver.
 - Added typed HMC, heatbath, file-loading, and self-learning HMC execution.
   SLHMC keeps the exact target action separate from the action used for the
   MD proposal. Gauge-only Sexton-Weingarten input is warned about and ignored;
@@ -79,7 +87,7 @@ checkpoint design.
 - Made MPI an optional weak dependency loaded through `LatticeQCDMPIExt`.
   Serial and one-GPU notebook runs can explicitly use
   `Gaugefields.SerialCommunicator()` without initializing MPI.
-- Updated the minimum supported package stack to Gaugefields 1.1.2,
+- Updated the minimum supported package stack to Gaugefields 1.1.4,
   LatticeDiracOperators 1.1.2, and QCDMeasurements 1. LatticeMatrices is used
   through Gaugefields.
 
@@ -88,6 +96,10 @@ checkpoint design.
 - Added generated regression matrices for all 464 current Wizard inputs and
   independent Wilson-clover, HISQ, and Möbius comparisons. Serial CPU, MPI
   one/two-rank, and NVIDIA H100 CUDA paths are covered.
+- Verified the Grid/Bridge++ momentum normalization on threaded CPU and two
+  MPI ranks, and on an NVIDIA H100 for gauge, staggered, and HISQ HMC plus an
+  exact staggered checkpoint restart. See `comparison.md` for the numerical
+  fingerprints and the old/new MD-time conversion comparison.
 - Added bitwise restart regressions for Wilson, Wilson-clover, staggered RHMC,
   HISQ RHMC, standard/Möbius domain-wall, stout Wilson, and fermionic SLHMC.
 - Added public-API and Aqua quality gates. Removed legacy names that were

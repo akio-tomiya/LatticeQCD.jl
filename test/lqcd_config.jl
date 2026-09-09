@@ -51,7 +51,7 @@ end
             @test config.update.md.integrator isa LeapfrogConfig
             @test config.update.md.integrator.ordering isa QPQConfig
             @test config.update.md.integrator.forces.names == (:gauge,)
-            @test config.update.momentum.sigma == 1.0
+            @test config.update.momentum.sigma == sqrt(2.0)
             @test config.update.momentum.random.seed == parameters.randomseed
             @test config.update.momentum.random.name == :momentum
             @test config.update.acceptance.random.seed == parameters.randomseed
@@ -94,6 +94,7 @@ end
             @test occursin("HMC", output)
             @test occursin("scheme: QPQ", output)
             @test occursin("MD steps: 15", output)
+            @test occursin("momentum denominator: 2", output)
 
             compact_output = sprint(show, config)
             @test occursin("update=HMCConfig", compact_output)
@@ -101,6 +102,11 @@ end
             isopen(parameters.load_fp) && close(parameters.load_fp)
         end
     end
+
+    random = RandomStreamConfig(1234, :momentum)
+    @test_throws ArgumentError GaussianMomentumConfig(0.0, random)
+    @test_throws ArgumentError GaussianMomentumConfig(-1.0, random)
+    @test_throws ArgumentError GaussianMomentumConfig(Inf, random)
 
     cold = GaugeConfig(3, 1, "cold", nothing)
     @test typeof(cold) === GaugeConfig{ColdStartConfig}

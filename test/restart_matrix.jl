@@ -40,7 +40,7 @@ function restart_test_input(
         ),
     )
     momentum = GaussianMomentumConfig(
-        1.0,
+        sqrt(2.0),
         RandomStreamConfig(0x5678, :momentum),
     )
     acceptance = RankZeroMetropolisConfig(

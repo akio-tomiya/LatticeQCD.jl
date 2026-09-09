@@ -52,7 +52,7 @@ function gpu_hmc_input(operator=nothing)
     update = HMCConfig(
         MDConfig(0.001, 1, LeapfrogConfig(QPQConfig(), forces)),
         GaussianMomentumConfig(
-            1.0,
+            sqrt(2.0),
             RandomStreamConfig(0x5678, :momentum),
         ),
         RankZeroMetropolisConfig(

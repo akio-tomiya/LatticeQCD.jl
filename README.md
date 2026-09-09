@@ -39,6 +39,8 @@ You can start it in [Google Colab](https://colab.research.google.com/drive/1dMD7
   available.
 - Unified typed execution for heatbath, HMC/RHMC, stout-smeared fermions,
   SLHMC, measurements, and gradient flow.
+- Grid/Bridge++-compatible momentum and MD-time normalization for typed v2
+  HMC, while the legacy entry points retain the historical LTK convention.
 - Portable JLD2 configuration output and safe periodic restart checkpoints,
   including dynamical-fermion HMC state.
 - Optional MPI loading and backend-neutral CPU/GPU setup; serial notebooks do

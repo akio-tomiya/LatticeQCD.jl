@@ -617,10 +617,34 @@ struct RandomStreamConfig{S<:Integer,N}
     name::N
 end
 
-"""Full Gaussian momentum refresh settings."""
+"""
+Full Gaussian momentum refresh settings.
+
+The MD momentum denominator is derived as `sigma^2`, so the Gaussian refresh,
+kinetic energy, and momentum kicks always use one consistent normalization.
+"""
 struct GaussianMomentumConfig{T<:Real,R<:RandomStreamConfig}
     sigma::T
     random::R
+
+    function GaussianMomentumConfig(
+        sigma::T,
+        random::R,
+    ) where {T<:Real,R<:RandomStreamConfig}
+        isfinite(sigma) || throw(ArgumentError(
+            "momentum sigma must be finite; got $sigma",
+        ))
+        sigma > 0 || throw(ArgumentError(
+            "momentum sigma must be positive; got $sigma",
+        ))
+        return new{T,R}(sigma, random)
+    end
+end
+
+function momentum_denominator(config::GaussianMomentumConfig)
+    sigma = config.sigma
+    two = one(sigma) + one(sigma)
+    return sigma == sqrt(two) ? two : abs2(sigma)
 end
 
 """Metropolis decisions drawn on rank zero and broadcast to other ranks."""
@@ -870,7 +894,7 @@ function update_config(parameters, fermions::Tuple=())
         end
         md = MDConfig(parameters.Δτ, parameters.MDsteps, integrator)
         momentum = GaussianMomentumConfig(
-            1.0,
+            sqrt(2.0),
             RandomStreamConfig(seed, :momentum),
         )
         acceptance = RankZeroMetropolisConfig(
@@ -1050,6 +1074,11 @@ function show_config(io::IO, config::HMCConfig)
     println(io, "  integrator:")
     print_integrator_config(io, config.md.integrator, 4)
     println(io, "  momentum sigma: ", config.momentum.sigma)
+    println(
+        io,
+        "  momentum denominator: ",
+        momentum_denominator(config.momentum),
+    )
     println(io, "  momentum seed: ", config.momentum.random.seed)
     println(io, "  momentum stream: ", config.momentum.random.name)
     if !isempty(config.pseudofermions)
@@ -1085,6 +1114,11 @@ function show_config(io::IO, config::SLHMCConfig)
     println(io, "  integrator:")
     print_integrator_config(io, config.md.integrator, 4)
     println(io, "  momentum sigma: ", config.momentum.sigma)
+    println(
+        io,
+        "  momentum denominator: ",
+        momentum_denominator(config.momentum),
+    )
     println(io, "  momentum seed: ", config.momentum.random.seed)
     if !isempty(config.pseudofermions)
         println(io, "  target pseudofermion refreshes:")

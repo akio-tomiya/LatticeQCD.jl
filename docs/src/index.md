@@ -75,7 +75,7 @@ target_action = GaugeActionConfig(
 integrator = LeapfrogConfig(QPQConfig(), ForceGroupConfig(:gauge))
 md = MDConfig(0.01, 10, integrator)
 momentum = GaussianMomentumConfig(
-    1.0,
+    sqrt(2.0),
     RandomStreamConfig(5678, :momentum),
 )
 acceptance = RankZeroMetropolisConfig(
@@ -91,6 +91,12 @@ environment = GaugefieldsEnvironment(
 simulation = build_simulation(input, environment)
 result = update!(simulation)
 ```
+
+The v2 workflow uses the Grid/Bridge++ momentum normalization. Thus the
+Gaussian coefficient width is `sqrt(2)`, the kinetic term is `p*p/4`, and
+momentum kicks carry a factor of two. Set the width explicitly to `1.0` to
+reproduce the historical LTK normalization; when comparing the same MD path,
+use `delta_tau_grid = delta_tau_ltk / sqrt(2)`.
 
 For self-learning HMC, the target action belongs to `LQCDConfig`, while the
 approximate action used only for the MD proposal belongs to `SLHMCConfig`.

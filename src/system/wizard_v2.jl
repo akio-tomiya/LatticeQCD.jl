@@ -1902,7 +1902,8 @@ function wizard_v2_update_description(draft::WizardV2Draft)
         "Sexton--Weingarten ($(hmc.N_SextonWeingargten) fast steps)" :
         (hmc.QPQ ? "QPQ leapfrog" : "PQP leapfrog")
     return "$(physical.update_method), $integrator, " *
-           "MD steps=$(hmc.MDsteps), delta tau=$(hmc.Δτ)"
+           "MD steps=$(hmc.MDsteps), delta tau=$(hmc.Δτ), " *
+           "Grid/Bridge++ momentum normalization"
 end
 
 function wizard_v2_review_summary(draft::WizardV2Draft)

@@ -18,7 +18,7 @@ function mpi_hmc_input()
     update = HMCConfig(
         MDConfig(0.02, 2, integrator),
         GaussianMomentumConfig(
-            1.0,
+            sqrt(2.0),
             RandomStreamConfig(0x5678, :momentum),
         ),
         RankZeroMetropolisConfig(
@@ -55,7 +55,7 @@ function mpi_wilson_hmc_input()
     update = HMCConfig(
         MDConfig(0.001, 1, integrator),
         GaussianMomentumConfig(
-            1.0,
+            sqrt(2.0),
             RandomStreamConfig(0x5678, :momentum),
         ),
         RankZeroMetropolisConfig(

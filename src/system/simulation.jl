@@ -40,7 +40,8 @@ import ..LQCDConfig_module:
     WilsonDiracConfig,
     canonical_configuration_format,
     fermion_action_names,
-    md_trajectory_length
+    md_trajectory_length,
+    momentum_denominator
 
 """Common supertype for runtime field configurations."""
 abstract type AbstractConfiguration end
@@ -1063,7 +1064,7 @@ function gaugefields_integrator(
     )
 end
 
-function build_md_driver(md_config, gauge, action)
+function build_md_driver(md_config, momentum_config, gauge, action)
     available = action isa Gaugefields.MDActionSet ?
                 Tuple(keys(action.terms)) : (:gauge,)
     return Gaugefields.md_driver(
@@ -1072,6 +1073,7 @@ function build_md_driver(md_config, gauge, action)
         steps=md_config.steps,
         trajectory_length=md_trajectory_length(md_config),
         integrator=gaugefields_integrator(md_config.integrator, available),
+        momentum_denominator=momentum_denominator(momentum_config),
     )
 end
 
@@ -1082,7 +1084,7 @@ function build_hmc_updater(
     refreshes::Tuple,
 )
     gauge = gauge_links(configuration)
-    driver = build_md_driver(config.md, gauge, action)
+    driver = build_md_driver(config.md, config.momentum, gauge, action)
     momentum = Gaugefields.gauge_momenta(gauge)
     backup = GaugeConfiguration([similar(link) for link in gauge])
     return HMCUpdater(
@@ -1127,8 +1129,13 @@ function build_slhmc_updater(
     refreshes::Tuple,
 )
     gauge = gauge_links(configuration)
-    md_driver = build_md_driver(config.md, gauge, md_action)
-    target_driver = build_md_driver(config.md, gauge, target_action)
+    md_driver = build_md_driver(config.md, config.momentum, gauge, md_action)
+    target_driver = build_md_driver(
+        config.md,
+        config.momentum,
+        gauge,
+        target_action,
+    )
     momentum = Gaugefields.gauge_momenta(gauge)
     backup = GaugeConfiguration([similar(link) for link in gauge])
     md_trajectory_state_providers = md_action isa Gaugefields.MDActionSet ?

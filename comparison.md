@@ -467,35 +467,54 @@ Together with the gauge-only and fermion-I/O matrices there are 464 current
 Wizard inputs. The Param-free TOML and canonical round-trip suite, including
 all of them, passed 528/528 assertions.
 
+# Momentum and MD-time normalization
+
+Gaugefields v1.1.4 and the typed LatticeQCD v2 path were compared on
+2026-09-09 using a `2^4` SU(3) hot field, plaquette coupling 1, QPQ with four
+steps, gauge seed `0x1234`, and momentum seed `0x5678`. The historical run
+used Gaussian width 1, momentum denominator 1, and trajectory length `0.04`.
+The Grid/Bridge++ run used width `sqrt(2)`, denominator 2, and trajectory
+length `0.04/sqrt(2)`.
+
+| Quantity | LTK normalization | Grid/Bridge++ normalization |
+|---|---:|---:|
+| Initial Hamiltonian | 264.4527674995198 | 264.45276749951984 |
+| Delta Hamiltonian | -2.9082313744765997e-5 | -2.9082313801609416e-5 |
+
+After the trajectory, the maximum elementwise link difference was
+`4.965068306494546e-16`. The maximum difference between the Grid momentum and
+`sqrt(2)` times the LTK momentum was `1.3322676295501878e-15`. This verifies
+the expected discrete-path identity after the MD-time conversion, rather
+than merely comparing ensemble averages. The same normalization-aware driver
+passed its two-rank MPI reversibility tests for both ordinary QPQ and grouped
+Sexton--Weingarten evolution.
+
 # Official v2 dependency and H100 smoke test
 
-The typed LatticeQCD path was finally tested with Gaugefields 1.1.2,
-LatticeDiracOperators 1.1.2, LatticeMatrices 1.2.1, and QCDMeasurements
-1.0.0. The optional `test/gpu_smoke.jl` driver was run with
-Julia 1.11.8, CUDA.jl 6.3.0, JACC's `cuda` backend, a serial communicator,
-and one NVIDIA H100 NVL. Each case used one QPQ leapfrog step with
-`delta_tau=0.001` and deterministic random streams.
+The typed LatticeQCD path was tested with Gaugefields 1.1.4,
+LatticeDiracOperators 1.1.2, LatticeMatrices 1.2.3, and QCDMeasurements
+1.0.0. The optional `test/gpu_smoke.jl` driver was run with Julia 1.11.8,
+CUDA.jl 6.3.1, JACC's `cuda` backend, a serial communicator, and one NVIDIA
+H100 NVL. Each case used the Grid/Bridge++ denominator 2, Gaussian width
+`sqrt(2)`, and one QPQ leapfrog step with `delta_tau=0.001` and deterministic
+random streams.
 
 | Case | Plaquette after the trajectory | Delta Hamiltonian |
 |---|---:|---:|
-| Gauge HMC | 0.9999989791590459 | -2.8920226213813294e-9 |
-| Four-taste staggered HMC | 0.9999989792140159 | -1.2222514556015085e-8 |
-| Four-taste HISQ HMC (`naik_epsilon=-0.083`) | 0.9999973729736324 | -1.229636836796999e-9 |
+| Gauge HMC | 0.9999979583715118 | -8.454080102637818e-9 |
+| Four-taste staggered HMC | 0.9999979585269517 | -3.4865479392465204e-8 |
+| Four-taste HISQ HMC (`naik_epsilon=-0.083`) | 0.9999947459617053 | -1.5517343854298815e-8 |
 
 All Hamiltonians and plaquettes were finite, the backing arrays were CUDA
 `CuArray`s, and every resulting configuration was saved as portable JLD2,
 loaded into a fresh GPU configuration, and reproduced the plaquette. The
 test also saved a staggered RHMC checkpoint after one trajectory, rebuilt a
 new session, restored it on the GPU, and reproduced the two-trajectory
-continuous run exactly. It passed 27/27 assertions. Repeating the same seeded
-driver on an RTX PRO 6000 produced the same three plaquettes and Hamiltonian
-differences.
+continuous run exactly. It passed 27/27 assertions.
 
-The serial typed suites, including every current Wizard input, were also run
-with this official dependency set. The gauge-only matrix passed 2830/2830
-runtime assertions, the fermion configuration-I/O matrix passed 507/507,
-and the 164 dynamical-fermion cases passed four shards of 1572, 1695, 1572,
-and 1695 assertions. Optional-MPI tests passed the lifecycle checks (8/8),
-the one-rank worker (30/30), and both two-rank workers (30/30 per rank). The
-worker covers exact JLD2 checkpoint restart for both gauge-only and
-Wilson-fermion HMC.
+The normalization change also passed 532/532 Param-free TOML assertions,
+160/160 Wizard v2 assertions, 24/24 SLHMC target/proposal assertions, and the
+94/94 exact restart matrix for dynamical Wilson, staggered, HISQ,
+domain-wall, and Mobius domain-wall cases. The Gaugefields MD suite passed on
+the threaded CPU backend, and its normalization-aware MPI test passed 12/12
+assertions independently on both ranks.

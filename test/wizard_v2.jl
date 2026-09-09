@@ -449,6 +449,16 @@ end
             spec = WizardV2.run_wizard(ui)
 
             @test spec isa LatticeQCD.SimulationSpec
+            @test spec.config.update.momentum.sigma == sqrt(2.0)
+            @test occursin(
+                "Grid/Bridge++ momentum normalization",
+                WizardV2.wizard_v2_review_summary(
+                    let draft = WizardV2.WizardV2Draft()
+                        draft.physicalparams.update_method = "HMC"
+                        draft
+                    end,
+                ),
+            )
             @test isempty(ui.answers)
             @test isfile(filename)
             @test !isfile("$filename.toml")

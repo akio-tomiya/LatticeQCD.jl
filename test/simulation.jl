@@ -8,6 +8,7 @@ function test_hmc_input(;
     lattice_size=(2, 2, 2, 2),
     colors=2,
     halo=1,
+    momentum_sigma=sqrt(2.0),
 )
     lattice = LatticeConfig(lattice_size)
     gauge = if initial isa AbstractGaugeInitializationConfig
@@ -25,7 +26,7 @@ function test_hmc_input(;
     integrator = LeapfrogConfig(ordering, ForceGroupConfig(:gauge))
     md = MDConfig(0.02, 2, integrator)
     momentum = GaussianMomentumConfig(
-        1.0,
+        momentum_sigma,
         RandomStreamConfig(0x5678, :momentum),
     )
     acceptance = RankZeroMetropolisConfig(
@@ -219,6 +220,7 @@ end
     @test simulation.updater.md_driver.integrator isa Gaugefields.QPQ
     @test simulation.updater.md_driver.steps == 2
     @test simulation.updater.md_driver.trajectory_length == 0.04
+    @test simulation.updater.md_driver.momentum_denominator == 2.0
     @test fieldtype(typeof(simulation), :configuration) ===
           typeof(simulation.configuration)
     @test fieldtype(typeof(simulation), :updater) === typeof(simulation.updater)
@@ -246,6 +248,12 @@ end
 
     pqp = build_simulation(test_hmc_input(ordering=PQPConfig()), environment)
     @test pqp.updater.md_driver.integrator isa Gaugefields.PQP
+
+    ltk = build_simulation(
+        test_hmc_input(momentum_sigma=1.0),
+        environment,
+    )
+    @test ltk.updater.md_driver.momentum_denominator == 1.0
 end
 
 @testset "HMC acceptance and device-local rollback" begin

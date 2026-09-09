@@ -17,7 +17,7 @@ function slhmc_gauge_hmc_input()
     update = HMCConfig(
         md,
         GaussianMomentumConfig(
-            1.0,
+            sqrt(2.0),
             RandomStreamConfig(0x5678, :momentum),
         ),
         RankZeroMetropolisConfig(
@@ -105,6 +105,10 @@ end
     identical_simulation = build_simulation(identical_input, environment)
 
     @test identical_simulation.updater isa SLHMCUpdater
+    @test identical_simulation.updater.md_driver.momentum_denominator ==
+          2.0
+    @test identical_simulation.updater.target_driver.momentum_denominator ==
+          2.0
     @test identical_simulation.state isa HMCState
     @test all(isconcretetype, fieldtypes(typeof(identical_input.update)))
     @test all(isconcretetype, fieldtypes(typeof(identical_simulation.updater)))
