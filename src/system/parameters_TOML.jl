@@ -81,7 +81,7 @@ end
 
 function construct_Params_from_TOML(filename::String)
     parameters = TOML.parsefile(filename)
-    println("inputfile: ", pwd() * "/" * filename)
+    println("inputfile: ", abspath(filename))
     construct_Params_from_TOML(parameters)
 end
 
@@ -121,10 +121,8 @@ function construct_Params_from_TOML(parameters)
     pos = findfirst(x -> String(x) == "load_fp", pnames)
     logfilename = parameters["System Control"]["logfile"]
     log_dir = parameters["System Control"]["log_dir"]
-    if isdir(log_dir) == false
-        mkdir(log_dir)
-    end
-    logfile = pwd() * "/" * log_dir * "/" * logfilename
+    logfile = abspath(log_dir, logfilename)
+    mkpath(dirname(logfile))
 
     load_fp = open(logfile, "w")
     value_Params[pos] = load_fp
@@ -172,16 +170,9 @@ function construct_Params_from_TOML(parameters)
         measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
         measurement_dir = parameters["Measurement set"]["measurement_dir"]
     end
-    if isdir(measurement_basedir) == false
-        mkdir(measurement_basedir)
-    end
-
-    if isdir(pwd() * "/" * measurement_basedir * "/" * measurement_dir) == false
-        mkdir(pwd() * "/" * measurement_basedir * "/" * measurement_dir)
-    end
-
     pos = findfirst(x -> String(x) == "measuredir", pnames)
-    measuredir = pwd() * "/" * measurement_basedir * "/" * measurement_dir
+    measuredir = abspath(measurement_basedir, measurement_dir)
+    mkpath(measuredir)
     value_Params[pos] = measuredir
 
     for (i, pname_i) in enumerate(pnames)
@@ -265,9 +256,7 @@ function parameter_check(p::Params)
     end
 
     log_dir = p.log_dir
-    if isdir(log_dir) == false
-        mkdir(log_dir)
-    end
+    mkpath(abspath(log_dir))
 
 
 

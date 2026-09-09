@@ -51,7 +51,7 @@ function Univ(p::Params; MPIparallel=false, PEs=nothing)
 
     end
     close(p.load_fp)
-    logfilename = pwd() * "/" * p.log_dir * "/" * p.logfile
+    logfilename = abspath(p.log_dir, p.logfile)
     verbose_print =
         Verbose_print(p.verboselevel, myid=get_myrank(U[1]), filename=logfilename)
 
