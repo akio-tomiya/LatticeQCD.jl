@@ -107,6 +107,8 @@ checkpoint design.
   in the lattice and legacy heatbath constructors.
 - Declared the `Logging` standard library as a test dependency so isolated
   `Pkg.test` environments can run the Param-free TOML input regressions.
+- Resolve legacy `Params` log and measurement directories with platform-native
+  path handling, including absolute paths on a different Windows drive.
 - Documented the v2 backend qualification matrix and v1 migration path.
 - Verified the notebook workflow through an actual IJulia kernel on Julia
   1.11, including gauge-only heatbath, an existing Wilson-plus-stout TOML

@@ -2,14 +2,14 @@ using LatticeQCD
 using Test
 using TOML
 
-function gauge_only_params(filename, directory)
+function gauge_only_params(filename, directory; absolute_paths=false)
     parameters = TOML.parsefile(joinpath(@__DIR__, filename))
     control = parameters["System Control"]
-    relative_directory = relpath(directory, pwd())
-    control["log_dir"] = joinpath(relative_directory, "logs")
+    output_directory = absolute_paths ? directory : relpath(directory, pwd())
+    control["log_dir"] = joinpath(output_directory, "logs")
     control["logfile"] = "lqcd-config.log"
     control["measurement_basedir"] = joinpath(
-        relative_directory,
+        output_directory,
         "measurements",
     )
     control["measurement_dir"] = "gauge-only"
@@ -18,8 +18,16 @@ end
 
 @testset "Typed gauge-only LQCDConfig" begin
     mktempdir() do directory
-        parameters = gauge_only_params("test02.toml", directory)
+        parameters = gauge_only_params(
+            "test02.toml",
+            directory;
+            absolute_paths=true,
+        )
         try
+            @test isopen(parameters.load_fp)
+            @test isfile(joinpath(directory, "logs", "lqcd-config.log"))
+            @test normpath(parameters.measuredir) ==
+                  normpath(joinpath(directory, "measurements", "gauge-only"))
             config = LQCDConfig(parameters)
 
             @test config.lattice.L == (4, 4, 4, 4)
