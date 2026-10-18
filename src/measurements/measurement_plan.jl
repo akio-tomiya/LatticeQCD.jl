@@ -515,6 +515,22 @@ end
 
 measurement_program(parameters::Params) = legacy_measurement_program(parameters)
 
+minimum_measurement_halo(::AbstractObservableConfig) = 0
+minimum_measurement_halo(::Union{
+    PionCorrelatorObservableConfig,ChiralCondensateObservableConfig,
+}) = 1
+minimum_measurement_halo(plan::MeasurementPlan) = maximum(
+    (minimum_measurement_halo(m.observable) for m in plan.measurements);
+    init=0,
+)
+minimum_measurement_halo(::NoGradientFlowMeasurementConfig) = 0
+minimum_measurement_halo(config::GradientFlowMeasurementConfig) =
+    minimum_measurement_halo(config.measurements)
+minimum_measurement_halo(program::MeasurementProgram) = max(
+    minimum_measurement_halo(program.direct),
+    minimum_measurement_halo(program.gradient_flow),
+)
+
 observable_name(::PlaquetteObservableConfig) = :plaquette
 observable_name(::PolyakovLoopObservableConfig) = :polyakov_loop
 observable_name(::TopologicalChargeObservableConfig) = :topological_charge

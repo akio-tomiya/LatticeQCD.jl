@@ -103,7 +103,7 @@ function wizard_v2_choice(
 )
     result = wizard_v2_scripted_answer!(ui, prompt)
     result isa WizardV2Answer || return result
-    selected = result.value
+    selected = result.value === :default ? default : result.value
     selected isa Integer || error("scripted choice for $prompt must be an integer")
     1 <= selected <= length(options) || error(
         "scripted choice $selected is outside 1:$(length(options)) for $prompt",
@@ -199,7 +199,7 @@ function wizard_v2_value(
 ) where {T}
     result = wizard_v2_scripted_answer!(ui, prompt)
     result isa WizardV2Answer || return result
-    raw = result.value
+    raw = result.value === :default ? default : result.value
     value = if T === String
         String(raw)
     elseif raw isa T
@@ -1279,8 +1279,8 @@ function edit_wizard_v2_update!(ui, draft)
     @wizard_v2_answer nsteps wizard_v2_value(
         ui,
         Int64,
-        "Number of total trajectories after thermalization";
-        default=isrevisit ? physical.Nsteps : 100 + physical.initialtrj,
+        "Number of production trajectories after thermalization";
+        default=isrevisit ? physical.Nsteps : 100,
         valid=value -> value > 0,
         validation_message="The number of trajectories must be positive.",
     )
@@ -1481,18 +1481,18 @@ function configure_wizard_v2_measurement!(ui, method, option, lattice; isnew=fal
         cg = ConjugateGradient(eps=method.eps, MaxCGstep=method.MaxCGstep)
         if fermion_index == 1
             method.fermiontype = "Wilson"
-            parameters = Wilson_parameters()
+            parameters = method.fermion_parameters isa Wilson_parameters ?
+                         deepcopy(method.fermion_parameters) : Wilson_parameters()
             result = configure_wizard_v2_wilson!(ui, parameters, cg)
             result === nothing || return result
         else
             method.fermiontype = "Staggered"
-            parameters = Staggered_parameters()
+            parameters = method.fermion_parameters isa Staggered_parameters ?
+                         deepcopy(method.fermion_parameters) : Staggered_parameters()
             result = configure_wizard_v2_staggered!(ui, parameters, cg)
             result === nothing || return result
         end
-        # Keep compatibility with the original Wizard, which records the
-        # selected fermion type and solver values but leaves the nested
-        # `fermion_parameters` field at its constructor default.
+        method.fermion_parameters = parameters
         method.eps = cg.eps
         method.MaxCGstep = cg.MaxCGstep
         result = configure_wizard_v2_measurement_smearing!(ui, method)
@@ -1855,6 +1855,7 @@ function wizard_v2_parameter_dictionary(draft::WizardV2Draft)
         draft.gradient_params,
         draft.measurement_gradientflow,
         slhmc_beta=draft.slhmc_beta,
+        trajectory_counts=true,
     )
 end
 
@@ -1933,7 +1934,7 @@ function wizard_v2_review_summary(draft::WizardV2Draft)
     println(io, "  fermion smearing: ", wizard_v2_smearing_description(draft))
     println(io, "  update: ", wizard_v2_update_description(draft))
     println(io, "  thermalization steps: ", physical.Nthermalization)
-    println(io, "  final trajectory setting: ", physical.Nsteps)
+    println(io, "  production steps: ", physical.Nsteps)
     println(
         io,
         "  measurements: ",
@@ -2008,6 +2009,7 @@ function wizard_v2_write_and_build_spec(draft)
         draft.gradient_params,
         draft.measurement_gradientflow,
         slhmc_beta=draft.slhmc_beta,
+        trajectory_counts=true,
     )
     return simulation_spec_from_legacy_toml(parameters)
 end
@@ -2022,7 +2024,8 @@ function print_wizard_v2_completion(::TerminalWizardV2UI, draft)
         session = build_simulation(spec, GaugefieldsEnvironment())
         run!(session)
 
-    `run!` prints trajectory progress and measurements on rank zero. For a
+    `run!` writes the selected log and measurement files and prints progress
+    on rank zero. For a
     GUI or another event-driven frontend, suppress console output with
 
         run!(session; verbose=false)

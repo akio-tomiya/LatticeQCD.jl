@@ -84,8 +84,6 @@ using LatticeQCD
 
 ```
 spec = run_wizard()
-session = build_simulation(spec, GaugefieldsEnvironment())
-summary = run!(session)
 ```
 
 The original Params-returning interface is available as
@@ -103,11 +101,37 @@ Choose parameters as you want!
 
 
 
-5.Start simulation with created your parameter file!
+5.Run the returned specification once:
 
+```julia
+session = build_simulation(spec, GaugefieldsEnvironment())
+summary = run!(session)
 ```
- run_LQCD("my_parameters.toml")
-```
+
+The wizard asks separately for thermalization steps and production trajectories.
+For example, 50 and 300 mean 350 updates in total, with measurements during
+production. Its saved TOML uses the legacy trajectory-number convention so that
+it also works with `run_LQCD("my_parameters.toml")`, an alternative way to run
+the simulation.
+
+Since v2.0.2, the typed runner writes to the measurement and log paths selected
+in the wizard. Measurement files are named `plaquette.txt`, `pion_correlator.txt`,
+etc.; flowed measurements go in a `flow` subdirectory. Each data line contains
+three tab-separated fields: trajectory, flow time (`nothing` for unflowed
+measurements), and the complete value in Julia representation. Files are
+appended, including after stop/resume. `verbose=false` only suppresses console
+output; file output and event delivery continue. Parsing a parameter file and
+building a session do not create these files.
+
+For a manually constructed specification, enable file output with
+`OutputConfig(text=TextOutputConfig(logfile="logs/run.log",
+measurement_directory="measurements/run"))`. Without these settings, a manually
+constructed `OutputConfig()` keeps file output disabled.
+
+HMC step size needs tuning when the lattice volume or fermion parameters change.
+Check the reported acceptance and `delta_H` on a short warmup run. To reduce the
+step size while keeping the trajectory length fixed, increase `MDsteps` and
+reduce `Δτ` so that `MDsteps * Δτ` stays constant.
 
 You'll get results!
 
@@ -115,13 +139,8 @@ Of cource, you can write/modify a parameter file by yourself.
 
 Enjoy life with lattice QCD.
 
-To see our demonstration above, execute,
-```julia
-using Plots
-using LatticeQCD 
-demo()
-```
-it takes time before showing up the window.
+The animation above comes from the optional legacy plotting demo. `demo` is
+loaded only after `Plots` is loaded; the workflow above does not require Plots.
 
 # What is supported?
 

@@ -807,6 +807,7 @@ function Pion_parameters_interactive()
         fermion_parameters, cg = staggered_wizard()
     end
 
+    method.fermion_parameters = fermion_parameters
     method.eps = cg.eps
     method.MaxCGstep = cg.MaxCGstep
 

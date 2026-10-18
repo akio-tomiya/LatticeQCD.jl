@@ -22,7 +22,7 @@ function simulation_input_structurally_equal(left, right)
     )
 end
 
-function legacy_params_for_input_test(document, directory, index)
+function redirected_input_for_test(document, directory, index)
     values = deepcopy(document)
     control = values["System Control"]
     relative_directory = relpath(directory, pwd())
@@ -33,6 +33,11 @@ function legacy_params_for_input_test(document, directory, index)
         "measurements_$index",
     )
     control["measurement_dir"] = "run"
+    return values
+end
+
+function legacy_params_for_input_test(document, directory, index)
+    values = redirected_input_for_test(document, directory, index)
     pushdisplay(TextDisplay(devnull))
     try
         return redirect_stdout(devnull) do
@@ -100,7 +105,9 @@ end
             end
             close(parameters.load_fp)
             new_spec = Logging.with_logger(Logging.NullLogger()) do
-                simulation_spec_from_legacy_toml(document)
+                simulation_spec_from_legacy_toml(
+                    redirected_input_for_test(document, directory, 0),
+                )
             end
             @test simulation_input_structurally_equal(old_spec, new_spec)
             @test new_spec.config.lattice.L == (4, 4, 4, 4)
@@ -133,7 +140,9 @@ end
                 end
                 close(parameters.load_fp)
                 new_spec = Logging.with_logger(Logging.NullLogger()) do
-                    load_simulation_spec(filename)
+                    simulation_spec_from_legacy_toml(
+                    redirected_input_for_test(document, directory, index),
+                )
                 end
                 @test simulation_input_structurally_equal(old_spec, new_spec)
             end
@@ -156,7 +165,9 @@ end
                 end
                 close(parameters.load_fp)
                 new_spec = Logging.with_logger(Logging.NullLogger()) do
-                    load_simulation_spec(filename)
+                    simulation_spec_from_legacy_toml(
+                    redirected_input_for_test(document, directory, 1_000 + index),
+                )
                 end
                 @test simulation_input_structurally_equal(old_spec, new_spec)
             end

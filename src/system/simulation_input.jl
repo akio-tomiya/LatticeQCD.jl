@@ -15,7 +15,8 @@ import ..MeasurementPlan_module
 import ..SimulationSession_module:
     SimulationSpec,
     legacy_output_config,
-    legacy_simulation_schedule
+    legacy_simulation_schedule,
+    legacy_simulation_spec
 import ..SimulationSession_module
 
 const LEGACY_PHYSICAL = "Physical setting"
@@ -72,32 +73,41 @@ function shallow_property_dictionary(value)
 end
 
 function normalize_legacy_measurement(method::AbstractDict)
-    normalized = Dict{String,Any}()
-    for (raw_name, value) in method
-        name = String(raw_name)
-        if name == "fermion_parameters"
-            value isa AbstractDict || throw(ArgumentError(
-                "measurement fermion_parameters must be a table",
-            ))
-            fermion_type = get(value, "Dirac_operator", nothing)
-            isnothing(fermion_type) && throw(ArgumentError(
-                "measurement fermion_parameters requires Dirac_operator",
-            ))
-            defaults = shallow_property_dictionary(
-                QCDMeasurements.initialize_fermion_parameters(fermion_type),
-            )
-            for (parameter_name, parameter_default) in defaults
-                normalized[parameter_name] = get(
-                    value,
-                    parameter_name,
-                    parameter_default,
-                )
-            end
-        else
-            normalized[name] = value
-        end
+    normalized = Dict{String,Any}(
+        String(key) => value for (key, value) in method
+    )
+    haskey(normalized, "fermion_parameters") || return normalized
+    nested = pop!(normalized, "fermion_parameters")
+    nested isa AbstractDict || throw(ArgumentError(
+        "measurement fermion_parameters must be a table",
+    ))
+    kind = get(nested, "Dirac_operator", nothing)
+    isnothing(kind) && throw(ArgumentError(
+        "measurement fermion_parameters requires Dirac_operator",
+    ))
+    if haskey(normalized, "fermiontype") && normalized["fermiontype"] != kind
+        throw(ArgumentError(
+            "measurement fermiontype conflicts with nested Dirac_operator",
+        ))
     end
-    return normalized
+    defaults = shallow_property_dictionary(
+        QCDMeasurements.initialize_fermion_parameters(kind),
+    )
+    for (raw_name, value) in nested
+        name = String(raw_name)
+        haskey(defaults, name) || throw(ArgumentError(
+            "unknown measurement fermion parameter $(repr(name)) for $kind",
+        ))
+        if haskey(normalized, name) && normalized[name] != value
+            throw(ArgumentError(
+                "conflicting flat and nested measurement parameter $name",
+            ))
+        end
+        normalized[name] = value
+    end
+    # Explicit flat values take precedence over omitted nested defaults.
+    # This is independent of the dictionary's iteration order.
+    return merge(defaults, normalized)
 end
 
 function normalize_legacy_measurements(methods::AbstractDict)
@@ -305,6 +315,17 @@ function legacy_simulation_values(document::AbstractDict)
             "checkpoint_every",
             control_defaults.checkpoint_every,
         )),
+        log_dir=String(legacy_value(control, "log_dir", control_defaults.log_dir)),
+        logfile=String(legacy_value(control, "logfile", control_defaults.logfile)),
+        measuredir=let
+            base = String(legacy_value(
+                (control, measurements), "measurement_basedir", "",
+            ))
+            directory = String(legacy_value(
+                (control, measurements), "measurement_dir", "",
+            ))
+            isempty(base) && isempty(directory) ? "" : abspath(base, directory)
+        end,
         verboselevel=Int(legacy_value(
             control,
             "verboselevel",
@@ -379,7 +400,7 @@ end
 """Convert an already-parsed legacy TOML document directly to typed input."""
 function simulation_spec_from_legacy_toml(document::AbstractDict)
     values = legacy_simulation_values(document)
-    return SimulationSpec(
+    return legacy_simulation_spec(
         lqcd_config(values),
         legacy_simulation_schedule(values),
         legacy_output_config(values),
@@ -995,7 +1016,20 @@ function parse_output(values::AbstractDict)
             "unsupported checkpoint format=$(repr(checkpoint_format))",
         ))
     end
-    return SimulationSession_module.OutputConfig(config, checkpoint)
+    text_values = get(values, "text", Dict{String,Any}())
+    text = SimulationSession_module.TextOutputConfig(
+        get(text_values, "logfile", nothing),
+        get(text_values, "measurement_directory", nothing),
+    )
+    return SimulationSession_module.OutputConfig(config, checkpoint, text)
+end
+
+function text_output_dictionary(config)
+    values = Dict{String,Any}()
+    isnothing(config.logfile) || (values["logfile"] = config.logfile)
+    isnothing(config.measurement_directory) ||
+        (values["measurement_directory"] = config.measurement_directory)
+    return values
 end
 
 """Convert a typed specification to the canonical, versioned TOML tree."""
@@ -1024,6 +1058,7 @@ function simulation_spec_dictionary(spec::SimulationSpec)
             ),
         ),
         "output" => Dict{String,Any}(
+            "text" => text_output_dictionary(spec.output.text),
             "configurations" => configuration_output_dictionary(
                 spec.output.configurations,
             ),

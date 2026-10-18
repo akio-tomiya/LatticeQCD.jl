@@ -166,6 +166,7 @@ function wizard_parameter_dictionary(
     measurement_gradientflow,
     ;
     slhmc_beta=nothing,
+    trajectory_counts=false,
 )
     system_parameters_dict = Dict()
 
@@ -184,12 +185,28 @@ function wizard_parameter_dictionary(
         )
     end
 
+    if trajectory_counts && physicalparams.update_method != "Fileloading"
+        physical = system_parameters_dict["Physical setting"]
+        first = physicalparams.initialtrj
+        warmup = physicalparams.Nthermalization
+        physical["Nthermalization"] = warmup == 0 ? 0 : first + warmup
+        physical["Nsteps"] = first - 1 + warmup + physicalparams.Nsteps
+    end
+
     # LDO pseudofermion fields require at least one halo layer.  The legacy
     # Print_Physical_parameters default is zero because it is also used for
-    # gauge-only input, so make the runnable dynamical-fermion requirement
+    # gauge-only input, so make the dynamical and valence fermion requirements
     # explicit in Wizard output.
-    if !fermionparams.quench
-        minimum_halo = fermionparams.Dirac_operator == "HISQ" ? 3 : 1
+    fermion_measurements = any(
+        method -> method.methodname in ("Pion_correlator", "Chiral_condensate"),
+        measurement.measurement_methods,
+    ) || (gradient_params.hasgradientflow && any(
+        method -> method.methodname in ("Pion_correlator", "Chiral_condensate"),
+        measurement_gradientflow.measurement_methods,
+    ))
+    if !fermionparams.quench || fermion_measurements
+        minimum_halo = !fermionparams.quench &&
+                       fermionparams.Dirac_operator == "HISQ" ? 3 : 1
         system_parameters_dict["Physical setting"]["Nwing"] =
             max(minimum_halo, physicalparams.Nwing)
     end
@@ -243,6 +260,7 @@ function write_wizard_parameter_file(
     measurement_gradientflow,
     ;
     slhmc_beta=nothing,
+    trajectory_counts=false,
 )
     parameters = wizard_parameter_dictionary(
         physicalparams,
@@ -254,6 +272,7 @@ function write_wizard_parameter_file(
         gradient_params,
         measurement_gradientflow,
         slhmc_beta=slhmc_beta,
+        trajectory_counts=trajectory_counts,
     )
     open(filename, "w") do io
         TOML.print(io, parameters)

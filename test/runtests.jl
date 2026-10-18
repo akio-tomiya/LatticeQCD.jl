@@ -17,6 +17,7 @@ include("configuration_sequence.jl")
 include("wizard_gauge_only.jl")
 include("measurement_plan.jl")
 include("wizard_v2.jl")
+include("wizard_regressions.jl")
 
 function readplaqdata()
     data = readlines("debugplaqdata.txt")
