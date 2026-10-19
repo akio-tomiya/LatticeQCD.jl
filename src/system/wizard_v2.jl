@@ -146,7 +146,8 @@ function wizard_v2_multiselect(
 )
     result = wizard_v2_scripted_answer!(ui, prompt)
     result isa WizardV2Answer || return result
-    choices = Set(Int(index) for index in result.value)
+    raw = result.value === :default ? selected : result.value
+    choices = Set(Int(index) for index in raw)
     all(index -> 1 <= index <= length(options), choices) || error(
         "a scripted selection is outside 1:$(length(options)) for $prompt",
     )
@@ -505,13 +506,15 @@ function edit_wizard_v2_lattice!(ui, draft)
             Int64,
             "Random seed";
             default=control.randomseed,
+            valid=value -> value >= 0,
+            validation_message="The random seed must be nonnegative.",
         )
         control.randomseed = randomseed
 
         @wizard_v2_answer verboselevel wizard_v2_value(
             ui,
             Int64,
-            "Verbose level";
+            "Fermion solver verbose level";
             default=WizardV2LatticePage in working.completed_pages ?
                     control.verboselevel : 2,
             valid=value -> 1 <= value <= 3,
@@ -721,8 +724,8 @@ function edit_wizard_v2_source!(ui, draft)
                 Int64,
                 "Start trajectory number";
                 default=physical.initialtrj,
-                valid=value -> value >= 0,
-                validation_message="The trajectory number must be nonnegative.",
+                valid=value -> value >= 1,
+                validation_message="The start trajectory number must be at least 1.",
             )
             physical.initialtrj = initialtrj
         elseif physical.NC == 2 && initial_index == 4
@@ -1320,8 +1323,8 @@ function edit_wizard_v2_update!(ui, draft)
                 Int64,
                 "Number of Sexton-Weingarten steps";
                 default=hmc.N_SextonWeingargten,
-                valid=value -> value > 0,
-                validation_message="Sexton-Weingarten steps must be positive.",
+                valid=value -> value > 0 && iseven(value),
+                validation_message="Sexton-Weingarten steps must be positive and even.",
             )
             hmc.N_SextonWeingargten = sexton_steps
         else
@@ -1635,9 +1638,11 @@ const WIZARD_V2_SAVE_FORMATS = ["nothing", "JLD", "ILDG", "BridgeText"]
 function edit_wizard_v2_output!(ui, draft)
     working = deepcopy(draft)
     control = working.controlparams
-    header = refresh_wizard_v2_automatic_names!(working)
+    refresh_wizard_v2_automatic_names!(working)
 
-    if !isempty(working.measurement.measurement_methods)
+    if !isempty(working.measurement.measurement_methods) ||
+       (working.gradient_params.hasgradientflow &&
+        !isempty(working.measurement_gradientflow.measurement_methods))
         @wizard_v2_answer measurement_basedir wizard_v2_value(
             ui,
             String,
@@ -1658,8 +1663,10 @@ function edit_wizard_v2_output!(ui, draft)
         control.measurement_basedir = measurement_basedir
         control.measurement_dir = measurement_dir
     else
-        control.measurement_basedir = "./measurements"
-        control.measurement_dir = header
+        # Keep custom paths while measurements are temporarily deselected.
+        # Automatic names have already been refreshed above.
+        isempty(control.measurement_basedir) &&
+            (control.measurement_basedir = "./measurements")
     end
 
     @wizard_v2_answer log_dir wizard_v2_value(

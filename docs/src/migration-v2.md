@@ -44,6 +44,15 @@ Wilson pion kappa and Staggered pion mass/flavor settings now survive the wizard
 TOML, and typed conversion. Files produced by the old buggy wizard do not contain
 the lost values: re-enter them or edit the nested `fermion_parameters` table.
 Quenched inputs with fermion measurements now receive the required halo as well.
+Both the legacy `Params` reader and the typed reader reject contradictory flat
+and nested fermion values and unknown nested fermion keys. Explicit flat values
+are preserved when the corresponding nested value is omitted.
+
+Custom measurement paths also apply to flow-only runs and survive temporarily
+deselecting all measurements. The wizard's verbosity setting controls the
+dynamical fermion solver; session progress is controlled separately by
+`run!(session; verbose=false)`, and backend diagnostics by
+`GaugefieldsEnvironment(verbose=...)`.
 
 The typed runner now honors wizard/legacy measurement and log destinations.
 Files are appended on rank zero, including when `verbose=false` or when resuming

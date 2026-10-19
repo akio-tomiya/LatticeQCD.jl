@@ -1,14 +1,14 @@
 module SimulationInput_module
 
 import TOML
-import QCDMeasurements
 
 import ..Parameter_structs:
     Print_Fermions_parameters,
     Print_Gradientflow_parameters,
     Print_HMCrelated_parameters,
     Print_Physical_parameters,
-    Print_System_control_parameters
+    Print_System_control_parameters,
+    normalize_legacy_measurement
 import ..LQCDConfig_module: lqcd_config
 import ..LQCDConfig_module
 import ..MeasurementPlan_module
@@ -64,50 +64,6 @@ function legacy_value(
         end
     end
     return default
-end
-
-function shallow_property_dictionary(value)
-    return Dict{String,Any}(
-        String(name) => getproperty(value, name) for name in propertynames(value)
-    )
-end
-
-function normalize_legacy_measurement(method::AbstractDict)
-    normalized = Dict{String,Any}(
-        String(key) => value for (key, value) in method
-    )
-    haskey(normalized, "fermion_parameters") || return normalized
-    nested = pop!(normalized, "fermion_parameters")
-    nested isa AbstractDict || throw(ArgumentError(
-        "measurement fermion_parameters must be a table",
-    ))
-    kind = get(nested, "Dirac_operator", nothing)
-    isnothing(kind) && throw(ArgumentError(
-        "measurement fermion_parameters requires Dirac_operator",
-    ))
-    if haskey(normalized, "fermiontype") && normalized["fermiontype"] != kind
-        throw(ArgumentError(
-            "measurement fermiontype conflicts with nested Dirac_operator",
-        ))
-    end
-    defaults = shallow_property_dictionary(
-        QCDMeasurements.initialize_fermion_parameters(kind),
-    )
-    for (raw_name, value) in nested
-        name = String(raw_name)
-        haskey(defaults, name) || throw(ArgumentError(
-            "unknown measurement fermion parameter $(repr(name)) for $kind",
-        ))
-        if haskey(normalized, name) && normalized[name] != value
-            throw(ArgumentError(
-                "conflicting flat and nested measurement parameter $name",
-            ))
-        end
-        normalized[name] = value
-    end
-    # Explicit flat values take precedence over omitted nested defaults.
-    # This is independent of the dictionary's iteration order.
-    return merge(defaults, normalized)
 end
 
 function normalize_legacy_measurements(methods::AbstractDict)

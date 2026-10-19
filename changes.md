@@ -20,6 +20,15 @@
   plotting, and HMC step-size tuning.
 - Add regression coverage using nondefault measurement parameters, direct and
   flowed measurements, canonical/legacy TOML round trips, and actual file output.
+- Preserve custom measurement paths for flow-only runs and while measurements
+  are temporarily deselected. Apply the same nested-parameter validation in the
+  legacy `Params` reader and the typed reader.
+- Reject zero starting trajectories, negative random seeds, and odd
+  Sexton-Weingarten step counts at the wizard prompt. Clarify that its verbosity
+  setting controls the dynamical fermion solver.
+- Audit all wizard pages with nondefault values, page revisits, both TOML formats,
+  all dynamical fermion/flavor choices, direct/flowed observables, input/output
+  formats, and an executed flow-only run with independent save/checkpoint intervals.
 
 ## 2.0.0
 
