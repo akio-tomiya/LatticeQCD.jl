@@ -10,8 +10,6 @@ This code enabales you to perform lattice QCD calculations! A native Julia code 
 LatticeQCD.jl v2 introduces a typed simulation workflow while retaining the
 existing parameter files and legacy entry points.
 
-v2.0.2 fixes wizard parameter preservation, fermion-measurement halos, trajectory counts, and log/measurement output paths; see [changes.md](changes.md#202) for details.
-
 - [What is lattice QCD? (PDG)](https://pdg.lbl.gov/2019/reviews/rpp2018-rev-lattice-qcd.pdf) : Lattice regulated quantum chromo-dynamics used in high energy physics.
 
 - [What is Julia?](https://julialang.org/) : An easy and fast scientific programming launguage with the JIT compiler
@@ -50,6 +48,8 @@ You can start it in [Google Colab](https://colab.research.google.com/drive/1dMD7
 
 See [changes.md](changes.md) for the complete v2 changes, compatibility notes,
 and validation coverage.
+
+v2.0.2 fixes wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup issues; see [changes.md](changes.md#202) for details.
 
 
 # Quick start
