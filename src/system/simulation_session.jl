@@ -528,12 +528,15 @@ output_config(parameters::Params) = legacy_output_config(parameters)
 function legacy_simulation_spec(
     config::LQCDConfig,
     schedule::SimulationSchedule,
-    output::OutputConfig,
+    output::OutputConfig;
+    warn_halo_adjustment::Bool=true,
 )
     halo = minimum_measurement_halo(schedule.measurements)
     if config.gauge.halo < halo
-        @warn "Nwing=$(config.gauge.halo) is too small for fermion " *
-              "measurements; using $halo halo layer"
+        if warn_halo_adjustment
+            @warn "Nwing=$(config.gauge.halo) is too small for fermion " *
+                  "measurements; using $halo halo layer"
+        end
         gauge = GaugeConfig(config.gauge.NC, halo, config.gauge.initialization)
         config = LQCDConfig(
             config.lattice, gauge, config.gauge_action, config.fermions, config.update,
@@ -1785,6 +1788,9 @@ function show_config(io::IO, spec::SimulationSpec)
     show_config(io, spec.output)
     return nothing
 end
+
+show_config(config::Union{SimulationSpec,SimulationSession,SimulationSchedule,OutputConfig}) =
+    show_config(stdout, config)
 
 function Base.show(io::IO, schedule::SimulationSchedule)
     print(

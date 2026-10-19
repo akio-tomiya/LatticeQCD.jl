@@ -1,5 +1,31 @@
 # Changes
 
+## 2.0.4
+
+- Replace the Requires-based Plots hook with `LatticeQCDPlotsExt` and a declared
+  optional Plots dependency. Both `using LatticeQCD, Plots` and the reverse
+  loading order enable `demo` without dependency warnings. Loading LatticeQCD
+  alone does not load or require Plots.
+- Run the plotting demo through the typed simulation/session API, retaining
+  the SU(3), 4⁴, hot-start heatbath setup and six plaquette/Polyakov-loop panels.
+  Remove unused legacy demo code. `demo()` defaults to 10,000 updates; the
+  `steps`, `display_every`, and `showplot` keywords allow short runs and control
+  display updates. Return the plot for notebooks and `savefig`, and avoid
+  creating legacy log/measurement files as a side effect.
+- Add `show_config(spec)` and `show_config(session)` stdout overloads as
+  documented, plus the corresponding schedule/output overloads. Explicit IO
+  overloads remain available.
+- When the typed reader loads legacy TOML without `Nwing`, automatically select
+  the required halo without warning: zero for gauge-only runs, one for ordinary
+  dynamical fermions or valence measurements (including gradient flow), and
+  three for dynamical HISQ. Explicit insufficient values are still corrected
+  with a warning; explicit sufficient values are preserved. Canonical typed
+  input retains its existing strict validation.
+- Add regressions for stdout summaries, all supported dynamical operator
+  families, direct/flowed valence halos, optional Plots loading, both package
+  loading orders, and a short demo with PNG output. Add optional Plots CI jobs
+  on Linux, macOS, and Windows for Julia 1.11 and 1.12.
+
 ## 2.0.2
 
 - Fix Windows CI fixture counts by matching filenames without assuming `/` path

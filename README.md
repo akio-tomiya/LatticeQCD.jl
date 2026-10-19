@@ -51,6 +51,8 @@ and validation coverage.
 
 v2.0.2 fixes wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup issues; see [changes.md](changes.md#202) for details.
 
+v2.0.4 fixes optional Plots loading, `show_config` convenience calls, and automatic legacy TOML halos; see [changes.md](changes.md#204).
+
 
 # Quick start
 
@@ -141,8 +143,19 @@ Of cource, you can write/modify a parameter file by yourself.
 
 Enjoy life with lattice QCD.
 
-The animation above comes from the optional legacy plotting demo. `demo` is
-loaded only after `Plots` is loaded; the workflow above does not require Plots.
+The animation above comes from the optional plotting demo. Install `Plots`
+separately to enable it; either package loading order works:
+
+```julia
+using LatticeQCD, Plots
+figure = demo(steps=20, showplot=false)
+display(figure)                    # also works in a notebook
+savefig(figure, "demo.png")
+```
+
+`demo()` keeps refreshing its plot during 10,000 heatbath updates. Use
+`display_every=10` to refresh less often. The simulation workflow above does
+not require Plots.
 
 # What is supported?
 

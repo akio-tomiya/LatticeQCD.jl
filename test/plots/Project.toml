@@ -1,0 +1,8 @@
+[deps]
+LatticeQCD = "8a12f9b3-8daf-4285-9aa6-f1d88d857ae8"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+Plots = "1"

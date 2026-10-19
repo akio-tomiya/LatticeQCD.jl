@@ -3,6 +3,8 @@ using Test
 
 include("public_api.jl")
 include("mpi_optional.jl")
+include("plots_optional.jl")
+include("config_convenience.jl")
 include("lqcd_config.jl")
 include("simulation.jl")
 include("wizard_fermion.jl")

@@ -356,10 +356,14 @@ end
 """Convert an already-parsed legacy TOML document directly to typed input."""
 function simulation_spec_from_legacy_toml(document::AbstractDict)
     values = legacy_simulation_values(document)
+    # An omitted halo requests automatic sizing. Only warn when an explicit
+    # value needs correction; use the same operator/measurement requirements.
+    warn_halo_adjustment = haskey(legacy_section(document, LEGACY_PHYSICAL), "Nwing")
     return legacy_simulation_spec(
-        lqcd_config(values),
+        lqcd_config(values; warn_halo_adjustment),
         legacy_simulation_schedule(values),
-        legacy_output_config(values),
+        legacy_output_config(values);
+        warn_halo_adjustment,
     )
 end
 

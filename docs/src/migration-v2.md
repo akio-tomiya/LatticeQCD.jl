@@ -44,6 +44,11 @@ Wilson pion kappa and Staggered pion mass/flavor settings now survive the wizard
 TOML, and typed conversion. Files produced by the old buggy wizard do not contain
 the lost values: re-enter them or edit the nested `fermion_parameters` table.
 Quenched inputs with fermion measurements now receive the required halo as well.
+When `load_simulation_spec` reads legacy TOML with `Nwing` omitted, it silently
+selects the required halo: zero for gauge-only runs, one for ordinary dynamical
+fermions or valence measurements (including gradient flow), and three for
+dynamical HISQ. An explicitly insufficient `Nwing` still produces a warning
+and is increased. Explicit typed specifications retain strict halo validation.
 Both the legacy `Params` reader and the typed reader reject contradictory flat
 and nested fermion values and unknown nested fermion keys. Explicit flat values
 are preserved when the corresponding nested value is omitted.
