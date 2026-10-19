@@ -78,6 +78,26 @@ jobs:
       # - uses: codecov/codecov-action@v1
       #  with:
       #    file: lcov.info
+  plots:
+    name: Plots - Julia ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["1.11", "1.12"]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v2
+      - name: Instantiate with optional Plots
+        run: julia --project=test/plots -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+      - name: Load LatticeQCD before Plots and draw demo
+        run: julia --startup-file=no --project=test/plots test/plots/runtests.jl lattice-first
+      - name: Load Plots before LatticeQCD and draw demo
+        run: julia --startup-file=no --project=test/plots test/plots/runtests.jl plots-first
   mpi:
     name: MPI (1 and 2 ranks) - Julia 1.11 - Ubuntu
     runs-on: ubuntu-latest

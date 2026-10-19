@@ -1,5 +1,4 @@
 module LatticeQCD
-using Requires
 
 const LatticeQCDversion = pkgversion(LatticeQCD)
 
@@ -94,17 +93,20 @@ include("./system/wizard.jl")
 
 
 
-function __init__()
-    @require Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
-        include("./demo/demo.jl")
-        import .Demo: demo
-        export demo
+"""
+    demo(; steps=10_000, display_every=1, showplot=true)
 
-        #import .Analyze: plot_plaquette, plot_polyakov, plot_plaq_and_poly
-        #export plot_plaquette, plot_polyakov, plot_plaq_and_poly
-    end
+Run the SU(3) heatbath demonstration on a 4⁴ lattice and return a six-panel
+Plots plot of the plaquette and Polyakov loop. Load `Plots` to enable this
+optional method: `using LatticeQCD, Plots` (either loading order works).
 
-end
+Use `demo(steps=20, showplot=false)` for a short run without opening a display;
+the returned plot can be displayed in a notebook or saved with `savefig`.
+`display_every` controls the interval between plot refreshes. The demo does
+not create simulation output files.
+"""
+function demo end
+export demo
 
 include("./system/lqcd.jl")
 

@@ -999,7 +999,7 @@ LQCDConfig(lattice, gauge, gauge_action, update) =
 Extract a typed gauge and dynamical-fermion configuration from legacy
 `Params`. Quenched inputs use an empty fermion tuple.
 """
-function lqcd_config(parameters)
+function lqcd_config(parameters; warn_halo_adjustment::Bool=true)
     lattice = LatticeConfig(Tuple(Int.(parameters.L)))
     fermions = fermion_action_configs(parameters)
     load_format = if isnothing(parameters.loadU_format)
@@ -1016,8 +1016,10 @@ function lqcd_config(parameters)
         replacement = minimum_halo == 1 ?
                       "one gauge-field halo layer" :
                       "$minimum_halo gauge-field halo layers"
-        @warn "Nwing=$halo in a legacy dynamical-fermion input is not " *
-              "supported by LDO v1 for this operator; using $replacement"
+        if warn_halo_adjustment
+            @warn "Nwing=$halo in a legacy dynamical-fermion input is not " *
+                  "supported by LDO v1 for this operator; using $replacement"
+        end
         halo = minimum_halo
     end
     gauge = GaugeConfig(
