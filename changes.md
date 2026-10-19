@@ -1,6 +1,6 @@
 # Changes
 
-## Unreleased
+## 2.0.4
 
 - Replace the Requires-based Plots hook with `LatticeQCDPlotsExt` and a declared
   optional Plots dependency. Both `using LatticeQCD, Plots` and the reverse

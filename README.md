@@ -51,7 +51,7 @@ and validation coverage.
 
 v2.0.2 fixes wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup issues; see [changes.md](changes.md#202) for details.
 
-Unreleased fixes cover optional Plots loading, `show_config` convenience calls, and automatic legacy TOML halos; see [changes.md](changes.md#unreleased).
+v2.0.4 fixes optional Plots loading, `show_config` convenience calls, and automatic legacy TOML halos; see [changes.md](changes.md#204).
 
 
 # Quick start
