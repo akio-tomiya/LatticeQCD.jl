@@ -2,6 +2,10 @@
 
 ## 2.0.2
 
+- Fix Windows CI fixture counts by matching filenames without assuming `/` path
+  separators. Close configuration manifests on validation errors so temporary
+  files can be deleted immediately, with regression checks for both missing
+  configurations and invalid file extensions.
 - Preserve pion-measurement Wilson kappa and Staggered mass/flavor settings in
   both wizards, saved TOML, typed specifications, and gradient-flow measurements.
   Revisiting the v2 measurement form now retains previously entered values.

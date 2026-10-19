@@ -13,15 +13,15 @@ const WIZARD_GAUGE_DIRECTORY = joinpath(@__DIR__, "wizard_gauge_only")
     ))
 
     @test length(files) == 256
-    @test count(path -> occursin("/su3_fileloading_", path), files) == 24
-    @test count(path -> occursin("/su2_fileloading_", path), files) == 24
+    @test count(path -> startswith(basename(path), "su3_fileloading_"), files) == 24
+    @test count(path -> startswith(basename(path), "su2_fileloading_"), files) == 24
     @test count(path -> occursin(
-        r"/su3_(cold|hot|file_|instanton|embedded_instanton)",
-        path,
+        r"^su3_(cold|hot|file_|instanton|embedded_instanton)",
+        basename(path),
     ), files) == 96
     @test count(path -> occursin(
-        r"/su2_(cold|hot|file_|instanton|embedded_instanton)",
-        path,
+        r"^su2_(cold|hot|file_|instanton|embedded_instanton)",
+        basename(path),
     ), files) == 112
 
     for path in files

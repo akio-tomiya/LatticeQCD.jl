@@ -233,9 +233,6 @@ end
         )
         @test_throws ArgumentError build_simulation(input, environment)
 
-        open(joinpath(directory, "filelist.txt"), "w") do io
-            println(io, "missing.txt")
-        end
         manifest_source = ManifestSourceConfig(directory, "filelist.txt")
         manifest_input = LQCDConfig(
             input.lattice,
@@ -243,7 +240,17 @@ end
             input.gauge_action,
             ConfigurationSequenceConfig(manifest_source, :bridge),
         )
-        @test_throws ArgumentError build_simulation(manifest_input, environment)
+        manifest_path = joinpath(directory, "filelist.txt")
+        for entry in ("missing.txt", "wrong.extension")
+            open(manifest_path, "w") do io
+                println(io, entry)
+            end
+            @test_throws ArgumentError build_simulation(manifest_input, environment)
+            # Both validation failures must release the handle immediately,
+            # without waiting for GC. Windows rejects deleting an open file.
+            rm(manifest_path)
+            @test !isfile(manifest_path)
+        end
 
         valid_path = joinpath(directory, "valid.txt")
         invalid_path = joinpath(directory, "invalid.txt")

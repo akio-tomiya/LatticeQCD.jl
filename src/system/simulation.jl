@@ -209,22 +209,26 @@ function configuration_paths(
     ))
 
     paths = String[]
-    for (line_number, line) in enumerate(eachline(manifest))
-        entry = strip(first(split(line, '#'; limit=2)))
-        isempty(entry) && continue
-        path = if isabspath(entry)
-            normpath(entry)
-        else
-            normpath(joinpath(directory, entry))
+    # Close the manifest even when validating an entry throws. In particular,
+    # Windows cannot remove an open manifest during temporary-directory cleanup.
+    open(manifest, "r") do io
+        for (line_number, line) in enumerate(eachline(io))
+            entry = strip(first(split(line, '#'; limit=2)))
+            isempty(entry) && continue
+            path = if isabspath(entry)
+                normpath(entry)
+            else
+                normpath(joinpath(directory, entry))
+            end
+            configuration_path_matches(path, format) || throw(ArgumentError(
+                "configuration manifest entry $line_number has the wrong " *
+                "extension for $format: $entry",
+            ))
+            isfile(path) || throw(ArgumentError(
+                "configuration manifest entry $line_number does not exist: $path",
+            ))
+            push!(paths, path)
         end
-        configuration_path_matches(path, format) || throw(ArgumentError(
-            "configuration manifest entry $line_number has the wrong " *
-            "extension for $format: $entry",
-        ))
-        isfile(path) || throw(ArgumentError(
-            "configuration manifest entry $line_number does not exist: $path",
-        ))
-        push!(paths, path)
     end
     isempty(paths) && throw(ArgumentError(
         "configuration manifest contains no $format files: $manifest",
