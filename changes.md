@@ -1,5 +1,35 @@
 # Changes
 
+## 2.0.2
+
+- Preserve pion-measurement Wilson kappa and Staggered mass/flavor settings in
+  both wizards, saved TOML, typed specifications, and gradient-flow measurements.
+  Revisiting the v2 measurement form now retains previously entered values.
+- Reject unknown nested fermion keys and conflicting flat/nested settings;
+  explicit flat values no longer depend on dictionary iteration order.
+- Include valence measurements when selecting gauge-field halo storage, including
+  legacy quenched and file-loading inputs and measurements after gradient flow.
+  Explicit typed specifications with insufficient measurement halos fail validation.
+- Interpret v2 wizard thermalization and production inputs as counts and encode
+  them correctly in legacy TOML. Existing legacy TOML thresholds remain unchanged.
+- Add serializable `TextOutputConfig` for rank-zero log and measurement files.
+  Wizard output paths now reach the typed runner, including quiet runs and
+  stop/resume. Complete measurement values are appended separately from the
+  compact console display; flowed measurements have a separate directory.
+- Make the quick start run a simulation once and explain output files, optional
+  plotting, and HMC step-size tuning.
+- Add regression coverage using nondefault measurement parameters, direct and
+  flowed measurements, canonical/legacy TOML round trips, and actual file output.
+- Preserve custom measurement paths for flow-only runs and while measurements
+  are temporarily deselected. Apply the same nested-parameter validation in the
+  legacy `Params` reader and the typed reader.
+- Reject zero starting trajectories, negative random seeds, and odd
+  Sexton-Weingarten step counts at the wizard prompt. Clarify that its verbosity
+  setting controls the dynamical fermion solver.
+- Audit all wizard pages with nondefault values, page revisits, both TOML formats,
+  all dynamical fermion/flavor choices, direct/flowed observables, input/output
+  formats, and an executed flow-only run with independent save/checkpoint intervals.
+
 ## 2.0.0
 
 ### Simulation architecture

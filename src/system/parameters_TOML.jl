@@ -7,7 +7,7 @@ import ..Parameter_structs:
     Print_System_control_parameters,
     Print_HMCrelated_parameters,
     struct2dict,
-    initialize_fermion_parameters,
+    normalize_legacy_measurement,
     Print_Gradientflow_parameters
 
 
@@ -263,33 +263,7 @@ function parameter_check(p::Params)
 end
 
 function construct_measurement_dir(x)
-    #println(x)
-    valuedic = Dict[]
-
-    for (method, methoddic) in x
-        dic_i = Dict()
-        for (key, value) in methoddic
-            if key == "fermion_parameters"
-                fermion_type = value["Dirac_operator"]
-                fermion_dict = struct2dict(initialize_fermion_parameters(fermion_type))
-                for (key_i, value_i) in fermion_dict
-                    if haskey(value, key_i)
-                        dic_i[key_i] = value[key_i]
-                    else
-                        dic_i[key_i] = value_i
-                    end
-                end
-            else
-                dic_i[key] = value
-            end
-        end
-        #println("dic_i $dic_i")
-        push!(valuedic, dic_i)
-    end
-
-    #display(valuedic)
-
-    return valuedic
+    return Dict[normalize_legacy_measurement(method) for method in values(x)]
 end
 
 #demo_TOML()

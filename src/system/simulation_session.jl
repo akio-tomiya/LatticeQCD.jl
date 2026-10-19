@@ -12,6 +12,7 @@ import ..LQCDCommunication: broadcast!, comm_rank, is_root
 import ..System_parameters: Params
 import ..LQCDConfig_module:
     ConfigurationSequenceConfig,
+    GaugeConfig,
     HMCConfig,
     HISQDiracConfig,
     LQCDConfig,
@@ -40,6 +41,7 @@ import ..MeasurementPlan_module:
     legacy_measurement_program,
     measure_due!,
     measurement_program,
+    minimum_measurement_halo,
     step!,
     run!
 
@@ -272,12 +274,41 @@ ILDGConfigurationOutput(
     width::Integer=8,
 ) = ILDGConfigurationOutput(directory, prefix, every, width)
 
+"""
+Append rank-zero progress and complete measurement values to text files.
+`nothing` disables either destination. Files are opened only when events occur.
+"""
+struct TextOutputConfig
+    logfile::Union{Nothing,String}
+    measurement_directory::Union{Nothing,String}
+    function TextOutputConfig(logfile, measurement_directory)
+        for path in (logfile, measurement_directory)
+            if !isnothing(path) && !(path isa AbstractString && !isempty(strip(path)))
+                throw(ArgumentError(
+                    "text output paths must be nonempty strings or nothing",
+                ))
+            end
+        end
+        return new(
+            isnothing(logfile) ? nothing : String(logfile),
+            isnothing(measurement_directory) ? nothing : String(measurement_directory),
+        )
+    end
+end
+TextOutputConfig(; logfile=nothing, measurement_directory=nothing) =
+    TextOutputConfig(logfile, measurement_directory)
+
 """All side-effect settings, kept separate from the physics config."""
 struct OutputConfig{C,K}
     configurations::C
     checkpoints::K
+    text::TextOutputConfig
 
-    function OutputConfig(configurations::C, checkpoints::K) where {
+    function OutputConfig(
+        configurations::C,
+        checkpoints::K,
+        text::TextOutputConfig,
+    ) where {
         C<:Union{
             NoConfigurationOutput,
             JLD2ConfigurationOutput,
@@ -289,9 +320,12 @@ struct OutputConfig{C,K}
             JLD2CheckpointOutput,
         },
     }
-        return new{C,K}(configurations, checkpoints)
+        return new{C,K}(configurations, checkpoints, text)
     end
 end
+
+OutputConfig(configurations, checkpoints) =
+    OutputConfig(configurations, checkpoints, TextOutputConfig())
 
 OutputConfig(configurations) = OutputConfig(
     configurations,
@@ -301,7 +335,8 @@ OutputConfig(configurations) = OutputConfig(
 OutputConfig(;
     configurations=NoConfigurationOutput(),
     checkpoints=NoCheckpointOutput(),
-) = OutputConfig(configurations, checkpoints)
+    text=TextOutputConfig(),
+) = OutputConfig(configurations, checkpoints, text)
 
 """Serializable, GUI-neutral specification for one simulation run."""
 struct SimulationSpec{
@@ -335,6 +370,13 @@ end
 """Return cross-component validation issues without throwing."""
 function validate(spec::SimulationSpec)
     issues = ValidationIssue{Vector{String},Symbol,String}[]
+    if spec.config.gauge.halo < minimum_measurement_halo(spec.schedule.measurements)
+        push!(issues, validation_issue(
+            ("config", "gauge", "halo"),
+            :minimum,
+            "fermion measurements require a gauge-field halo width of at least 1",
+        ))
+    end
     for (index, fermion) in enumerate(spec.config.fermions)
         if fermion.operator isa HISQDiracConfig
             if spec.config.gauge.halo < 3
@@ -423,9 +465,18 @@ end
 
 simulation_schedule(parameters::Params) = legacy_simulation_schedule(parameters)
 
+function legacy_text_output(parameters)
+    logfile = hasproperty(parameters, :logfile) && !isempty(parameters.logfile) ?
+              abspath(parameters.log_dir, parameters.logfile) : nothing
+    directory = hasproperty(parameters, :measuredir) && !isempty(parameters.measuredir) ?
+                abspath(parameters.measuredir) : nothing
+    return TextOutputConfig(logfile, directory)
+end
+
 function legacy_output_config(parameters)
     # The legacy Fileloading runner deliberately ignores saveU_* settings.
-    parameters.update_method == "Fileloading" && return OutputConfig()
+    text = legacy_text_output(parameters)
+    parameters.update_method == "Fileloading" && return OutputConfig(; text)
     configurations = if isnothing(parameters.saveU_format)
         NoConfigurationOutput()
     else
@@ -468,13 +519,30 @@ function legacy_output_config(parameters)
         checkpoint_dir = String(parameters.checkpoint_dir)
         JLD2CheckpointOutput(checkpoint_dir; every=checkpoint_every)
     end
-    return OutputConfig(configurations, checkpoints)
+    return OutputConfig(configurations, checkpoints, text)
 end
 
 
 output_config(parameters::Params) = legacy_output_config(parameters)
 
-SimulationSpec(parameters::Params) = SimulationSpec(
+function legacy_simulation_spec(
+    config::LQCDConfig,
+    schedule::SimulationSchedule,
+    output::OutputConfig,
+)
+    halo = minimum_measurement_halo(schedule.measurements)
+    if config.gauge.halo < halo
+        @warn "Nwing=$(config.gauge.halo) is too small for fermion " *
+              "measurements; using $halo halo layer"
+        gauge = GaugeConfig(config.gauge.NC, halo, config.gauge.initialization)
+        config = LQCDConfig(
+            config.lattice, gauge, config.gauge_action, config.fermions, config.update,
+        )
+    end
+    return SimulationSpec(config, schedule, output)
+end
+
+SimulationSpec(parameters::Params) = legacy_simulation_spec(
     LQCDConfig(parameters),
     simulation_schedule(parameters),
     output_config(parameters),
@@ -892,8 +960,40 @@ function is_session_root(session::SimulationSession)
     return is_root(communicator)
 end
 
+function write_text_event!(output::TextOutputConfig, event)
+    if !isnothing(output.logfile)
+        mkpath(dirname(output.logfile))
+        open(output.logfile, "a") do io
+            print_simulation_event(io, event)
+        end
+    end
+    if event isa MeasurementFinished && !isnothing(output.measurement_directory)
+        record = event.record
+        directory = if isnothing(record.point.flow_time)
+            output.measurement_directory
+        else
+            joinpath(output.measurement_directory, "flow")
+        end
+        mkpath(directory)
+        filename = joinpath(directory, String(record.name) * ".txt")
+        fresh = !isfile(filename) || filesize(filename) == 0
+        open(filename, "a") do io
+            fresh && println(
+                io, "# trajectory\tflow_time\tvalue (complete Julia representation)",
+            )
+            print(io, record.point.trajectory, '\t', record.point.flow_time, '\t')
+            show(IOContext(io, :compact => true, :limit => false), record.value)
+            println(io)
+        end
+    end
+    return event
+end
+
 function emit_event!(session::SimulationSession, event)
-    is_session_root(session) && deliver_event!(session.sink, event)
+    if is_session_root(session)
+        write_text_event!(session.output.text, event)
+        deliver_event!(session.sink, event)
+    end
     return event
 end
 
@@ -1653,6 +1753,8 @@ end
 
 function show_config(io::IO, output::OutputConfig)
     println(io, "OutputConfig")
+    println(io, "  log file: ", repr(output.text.logfile))
+    println(io, "  measurement directory: ", repr(output.text.measurement_directory))
     if output.configurations isa NoConfigurationOutput
         println(io, "  configurations: disabled")
     else
@@ -1730,6 +1832,7 @@ export SimulationSchedule,
     NoCheckpointOutput,
     JLD2CheckpointOutput,
     OutputConfig,
+    TextOutputConfig,
     SimulationSpec,
     ValidationIssue,
     validate,
