@@ -112,9 +112,11 @@ session = build_simulation(spec, GaugefieldsEnvironment())
 summary = run!(session)
 ```
 
-The wizard asks separately for thermalization steps and production trajectories.
-For example, 50 and 300 mean 350 updates in total, with measurements during
-production. Its saved TOML uses the legacy trajectory-number convention so that
+In expert mode, the wizard asks separately for thermalization steps and
+production trajectories. For example, 50 and 300 mean 350 updates in total,
+with measurements during production. Simple mode asks only for the number of
+production trajectories (default 100) and uses no thermalization steps.
+Its saved TOML uses the legacy trajectory-number convention so that
 it also works with `run_LQCD("my_parameters.toml")`, an alternative way to run
 the simulation.
 
