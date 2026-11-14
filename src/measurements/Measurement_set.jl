@@ -32,25 +32,25 @@ struct Measurements_set
 
             if method["methodname"] == "Plaquette"
                 measurements[i] =
-                    Plaquette_measurement(U, filename = measurement_dir * "/Plaquette.txt")
+                    Plaquette_measurement(U, filename = joinpath(measurement_dir, "Plaquette.txt"))
 
             elseif method["methodname"] == "Polyakov_loop"
                 measurements[i] = Polyakov_measurement(
                     U,
-                    filename = measurement_dir * "/Polyakov_loop.txt",
+                    filename = joinpath(measurement_dir, "Polyakov_loop.txt"),
                 )
             elseif method["methodname"] == "Topological_charge"
                 TC_methods =
                     set_parameter_default(method, "TC_methods", ["plaquette", "clover"])
                 measurements[i] = Topological_charge_measurement(
                     U,
-                    filename = measurement_dir * "/Topological_charge.txt",
+                    filename = joinpath(measurement_dir, "Topological_charge.txt"),
                     TC_methods = TC_methods,
                 )
             elseif method["methodname"] == "Energy_density"
                 measurements[i] = Energy_density_measurement(
                     U,
-                    filename = measurement_dir * "/Energy_density.txt",
+                    filename = joinpath(measurement_dir, "Energy_density.txt"),
                 )
 
             elseif method["methodname"] == "Chiral_condensate"
@@ -74,7 +74,7 @@ struct Measurements_set
 
                 measurements[i] = Chiral_condensate_measurement(
                     U,
-                    filename = measurement_dir * "/Chiral_condensate.txt",
+                    filename = joinpath(measurement_dir, "Chiral_condensate.txt"),
                     fermiontype = fermiontype,
                     mass = mass,
                     Nf = Nf,
@@ -114,7 +114,7 @@ struct Measurements_set
 
                 measurements[i] = Pion_correlator_measurement(
                     U,
-                    filename = measurement_dir * "/Pion_correlator.txt",
+                    filename = joinpath(measurement_dir, "Pion_correlator.txt"),
                     fermiontype = fermiontype,
                     mass = mass,
                     Nf = Nf,
@@ -138,7 +138,7 @@ struct Measurements_set
 
                 measurements[i] = Wilson_loop_measurement(
                     U,
-                    filename = measurement_dir * "/Wilson_loop.txt",
+                    filename = joinpath(measurement_dir, "Wilson_loop.txt"),
                     Tmax = Tmax,
                     Rmax = Rmax,
                     verbose_level = verbose_level,

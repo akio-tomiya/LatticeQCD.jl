@@ -174,6 +174,11 @@ function wizard_parameter_dictionary(
     system_parameters_dict["Physical setting(fermions)"] =
         merge(struct2dict(fermionparams), struct2dict(fermion_parameters))
     system_parameters_dict["System Control"] = struct2dict(controlparams)
+    # The flow form owns these settings in both Wizard interfaces.
+    # Do not serialize the stale compatibility copies from System Control.
+    for key in fieldnames(Print_Gradientflow_parameters)
+        delete!(system_parameters_dict["System Control"], string(key))
+    end
     system_parameters_dict["HMC related"] = struct2dict(hmcparams)
     system_parameters_dict["Measurement set"] = struct2dict(measurement)
     system_parameters_dict["gradientflow_measurements"] =

@@ -17,6 +17,11 @@
   from historical Wizard files remain accepted with a warning.
 - Keep flow settings unambiguous in the automatic-halo test inputs so halo
   warnings are checked independently of duplicate-parameter diagnostics.
+- Save flow settings only in `gradientflow_measurements` in both Wizard
+  interfaces, preventing stale `System Control` values from conflicting with
+  the selected settings when saved files are reloaded.
+- Use native path separators for compatibility measurement output files,
+  including Wilson and Polyakov loops, on Windows as well as Unix.
 - Initialize the direct/flow index lists in `Measurements_set`, construct
   `Wilson_loop` with `Wilson_loop_measurement` and its own filename, and fix
   `Polyakov_loop.txt.txt` to `Polyakov_loop.txt`.
