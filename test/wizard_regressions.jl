@@ -35,8 +35,19 @@ end
         set = flowed ? draft.measurement_gradientflow : draft.measurement
         set.measurement_methods = w.Measurement_parameters[method]
         draft.gradient_params.hasgradientflow = flowed
+        draft.gradient_params.eps_flow = 0.023
+        draft.gradient_params.numflow = 3
+        draft.gradient_params.Nflow = 2
+        # Stale compatibility fields must not override the flow form on save.
+        draft.controlparams.hasgradientflow = !flowed
         dict = w.wizard_v2_parameter_dictionary(draft)
         document = TOML.parse(sprint(io -> TOML.print(io, dict)))
+        @test_logs LatticeQCD.Parameter_structs.validate_legacy_parameters(document)
+        for key in ("hasgradientflow", "eps_flow", "numflow", "Nflow")
+            @test !haskey(document["System Control"], key)
+            @test document["gradientflow_measurements"][key] ==
+                  getproperty(draft.gradient_params, Symbol(key))
+        end
         spec = simulation_spec_from_legacy_toml(document)
         @test spec.config.gauge.halo == 1
         plan = flowed ? spec.schedule.measurements.gradient_flow.measurements : spec.schedule.measurements.direct

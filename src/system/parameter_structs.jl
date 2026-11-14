@@ -255,6 +255,51 @@ Base.@kwdef mutable struct Print_Measurement_parameters
     measurement_methods::Array{Dict,1} = Dict[]
 end
 
+"""Validate legacy section keys before either reader creates output files."""
+function validate_legacy_parameters(document::AbstractDict)
+    names(T) = Set(String.(fieldnames(T)))
+    schemas = Dict(
+        "Physical setting" => union(names(Print_Physical_parameters), ["ITERATION_MAX"]),
+        "Physical setting(fermions)" => union(names(Print_Fermions_parameters), ["hasclover"]),
+        "System Control" => union(names(Print_System_control_parameters), ["ITERATION_MAX"]),
+        "HMC related" => names(Print_HMCrelated_parameters),
+        "Measurement set" => Set(["measurement_methods", "measurement_basedir", "measurement_dir"]),
+        "gradientflow_measurements" => union(names(Print_Gradientflow_parameters), ["measurements_for_flow"]),
+        "SLHMC related" => union(names(Print_SLMC_parameters), ["training_data_name"]),
+        "SLMC related" => union(names(Print_SLMC_parameters), ["training_data_name"]),
+    )
+    seen = Dict{String,String}()
+    # Check collisions first, so misplaced duplicate keys cannot silently win
+    # according to Dict iteration order (or reader-specific precedence).
+    for section in sort!(collect(keys(document)))
+        values = document[section]
+        haskey(schemas, section) || throw(ArgumentError("unknown legacy TOML section $(repr(section))"))
+        values isa AbstractDict || throw(ArgumentError("legacy TOML section $(repr(section)) must be a table"))
+        for key in sort!(collect(keys(values)))
+            if haskey(seen, key)
+                previous = seen[key]
+                message = "duplicate legacy parameter $(repr(key)) in [$previous] and [$section]; specify it once"
+                # Historical Wizard files repeat identical flow settings in
+                # System Control and gradientflow_measurements. Keep them
+                # readable, but never choose silently between different values.
+                if key in names(Print_Gradientflow_parameters) &&
+                   isequal(document[previous][key], values[key])
+                    @warn message
+                else
+                    throw(ArgumentError(message))
+                end
+            end
+            seen[key] = section
+        end
+    end
+    for (section, values) in document, key in keys(values)
+        key in schemas[section] || throw(ArgumentError(
+            "unknown legacy parameter $(repr(key)) in [$section]",
+        ))
+    end
+    return nothing
+end
+
 const printlist_physical = generate_printlist(Print_Physical_parameters)
 const printlist_fermions = generate_printlist(Print_Fermions_parameters)
 const printlist_systemcontrol = generate_printlist(Print_System_control_parameters)

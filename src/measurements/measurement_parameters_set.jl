@@ -78,7 +78,7 @@ function Measurement_methods(
         #println(measurement_parameters)
         intervals[i] = measurement_parameters.measure_every
 
-        filename = measurement_dir * "/" * measurement_parameters.methodname * ".txt"
+        filename = joinpath(measurement_dir, measurement_parameters.methodname * ".txt")
         measurements[i] = prepare_measurement(U, measurement_parameters, filename)
         measurement_parameters_set[i] = deepcopy(measurement_parameters)
 

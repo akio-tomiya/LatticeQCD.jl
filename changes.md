@@ -1,6 +1,38 @@
 # Changes
 
+## 2.0.5
+
+- Make `run_LQCD` / `run_LQCD_file` start measurements at the trajectory
+  number specified by `Nthermalization`, matching the typed legacy-input
+  adapter. For example, `initialtrj = 1`, `Nsteps = 3`, and
+  `Nthermalization = 3` produce measurements only at trajectory 3. Initial
+  trajectory-zero measurements remain available when thermalization is disabled.
+- Respect `hasgradientflow = false`: skip flow construction, integration, and
+  flow measurement output files. When enabled, use `Nflow` integration steps
+  per sample and close direct and flowed measurement streams on return or error.
+- Reject unknown legacy TOML sections/keys and conflicting or ambiguous
+  duplicate parameters in both readers before creating output files. Errors
+  identify the parameter and section. A duplicate `measurement_basedir` is
+  rejected even when both values are equal. Identical repeated flow settings
+  from historical Wizard files remain accepted with a warning.
+- Keep flow settings unambiguous in the automatic-halo test inputs so halo
+  warnings are checked independently of duplicate-parameter diagnostics.
+- Save flow settings only in `gradientflow_measurements` in both Wizard
+  interfaces, preventing stale `System Control` values from conflicting with
+  the selected settings when saved files are reloaded.
+- Use native path separators for compatibility measurement output files,
+  including Wilson and Polyakov loops, on Windows as well as Unix.
+- Initialize the direct/flow index lists in `Measurements_set`, construct
+  `Wilson_loop` with `Wilson_loop_measurement` and its own filename, and fix
+  `Polyakov_loop.txt.txt` to `Polyakov_loop.txt`.
+- Add regressions for input validation before I/O, thermalization thresholds,
+  enabled/disabled flow, integration-step equivalence, and compatibility
+  measurements. Verify 464 Wizard and 14 historical input files, typed TOML
+  round trips, session output, and HMC restart behavior with the existing tests.
+
 ## 2.0.4
+
+Version 2.0.4 fixes optional Plots loading, adds `show_config` convenience calls, and selects the required halos for legacy TOML input.
 
 - Replace the Requires-based Plots hook with `LatticeQCDPlotsExt` and a declared
   optional Plots dependency. Both `using LatticeQCD, Plots` and the reverse
@@ -27,6 +59,8 @@
   on Linux, macOS, and Windows for Julia 1.11 and 1.12.
 
 ## 2.0.2
+
+Version 2.0.2 fixes Wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup.
 
 - Fix Windows CI fixture counts by matching filenames without assuming `/` path
   separators. Close configuration manifests on validation errors so temporary
@@ -61,6 +95,8 @@
   formats, and an executed flow-only run with independent save/checkpoint intervals.
 
 ## 2.0.0
+
+Version 2.0.0 introduces typed simulation specifications and sessions, the new Wizard, unified simulation and measurement execution, portable checkpoints, and optional MPI loading.
 
 ### Simulation architecture
 

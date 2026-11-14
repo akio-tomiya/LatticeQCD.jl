@@ -1,5 +1,6 @@
 # LatticeQCD.jl 
 
+Version 2.0.5 fixes legacy thermalization and gradient-flow measurements, validates legacy TOML before output, removes duplicate flow settings from Wizard output, and repairs compatibility measurements and Windows output paths; see [changes.md](changes.md#205).
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 
@@ -48,11 +49,6 @@ You can start it in [Google Colab](https://colab.research.google.com/drive/1dMD7
 
 See [changes.md](changes.md) for the complete v2 changes, compatibility notes,
 and validation coverage.
-
-v2.0.2 fixes wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup issues; see [changes.md](changes.md#202) for details.
-
-v2.0.4 fixes optional Plots loading, `show_config` convenience calls, and automatic legacy TOML halos; see [changes.md](changes.md#204).
-
 
 # Quick start
 

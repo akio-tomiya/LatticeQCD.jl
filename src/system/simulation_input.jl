@@ -8,7 +8,8 @@ import ..Parameter_structs:
     Print_HMCrelated_parameters,
     Print_Physical_parameters,
     Print_System_control_parameters,
-    normalize_legacy_measurement
+    normalize_legacy_measurement,
+    validate_legacy_parameters
 import ..LQCDConfig_module: lqcd_config
 import ..LQCDConfig_module
 import ..MeasurementPlan_module
@@ -111,6 +112,7 @@ create output directories, or mutate the parsed TOML dictionary. The returned
 resulting `SimulationSpec`.
 """
 function legacy_simulation_values(document::AbstractDict)
+    validate_legacy_parameters(document)
     physical = legacy_section(document, LEGACY_PHYSICAL)
     fermions = legacy_section(document, LEGACY_FERMIONS)
     control = legacy_section(document, LEGACY_CONTROL)
