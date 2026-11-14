@@ -31,6 +31,11 @@ end
         ("su2_hisq_nf4_thin_leapfrog.toml", 3),
     )
         document = TOML.parsefile(joinpath(@__DIR__, "wizard_fermion", fixture))
+        # Historical Wizard fixtures repeat this setting in two sections.
+        # Keep one copy so these tests isolate halo warnings; duplicate-input
+        # warnings and conflicts are covered in legacy_input_regressions.jl.
+        @test pop!(document["System Control"], "hasgradientflow") ==
+              document["gradientflow_measurements"]["hasgradientflow"]
         physical = document["Physical setting"]
         delete!(physical, "Nwing")
         original = deepcopy(document)
@@ -50,6 +55,10 @@ end
 
     document = TOML.parsefile(joinpath(@__DIR__, "wizard_gauge_only",
                                      "su2_cold_heatbath_no_or_save_none.toml"))
+    # Keep flow control in the section changed by the valence cases below,
+    # avoiding a stale false value in System Control when flow is enabled.
+    @test pop!(document["System Control"], "hasgradientflow") ==
+          document["gradientflow_measurements"]["hasgradientflow"]
     physical = document["Physical setting"]
     delete!(physical, "Nwing")
     gauge_only = @test_logs min_level=Logging.Warn simulation_spec_from_legacy_toml(document)

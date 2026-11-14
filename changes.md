@@ -15,6 +15,8 @@
   identify the parameter and section. A duplicate `measurement_basedir` is
   rejected even when both values are equal. Identical repeated flow settings
   from historical Wizard files remain accepted with a warning.
+- Keep flow settings unambiguous in the automatic-halo test inputs so halo
+  warnings are checked independently of duplicate-parameter diagnostics.
 - Initialize the direct/flow index lists in `Measurements_set`, construct
   `Wilson_loop` with `Wilson_loop_measurement` and its own filename, and fix
   `Polyakov_loop.txt.txt` to `Polyakov_loop.txt`.
