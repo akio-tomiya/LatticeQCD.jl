@@ -96,7 +96,8 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     numflow = parameters.numflow
     Nflow = parameters.Nflow
     dτ = Nflow * eps_flow
-    gradientflow = Gradientflow(univ.U, Nflow=1, eps=eps_flow)
+    gradientflow = parameters.hasgradientflow ?
+        Gradientflow(univ.U, Nflow=Nflow, eps=eps_flow) : nothing
 
     measurements =
         Measurement_methods(univ.U, parameters.measuredir, parameters.measurement_methods)
@@ -112,85 +113,96 @@ function run_LQCD_file(filenamein::String; MPIparallel=false)
     #    plaq_m = Plaquette_measurement(univ.U, printvalues=false)
     #end
 
-    measurements_for_flow =
-        Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow)
+    measurements_for_flow = parameters.hasgradientflow ?
+        Measurement_methods(univ.U, parameters.measuredir, parameters.measurements_for_flow) : nothing
 
 
-    calc_measurement_values(measurements, 0, univ.U)
-    savedata = Savedata(
-        parameters.saveU_format,
-        parameters.saveU_dir,
-        parameters.saveU_every,
-        parameters.update_method,
-        univ.U,
-    )
+    try
+        if parameters.Nthermalization <= 0
+            calc_measurement_values(measurements, 0, univ.U)
+        end
+        savedata = Savedata(
+            parameters.saveU_format,
+            parameters.saveU_dir,
+            parameters.saveU_every,
+            parameters.update_method,
+            univ.U,
+        )
 
-    value, runtime_all = @timed begin
+        value, runtime_all = @timed begin
 
-        numaccepts = 0
-        for itrj = parameters.initialtrj:parameters.Nsteps
-            println_verbose_level1(univ, "# itrj = $itrj")
-            accepted, runtime = @timed update!(updatemethod, univ.U)
+            numaccepts = 0
+            for itrj = parameters.initialtrj:parameters.Nsteps
+                println_verbose_level1(univ, "# itrj = $itrj")
+                accepted, runtime = @timed update!(updatemethod, univ.U)
 
-            println_verbose_level1(univ, "Update: Elapsed time $runtime [s]")
-            if accepted
-                numaccepts += 1
-            end
-            save_gaugefield(savedata, univ.U, itrj)
-
-            measurestrings = calc_measurement_values(measurements, itrj, univ.U)
-            #println(measurestrings)
-            #println("$(univ.verbose_print.fp)")
-            for st in measurestrings
-                println(univ.verbose_print.fp, st)
-            end
-
-
-
-            Usmr = deepcopy(univ.U)
-            for istep = 1:numflow
-                τ = istep * dτ
-                flow!(Usmr, gradientflow)
-                additional_string = "$itrj $istep $τ "
-                for i = 1:measurements_for_flow.num_measurements
-                    interval = measurements_for_flow.intervals[i]
-                    if istep % interval == 0
-                        measure(
-                            measurements_for_flow.measurements[i],
-                            Usmr,
-                            additional_string=additional_string,
-                        )
-                    end
+                println_verbose_level1(univ, "Update: Elapsed time $runtime [s]")
+                if accepted
+                    numaccepts += 1
                 end
+                save_gaugefield(savedata, univ.U, itrj)
+
+                if itrj >= parameters.Nthermalization
+                    measurestrings = calc_measurement_values(measurements, itrj, univ.U)
+                    #println(measurestrings)
+                    #println("$(univ.verbose_print.fp)")
+                    for st in measurestrings
+                        println(univ.verbose_print.fp, st)
+                    end
+
+
+
+                    if parameters.hasgradientflow
+                        Usmr = deepcopy(univ.U)
+                        for istep = 1:numflow
+                            τ = istep * dτ
+                            flow!(Usmr, gradientflow)
+                            additional_string = "$itrj $istep $τ "
+                            for i = 1:measurements_for_flow.num_measurements
+                                interval = measurements_for_flow.intervals[i]
+                                if istep % interval == 0
+                                    measure(
+                                        measurements_for_flow.measurements[i],
+                                        Usmr,
+                                        additional_string=additional_string,
+                                    )
+                                end
+                            end
+                        end
+                    end
+
+
+                end
+
+                println_verbose_level1(
+                    univ,
+                    "Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %",
+                )
+                flush(univ.verbose_print.fp)
+
             end
-
-            println_verbose_level1(
-                univ,
-                "Acceptance $numaccepts/$itrj : $(round(numaccepts*100/itrj)) %",
-            )
-            flush(univ.verbose_print.fp)
-
         end
-        #println(stdout,univ.verbose_print.fp)
-        #println("close file")
+
+        println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
+
+
+        #temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
+        temps = plaq_m._temporary_gaugefields
+        temp1, it_temp1 = get_temp(temps)
+        temp2, it_temp2 = get_temp(temps)
+        plaq = real(calculate_Plaquette(univ.U, temp1, temp2) * plaq_m.factor)
+        unused!(temps, it_temp1)
+        unused!(temps, it_temp2)
+        return plaq
+    finally
         close(univ.verbose_print.fp)
-        for meas in measurements.measurements
-            close(meas.verbose_print.fp)
+        for group in (measurements, measurements_for_flow)
+            isnothing(group) && continue
+            for meas in group.measurements
+                isnothing(meas.verbose_print) || close(meas.verbose_print.fp)
+            end
         end
-        #println(stdout,univ.verbose_print.fp)
     end
-
-    println_verbose_level1(univ, "Total Elapsed time $(runtime_all) [s]")
-
-
-    #temps = QCDMeasurements.get_temporary_gaugefields(plaq_m)
-    temps = plaq_m._temporary_gaugefields
-    temp1, it_temp1 = get_temp(temps)
-    temp2, it_temp2 = get_temp(temps)
-    plaq = real(calculate_Plaquette(univ.U, temp1, temp2) * plaq_m.factor)
-    unused!(temps, it_temp1)
-    unused!(temps, it_temp2)
-    return plaq
 
 end
 
@@ -213,7 +225,7 @@ mutable struct Savedata
                 U[1],
                 "save gaugefields U every $(saveU_every) trajectory",
             )
-            #println("save gaugefields U every $(parameters.saveU_every) trajectory")   
+            #println("save gaugefields U every $(parameters.saveU_every) trajectory")
             issaved = true
         else
             issaved = false

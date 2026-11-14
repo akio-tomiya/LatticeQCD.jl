@@ -1,5 +1,7 @@
 # LatticeQCD.jl 
 
+Version 2.0.5 makes legacy measurements respect thermalization and gradient-flow settings, validates legacy TOML before creating output files, and repairs the compatibility measurement collection; see [changes.md](changes.md).
+
 
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 

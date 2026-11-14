@@ -20,11 +20,15 @@ struct Measurements_set
         nummeasurements = length(measurement_methods)
         measurements = Array{AbstractMeasurement,1}(undef, nummeasurements)
         methodnames = Array{String,1}(undef, nummeasurements)
+        baremesurement_indices = Int64[]
+        flowmeasurement_indices = Int64[]
 
 
         for i = 1:nummeasurements
             method = measurement_methods[i]
             methodnames[i] = method["methodname"]
+            set_parameter_default(method, "bare measure", true) && push!(baremesurement_indices, i)
+            set_parameter_default(method, "flow measure", false) && push!(flowmeasurement_indices, i)
 
             if method["methodname"] == "Plaquette"
                 measurements[i] =
@@ -33,7 +37,7 @@ struct Measurements_set
             elseif method["methodname"] == "Polyakov_loop"
                 measurements[i] = Polyakov_measurement(
                     U,
-                    filename = measurement_dir * "/Polyakov_loop.txt.txt",
+                    filename = measurement_dir * "/Polyakov_loop.txt",
                 )
             elseif method["methodname"] == "Topological_charge"
                 TC_methods =
@@ -130,10 +134,11 @@ struct Measurements_set
                 flowmeasure = set_parameter_default(method, "flow measure", false)
                 Tmax = set_parameter_default(method, "Tmax", 4)
                 Rmax = set_parameter_default(method, "Rmax", 4)
+                verbose_level = set_parameter_default(method, "verbose_level", 2)
 
-                measurements[i] = Pion_correlator_measurement(
+                measurements[i] = Wilson_loop_measurement(
                     U,
-                    filename = measurement_dir * "/Pion_correlator.txt",
+                    filename = measurement_dir * "/Wilson_loop.txt",
                     Tmax = Tmax,
                     Rmax = Rmax,
                     verbose_level = verbose_level,
@@ -151,6 +156,8 @@ struct Measurements_set
             measurements,#::Array{AbstractMeasurement,1}
             measurement_methods,#::Array{Dict,1}
             methodnames,#::Array{String,1}
+            baremesurement_indices,
+            flowmeasurement_indices,
         )
     end
 

@@ -1,5 +1,28 @@
 # Changes
 
+## 2.0.5
+
+- Make `run_LQCD` / `run_LQCD_file` start measurements at the trajectory
+  number specified by `Nthermalization`, matching the typed legacy-input
+  adapter. For example, `initialtrj = 1`, `Nsteps = 3`, and
+  `Nthermalization = 3` produce measurements only at trajectory 3. Initial
+  trajectory-zero measurements remain available when thermalization is disabled.
+- Respect `hasgradientflow = false`: skip flow construction, integration, and
+  flow measurement output files. When enabled, use `Nflow` integration steps
+  per sample and close direct and flowed measurement streams on return or error.
+- Reject unknown legacy TOML sections/keys and conflicting or ambiguous
+  duplicate parameters in both readers before creating output files. Errors
+  identify the parameter and section. A duplicate `measurement_basedir` is
+  rejected even when both values are equal. Identical repeated flow settings
+  from historical Wizard files remain accepted with a warning.
+- Initialize the direct/flow index lists in `Measurements_set`, construct
+  `Wilson_loop` with `Wilson_loop_measurement` and its own filename, and fix
+  `Polyakov_loop.txt.txt` to `Polyakov_loop.txt`.
+- Add regressions for input validation before I/O, thermalization thresholds,
+  enabled/disabled flow, integration-step equivalence, and compatibility
+  measurements. Verify 464 Wizard and 14 historical input files, typed TOML
+  round trips, session output, and HMC restart behavior with the existing tests.
+
 ## 2.0.4
 
 - Replace the Requires-based Plots hook with `LatticeQCDPlotsExt` and a declared

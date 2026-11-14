@@ -8,6 +8,7 @@ import ..Parameter_structs:
     Print_HMCrelated_parameters,
     struct2dict,
     normalize_legacy_measurement,
+    validate_legacy_parameters,
     Print_Gradientflow_parameters
 
 
@@ -87,7 +88,7 @@ end
 
 
 function construct_Params_from_TOML(parameters)
-
+    validate_legacy_parameters(parameters)
     show_parameters(parameters)
 
 
@@ -165,7 +166,7 @@ function construct_Params_from_TOML(parameters)
         measurement_dir = parameters["System Control"]["measurement_dir"]
     elseif haskey(parameters["Measurement set"], "measurement_basedir") &&
            haskey(parameters["System Control"], "measurement_basedir")
-        @error "both \"Measurement set\" and \"System Control\" have \"measurement_basedir\". remove one."
+        throw(ArgumentError("measurement_basedir must be specified in only one section"))
     else
         measurement_basedir = parameters["Measurement set"]["measurement_basedir"]
         measurement_dir = parameters["Measurement set"]["measurement_dir"]
