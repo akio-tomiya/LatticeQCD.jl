@@ -32,6 +32,8 @@
 
 ## 2.0.4
 
+Version 2.0.4 fixes optional Plots loading, adds `show_config` convenience calls, and selects the required halos for legacy TOML input.
+
 - Replace the Requires-based Plots hook with `LatticeQCDPlotsExt` and a declared
   optional Plots dependency. Both `using LatticeQCD, Plots` and the reverse
   loading order enable `demo` without dependency warnings. Loading LatticeQCD
@@ -57,6 +59,8 @@
   on Linux, macOS, and Windows for Julia 1.11 and 1.12.
 
 ## 2.0.2
+
+Version 2.0.2 fixes Wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup.
 
 - Fix Windows CI fixture counts by matching filenames without assuming `/` path
   separators. Close configuration manifests on validation errors so temporary
@@ -91,6 +95,8 @@
   formats, and an executed flow-only run with independent save/checkpoint intervals.
 
 ## 2.0.0
+
+Version 2.0.0 introduces typed simulation specifications and sessions, the new Wizard, unified simulation and measurement execution, portable checkpoints, and optional MPI loading.
 
 ### Simulation architecture
 

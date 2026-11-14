@@ -2,12 +2,6 @@
 
 Version 2.0.5 fixes legacy thermalization and gradient-flow measurements, validates legacy TOML before output, removes duplicate flow settings from Wizard output, and repairs compatibility measurements and Windows output paths; see [changes.md](changes.md#205).
 
-Version 2.0.4 fixes optional Plots loading, adds `show_config` convenience calls, and selects the required halos for legacy TOML input; see [changes.md](changes.md#204).
-
-Version 2.0.2 fixes Wizard parameter preservation, fermion-measurement halos, trajectory counts, log/measurement output paths, and Windows path/file cleanup; see [changes.md](changes.md#202).
-
-Version 2.0.0 introduces typed simulation specifications and sessions, the new Wizard, unified simulation and measurement execution, portable checkpoints, and optional MPI loading; see [changes.md](changes.md#200).
-
 [![CI](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akio-tomiya/LatticeQCD.jl/actions/workflows/CI.yml)
 
 <img src="logo.png" width=400>
